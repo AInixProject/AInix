@@ -1,0 +1,5 @@
+ai-nix-core/.data
+*.swp
+*.swo
+*.pyc
+venv-aix
