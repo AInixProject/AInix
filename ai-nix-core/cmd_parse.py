@@ -65,9 +65,6 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         else:
             raise CmdParseError("Unexpected kind", k)
 
-            
-            
-
     def parse(self, cmd):
         lexedProgram = bashlex.parse(cmd)
         print(lexedProgram)
