@@ -51,7 +51,7 @@ def load(program_description):
     data = yaml.safe_load(program_description)
     print(data)
 
-    valid_top_level_keys = ['name', 'arguments']
+    valid_top_level_keys = ['name', 'arguments', 'training-data']
     required_top_level_keys = ['name']
     _verify_keys(data.keys(), valid_top_level_keys, required_top_level_keys)
      
