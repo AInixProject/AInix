@@ -5,13 +5,7 @@ import torchtext
 import torch.nn.functional as F
 import pdb 
 import itertools
-from ignite.engine import Events
-from ignite.trainer import create_supervised_trainer
-from ignite.evaluator import Evaluator
-from ignite.metrics import CategoricalAccuracy, NegativeLogLikelihood
 import math
-from ignite.exceptions import NotComputableError
-
 
 #train_iter, test_iter = torchtext.datasets.IMDB.iters(batch_size=4)
 #
@@ -30,8 +24,7 @@ TEXT.build_vocab(train, max_size=1000)
 LABEL.build_vocab(train)
 
 # print information about the data
-print('train.fields', train.fields)
-print('len(train)', len(train))
+print('train.fields', train.fields) print('len(train)', len(train))
 print('vars(train[0])', vars(train[0]))
 print('len(test)', len(test))
 
@@ -91,7 +84,7 @@ val_epoch_iter = itertools.islice(test_iter, numOfBatchesPerEpochVAL)
 trainer = Trainer(training_update_function)
 evaluator = Evaluator(evaluator_function)
 acc = CategoricalAccuracy()
-nll = NegativeLogLikelihood()
+nll = Loss(F.nll_loss())
 acc.attach(evaluator, 'accuracy')
 nll.attach(evaluator, 'nll')
 #

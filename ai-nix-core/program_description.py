@@ -78,6 +78,8 @@ class AIProgramDescription():
         self.arguments = arguments 
         self.in_data_file = in_data_file
         self.out_data_file = out_data_file
+        # Program index is set during training to catagorize programs
+        self.program_index = None
 
     def get_examples(self):
         return self.examples
