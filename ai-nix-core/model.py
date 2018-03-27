@@ -30,10 +30,12 @@ class SimpleCmd():
         self.predictProgram = PredictProgramModel(
             run_context.std_word_size, run_context.num_of_descriptions)
         self.all_modules = nn.ModuleList([self.encoder, self.predictProgram])
+        if run_context.use_cuda:
+            self.all_modules.cuda()
 
         self.optimizer = optim.Adam(self.all_modules.parameters())
 
-    def train_step(self, batch):
+    def train_step(self, engine, batch):
         self.all_modules.train()
         self.optimizer.zero_grad()
 
@@ -49,7 +51,7 @@ class SimpleCmd():
 
         return loss.data[0]
 
-    def eval_step(self, batch):
+    def eval_step(self, engine, batch):
         query, query_lengths = batch.nl
         ast = batch.command
         firstCommands = [a[0] for a in ast]
