@@ -20,9 +20,22 @@ class Net(nn.Module):
         x = self.fc1(x)
         return F.log_softmax(x)
 
+
 class SimpleCmd():
     def __init__(self, run_context):
         self.run_context = run_context
+
+        # Build the argument data for this model
+        encodeType = torch.cuda.FloatTensor if run_context.use_cuda else torch.FloatTensor
+        for prog in run_context.descriptions:
+            all_top_v = []
+            if prog.arguments is None:
+                continue
+            for arg in prog.arguments:
+                topv = Variable(torch.randn(run_context.std_word_size).type(encodeType), requires_grad = True)
+                all_top_v.append(topv)
+                arg.model_data = {"top_v": topv} 
+            prog.model_data_grouped = {"top_v": torch.stack(all_top_v) if all_top_v else None}
 
         self.criterion = nn.NLLLoss()
         self.encoder = SimpleEncodeModel(
@@ -46,12 +59,24 @@ class SimpleCmd():
         encodings = self.encoder(query)
         pred = self.predictProgram(encodings)
         loss = self.criterion(pred, expectedProgIndicies)
+        
+        # Go through and predict each argument
+        for i, firstCmd in enumerate(firstCommands):
+            if len(firstCmd.program_desc.arguments) > 0:
+                argDots = torch.mv(firstCmd.program_desc.model_data_grouped['top_v'], encodings[i])
+                argLoss = F.binary_cross_entropy_with_logits(argDots, firstCmd.arg_present_tensor,
+                        size_average = False)
+                #print("Dots", argDots, "sigmoid", F.sigmoid(argDots), "epect", firstCmd.arg_present_tensor, "loss", argLoss)
+                loss += argLoss
+
+
         loss.backward()
         self.optimizer.step()
 
         return loss.data[0]
 
     def eval_step(self, engine, batch):
+        self.all_modules.eval()
         query, query_lengths = batch.nl
         ast = batch.command
         firstCommands = [a[0] for a in ast]
@@ -59,6 +84,15 @@ class SimpleCmd():
         encodings = self.encoder(query)
         pred = self.predictProgram(encodings)
         print("pred ", pred, "gt", expectedProgIndicies)
+        # This should really just return an ast
+
+        # Go through and predict each argument
+        for i, firstCmd in enumerate(firstCommands):
+            if len(firstCmd.program_desc.arguments) > 0:
+                argDots = torch.mv(firstCmd.program_desc.model_data_grouped['top_v'], encodings[i])
+                argLoss = F.binary_cross_entropy_with_logits(argDots, firstCmd.arg_present_tensor,
+                        size_average = False)
+                print("pred args ", pred, "gt", expectedProgIndicies)
         return pred.data.cpu(), expectedProgIndicies.data.cpu()
 
 class SimpleEncodeModel(nn.Module):

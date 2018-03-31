@@ -33,7 +33,9 @@ class Argument():
         self.name = name
         self.shorthand = shorthand
         self.argtype = argtype
-        pass
+
+        # stores argument specific data for models
+        self.model_data = None
 
     @classmethod
     def load(cls, data):
@@ -80,6 +82,7 @@ class AIProgramDescription():
         self.out_data_file = out_data_file
         # Program index is set during training to catagorize programs
         self.program_index = None
+        self.model_data_grouped = None
 
     def get_examples(self):
         return self.examples

@@ -2,6 +2,8 @@ import bashlex
 import program_description
 import sys, os
 import pudb
+import torch
+from torch.autograd import Variable
 
 class ArgumentNode():
     def __init__(self, arg, present, value):
@@ -10,9 +12,13 @@ class ArgumentNode():
         self.value = value
 
 class ProgramNode():
-    def __init__(self, program_desc, arguments):
+    def __init__(self, program_desc, arguments, use_cuda):
         self.program_desc = program_desc
         self.arguments = arguments
+        
+        encodeType = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+        self.arg_present_tensor = Variable(encodeType(
+                [1.0 if a.present else 0.0 for a in self.arguments]), requires_grad = False)
 
     def __repr__(self):
         return "<ProgramNode: " + self.program_desc.name + \
@@ -22,8 +28,9 @@ class CmdParseError(Exception):
     pass
 
 class CmdParser(): #bashlex.ast.nodevisitor):
-    def __init__(self, avail_desc):
+    def __init__(self, avail_desc, use_cuda = False):
         self.command_by_name = {desc.name: desc for desc in avail_desc}
+        self.use_cuda = use_cuda
         pass
     
     def _arg_in_word(self, arg, word):
@@ -60,7 +67,7 @@ class CmdParser(): #bashlex.ast.nodevisitor):
                         break
                 else:
                     args.append(ArgumentNode(arg, False, None))
-            return cur_parse + [ProgramNode(command, args)]
+            return cur_parse + [ProgramNode(command, args, self.use_cuda)]
 
         else:
             raise CmdParseError("Unexpected kind", k)

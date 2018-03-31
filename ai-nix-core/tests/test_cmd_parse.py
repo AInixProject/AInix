@@ -1,7 +1,8 @@
 import pytest
 from cmd_parse import *
 import program_description
-
+import torch
+from torch.autograd import Variable
 
 noArgs = program_description.AIProgramDescription(
     name = "noarg"
@@ -34,6 +35,7 @@ def test_onearg_parse():
     assert len(out[0].arguments) == 1
     assert out[0].arguments[0].arg == aArg
     assert out[0].arguments[0].present == True
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1])))
 
 def test_onearg_missing_parse():
     parser = CmdParser([noArgs, onearg])
@@ -53,6 +55,16 @@ def test_two_arg():
     assert out[0].arguments[0].arg == aArg
     assert out[0].arguments[0].present == True
     assert out[0].arguments[1].present == False
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,0])))
+
+    out = parser.parse("twoarg -b")
+    assert len(out) == 1
+    assert out[0].program_desc == twoarg
+    assert len(out[0].arguments) == 2
+    assert out[0].arguments[0].arg == aArg
+    assert out[0].arguments[0].present == False
+    assert out[0].arguments[1].present == True
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([0,1])))
 
     out = parser.parse("twoarg -a -b")
     assert len(out) == 1
@@ -62,6 +74,7 @@ def test_two_arg():
     assert out[0].arguments[1].arg == bArg
     assert out[0].arguments[0].present == True
     assert out[0].arguments[1].present == True
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1])))
 
     out = parser.parse("twoarg -ab")
     assert len(out) == 1
@@ -71,6 +84,7 @@ def test_two_arg():
     assert out[0].arguments[1].arg == bArg
     assert out[0].arguments[0].present == True
     assert out[0].arguments[1].present == True
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1])))
 
     out = parser.parse("twoarg -ba")
     assert len(out) == 1
@@ -80,3 +94,4 @@ def test_two_arg():
     assert out[0].arguments[1].arg == bArg
     assert out[0].arguments[0].present == True
     assert out[0].arguments[1].present == True
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1])))

@@ -87,10 +87,11 @@ def run_train(meta_model, train, val, run_context, test = None):
               .format(state.epoch, avg_accuracy, avg_nll))
 
     train_iter.repeat = False        
-    trainer.run(train_iter, max_epochs=30)
+    trainer.run(train_iter, max_epochs=50)
 
+aArg = program_description.Argument("a", "StoreTrue")
 lsDesc = program_description.AIProgramDescription(
-    name = "ls"
+    name = "ls", arguments = [aArg]
 )
 pwdDesc = program_description.AIProgramDescription(
     name = "pwd"
@@ -105,7 +106,13 @@ if __name__ == "__main__":
         ("list files and dirs here", "ls"),
         ("list", "ls"),
         ("print working directory", "pwd"),
-        ("print current dir", "pwd")
+        ("print current dir", "pwd"),
+        ("list all files with dot files", "ls -a"),
+        ("list all files with hidden files", "ls -a"),
+        ("list all including dot files", "ls -a"),
+        ("ls with dot files", "ls -a"),
+        ("ls with hidden files", "ls -a"),
+        ("ls with hidden files", "ls -a")
     ]
     use_cuda = False #torch.cuda.is_available()
     descs = [lsDesc, pwdDesc]
@@ -113,7 +120,7 @@ if __name__ == "__main__":
     (_, nl_field), (_, cmd_field) = fields 
 
     STD_WORD_SIZE = 10
-    context = RunContext(STD_WORD_SIZE, nl_field, cmd_field, descs, use_cuda)
+    context = RunContext(STD_WORD_SIZE, nl_field, cmd_field, descs, use_cuda, debug = True)
     meta_model = SimpleCmd(context)
 
     run_train(meta_model, train, val, context)
