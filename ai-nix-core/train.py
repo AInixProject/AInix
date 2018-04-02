@@ -160,7 +160,7 @@ if __name__ == "__main__":
     (train, val), fields = build_dataset(data, descs, use_cuda)
     (_, nl_field), (_, cmd_field) = fields 
 
-    STD_WORD_SIZE = 10
+    STD_WORD_SIZE = 20
     context = RunContext(STD_WORD_SIZE, nl_field, cmd_field, descs, use_cuda, debug = True)
     meta_model = SimpleCmd(context)
 
