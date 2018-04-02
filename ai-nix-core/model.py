@@ -1,3 +1,5 @@
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
 import torch
 from torch import Tensor, nn, optim
 from torch.autograd import Variable
@@ -6,6 +8,7 @@ import torch.nn.functional as F
 import pudb 
 import itertools
 import math
+from cmd_parse import ProgramNode, ArgumentNode
 
 class Net(nn.Module):
     def __init__(self, textVocabLen):
@@ -82,18 +85,25 @@ class SimpleCmd():
         firstCommands = [a[0] for a in ast]
         expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands)
         encodings = self.encoder(query)
-        pred = self.predictProgram(encodings)
-        print("pred ", pred, "gt", expectedProgIndicies)
-        # This should really just return an ast
+        predPrograms = self.predictProgram(encodings)
+        vals, predProgramsMaxs =  predPrograms.max(1)
+        print("pred ", predPrograms, "gt", expectedProgIndicies)
 
         # Go through and predict each argument
-        for i, firstCmd in enumerate(firstCommands):
-            if len(firstCmd.program_desc.arguments) > 0:
-                argDots = torch.mv(firstCmd.program_desc.model_data_grouped['top_v'], encodings[i])
-                argLoss = F.binary_cross_entropy_with_logits(argDots, firstCmd.arg_present_tensor,
-                        size_average = False)
-                print("pred args ", pred, "gt", expectedProgIndicies)
-        return pred.data.cpu(), expectedProgIndicies.data.cpu()
+        pred = [[] for b in firstCommands]
+        predProgramDescs = [self.run_context.descriptions[m.data[0]] for m in predProgramsMaxs]
+        for i, predProgragmD in enumerate(predProgramDescs):
+            setArgs = []
+            if len(predProgragmD.arguments) > 0:
+                argDots = torch.mv(predProgragmD.model_data_grouped['top_v'], encodings[i])
+                argSig = F.sigmoid(argDots)
+                for aIndex, arg in enumerate(predProgragmD.arguments):
+                    thisArgPrediced = argSig[aIndex].data[0] > 0.5
+                    setArgs.append(ArgumentNode(arg, thisArgPrediced, thisArgPrediced))
+
+            pred[i].append(ProgramNode(predProgragmD, setArgs, self.run_context.use_cuda))
+
+        return pred, batch.command
 
 class SimpleEncodeModel(nn.Module):
     """Creates a one word description of whole sequence"""

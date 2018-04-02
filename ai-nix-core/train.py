@@ -9,7 +9,7 @@ except ImportError:
 import pudb
 from model import SimpleCmd
 from ignite.engines.engine import Events, Engine
-from ignite.metrics import CategoricalAccuracy, Loss
+from ignite.metrics import CategoricalAccuracy, Loss, Metric
 from ignite.exceptions import NotComputableError
 import program_description
 from cmd_field import CommandField
@@ -28,8 +28,7 @@ def build_dataset(data, descs, use_cuda):
     Command_field = CommandField(descs)
 
     fields = [('nl', NL_field), ('command', Command_field)]
-    examples = []
-
+    examples = [] 
     for x, y in zip(inputs, outputs):
         examples.append(torchtext.data.Example.fromlist([x, y], fields))
 
@@ -64,10 +63,45 @@ def run_train(meta_model, train, val, run_context, test = None):
 
     trainer = Engine(meta_model.train_step)
     evaluator = Engine(meta_model.eval_step)
-    nll = Loss(F.nll_loss)
-    nll.attach(evaluator, 'nll')
-    acc = CategoricalAccuracy()
-    acc.attach(evaluator, 'accuracy')
+    #nll = Loss(F.nll_loss)
+    #nll.attach(evaluator, 'nll')
+    #acc = CategoricalAccuracy()
+    #acc.attach(evaluator, 'accuracy')
+    class BashMetric(Metric):
+        def reset(self):
+            self._num_examples = 0
+            self._num_first_commands_right = 0
+            self._num_args_seen = 0
+            self._num_args_seen_when_right = 0
+            self._num_args_pres_correct = 0
+
+        def update(self, output):
+            y_pred, y = output
+            self._num_examples += len(y_pred)
+            for p, gt in zip(y_pred, y):
+                pFirstCmd, gtFirstCmd = p[0], gt[0]
+                gotFirstCommand = pFirstCmd.program_desc.name == gtFirstCmd.program_desc.name
+                self._num_args_seen += len(gtFirstCmd.arguments)
+                if gotFirstCommand:
+                    self._num_first_commands_right += 1
+                    self._num_args_seen_when_right += len(gtFirstCmd.arguments)
+                    for pArg, gtArg in zip(pFirstCmd.arguments, gtFirstCmd.arguments):
+                        if pArg.present == gtArg.present:
+                            self._num_args_pres_correct += 1
+
+        def first_cmd_acc(self):
+            return self._num_first_commands_right / self._num_examples
+
+        def arg_acc(self):
+            return self._num_args_pres_correct / self._num_args_seen
+
+        def compute(self):
+            pass
+
+    bashmetric = BashMetric()
+    bashmetric.attach(evaluator, 'bashmetric')
+
+
 
     @trainer.on(Events.ITERATION_COMPLETED)
     def log_training_loss(engine):
@@ -81,17 +115,20 @@ def run_train(meta_model, train, val, run_context, test = None):
     def log_validation_results(engine):
         state = engine.state
         evaluator.run(val_iter)
-        avg_accuracy = acc.compute()
-        avg_nll = nll.compute()
-        print("Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
-              .format(state.epoch, avg_accuracy, avg_nll))
+        #avg_accuracy = acc.compute()
+        #avg_nll = nll.compute()
+        #print("Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
+        #      .format(state.epoch, avg_accuracy, avg_nll))
+        print("Validation Results - Epoch: {} FirstCmdAcc: {:.2f} ArgAcc: {:.2f}" 
+              .format(state.epoch, bashmetric.first_cmd_acc(), bashmetric.arg_acc()))
 
     train_iter.repeat = False        
     trainer.run(train_iter, max_epochs=50)
 
 aArg = program_description.Argument("a", "StoreTrue")
+lArg = program_description.Argument("l", "StoreTrue")
 lsDesc = program_description.AIProgramDescription(
-    name = "ls", arguments = [aArg]
+    name = "ls", arguments = [aArg, lArg]
 )
 pwdDesc = program_description.AIProgramDescription(
     name = "pwd"
@@ -112,7 +149,11 @@ if __name__ == "__main__":
         ("list all including dot files", "ls -a"),
         ("ls with dot files", "ls -a"),
         ("ls with hidden files", "ls -a"),
-        ("ls with hidden files", "ls -a")
+        ("list with dot files", "ls -a"),
+        ("list all files with stuff like file size", "ls -l"),
+        ("list all files in long format", "ls -l"),
+        ("ls with date changed and size", "ls -l"),
+        ("show info about files here", "ls -l")
     ]
     use_cuda = False #torch.cuda.is_available()
     descs = [lsDesc, pwdDesc]
