@@ -87,7 +87,7 @@ class SimpleCmd():
         encodings = self.encoder(query)
         predPrograms = self.predictProgram(encodings)
         vals, predProgramsMaxs =  predPrograms.max(1)
-        print("pred ", predPrograms, "gt", expectedProgIndicies)
+        #print("pred ", predPrograms, "gt", expectedProgIndicies)
 
         # Go through and predict each argument
         pred = [[] for b in firstCommands]

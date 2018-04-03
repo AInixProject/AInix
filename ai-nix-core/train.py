@@ -17,6 +17,7 @@ from run_context import RunContext
 import math
 import itertools
 import torch.nn.functional as F
+import data
 
 LOG_INTERVAL = 1
 
@@ -74,6 +75,7 @@ def run_train(meta_model, train, val, run_context, test = None):
             self._num_args_seen = 0
             self._num_args_seen_when_right = 0
             self._num_args_pres_correct = 0
+            self._num_exact_match = 0
 
         def update(self, output):
             y_pred, y = output
@@ -85,15 +87,24 @@ def run_train(meta_model, train, val, run_context, test = None):
                 if gotFirstCommand:
                     self._num_first_commands_right += 1
                     self._num_args_seen_when_right += len(gtFirstCmd.arguments)
+                    fullMatch = True
                     for pArg, gtArg in zip(pFirstCmd.arguments, gtFirstCmd.arguments):
                         if pArg.present == gtArg.present:
                             self._num_args_pres_correct += 1
+                        else:
+                            fullMatch = False
+                    if fullMatch:
+                        self._num_exact_match += 1
+
 
         def first_cmd_acc(self):
             return self._num_first_commands_right / self._num_examples
 
         def arg_acc(self):
             return self._num_args_pres_correct / self._num_args_seen
+
+        def exact_match_acc(self):
+            return self._num_exact_match / self._num_examples
 
         def compute(self):
             pass
@@ -119,49 +130,19 @@ def run_train(meta_model, train, val, run_context, test = None):
         #avg_nll = nll.compute()
         #print("Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
         #      .format(state.epoch, avg_accuracy, avg_nll))
-        print("Validation Results - Epoch: {} FirstCmdAcc: {:.2f} ArgAcc: {:.2f}" 
-              .format(state.epoch, bashmetric.first_cmd_acc(), bashmetric.arg_acc()))
+        print("Validation Results - Epoch: {} FirstCmdAcc: {:.2f} ArgAcc: {:.2f} ExactAcc: {:.2f}"
+              .format(state.epoch, bashmetric.first_cmd_acc(), bashmetric.arg_acc(), bashmetric.exact_match_acc()))
 
     train_iter.repeat = False        
-    trainer.run(train_iter, max_epochs=50)
+    trainer.run(train_iter, max_epochs=100)
 
-aArg = program_description.Argument("a", "StoreTrue")
-lArg = program_description.Argument("l", "StoreTrue")
-lsDesc = program_description.AIProgramDescription(
-    name = "ls", arguments = [aArg, lArg]
-)
-pwdDesc = program_description.AIProgramDescription(
-    name = "pwd"
-)
 if __name__ == "__main__":
-    data = [
-        ("list all files", "ls"),
-        ("list all files here", "ls"),
-        ("what file am I in", "pwd"),
-        ("list my files", "ls"),
-        ("list what is here", "ls"),
-        ("list files and dirs here", "ls"),
-        ("list", "ls"),
-        ("print working directory", "pwd"),
-        ("print current dir", "pwd"),
-        ("list all files with dot files", "ls -a"),
-        ("list all files with hidden files", "ls -a"),
-        ("list all including dot files", "ls -a"),
-        ("ls with dot files", "ls -a"),
-        ("ls with hidden files", "ls -a"),
-        ("list with dot files", "ls -a"),
-        ("list all files with stuff like file size", "ls -l"),
-        ("list all files in long format", "ls -l"),
-        ("ls with date changed and size", "ls -l"),
-        ("show info about files here", "ls -l")
-    ]
     use_cuda = False #torch.cuda.is_available()
-    descs = [lsDesc, pwdDesc]
-    (train, val), fields = build_dataset(data, descs, use_cuda)
+    (train, val), fields = build_dataset(data.all_data, data.all_descs, use_cuda)
     (_, nl_field), (_, cmd_field) = fields 
 
-    STD_WORD_SIZE = 20
-    context = RunContext(STD_WORD_SIZE, nl_field, cmd_field, descs, use_cuda, debug = True)
+    STD_WORD_SIZE = 30
+    context = RunContext(STD_WORD_SIZE, nl_field, cmd_field, data.all_descs, use_cuda, debug = True)
     meta_model = SimpleCmd(context)
 
     run_train(meta_model, train, val, context)
