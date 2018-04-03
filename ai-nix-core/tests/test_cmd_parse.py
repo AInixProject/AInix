@@ -20,6 +20,17 @@ twoarg = program_description.AIProgramDescription(
     arguments = [aArg, bArg] 
 )
 
+posArg = program_description.Argument("aposarg", "Stringlike", position = 0)
+justpos = program_description.AIProgramDescription(
+    name = "justpos",
+    arguments = [posArg] 
+)
+
+posandtwo = program_description.AIProgramDescription(
+    name = "posandtwo",
+    arguments = [aArg, bArg, posArg] 
+)
+
 def test_noarg_parse():
     parser = CmdParser([noArgs])
     out = parser.parse("noarg")
@@ -95,3 +106,31 @@ def test_two_arg():
     assert out[0].arguments[0].present == True
     assert out[0].arguments[1].present == True
     assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1])))
+
+def test_just_pos():
+    parser = CmdParser([justpos])
+    out = parser.parse("justpos main.c")
+    assert out[0].arguments[0].present == True
+    assert out[0].arguments[0].value == "main.c"
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1])))
+
+    out = parser.parse("justpos main.c ~/sdf/")
+    assert out[0].arguments[0].present == True
+    assert out[0].arguments[0].value == "main.c ~/sdf/"
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1])))
+
+def test_pos_and_args():
+    parser = CmdParser([posandtwo])
+    out = parser.parse("posandtwo -a -b main.c")
+    assert out[0].arguments[0].present == True
+    assert out[0].arguments[1].present == True
+    assert out[0].arguments[2].present == True
+    assert out[0].arguments[2].value == "main.c"
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1,1])))
+
+    out = parser.parse("posandtwo -a -b")
+    assert out[0].arguments[0].present == True
+    assert out[0].arguments[1].present == True
+    assert out[0].arguments[2].present == False
+    assert out[0].arguments[2].value == None
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1,0])))

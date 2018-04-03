@@ -27,12 +27,17 @@ def _verify_keys(keys, valid_keys = None, required_keys = None):
 class StoreTrue():
     pass
 
+class Stringlike():
+    pass
+
 class Argument():
     """Represents an argument in a AIProgramDescription"""
-    def __init__(self, name, argtype, shorthand = None):
+    def __init__(self, name, argtype, shorthand = None, position = None, required = False):
         self.name = name
         self.shorthand = shorthand
         self.argtype = argtype
+        self.position = position
+        self.required = required
 
         # stores argument specific data for models
         self.model_data = None

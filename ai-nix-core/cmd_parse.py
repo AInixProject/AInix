@@ -4,6 +4,7 @@ import sys, os
 import pudb
 import torch
 from torch.autograd import Variable
+import getopt
 
 class ArgumentNode():
     def __init__(self, arg, present, value):
@@ -44,7 +45,38 @@ class CmdParser(): #bashlex.ast.nodevisitor):
                 return True
 
         return False
+    
+    def _getopt(self, cmd_desc, cmd_parts):
+        """custom modification of getopt to based off a bashlex ast and stuff like cmd substitution"""
+        # build the optstring
+        optstring = []
+        longargs = []
+        for arg in cmd_desc.arguments:
+            if arg.position is None:
+                needValue = arg.argtype != "StoreTrue"
+                if len(arg.name) == 1:
+                    optstring.append(arg.name)
+                    if needValue:
+                        optstring.append(":")
+                else:
+                    if arg.shorthand:
+                        optstring.append(arg.shorthand)
+                    longargs.append(arg.name + "=" if needValue else arg.name)
+        optstring = ''.join(optstring)
+
+        # figure out what the input args are
+        #print("cmd_parts", cmd_parts)
+        inargs = [p.word for p in cmd_parts]
+        #print("inargs", inargs)
+
+        # use normal getopt to parse
+        optlist, args = getopt.getopt(inargs, optstring, longargs)
+
+        # convert to a dict
+        dictoptlist = {arg:val if val != '' else None for arg, val in optlist}
         
+        return dictoptlist, args
+
 
     def _parse_node(self, n, cur_parse = []):
         k = n.kind
@@ -58,16 +90,42 @@ class CmdParser(): #bashlex.ast.nodevisitor):
             command = self.command_by_name[commandName]
             # Figure out all of its arguments
             args = []
+            optlist, non_opt_args = self._getopt(command, parts)
+            print("optlist", optlist)
+            print("nonopt", non_opt_args)
             for arg in command.arguments:
-                for part in parts:
-                    word = part.word
-                    pres = self._arg_in_word(arg, word)
-                    if pres:
-                        args.append(ArgumentNode(arg, True, None))
-                        break
+                print("arg pos", arg.position)
+                if arg.position is None:
+                    if ("-" if len(arg.name) == 1 else "--") + arg.name in optlist:
+                        args.append(ArgumentNode(arg, True, optlist[("-" if len(arg.name) == 1 else "--") + arg.name]))
+                        continue
+                    if arg.shorthand and "-" + arg.shorthand in optlist:
+                        args.append(ArgumentNode(arg, True, "-" + optlist["-" + arg.shorthand]))
+                        continue
                 else:
-                    args.append(ArgumentNode(arg, False, None))
+                    if(len(non_opt_args) > 0):
+                        args.append(ArgumentNode(arg, True, " ".join(non_opt_args)))
+                        continue
+                args.append(ArgumentNode(arg, False, None))
+
+
             return cur_parse + [ProgramNode(command, args, self.use_cuda)]
+
+            #partIsConsumed = [False for _ in parts]
+            #for arg in command.arguments:
+            #    # For now only look at non-positional args
+            #    if arg.position:
+            #        continue
+            #    for partIndex, part in enumerate(parts):
+            #        word = part.word
+            #        pres = self._arg_in_word(arg, word)
+            #        if pres:
+            #            partIsConsumed[partIndex] = True
+            #            args.append(ArgumentNode(arg, True, None))
+            #            break
+            #    else:
+            #        args.append(ArgumentNode(arg, False, None))
+            #return cur_parse + [ProgramNode(command, args, self.use_cuda)]
 
         else:
             raise CmdParseError("Unexpected kind", k)
