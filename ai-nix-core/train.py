@@ -134,7 +134,7 @@ def run_train(meta_model, train, val, run_context, test = None):
               .format(state.epoch, bashmetric.first_cmd_acc(), bashmetric.arg_acc(), bashmetric.exact_match_acc()))
 
     train_iter.repeat = False        
-    trainer.run(train_iter, max_epochs=100)
+    trainer.run(train_iter, max_epochs=50)
 
 if __name__ == "__main__":
     use_cuda = False #torch.cuda.is_available()
