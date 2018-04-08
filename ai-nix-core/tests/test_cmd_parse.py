@@ -31,6 +31,14 @@ posandtwo = program_description.AIProgramDescription(
     arguments = [aArg, bArg, posArg] 
 )
 
+cValArg = program_description.Argument("c", "Stringlike")
+
+valprog = program_description.AIProgramDescription(
+    name = "valprog",
+    arguments = [aArg, bArg, cValArg, posArg] 
+)
+
+
 def test_noarg_parse():
     parser = CmdParser([noArgs])
     out = parser.parse("noarg")
@@ -134,3 +142,31 @@ def test_pos_and_args():
     assert out[0].arguments[2].present == False
     assert out[0].arguments[2].value == None
     assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1,0])))
+
+def test_val_arg():
+    parser = CmdParser([valprog])
+    out = parser.parse("valprog -c foo")
+    assert out[0].arguments[0].present == False
+    assert out[0].arguments[1].present == False
+    assert out[0].arguments[2].present == True
+    assert out[0].arguments[3].present == False
+    assert out[0].arguments[2].value == "foo"
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([0,0,1,0])))
+
+    out = parser.parse("valprog -a -c bar main.c")
+    assert out[0].arguments[2].value == "bar"
+    assert out[0].arguments[3].value == "main.c"
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,0,1,1])))
+
+    out = parser.parse("valprog -ba -c \"foo bar\" main.c")
+    assert out[0].arguments[2].value == "foo bar"
+    assert out[0].arguments[3].value == "main.c"
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1,1,1])))
+
+def test_val_combined():
+    """A test of whether argument value parsing works when there is no
+    space between the flag and the value"""
+    parser = CmdParser([valprog])
+    out = parser.parse("valprog -cfoo")
+    assert out[0].arguments[2].value == "foo"
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([0,0,1,0])))

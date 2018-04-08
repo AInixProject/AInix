@@ -112,8 +112,6 @@ def run_train(meta_model, train, val, run_context, test = None):
     bashmetric = BashMetric()
     bashmetric.attach(evaluator, 'bashmetric')
 
-
-
     @trainer.on(Events.ITERATION_COMPLETED)
     def log_training_loss(engine):
         state = engine.state

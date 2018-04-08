@@ -63,7 +63,7 @@ class SimpleCmd():
         pred = self.predictProgram(encodings)
         loss = self.criterion(pred, expectedProgIndicies)
         
-        # Go through and predict each argument
+        # Go through and predict each argument present or not
         for i, firstCmd in enumerate(firstCommands):
             if len(firstCmd.program_desc.arguments) > 0:
                 argDots = torch.mv(firstCmd.program_desc.model_data_grouped['top_v'], encodings[i])
@@ -132,3 +132,20 @@ class PredictProgramModel(nn.Module):
     def forward(self, x):
         x = self.chooseProgramFC(x)
         return F.log_softmax(x)
+
+class SimpleDecoderModel(nn.Module):
+    def __init__(self, hidden_size, output_size):
+        super(SimpleDecoderModel, self).__init__()
+        self.hidden_size = hidden_size
+
+        self.embedding = nn.Embedding(output_size, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size)
+        self.out = nn.Linear(hidden_size, output_size)
+        self.softmax = nn.LogSoftmax(dim=1)
+
+    def forward(self, input, hidden):
+        output = self.embedding(input).view(1, 1, -1)
+        output = F.relu(output)
+        output, hidden = self.gru(output, hidden)
+        output = self.softmax(self.out(output[0]))
+        return output, hidden
