@@ -17,7 +17,8 @@ from run_context import RunContext
 import math
 import itertools
 import torch.nn.functional as F
-import data
+import data as sampledata
+from bashmetrics import BashMetric
 
 LOG_INTERVAL = 1
 
@@ -40,16 +41,16 @@ def build_dataset(data, descs, use_cuda):
 
     return (train, val), fields
 
-def run_train(meta_model, train, val, run_context, test = None):
-    batch_size = 1
-    train_iter = torchtext.data.iterator.BucketIterator(train,
-        batch_size = batch_size, train = True, repeat = False,
-        shuffle = True, sort_key=lambda x: x.nl,
-        device = None if run_context.use_cuda else -1)
-    val_iter = torchtext.data.iterator.BucketIterator(val,
-        batch_size = batch_size, train = True, repeat = False,
-        shuffle = True, sort_key=lambda x: x.nl,
-        device = None if run_context.use_cuda else -1)
+def eval_model(meta_model, val_iter, metrics):
+    evaluator = Engine(meta_model.eval_step)
+    bashmetric = BashMetric()
+    for metric, metric_name in metrics:
+        metric.attach(evaluator, metric_name)
+
+    evaluator.run(val_iter)
+
+
+def run_train(meta_model, train_iter, val_iter, run_context, test = None, num_epochs = 50):
 
     batch = next(iter(train_iter))
     print(batch.nl)
@@ -58,89 +59,55 @@ def run_train(meta_model, train, val, run_context, test = None):
     #print(textVocabLen)
     #labelVocabLen = len(LABEL.vocab.itos)
     #print("nl vocab", NL_field.vocab.itos)
-    numOfBatchesPerEpoch = math.ceil(len(train)/batch_size)
-    numOfBatchesPerEpochVAL = math.ceil(len(val)/batch_size)
-    val_epoch_iter = itertools.islice(val_iter, numOfBatchesPerEpochVAL)
+    numOfBatchesPerEpoch = math.ceil(len(train_iter)/run_context.batch_size)
+    numOfBatchesPerEpochVAL = math.ceil(len(val_iter)/run_context.batch_size)
 
     trainer = Engine(meta_model.train_step)
-    evaluator = Engine(meta_model.eval_step)
-    #nll = Loss(F.nll_loss)
-    #nll.attach(evaluator, 'nll')
-    #acc = CategoricalAccuracy()
-    #acc.attach(evaluator, 'accuracy')
-    class BashMetric(Metric):
-        def reset(self):
-            self._num_examples = 0
-            self._num_first_commands_right = 0
-            self._num_args_seen = 0
-            self._num_args_seen_when_right = 0
-            self._num_args_pres_correct = 0
-            self._num_exact_match = 0
 
-        def update(self, output):
-            y_pred, y = output
-            self._num_examples += len(y_pred)
-            for p, gt in zip(y_pred, y):
-                pFirstCmd, gtFirstCmd = p[0], gt[0]
-                gotFirstCommand = pFirstCmd.program_desc.name == gtFirstCmd.program_desc.name
-                self._num_args_seen += len(gtFirstCmd.arguments)
-                if gotFirstCommand:
-                    self._num_first_commands_right += 1
-                    self._num_args_seen_when_right += len(gtFirstCmd.arguments)
-                    fullMatch = True
-                    for pArg, gtArg in zip(pFirstCmd.arguments, gtFirstCmd.arguments):
-                        if pArg.present == gtArg.present:
-                            self._num_args_pres_correct += 1
-                        else:
-                            fullMatch = False
-                    if fullMatch:
-                        self._num_exact_match += 1
+    if not run_context.quiet_mode:
+        @trainer.on(Events.ITERATION_COMPLETED)
+        def log_training_loss(engine):
+            state = engine.state
+            iter = (state.iteration - 1) % numOfBatchesPerEpoch + 1
+            if iter % LOG_INTERVAL == 0:
+                print("Epoch[{}] Iteration[{}/{}] Loss: {:.2f}".format(
+                    state.epoch, iter, numOfBatchesPerEpoch, state.output))
 
-
-        def first_cmd_acc(self):
-            return self._num_first_commands_right / self._num_examples
-
-        def arg_acc(self):
-            return self._num_args_pres_correct / self._num_args_seen
-
-        def exact_match_acc(self):
-            return self._num_exact_match / self._num_examples
-
-        def compute(self):
-            pass
-
-    bashmetric = BashMetric()
-    bashmetric.attach(evaluator, 'bashmetric')
-
-    @trainer.on(Events.ITERATION_COMPLETED)
-    def log_training_loss(engine):
-        state = engine.state
-        iter = (state.iteration - 1) % numOfBatchesPerEpoch + 1
-        if iter % LOG_INTERVAL == 0:
-            print("Epoch[{}] Iteration[{}/{}] Loss: {:.2f}".format(
-                state.epoch, iter, numOfBatchesPerEpoch, state.output))
-
-    @trainer.on(Events.EPOCH_COMPLETED)
-    def log_validation_results(engine):
-        state = engine.state
-        evaluator.run(val_iter)
-        #avg_accuracy = acc.compute()
-        #avg_nll = nll.compute()
-        #print("Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
-        #      .format(state.epoch, avg_accuracy, avg_nll))
-        print("Validation Results - Epoch: {} FirstCmdAcc: {:.2f} ArgAcc: {:.2f} ExactAcc: {:.2f}"
-              .format(state.epoch, bashmetric.first_cmd_acc(), bashmetric.arg_acc(), bashmetric.exact_match_acc()))
+        @trainer.on(Events.EPOCH_COMPLETED)
+        def log_validation_results(engine):
+            state = engine.state
+            bashmetric = BashMetric()
+            eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
+            print("Validation Results - Epoch: {} FirstCmdAcc: {:.2f} ArgAcc: {:.2f} ExactAcc: {:.2f}"
+                  .format(state.epoch, bashmetric.first_cmd_acc(), bashmetric.arg_acc(), bashmetric.exact_match_acc()))
 
     train_iter.repeat = False        
-    trainer.run(train_iter, max_epochs=50)
+    return trainer.run(train_iter, max_epochs=num_epochs)
 
-if __name__ == "__main__":
-    use_cuda = False #torch.cuda.is_available()
-    (train, val), fields = build_dataset(data.all_data, data.all_descs, use_cuda)
+def run_with_data_list(data, descs, use_cuda, quiet_mode = False, num_epochs = 50):
+    (train, val), fields = build_dataset(data, descs, use_cuda)
     (_, nl_field), (_, cmd_field) = fields 
 
     STD_WORD_SIZE = 30
-    context = RunContext(STD_WORD_SIZE, nl_field, cmd_field, data.all_descs, use_cuda, debug = True)
+    batch_size = 1
+    context = RunContext(STD_WORD_SIZE, nl_field, cmd_field, descs, use_cuda,
+            batch_size = batch_size, debug = True, quiet_mode = quiet_mode)
+
+    train_iter = torchtext.data.iterator.BucketIterator(train,
+        batch_size = batch_size, train = True, repeat = False,
+        shuffle = True, sort_key=lambda x: x.nl,
+        device = None if context.use_cuda else -1)
+    val_iter = torchtext.data.iterator.BucketIterator(val,
+        batch_size = batch_size, train = True, repeat = False,
+        shuffle = True, sort_key=lambda x: x.nl,
+        device = None if context.use_cuda else -1)
+
     meta_model = SimpleCmd(context)
 
-    run_train(meta_model, train, val, context)
+    final_state = run_train(meta_model, train_iter, val_iter, context, num_epochs = num_epochs)
+    # For now just return everything you could care about in a disorganized messy tupple
+    return (meta_model, final_state, train_iter, val_iter)
+
+if __name__ == "__main__":
+    use_cuda = False #torch.cuda.is_available()
+    run_with_data_list(sampledata.all_data, sampledata.all_descs, use_cuda)

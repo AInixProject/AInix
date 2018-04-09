@@ -131,7 +131,7 @@ class PredictProgramModel(nn.Module):
 
     def forward(self, x):
         x = self.chooseProgramFC(x)
-        return F.log_softmax(x)
+        return F.log_softmax(x, dim=1)
 
 class SimpleDecoderModel(nn.Module):
     def __init__(self, hidden_size, output_size):
