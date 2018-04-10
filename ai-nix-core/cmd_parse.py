@@ -13,7 +13,7 @@ class ArgumentNode():
         self.value = value
 
         # Filled in by model
-        self.tensor_value = None
+        self.parsed_value = None
         
 
     def __repr__(self):
@@ -65,7 +65,7 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         longargs = []
         for arg in cmd_desc.arguments:
             if arg.position is None:
-                needValue = arg.argtype != "StoreTrue"
+                needValue = type(arg.argtype).__name__ != "StoreTrue"
                 if len(arg.name) == 1:
                     optstring.append(arg.name)
                     if needValue:

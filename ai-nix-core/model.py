@@ -9,6 +9,7 @@ import pudb
 import itertools
 import math
 from cmd_parse import ProgramNode, ArgumentNode
+import constants
 
 class SimpleCmd():
     def __init__(self, run_context):
@@ -33,12 +34,13 @@ class SimpleCmd():
         self.encoder = SimpleEncodeModel(
             run_context.nl_vocab_size, run_context.std_word_size)
         self.decoder = SimpleDecoderModel(
-            run_context.nl_vocab_size, run_context.std_word_size)
+            run_context.std_word_size, run_context.nl_vocab_size)
         self.predictProgram = PredictProgramModel(
             run_context.std_word_size, run_context.num_of_descriptions)
         self.all_modules = nn.ModuleList([self.encoder, self.predictProgram])
         if run_context.use_cuda:
             self.all_modules.cuda()
+
 
         self.optimizer = optim.Adam(list(self.all_modules.parameters()) + all_arg_params)
 
@@ -54,15 +56,19 @@ class SimpleCmd():
         pred = self.predictProgram(encodings)
         loss = self.criterion(pred, expectedProgIndicies)
         
-        # Go through and predict each argument present or not
         for i, firstCmd in enumerate(firstCommands):
+            # Go through and predict each argument present or not
             if len(firstCmd.program_desc.arguments) > 0:
                 argDots = torch.mv(firstCmd.program_desc.model_data_grouped['top_v'], encodings[i])
                 argLoss = F.binary_cross_entropy_with_logits(argDots, firstCmd.arg_present_tensor,
                         size_average = False)
-                #print("Dots", argDots, "sigmoid", F.sigmoid(argDots), "epect", firstCmd.arg_present_tensor, "loss", argLoss)
                 loss += argLoss
-
+            # Go through and predict the value of present nodes
+            for arg_node in firstCmd.arguments:
+                if arg_node.present and arg_node.value is not None:
+                    argtype = arg_node.arg.argtype
+                    parsed_value = argtype.parse_value(arg_node.value, self.run_context)
+                    loss += argtype.predict_value(encodings[i], parsed_value, self.run_context, self, is_eval = False)
 
         loss.backward()
         self.optimizer.step()
@@ -95,6 +101,23 @@ class SimpleCmd():
             pred[i].append(ProgramNode(predProgragmD, setArgs, self.run_context.use_cuda))
 
         return pred, batch.command
+
+    def std_decode(self, encodeing, run_context, expected_tensor, is_eval = False):
+        decoder_input = Variable(torch.LongTensor([[run_context.nl_field.vocab.stoi[constants.SOS]]]))  
+        decoder_input = decoder_input.cuda() if run_context.use_cuda else decoder_input
+
+        loss = 0
+        criterion = nn.NLLLoss()
+
+        decoder_hidden = encodeing.view(1,1,-1) # double unsqueeze
+        target_length = expected_tensor.size()[0]
+        for di in range(target_length):
+            decoder_output, decoder_hidden = self.decoder(
+                decoder_input, decoder_hidden)
+            loss += criterion(decoder_output, expected_tensor[0][di])
+            decoder_input = expected_tensor[di]  # Teacher forcing
+
+        return loss
 
 class SimpleEncodeModel(nn.Module):
     """Creates a one word description of whole sequence"""

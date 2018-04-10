@@ -59,3 +59,24 @@ def test_pick_arg():
     bashmetric = BashMetric()
     train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98
+
+def test_fill_pos():
+    posArg = Argument("aposarg", "Stringlike", position = 0)
+    cow = AIProgramDescription(
+        name = "cow",
+        arguments = [posArg]
+    )
+    data = [
+        ("cow goes woof", "cow woof woof"),
+        ("cow goes moo", "cow moo"),
+        ("cow goes meow", "cow meow meow meow")
+    ] * 100
+    random.shuffle(data)
+    # Do training
+    train_output = train.run_with_data_list(data, [cow], False, quiet_mode = True, num_epochs = 5)
+    meta_model, final_state, train_iter, val_iter = train_output
+    
+    # eval the model. Expect should get basically perfect progam picking
+    bashmetric = BashMetric()
+    train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
+    assert bashmetric.exact_match_acc() >= 0.98

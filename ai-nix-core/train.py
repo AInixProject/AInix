@@ -19,13 +19,14 @@ import itertools
 import torch.nn.functional as F
 import data as sampledata
 from bashmetrics import BashMetric
+import constants
 
 LOG_INTERVAL = 1
 
 def build_dataset(data, descs, use_cuda):
     inputs, outputs = zip(*data)
     NL_field = torchtext.data.Field(lower=True, include_lengths=True,
-        batch_first=True, init_token = None, eos_token = None,
+        batch_first=True, init_token = constants.SOS, eos_token = constants.EOS,
         tensor_type = torch.cuda.LongTensor if use_cuda else torch.LongTensor)
     Command_field = CommandField(descs)
 

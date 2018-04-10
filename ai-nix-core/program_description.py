@@ -32,20 +32,28 @@ class StoreTrue(ArgumentType):
     pass
 
 class Stringlike(ArgumentType):
-    def parse_value(self, value, run_context):
+    def parse_value(self, value, run_context, is_eval = False):
         """Takes in a value and converts it to friendly representation"""
-        pass
+        preproc = run_context.nl_field.preprocess(value)
+        return run_context.nl_field.process([preproc], 
+                device = 0 if run_context.use_cuda else -1,
+                train = not is_eval)[0] # take 0th since a tuple with length
 
-    def predict_value(self, encoding, run_context):
+    def predict_value(self, encoding, expected_value, run_context, meta_model, is_eval = False):
         """Predict the representation."""
-        pass
+        return meta_model.std_decode(encoding, run_context, expected_value, is_eval)
 
 class Argument():
     """Represents an argument in a AIProgramDescription"""
     def __init__(self, name, argtype, shorthand = None, position = None, required = False):
         self.name = name
         self.shorthand = shorthand
-        self.argtype = argtype
+        if argtype == "StoreTrue":
+            self.argtype = StoreTrue()
+        elif argtype == "Stringlike":
+            self.argtype = Stringlike()
+        else:
+            raise ValueError("unknown arg type ", argtype)
         self.position = position
         self.required = required
 
