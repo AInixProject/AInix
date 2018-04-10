@@ -12,6 +12,18 @@ class ArgumentNode():
         self.present = present
         self.value = value
 
+        # Filled in by model
+        self.tensor_value = None
+        
+
+    def __repr__(self):
+        out = "<ArgumentNode: "
+        out += self.arg.name
+        out += " NOT present" if self.present else " IS present"
+        if self.present and self.value is not None:
+            out += " val=" + self.value
+        return out 
+
 class ProgramNode():
     def __init__(self, program_desc, arguments, use_cuda):
         self.program_desc = program_desc
@@ -91,10 +103,7 @@ class CmdParser(): #bashlex.ast.nodevisitor):
             # Figure out all of its arguments
             args = []
             optlist, non_opt_args = self._getopt(command, parts)
-            print("optlist", optlist)
-            print("nonopt", non_opt_args)
             for arg in command.arguments:
-                print("arg pos", arg.position)
                 if arg.position is None:
                     if ("-" if len(arg.name) == 1 else "--") + arg.name in optlist:
                         args.append(ArgumentNode(arg, True, optlist[("-" if len(arg.name) == 1 else "--") + arg.name]))

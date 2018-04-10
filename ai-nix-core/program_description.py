@@ -24,11 +24,21 @@ def _verify_keys(keys, valid_keys = None, required_keys = None):
             raise ProgramParseError("Missing Required Top level attributes", 
                 set(required_keys) - set(keys))
 
-class StoreTrue():
+class ArgumentType():
+    def __init__(self):
+        self.model_data = None
+
+class StoreTrue(ArgumentType):
     pass
 
-class Stringlike():
-    pass
+class Stringlike(ArgumentType):
+    def parse_value(self, value, run_context):
+        """Takes in a value and converts it to friendly representation"""
+        pass
+
+    def predict_value(self, encoding, run_context):
+        """Predict the representation."""
+        pass
 
 class Argument():
     """Represents an argument in a AIProgramDescription"""

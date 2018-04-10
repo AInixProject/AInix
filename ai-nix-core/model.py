@@ -10,26 +10,13 @@ import itertools
 import math
 from cmd_parse import ProgramNode, ArgumentNode
 
-class Net(nn.Module):
-    def __init__(self, textVocabLen):
-        super(Net, self).__init__()
-        embedding_dim = 50
-        self.embed = nn.Embedding(textVocabLen, embedding_dim)
-        self.fc1 = nn.Linear(embedding_dim, labelVocabLen)
-
-    def forward(self, x):
-        x = self.embed(x)
-        x = x.mean(1)
-        x = self.fc1(x)
-        return F.log_softmax(x)
-
-
 class SimpleCmd():
     def __init__(self, run_context):
         self.run_context = run_context
 
         # Build the argument data for this model
         encodeType = torch.cuda.FloatTensor if run_context.use_cuda else torch.FloatTensor
+        all_arg_params = []
         for prog in run_context.descriptions:
             all_top_v = []
             if prog.arguments is None:
@@ -37,11 +24,15 @@ class SimpleCmd():
             for arg in prog.arguments:
                 topv = Variable(torch.randn(run_context.std_word_size).type(encodeType), requires_grad = True)
                 all_top_v.append(topv)
+                all_arg_params.append(topv)
                 arg.model_data = {"top_v": topv} 
             prog.model_data_grouped = {"top_v": torch.stack(all_top_v) if all_top_v else None}
 
+        # Create layers
         self.criterion = nn.NLLLoss()
         self.encoder = SimpleEncodeModel(
+            run_context.nl_vocab_size, run_context.std_word_size)
+        self.decoder = SimpleDecoderModel(
             run_context.nl_vocab_size, run_context.std_word_size)
         self.predictProgram = PredictProgramModel(
             run_context.std_word_size, run_context.num_of_descriptions)
@@ -49,7 +40,7 @@ class SimpleCmd():
         if run_context.use_cuda:
             self.all_modules.cuda()
 
-        self.optimizer = optim.Adam(self.all_modules.parameters())
+        self.optimizer = optim.Adam(list(self.all_modules.parameters()) + all_arg_params)
 
     def train_step(self, engine, batch):
         self.all_modules.train()
