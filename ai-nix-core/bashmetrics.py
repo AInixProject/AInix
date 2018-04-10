@@ -49,6 +49,11 @@ class BashMetric(Metric):
         else:
             return None
 
+    def arg_val_exact_acc(self):
+        if self._num_values_seen == 0:
+            return float('nan')
+        return self._num_values_exact_match / self._num_values_seen
+
     def exact_match_acc(self):
         return self._num_exact_match / self._num_examples
 

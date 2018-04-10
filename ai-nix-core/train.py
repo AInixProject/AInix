@@ -79,8 +79,10 @@ def run_train(meta_model, train_iter, val_iter, run_context, test = None, num_ep
             state = engine.state
             bashmetric = BashMetric()
             eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
-            print("Validation Results - Epoch: {} FirstCmdAcc: {:.2f} ArgAcc: {:.2f} ExactAcc: {:.2f}"
-                  .format(state.epoch, bashmetric.first_cmd_acc(), bashmetric.arg_acc(), bashmetric.exact_match_acc()))
+            print("""Validation Results - Epoch: {} 
+                FirstCmdAcc: {:.2f} ArgAcc: {:.2f} ValExactAcc: {:.2f} ExactAcc: {:.2f}"""
+                .format(state.epoch, bashmetric.first_cmd_acc(), bashmetric.arg_acc(),
+                    bashmetric.arg_val_exact_acc(), bashmetric.exact_match_acc()))
 
     train_iter.repeat = False        
     return trainer.run(train_iter, max_epochs=num_epochs)
