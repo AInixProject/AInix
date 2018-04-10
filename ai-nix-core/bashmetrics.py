@@ -8,6 +8,8 @@ class BashMetric(Metric):
         self._num_args_seen_when_right = 0
         self._num_args_pres_correct = 0
         self._num_exact_match = 0
+        self._num_values_seen = 0
+        self._num_values_exact_match = 0
 
     def update(self, output):
         y_pred, y = output
@@ -25,6 +27,15 @@ class BashMetric(Metric):
                         self._num_args_pres_correct += 1
                     else:
                         fullMatch = False
+
+                    if gtArg.value is not None:
+                        self._num_values_seen += 1
+                        print("expected value", gtArg.value, " got arg value", pArg.value)
+                        if gtArg.value == pArg.value:
+                            self._num_values_exact_match += 1
+                        else:
+                            fullMatch = False
+
                 if fullMatch:
                     self._num_exact_match += 1
 

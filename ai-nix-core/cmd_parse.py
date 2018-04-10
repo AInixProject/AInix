@@ -141,7 +141,6 @@ class CmdParser(): #bashlex.ast.nodevisitor):
 
     def parse(self, cmd):
         lexedProgram = bashlex.parse(cmd)
-        print(lexedProgram)
         return self._parse_node(lexedProgram[0])
 
     #def visitcommand(self, n, parts):

@@ -1,6 +1,6 @@
 from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
-import torch
+                        print_function, unicode_literals) 
+import torch 
 from torch import Tensor, nn, optim
 from torch.autograd import Variable
 import torchtext
@@ -37,7 +37,7 @@ class SimpleCmd():
             run_context.std_word_size, run_context.nl_vocab_size)
         self.predictProgram = PredictProgramModel(
             run_context.std_word_size, run_context.num_of_descriptions)
-        self.all_modules = nn.ModuleList([self.encoder, self.predictProgram])
+        self.all_modules = nn.ModuleList([self.encoder, self.decoder, self.predictProgram])
         if run_context.use_cuda:
             self.all_modules.cuda()
 
@@ -68,7 +68,7 @@ class SimpleCmd():
                 if arg_node.present and arg_node.value is not None:
                     argtype = arg_node.arg.argtype
                     parsed_value = argtype.parse_value(arg_node.value, self.run_context)
-                    loss += argtype.predict_value(encodings[i], parsed_value, self.run_context, self, is_eval = False)
+                    loss += argtype.train_value(encodings[i], parsed_value, self.run_context, self)
 
         loss.backward()
         self.optimizer.step()
@@ -95,14 +95,19 @@ class SimpleCmd():
                 argDots = torch.mv(predProgragmD.model_data_grouped['top_v'], encodings[i])
                 argSig = F.sigmoid(argDots)
                 for aIndex, arg in enumerate(predProgragmD.arguments):
-                    thisArgPrediced = argSig[aIndex].data[0] > 0.5
-                    setArgs.append(ArgumentNode(arg, thisArgPrediced, thisArgPrediced))
+                    thisArgPredicted = argSig[aIndex].data[0] > 0.5
+                    if thisArgPredicted and arg.argtype.requires_val:
+                        predVal = arg.argtype.eval_value(encodings[i], self.run_context, self)
+                    else:
+                        predVal = thisArgPredicted
+
+                    setArgs.append(ArgumentNode(arg, thisArgPredicted, predVal))
 
             pred[i].append(ProgramNode(predProgragmD, setArgs, self.run_context.use_cuda))
 
         return pred, batch.command
 
-    def std_decode(self, encodeing, run_context, expected_tensor, is_eval = False):
+    def std_decode_train(self, encodeing, run_context, expected_tensor):
         decoder_input = Variable(torch.LongTensor([[run_context.nl_field.vocab.stoi[constants.SOS]]]))  
         decoder_input = decoder_input.cuda() if run_context.use_cuda else decoder_input
 
@@ -110,14 +115,35 @@ class SimpleCmd():
         criterion = nn.NLLLoss()
 
         decoder_hidden = encodeing.view(1,1,-1) # double unsqueeze
-        target_length = expected_tensor.size()[0]
-        for di in range(target_length):
+        target_length = expected_tensor.size()[1]
+        for di in range(1, target_length):
             decoder_output, decoder_hidden = self.decoder(
                 decoder_input, decoder_hidden)
             loss += criterion(decoder_output, expected_tensor[0][di])
-            decoder_input = expected_tensor[di]  # Teacher forcing
-
+            decoder_input = expected_tensor[0][di]  # Teacher forcing
         return loss
+    
+    def std_decode_eval(self, encodeing, run_context, max_length = 5):
+        decoder_input = Variable(torch.LongTensor([[run_context.nl_field.vocab.stoi[constants.SOS]]]))  
+        decoder_input = decoder_input.cuda() if run_context.use_cuda else decoder_input
+
+        decoded_words = [constants.SOS]
+        decoder_hidden = encodeing.view(1,1,-1) # double unsqueeze
+        for di in range(max_length):
+            decoder_output, decoder_hidden = self.decoder(
+                decoder_input, decoder_hidden)
+            topv, topi = decoder_output.data.topk(1)
+            ni = topi[0][0]
+            decoded_words.append(run_context.nl_field.vocab.itos[ni])
+            if decoded_words[-1] == constants.EOS:
+                decoded_words = decoded_words[1:-1]
+                break
+            decoder_input = Variable(torch.LongTensor([[ni]]))
+            decoder_input = decoder_input.cuda() if run_context.use_cuda else decoder_input
+
+        return decoded_words
+
+
 
 class SimpleEncodeModel(nn.Module):
     """Creates a one word description of whole sequence"""

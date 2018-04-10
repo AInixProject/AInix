@@ -73,7 +73,7 @@ def test_fill_pos():
     ] * 100
     random.shuffle(data)
     # Do training
-    train_output = train.run_with_data_list(data, [cow], False, quiet_mode = True, num_epochs = 5)
+    train_output = train.run_with_data_list(data, [cow], False, quiet_mode = True, num_epochs = 3)
     meta_model, final_state, train_iter, val_iter = train_output
     
     # eval the model. Expect should get basically perfect progam picking

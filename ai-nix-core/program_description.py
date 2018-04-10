@@ -27,11 +27,16 @@ def _verify_keys(keys, valid_keys = None, required_keys = None):
 class ArgumentType():
     def __init__(self):
         self.model_data = None
+        self.requires_val = False
 
 class StoreTrue(ArgumentType):
     pass
 
 class Stringlike(ArgumentType):
+    def __init__(self):
+        super(Stringlike, self).__init__()
+        self.requires_val = True
+
     def parse_value(self, value, run_context, is_eval = False):
         """Takes in a value and converts it to friendly representation"""
         preproc = run_context.nl_field.preprocess(value)
@@ -39,9 +44,12 @@ class Stringlike(ArgumentType):
                 device = 0 if run_context.use_cuda else -1,
                 train = not is_eval)[0] # take 0th since a tuple with length
 
-    def predict_value(self, encoding, expected_value, run_context, meta_model, is_eval = False):
-        """Predict the representation."""
-        return meta_model.std_decode(encoding, run_context, expected_value, is_eval)
+    def train_value(self, encoding, expected_value, run_context, meta_model):
+        return meta_model.std_decode_train(encoding, run_context, expected_value)
+
+    def eval_value(self, encoding, run_context, meta_model):
+        predSequence =  meta_model.std_decode_eval(encoding, run_context)
+        return " ".join(predSequence)
 
 class Argument():
     """Represents an argument in a AIProgramDescription"""
