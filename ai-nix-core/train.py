@@ -91,7 +91,7 @@ def run_with_data_list(data, descs, use_cuda, quiet_mode = False, num_epochs = 5
     (train, val), fields = build_dataset(data, descs, use_cuda)
     (_, nl_field), (_, cmd_field) = fields 
 
-    STD_WORD_SIZE = 30
+    STD_WORD_SIZE = 20
     batch_size = 1
     context = RunContext(STD_WORD_SIZE, nl_field, cmd_field, descs, use_cuda,
             batch_size = batch_size, debug = True, quiet_mode = quiet_mode)

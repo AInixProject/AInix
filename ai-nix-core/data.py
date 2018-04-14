@@ -9,9 +9,10 @@ ls_lArg = Argument("l", "StoreTrue")
 ls_SArg = Argument("S", "StoreTrue")
 ls_tArg = Argument("t", "StoreTrue")
 ls_rArg = Argument("r", "StoreTrue")
+ls_iArg = Argument("i", "StoreTrue")
 ls_fileList = Argument("fileList", "Stringlike", position = 1)
 lsDesc = AIProgramDescription(
-    name = "ls", arguments = [ls_aArg, ls_lArg, ls_SArg, ls_tArg, ls_rArg, ls_fileList]
+    name = "ls", arguments = [ls_aArg, ls_lArg, ls_SArg, ls_tArg, ls_rArg, ls_iArg, ls_fileList]
 )
 all_descs.append(lsDesc)
 lsdata = [
@@ -53,6 +54,10 @@ lsdata = [
     ("ls -l sorted by change data", "ls -lt"),
     ("ls -l sorted by modification data", "ls -lt"),
     ("ls -l sorted by mod data", "ls -lt"),
+    ("ls -l sort by mod data", "ls -lt"),
+    ("list inode numbers of files here", "ls -i"),
+    ("ls with inode numbers", "ls -i"),
+    ("list files in home dir", "ls ~"),
     # with values
     ("what files are here with file information", "ls -l"),
     ("ls all files in pictures", "ls pictures"),
@@ -79,7 +84,8 @@ pwddata = [
     ("get current path", "pwd"),
     ("what directory am I in", "pwd"),
     ("prnt working dir", "pwd"),
-    ("print out what directory am in", "pwd")
+    ("print out what directory am in", "pwd"),
+    ("get my current directory", "pwd")
 ]
 
 ### CD ###
@@ -132,6 +138,10 @@ rmdata = [
     ("rm everything here but ask me first", "rm -ri *"),
     ("delete all jpg files with confirmation first", "rm -i *.jpg"),
     ("delete foo.txt and bar.txt", "rm foo.txt bar.txt"),
+    ("rm * with confirmation", "rm *"),
+    ("rm -rf * with confirmation", "rm -irf *"),
+    ("rm -r * with confirmation", "rm -ir *"),
+    ("rm everything here with prompt before removal", "rm -ir *"),
 ]
 
 ### mkdir ###
@@ -142,6 +152,7 @@ mkdirDesc = AIProgramDescription(
 all_descs.append(mkdirDesc)
 mkdirData = [
     ("make a directory named foo", "mkdir foo"),
+    ("make a foo directory", "mkdir foo"),
     ("make a directory named testdir", "mkdir testdir"),
     ("make a dir named testdir", "mkdir testdir")
 ]
@@ -158,11 +169,26 @@ touchData = [
     ("make a file named __init__.py", "touch __init__.py"),
     ("create a __init__.py", "touch __init__.py"),
     ("make this a python module", "touch __init__.py"),
-    ("setup this dir as a python module", "touch __init__.py")
+    ("setup this dir as a python module", "touch __init__.py"),
+    ("make a blank gitignore", "touch .gitignore"),
+]
+
+### cat ###
+cat_nArg = Argument("n", "StoreTrue")
+cat_fileList = Argument("fileList", "Stringlike", position = 1)
+catDesc = AIProgramDescription(
+    name = "cat", arguments = [cat_nArg, cat_fileList]
+)
+all_descs.append(catDesc)
+catData = [
+    ("print the contents of foo.txt", "cat foo.txt"),
+    ("print whats in foo.txt", "cat foo.txt"),
+    ("print out foo.txt", "cat foo.txt"),
+    ("print the contents of foo.txt with line numbers", "cat -n foo.txt"),
 ]
 
 ###########
-all_data = lsdata + pwddata + cddata + echodata + rmdata + mkdirData + touchData
+all_data = lsdata + pwddata + cddata + echodata + rmdata + mkdirData + touchData + catData
 random.shuffle(all_data)
 
 if __name__ == "__main__":
