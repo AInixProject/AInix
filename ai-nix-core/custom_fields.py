@@ -19,12 +19,7 @@ class Replacer():
         # check that has a correspondence
         nlset = set(nlmatches)
         cmdset = set(cmdmatches)
-        if len(nlset) != len(nlmatches) or len(cmdset) != len(cmdmatches):
-            raise ValueError("Ambigious duplicate replacements")
         intersection = nlset & cmdset
-        if len(nlmatches) > len(cmdmatches) or len(intersection) != len(nlmatches) or \
-            len(intersection) != len(cmdmatches):
-            raise ValueError("Unmatched replace elements found")
         # replace
         newnl, newcmd = nl, cmd
         for match in nlmatches:
