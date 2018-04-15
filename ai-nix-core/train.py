@@ -12,7 +12,7 @@ from ignite.engines.engine import Events, Engine
 from ignite.metrics import CategoricalAccuracy, Loss, Metric
 from ignite.exceptions import NotComputableError
 import program_description
-from cmd_field import CommandField
+from custom_fields import CommandField
 from run_context import RunContext
 import math
 import itertools
