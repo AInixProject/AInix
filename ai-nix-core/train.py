@@ -20,27 +20,29 @@ import torch.nn.functional as F
 import data as sampledata
 from bashmetrics import BashMetric
 import constants
+import random
 
 LOG_INTERVAL = 1
 
-def build_dataset(data, descs, use_cuda):
-    inputs, outputs = zip(*data)
+def build_dataset(train, val, descs, use_cuda, test = None):
+    datasplits = [x for x in (train, val, test) if x is not None]
     NL_field = torchtext.data.Field(lower=True, include_lengths=True,
         batch_first=True, init_token = constants.SOS, eos_token = constants.EOS,
         tensor_type = torch.cuda.LongTensor if use_cuda else torch.LongTensor)
     Command_field = CommandField(descs)
 
     fields = [('nl', NL_field), ('command', Command_field)]
-    examples = [] 
-    for x, y in zip(inputs, outputs):
-        examples.append(torchtext.data.Example.fromlist([x, y], fields))
+    examples_per_split = [[] for l in datasplits]
+    datasets = []
+    for datasplit, splitexamples in zip(datasplits,examples_per_split):
+        inputs, outputs = zip(*datasplit)
+        for x, y in zip(inputs, outputs):
+            splitexamples.append(torchtext.data.Example.fromlist([x, y], fields))
+        datasets.append(torchtext.data.Dataset(splitexamples, fields))
 
-    dataset = torchtext.data.Dataset(examples, fields) 
-    train, val = dataset.split()
+    NL_field.build_vocab(datasets[0], max_size=1000)
 
-    NL_field.build_vocab(train, max_size=1000)
-
-    return (train, val), fields
+    return tuple(datasets), fields
 
 def eval_model(meta_model, val_iter, metrics):
     evaluator = Engine(meta_model.eval_step)
@@ -87,8 +89,8 @@ def run_train(meta_model, train_iter, val_iter, run_context, test = None, num_ep
     train_iter.repeat = False        
     return trainer.run(train_iter, max_epochs=num_epochs)
 
-def run_with_data_list(data, descs, use_cuda, quiet_mode = False, num_epochs = 50):
-    (train, val), fields = build_dataset(data, descs, use_cuda)
+def run_with_specific_split(train, val, descs, use_cuda, quiet_mode = False, num_epochs = 50):
+    (train, val), fields = build_dataset(train, val, descs, use_cuda)
     (_, nl_field), (_, cmd_field) = fields 
 
     STD_WORD_SIZE = 20
@@ -110,6 +112,14 @@ def run_with_data_list(data, descs, use_cuda, quiet_mode = False, num_epochs = 5
     final_state = run_train(meta_model, train_iter, val_iter, context, num_epochs = num_epochs)
     # For now just return everything you could care about in a disorganized messy tupple
     return (meta_model, final_state, train_iter, val_iter)
+
+def run_with_data_list(data, descs, use_cuda, quiet_mode = False, num_epochs = 50, trainsplit = .7):
+    """Runs training just based off a single list of (x, y) tupples.
+    Will split the data for you"""
+    random.shuffle(data)  
+    train = data[:int(len(data)*trainsplit)]
+    val = data[int(len(data)*trainsplit):]
+    return run_with_specific_split(train, val, descs, use_cuda, quiet_mode, num_epochs)
 
 if __name__ == "__main__":
     use_cuda = False #torch.cuda.is_available()

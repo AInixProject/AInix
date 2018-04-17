@@ -5,6 +5,7 @@ import six
 from utils import WeightedRandomChooser
 import re
 import pudb
+import csv
 
 class Replacer():
     pattern = r"\[-\[.+?\]-\]"
@@ -58,6 +59,8 @@ class ReplacementGroup():
 
     def sample_replacement(self, *args):
         return self._sampler.sample().get_replacement()
+    
+        
 
 class Replacement():
     def __init__(self, nl_value, cmd_value, weight):
@@ -67,6 +70,13 @@ class Replacement():
 
     def get_replacement(self):
         return self._nl_value, self._cmd_value
+
+    @classmethod
+    def from_tsv(cls, file_name):
+        """Returns a list a of replacements loaded from a tsv"""
+        with open(file_name) as tsvfile:
+            reader = csv.reader(tsvfile, delimiter='\t')
+            return [cls(nl, cmd, int(weight)) for nl, cmd, weight in reader]
 
 class CommandField(torchtext.data.RawField):
     """A torch text field specifically for commands. Will parse

@@ -1,4 +1,5 @@
 from program_description import Argument, AIProgramDescription
+from custom_fields import Replacer, ReplacementGroup, Replacement
 import random
 
 all_descs = []
@@ -58,13 +59,13 @@ lsdata = [
     ("list inode numbers of files here", "ls -i"),
     ("ls with inode numbers", "ls -i"),
     ("list files in home dir", "ls ~"),
-    # with values
     ("what files are here with file information", "ls -l"),
+    # with values
     ("ls all files in pictures", "ls pictures"),
     ("ls all files in pictures and home", "ls pictures ~"),
     ("list all files in ..", "ls .."),
     ("list all jpg files here", "ls *.jpg"),
-    ("list all text files here", "ls *.jpg")
+    ("list all text files here", "ls *.txt")
 ]
 
 
@@ -190,6 +191,9 @@ catData = [
 ###########
 all_data = lsdata + pwddata + cddata + echodata + rmdata + mkdirData + touchData + catData
 random.shuffle(all_data)
+
+filename_repl = ReplacementGroup('FILENAME', Replacement.from_tsv("./data/FILENAME.tsv"))
+replacer = Replacer([filename_repl])
 
 if __name__ == "__main__":
     print("Found %d examples and %d descriptions" % (len(all_data), len(all_descs)))

@@ -22,7 +22,7 @@ def test_arg_params_training():
         ("give cow an apple", "cow -a"),
         ("give the cow a banana", "cow -b"),
     ] * 100
-    (train, val), fields = trainmodule.build_dataset(data, [cow], False)
+    (train, val), fields = trainmodule.build_dataset(data[:-10], data[-10:], [cow], False)
     (_, nl_field), (_, cmd_field) = fields 
 
     STD_WORD_SIZE = 5
