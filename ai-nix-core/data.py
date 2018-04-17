@@ -116,7 +116,9 @@ all_descs.append(echoDesc)
 echodata = [
     ("say hello", "echo hello"),
     ("print out \"hello world\"", "echo hello world"),
-    ("print out hello world", "echo hello world")
+    ("print out hello world", "echo hello world"),
+    ("print an empty new line", "echo"),
+    ("print an empty line", "echo")
 ]
 
 ### RM ###
@@ -146,8 +148,8 @@ rmdata = [
     ("delete all jpg files with confirmation first", "rm -i *.jpg"),
     ("delete [-[1.FILENAME]-] and [-[2.FILENAME]-]", "rm [-[1.FILENAME]-] [-[2.FILENAME]-]"),
     ("remove [-[1.FILENAME]-] and [-[2.FILENAME]-]", "rm [-[1.FILENAME]-] [-[2.FILENAME]-]"),
-    ("remove [-[1.FILENAME]-], [-[2.FILENAME]-] and [-[3.FILENAME]-]", "rm [-[1.FILENAME]-] [-[2.FILENAME]-] [3.FILENAME]-]"),
-    ("rm * with confirmation", "rm *"),
+    ("remove [-[1.FILENAME]-], [-[2.FILENAME]-] and [-[3.FILENAME]-]", "rm [-[1.FILENAME]-] [-[2.FILENAME]-] [-[3.FILENAME]-]"),
+    ("rm * with confirmation", "rm -i *"),
     ("rm -rf * with confirmation", "rm -irf *"),
     ("rm -r * with confirmation", "rm -ir *"),
     ("rm everything here with prompt before removal", "rm -ir *"),
@@ -167,9 +169,10 @@ mkdirData = [
 ]
 
 ### touch ###
+touch_rArg = Argument("r", "StoreTrue")
 touch_fileList = Argument("fileList", "Stringlike", position = 1)
 touchDesc = AIProgramDescription(
-    name = "touch", arguments = [touch_fileList]
+    name = "touch", arguments = [touch_fileList, touch_rArg]
 )
 all_descs.append(touchDesc)
 touchData = [
@@ -184,6 +187,11 @@ touchData = [
     ("make an empty gitignore", "touch .gitignore"),
     ("create an empty file named [-[FILENAME]-]", "touch [-[FILENAME]-]"),
     ("add empty file named [-[FILENAME]-] here", "touch [-[FILENAME]-]"),
+    ("set the last mod time of [-[FILENAME]-] to now", "touch [-[FILENAME]-]"),
+    ("set the last accessed and modified time of [-[FILENAME]-] to now", "touch [-[FILENAME]-]"),
+    ("reset the last modified time of [-[FILENAME]-] to now", "touch [-[FILENAME]-]"),
+    ("set the last modified time of [-[1.FILENAME]-] to be the same as [-[2.FILENAME]-]", "touch -r [-[2.FILENAME]-] [-[1.FILENAME]-]"),
+    ("touch [-[1.FILENAME]-] using last modified and access times of [-[2.FILENAME]-]", "touch -r [-[2.FILENAME]-] [-[1.FILENAME]-]"),
 ]
 
 ### cat ###
@@ -200,6 +208,8 @@ catData = [
     ("print the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
     ("write out the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
     ("print the content of [-[FILENAME]-]", "cat -n [-[FILENAME]-]"),
+    ("concatenate * together", "cat *"),
+    ("concatenate [-[1.FILENAME]-] and [-[2.FILENAME]-] together", "cat [-[1.FILENAME]-] [-[2.FILENAME]-]"),
 ]
 
 ###########
