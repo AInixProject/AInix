@@ -48,7 +48,7 @@ class Stringlike(ArgumentType):
         return meta_model.std_decode_train(encoding, run_context, expected_value)
 
     def eval_value(self, encoding, run_context, meta_model):
-        predSequence =  meta_model.std_decode_eval(encoding, run_context)
+        predSequence = meta_model.std_decode_eval(encoding, run_context)
         return " ".join(predSequence)
 
 class Argument():

@@ -26,18 +26,20 @@ class Replacer():
         for match in nlmatches:
             # A match will have be surrounded with dash-brackets with .'s seperating args
             vals = match[3:-3].split(".")
+            otherArgs = None
             if len(vals) > 1:
                 try:
                     int(vals[0])
                     matchtypename = vals[1]
+                    if len(vals) > 2:
+                        otherArgs = vals[2:]
                 except ValueError:
                     # if the first one is not an int, then the type must come first
                     matchtypename = vals[0]
-                if len(vals) > 2:
-                    otherArgs = vals[2:]
+                    if len(vals) > 1:
+                        otherArgs = vals[2:]
             else:
                 matchtypename = vals[0]
-                otherArgs = None
                 
             # sample 
             if matchtypename not in self.nameToTypes:

@@ -132,13 +132,21 @@ rmdata = [
     ("delete everything here", "rm -r *"),
     ("force delete everything here", "rm -rf *"),
     ("remove everything here", "rm -r *"),
-    ("delete foo.txt", "rm foo.txt"),
+    ("delete [-[FILENAME]-]", "rm [-[FILENAME]-]"),
     ("delete all jpg files here", "rm *.jpg"),
+    ("delete all png files here", "rm *.png"),
     ("delete all text files here", "rm *.txt"),
+    ("remove all txt files", "rm *.txt"),
+    ("remove all c files", "rm *.c"),
+    ("delete all header files here", "rm *.h"),
+    ("delete all md files here", "rm *.md"),
+    ("remove all markdown files", "rm *.md"),
     ("rm everything here with confirmation first", "rm -ri *"),
     ("rm everything here but ask me first", "rm -ri *"),
     ("delete all jpg files with confirmation first", "rm -i *.jpg"),
-    ("delete foo.txt and bar.txt", "rm foo.txt bar.txt"),
+    ("delete [-[1.FILENAME]-] and [-[2.FILENAME]-]", "rm [-[1.FILENAME]-] [-[2.FILENAME]-]"),
+    ("remove [-[1.FILENAME]-] and [-[2.FILENAME]-]", "rm [-[1.FILENAME]-] [-[2.FILENAME]-]"),
+    ("remove [-[1.FILENAME]-], [-[2.FILENAME]-] and [-[3.FILENAME]-]", "rm [-[1.FILENAME]-] [-[2.FILENAME]-] [3.FILENAME]-]"),
     ("rm * with confirmation", "rm *"),
     ("rm -rf * with confirmation", "rm -irf *"),
     ("rm -r * with confirmation", "rm -ir *"),
@@ -165,13 +173,17 @@ touchDesc = AIProgramDescription(
 )
 all_descs.append(touchDesc)
 touchData = [
-    ("make a file named foo.txt", "touch foo.txt"),
-    ("create a file named foo.txt", "touch foo.txt"),
+    ("make a file named [-[FILENAME]-]", "touch [-[FILENAME]-]"),
+    ("create a file named [-[FILENAME]-]", "touch [-[FILENAME]-]"),
     ("make a file named __init__.py", "touch __init__.py"),
     ("create a __init__.py", "touch __init__.py"),
     ("make this a python module", "touch __init__.py"),
     ("setup this dir as a python module", "touch __init__.py"),
     ("make a blank gitignore", "touch .gitignore"),
+    ("make a gitignore", "touch .gitignore"),
+    ("make an empty gitignore", "touch .gitignore"),
+    ("create an empty file named [-[FILENAME]-]", "touch [-[FILENAME]-]"),
+    ("add empty file named [-[FILENAME]-] here", "touch [-[FILENAME]-]"),
 ]
 
 ### cat ###
@@ -182,10 +194,12 @@ catDesc = AIProgramDescription(
 )
 all_descs.append(catDesc)
 catData = [
-    ("print the contents of foo.txt", "cat foo.txt"),
-    ("print whats in foo.txt", "cat foo.txt"),
-    ("print out foo.txt", "cat foo.txt"),
-    ("print the contents of foo.txt with line numbers", "cat -n foo.txt"),
+    ("print the contents of [-[FILENAME]-]", "cat [-[FILENAME]-]"),
+    ("print whats in [-[FILENAME]-]", "cat [-[FILENAME]-]"),
+    ("print out [-[FILENAME]-]", "cat [-[FILENAME]-]"),
+    ("print the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
+    ("write out the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
+    ("print the content of [-[FILENAME]-]", "cat -n [-[FILENAME]-]"),
 ]
 
 ###########
@@ -194,6 +208,15 @@ random.shuffle(all_data)
 
 filename_repl = ReplacementGroup('FILENAME', Replacement.from_tsv("./data/FILENAME.tsv"))
 replacer = Replacer([filename_repl])
+
+def get_all_data_replaced(num_duplicates = 1, num_val_duplicates = None, trainsplit = .7):
+    train = all_data[:int(len(all_data)*trainsplit)]*num_duplicates
+    if num_val_duplicates is None:
+        num_val_duplicates = num_duplicates
+    val = all_data[int(len(all_data)*trainsplit):]*num_val_duplicates
+    replaced_train = [replacer.strings_replace(*d) for d in train]
+    replaced_val = [replacer.strings_replace(*d) for d in val]
+    return replaced_train, replaced_val
 
 if __name__ == "__main__":
     print("Found %d examples and %d descriptions" % (len(all_data), len(all_descs)))

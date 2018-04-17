@@ -48,3 +48,12 @@ def test_replacer5():
     nl, cmd = replacer.strings_replace("hello [-[TEST]-]", "run [-[TEST]-] [-[TEST]-]")
     assert nl == "hello foo"
     assert cmd == "run bar bar"
+
+def test_replacer6():
+    """Test numbered replacements"""
+    replacement = Replacement("foo", "bar", 1) 
+    rg = ReplacementGroup('TEST', [replacement])
+    replacer = Replacer([rg])
+    nl, cmd = replacer.strings_replace("hello [-[1.TEST]-] [-[2.TEST]-]", "run [-[1.TEST]-] [-[2.TEST]-]")
+    assert nl == "hello foo foo"
+    assert cmd == "run bar bar"

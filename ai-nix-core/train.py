@@ -1,3 +1,5 @@
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
 import yaml
 import torchtext
 import torch
@@ -123,4 +125,9 @@ def run_with_data_list(data, descs, use_cuda, quiet_mode = False, num_epochs = 5
 
 if __name__ == "__main__":
     use_cuda = False #torch.cuda.is_available()
-    run_with_data_list(sampledata.all_data, sampledata.all_descs, use_cuda)
+    #run_with_data_list(sampledata.all_data, sampledata.all_descs, use_cuda)
+    num_train_duplicates = 5
+    train, val = sampledata.get_all_data_replaced(num_train_duplicates,2)
+    run_with_specific_split(train, val, sampledata.all_descs, use_cuda,
+            quiet_mode = False, num_epochs=50//num_train_duplicates)
+

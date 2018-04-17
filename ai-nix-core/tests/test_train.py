@@ -80,3 +80,34 @@ def test_fill_pos():
     bashmetric = BashMetric()
     train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98
+
+def test_copy_mechanism():
+    posArg = Argument("aposarg", "Stringlike", position = 0)
+    cow = AIProgramDescription(
+        name = "hello",
+        arguments = [posArg]
+    )
+    traindata = [
+        ("my name is bob", "hello bob"),
+        ("my name is alice", "hello alice"),
+        ("my name is Alice", "hello Alice"),
+        ("my name is eve", "hello eve"),
+        ("my name is jim", "hello jim"),
+        ("my name is gregthefifth", "hello gregthefifth"),
+    ]
+    valdata = [
+        ("my name is hoozawhatz", "hello hoozawhatz"),
+        ("my name is boogieman", "hello boogieman"),
+        ("my name is frankenstien", "hello frankenstien"),
+        ("my name is walle", "hello walle"),
+    ]
+
+    # Do training
+    train_output = train.run_with_specific_split(traindata, valdata, [cow], 
+            False, quiet_mode = True, num_epochs = 50)
+    meta_model, final_state, train_iter, val_iter = train_output
+    
+    # eval the model. Expect should get basically perfect progam picking
+    bashmetric = BashMetric()
+    train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
+    assert bashmetric.exact_match_acc() >= 0.98
