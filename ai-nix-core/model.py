@@ -48,7 +48,7 @@ class SimpleCmd():
         self.all_modules.train()
         self.optimizer.zero_grad()
 
-        query, query_lengths = batch.nl
+        (query, query_lengths), nlexamples = batch.nl
         ast = batch.command
         firstCommands = [a[0] for a in ast]
         expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands)
@@ -67,7 +67,7 @@ class SimpleCmd():
             for arg_node in firstCmd.arguments:
                 if arg_node.present and arg_node.value is not None:
                     argtype = arg_node.arg.argtype
-                    parsed_value = argtype.parse_value(arg_node.value, self.run_context)
+                    parsed_value = argtype.parse_value(arg_node.value, self.run_context, nlexamples[i])
                     loss += argtype.train_value(encodings[i], parsed_value, self.run_context, self)
 
         loss.backward()
@@ -77,7 +77,7 @@ class SimpleCmd():
 
     def eval_step(self, engine, batch):
         self.all_modules.eval()
-        query, query_lengths = batch.nl
+        (query, query_lengths), nlexamples = batch.nl
         ast = batch.command
         firstCommands = [a[0] for a in ast]
         expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands)
@@ -97,7 +97,7 @@ class SimpleCmd():
                 for aIndex, arg in enumerate(predProgragmD.arguments):
                     thisArgPredicted = argSig[aIndex].data[0] > 0.5
                     if thisArgPredicted and arg.argtype.requires_val:
-                        predVal = arg.argtype.eval_value(encodings[i], self.run_context, self)
+                        predVal = arg.argtype.eval_value(encodings[i], self.run_context, self, nlexamples[i])
                     else:
                         predVal = thisArgPredicted
 

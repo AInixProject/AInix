@@ -104,10 +104,38 @@ def test_copy_mechanism():
 
     # Do training
     train_output = train.run_with_specific_split(traindata, valdata, [cow], 
-            False, quiet_mode = True, num_epochs = 50)
+            False, quiet_mode = True, num_epochs = 200)
     meta_model, final_state, train_iter, val_iter = train_output
     
     # eval the model. Expect should get basically perfect progam picking
     bashmetric = BashMetric()
+    train.eval_model(meta_model, train_iter, [(bashmetric, 'bashmetric')])
+    assert bashmetric.exact_match_acc() >= 0.98, "Did not fully learn train"
+    bashmetric = BashMetric()
     train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
-    assert bashmetric.exact_match_acc() >= 0.98
+    assert bashmetric.exact_match_acc() >= 0.98, "Did not generalize to val"
+
+def test_case_sensitive():
+    posArg = Argument("aposarg", "Stringlike", position = 0)
+    cow = AIProgramDescription(
+        name = "hello",
+        arguments = [posArg]
+    )
+    traindata = [
+        ("my name is bob", "hello bob"),
+        ("my name is Bob", "hello Bob"),
+        ("my name is BoB", "hello BoB"),
+        ("my name is boB", "hello boB"),
+        ("my name is BOB", "hello BOB"),
+    ]
+    valdata = traindata
+
+    # Do training
+    train_output = train.run_with_specific_split(traindata, valdata, [cow], 
+            False, quiet_mode = True, num_epochs = 200)
+    meta_model, final_state, train_iter, val_iter = train_output
+    
+    # eval the model. Expect should get basically perfect progam picking
+    bashmetric = BashMetric()
+    train.eval_model(meta_model, train_iter, [(bashmetric, 'bashmetric')])
+    assert bashmetric.exact_match_acc() >= 0.98, "Did not fully learn to gen case sensitive"

@@ -14,7 +14,7 @@ from ignite.engines.engine import Events, Engine
 from ignite.metrics import CategoricalAccuracy, Loss, Metric
 from ignite.exceptions import NotComputableError
 import program_description
-from custom_fields import CommandField
+from custom_fields import CommandField, NLField
 from run_context import RunContext
 import math
 import itertools
@@ -28,8 +28,9 @@ LOG_INTERVAL = 1
 
 def build_dataset(train, val, descs, use_cuda, test = None):
     datasplits = [x for x in (train, val, test) if x is not None]
-    NL_field = torchtext.data.Field(lower=True, include_lengths=True,
-        batch_first=True, init_token = constants.SOS, eos_token = constants.EOS,
+    NL_field = NLField(lower=False, include_lengths=True,
+        batch_first=True, 
+        init_token = constants.SOS, eos_token = constants.EOS, unk_token = constants.UNK,
         tensor_type = torch.cuda.LongTensor if use_cuda else torch.LongTensor)
     Command_field = CommandField(descs)
 
