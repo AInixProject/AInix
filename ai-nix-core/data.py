@@ -6,14 +6,22 @@ all_descs = []
 
 ### LS ###
 ls_aArg = Argument("a", "StoreTrue")
+ls_AArg = Argument("A", "StoreTrue")
 ls_lArg = Argument("l", "StoreTrue")
 ls_SArg = Argument("S", "StoreTrue")
+ls_sArg = Argument("s", "StoreTrue")
 ls_tArg = Argument("t", "StoreTrue")
 ls_rArg = Argument("r", "StoreTrue")
 ls_iArg = Argument("i", "StoreTrue")
+ls_RArg = Argument("R", "StoreTrue")
+ls_hArg = Argument("h", "StoreTrue")
+ls_XArg = Argument("X", "StoreTrue")
+ls_dArg = Argument("X", "StoreTrue")
+ls_1Arg = Argument("1", "StoreTrue")
+ls_dArg = Argument("d", "StoreTrue")
 ls_fileList = Argument("fileList", "Stringlike", position = 1)
 lsDesc = AIProgramDescription(
-    name = "ls", arguments = [ls_aArg, ls_lArg, ls_SArg, ls_tArg, ls_rArg, ls_iArg, ls_fileList]
+    name = "ls", arguments = [ls_aArg, ls_AArg, ls_lArg, ls_SArg, ls_sArg, ls_tArg, ls_rArg, ls_iArg, ls_RArg, ls_hArg, ls_XArg, ls_dArg, ls_1Arg, ls_dArg, ls_fileList]
 )
 all_descs.append(lsDesc)
 lsdata = [
@@ -33,6 +41,7 @@ lsdata = [
     ("list all files in long format", "ls -l"),
     ("ls with date changed and size", "ls -l"),
     ("show info about files here", "ls -l"),
+    ("ls with long format", "ls -l"),
     ("ls in long format with dot files", "ls -l -a"),
     ("what files are here", "ls"),
     ("list all files here please", "ls"),
@@ -43,6 +52,8 @@ lsdata = [
     ("ls biggest files first", "ls -lS"),
     ("list files here biggest files first", "ls -lS"),
     ("list files largest files first", "ls -lS"),
+    ("ls in order of decreasing size", "ls -lS"),
+    ("ls order with decreasing file size", "ls -lS"),
     ("list filese here sorted by files size decending", "ls -lS"),
     ("list files here sorted by file size with dot files", "ls -lSa"),
     ("list files here sorted by modified data", "ls -lt"),
@@ -57,15 +68,70 @@ lsdata = [
     ("ls -l sorted by mod data", "ls -lt"),
     ("ls -l sort by mod data", "ls -lt"),
     ("list inode numbers of files here", "ls -i"),
+    ("find inode numbers of files", "ls -i"),
+    ("print inode numbers of files here", "ls -i"),
     ("ls with inode numbers", "ls -i"),
     ("list files in home dir", "ls ~"),
     ("what files are here with file information", "ls -l"),
+    ("ls recursively down all dirs", "ls -R"),
+    ("list files recursively exploring directories", "ls -R"),
+    ("ls with latest modified file or directory date as last", "ls -ltr"),
+    ("display files in order of size", "ls -lS"),
+    ("display files biggest files first", "ls -lS"),
+    ("display files smallest files first", "ls -lSr"),
+    ("list all files including hidden file starting with '.'", "ls -a"),
+    ("list file's inode index number", "ls -i"),
+    ("ls -a with inode index number", "ls -ai"),
+    ("list with long format - show permissions", "ls -l"),
+    ("list long format including hidden files", "ls -la"),
+    ("list long format with readable file size", "ls -lh"),
+    ("list with long format with file size", "ls -ls"),
+    ("list in reverse order", "ls -r"),
+    ("ls in reverse order", "ls -r"),
+    ("list recursively directory tree", "ls -R"),
+    ("list file size", "ls -s"),
+    ("ls sort by time & date", "ls -t"),
+    ("ls sort by extension name", "ls -X"),
+    ("ls group extension together", "ls -X"),
+    ("list files grouped by file extension", "ls -X"),
+    ("list files sort by extension with hidden files", "ls -Xa"),
+    ("list files sort by date/time", "ls -t"),
+    ("list all subdirectories", "ls *"),
+    ("list only text files", "ls *.txt"),
+    ("ls -l sort by file extension", "ls -lX"),
+    ("display a list of files and or directories only", "ls"),
+    ("display a long list of the content of current directory", "ls -l"),
+    ("ls -l with human readable file sizes", "ls -lh"),
+    ("list files sort by the largest file size first", "ls -lS"),
+    ("ls sort list by extension", "ls -X"),
+    ("ls -l sort the list by modification time which the newest first", "ls -lt"),
+    ("ls one file per line", "ls -1"),
+    ("ls single entry per line", "ls -1"),
+    ("show long listing information about each file/directory here", "ls -l"),
+    ("ls order files based on last modified time", "ls -t"),
+    ("ls -a but dont include . or ..", "ls -A"),
+    ("list hidden files but dont include . or ..", "ls -A"),
+    ("show all files recursively", "ls -R"),
+    ("display files one file per line", "ls -1"),
+    ("display total information about Files/Directories", "ls -l"),
+    ("display files with file size in human readable form", "ls -lh"),
+    ("ls order files based on last modified time in dec-ending order", "ls -lrt"),
+    ("list all subdirectories", "ls *"),
+    ("list display file Inode number one per line", "ls -i -1"),
+    ("ls sort files with size", "ls -lS"),
+    ("check inode number of files and directories", "ls -i"),
     # with values
     ("ls all files in pictures", "ls pictures"),
     ("ls all files in pictures and home", "ls pictures ~"),
     ("list all files in ..", "ls .."),
     ("list all jpg files here", "ls *.jpg"),
-    ("list all text files here", "ls *.txt")
+    ("list all text files here", "ls *.txt"),
+    ("list inode numbers of *.h", "ls -i *.h"),
+    ("list root directory", "ls /"),
+    ("list parent directory", "ls .."),
+    ("list directories only", "ls -d */"),
+    ("list directory entries only", "ls -d */"),
+    ("list my home directory", "ls ~"),
 ]
 
 
@@ -105,6 +171,9 @@ cddata = [
     ("cd to my home directory", "cd ~"),
     ("cd to where I was before", "cd -"),
     ("go back to where I was", "cd -"),
+    ("go back to directory was in before last cd", "cd -"),
+    ("cd up three directories", "cd ../../.."),
+    ("go up to parent directory", "cd .."),
 ]
 
 ### ECHO ###
@@ -150,8 +219,12 @@ rmdata = [
     ("remove [-[1.FILENAME]-] and [-[2.FILENAME]-]", "rm [-[1.FILENAME]-] [-[2.FILENAME]-]"),
     ("remove [-[1.FILENAME]-], [-[2.FILENAME]-] and [-[3.FILENAME]-]", "rm [-[1.FILENAME]-] [-[2.FILENAME]-] [-[3.FILENAME]-]"),
     ("rm * with confirmation", "rm -i *"),
+    ("rm *.txt with confirmation", "rm -i *.txt"),
+    ("rm all txt files with confirmation", "rm -i *.txt"),
+    ("rm *.png with confirmation", "rm -i *.png"),
     ("rm -rf * with confirmation", "rm -irf *"),
     ("rm -r * with confirmation", "rm -ir *"),
+    ("rm [-[FILENAME]-] even if protected", "rm -f [-[FILENAME]-]"),
     ("rm everything here with prompt before removal", "rm -ir *"),
 ]
 
@@ -208,6 +281,7 @@ catData = [
     ("print the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
     ("write out the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
     ("print the content of [-[FILENAME]-]", "cat -n [-[FILENAME]-]"),
+    ("cat [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
     ("concatenate * together", "cat *"),
     ("concatenate [-[1.FILENAME]-] and [-[2.FILENAME]-] together", "cat [-[1.FILENAME]-] [-[2.FILENAME]-]"),
 ]
