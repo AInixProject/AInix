@@ -32,7 +32,8 @@ class ArgumentType():
         self.requires_val = False
 
 class StoreTrue(ArgumentType):
-    pass
+    def as_shell_string(self, value):
+        return ''
 
 class Stringlike(ArgumentType):
     def __init__(self):
@@ -77,6 +78,9 @@ class Stringlike(ArgumentType):
 
         return " ".join(copied)
 
+    def as_shell_string(self, value):
+        return value
+
 class Argument():
     """Represents an argument in a AIProgramDescription"""
     def __init__(self, name, argtype, shorthand = None, position = None, required = False):
@@ -93,6 +97,23 @@ class Argument():
 
         # stores argument specific data for models
         self.model_data = None
+
+    def as_shell_string(self, value):
+        """Gets the shell string version of this Argument given the value"""
+        out = ""
+        if self.position is None:
+            if self.name is not None:
+                out += "--" if self.shorthand else "-"
+                out += self.name
+            elif self.shorthand is not None:
+                out += "-" + self.shorthand
+        argval = self.argtype.as_shell_string(value)
+        if argval != '' and self.position is None:
+            out += " "
+        out += argval
+        return out
+
+        
 
     @classmethod
     def load(cls, data):

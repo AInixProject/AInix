@@ -170,3 +170,33 @@ def test_val_combined():
     out = parser.parse("valprog -cfoo")
     assert out[0].arguments[2].value == "foo"
     assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([0,0,1,0])))
+
+###
+# Test correct as_shell_string
+###
+
+def test_as_shell_string1():
+    parser = CmdParser([posandtwo])
+    out = parser.parse("posandtwo -a -b main.c")
+    assert out[0].as_shell_string() == "posandtwo -a -b main.c"
+
+    out = parser.parse("posandtwo -ab main.c")
+    assert out[0].as_shell_string() == "posandtwo -a -b main.c"
+
+    out = parser.parse("posandtwo -a main.c")
+    assert out[0].as_shell_string() == "posandtwo -a main.c"
+
+    out = parser.parse("posandtwo -b -a main.c")
+    assert out[0].as_shell_string() == "posandtwo -a -b main.c"
+
+def test_as_shell_string2():
+    parser = CmdParser([valprog])
+    out = parser.parse("valprog -c foo")
+    assert out[0].as_shell_string() == "valprog -c foo"
+
+
+@pytest.mark.skip(reason="will need to fix this when implement custom parser")
+def test_as_shell_string_quotes():
+    parser = CmdParser([valprog])
+    out = parser.parse("valprog -c \"foo bar\" main.c")
+    assert out[0].as_shell_string() == "valprog -c \"foo bar\" main.c"

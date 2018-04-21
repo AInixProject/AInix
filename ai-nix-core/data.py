@@ -152,7 +152,8 @@ pwddata = [
     ("what directory am I in", "pwd"),
     ("prnt working dir", "pwd"),
     ("print out what directory am in", "pwd"),
-    ("get my current directory", "pwd")
+    ("get my current directory", "pwd"),
+    ("print current working directory", "pwd"),
 ]
 
 ### CD ###
@@ -204,6 +205,7 @@ rmdata = [
     ("force delete everything here", "rm -rf *"),
     ("remove everything here", "rm -r *"),
     ("delete [-[FILENAME]-]", "rm [-[FILENAME]-]"),
+    ("delete [-[FILENAME]-] with interactive deletion", "rm -i [-[FILENAME]-]"),
     ("delete all jpg files here", "rm *.jpg"),
     ("delete all png files here", "rm *.png"),
     ("delete all text files here", "rm *.txt"),
@@ -222,9 +224,12 @@ rmdata = [
     ("rm *.txt with confirmation", "rm -i *.txt"),
     ("rm all txt files with confirmation", "rm -i *.txt"),
     ("rm *.png with confirmation", "rm -i *.png"),
+    ("rm *.jpg *.png *.gif with confirmation", "rm -i *.jpg *.png *.gif"),
     ("rm -rf * with confirmation", "rm -irf *"),
     ("rm -r * with confirmation", "rm -ir *"),
     ("rm [-[FILENAME]-] even if protected", "rm -f [-[FILENAME]-]"),
+    ("force delete [-[FILENAME]-]", "rm -f [-[FILENAME]-]"),
+    ("rm [-[FILENAME]-] override write protected", "rm -f [-[FILENAME]-]"),
     ("rm everything here with prompt before removal", "rm -ir *"),
 ]
 
@@ -280,7 +285,7 @@ catData = [
     ("print out [-[FILENAME]-]", "cat [-[FILENAME]-]"),
     ("print the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
     ("write out the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
-    ("print the content of [-[FILENAME]-]", "cat -n [-[FILENAME]-]"),
+    ("print the content of [-[FILENAME]-]", "cat [-[FILENAME]-]"),
     ("cat [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
     ("concatenate * together", "cat *"),
     ("concatenate [-[1.FILENAME]-] and [-[2.FILENAME]-] together", "cat [-[1.FILENAME]-] [-[2.FILENAME]-]"),

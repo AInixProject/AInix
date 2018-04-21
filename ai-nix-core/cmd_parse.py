@@ -23,6 +23,12 @@ class ArgumentNode():
         if self.present and self.value is not None:
             out += " val=" + self.value
         return out 
+    
+    def as_shell_string(self):
+        if self.present:
+            return self.arg.as_shell_string(self.value)
+        else:
+            return None
 
 class ProgramNode():
     def __init__(self, program_desc, arguments, use_cuda):
@@ -36,6 +42,22 @@ class ProgramNode():
     def __repr__(self):
         return "<ProgramNode: " + self.program_desc.name + \
             " arguments=" + str(self.arguments) + ">"
+
+    def as_shell_string(self):
+        out = self.program_desc.name
+        for arg in self.arguments:
+            if arg.present:
+                out += " " + arg.as_shell_string()
+        return out
+
+
+class ProgramListNode():
+    def __init__(self):
+        self.program_list = []
+
+    def append(self, new_node):
+        self.program_list.append(new_node)
+
 
 class CmdParseError(Exception):
     pass
@@ -77,9 +99,7 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         optstring = ''.join(optstring)
 
         # figure out what the input args are
-        #print("cmd_parts", cmd_parts)
         inargs = [p.word for p in cmd_parts]
-        #print("inargs", inargs)
 
         # use normal getopt to parse
         optlist, args = getopt.getopt(inargs, optstring, longargs)
