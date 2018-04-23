@@ -171,6 +171,29 @@ def test_val_combined():
     assert out[0].arguments[2].value == "foo"
     assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([0,0,1,0])))
 
+def test_pipe():
+    """A test of whether argument value parsing works when there is no
+    space between the flag and the value"""
+    parser = CmdParser([posandtwo, valprog])
+    out = parser.parse("posandtwo | valprog")
+    assert isinstance(out[0], ProgramNode)
+    assert out[0].program_desc == posandtwo
+
+    assert isinstance(out[1], PipeNode)
+    assert isinstance(out[2], ProgramNode)
+    assert out[2].program_desc == valprog
+
+def test_pipe2():
+    """A test of whether argument value parsing works when there is no
+    space between the flag and the value"""
+    parser = CmdParser([posandtwo, valprog])
+    out = parser.parse("posandtwo | valprog | posandtwo")
+    assert isinstance(out[0], ProgramNode)
+    assert isinstance(out[1], PipeNode)
+    assert isinstance(out[2], ProgramNode)
+    assert isinstance(out[3], PipeNode)
+    assert isinstance(out[4], ProgramNode)
+
 ###
 # Test correct as_shell_string
 ###

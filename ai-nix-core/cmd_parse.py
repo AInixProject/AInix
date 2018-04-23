@@ -51,12 +51,27 @@ class ProgramNode():
         return out
 
 
-class ProgramListNode():
+class JoinNode():
+    pass
+
+class PipeNode():
+    pass
+
+class CompoundCommandNode():
     def __init__(self):
         self.program_list = []
 
     def append(self, new_node):
-        self.program_list.append(new_node)
+        if isinstance(new_node, CompoundCommandNode):
+            self.program_list.extend(new_node.program_list)
+        else:
+            self.program_list.append(new_node)
+
+    def __getitem__(self, key):
+        return self.program_list[key]
+
+    def __len__(self):
+        return len(self.program_list)
 
 
 class CmdParseError(Exception):
@@ -110,11 +125,12 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         return dictoptlist, args
 
 
-    def _parse_node(self, n, cur_parse = []):
+    def _parse_node(self, n):
         k = n.kind
         if k == 'command':
             parts = n.parts
             if(len(parts) == 0):
+                pudb.set_trace()
                 raise CmdParseError("Command has no parts", n)
             commandName = parts.pop(0).word
             if commandName not in self.command_by_name:
@@ -126,7 +142,8 @@ class CmdParser(): #bashlex.ast.nodevisitor):
             for arg in command.arguments:
                 if arg.position is None:
                     if ("-" if len(arg.name) == 1 else "--") + arg.name in optlist:
-                        args.append(ArgumentNode(arg, True, optlist[("-" if len(arg.name) == 1 else "--") + arg.name]))
+                        args.append(ArgumentNode(
+                            arg, True, optlist[("-" if len(arg.name) == 1 else "--") + arg.name]))
                         continue
                     if arg.shorthand and "-" + arg.shorthand in optlist:
                         args.append(ArgumentNode(arg, True, "-" + optlist["-" + arg.shorthand]))
@@ -136,32 +153,23 @@ class CmdParser(): #bashlex.ast.nodevisitor):
                         args.append(ArgumentNode(arg, True, " ".join(non_opt_args)))
                         continue
                 args.append(ArgumentNode(arg, False, None))
-
-
-            return cur_parse + [ProgramNode(command, args, self.use_cuda)]
-
-            #partIsConsumed = [False for _ in parts]
-            #for arg in command.arguments:
-            #    # For now only look at non-positional args
-            #    if arg.position:
-            #        continue
-            #    for partIndex, part in enumerate(parts):
-            #        word = part.word
-            #        pres = self._arg_in_word(arg, word)
-            #        if pres:
-            #            partIsConsumed[partIndex] = True
-            #            args.append(ArgumentNode(arg, True, None))
-            #            break
-            #    else:
-            #        args.append(ArgumentNode(arg, False, None))
-            #return cur_parse + [ProgramNode(command, args, self.use_cuda)]
-
+            #cur_parse.append(ProgramNode(command, args, self.use_cuda))
+            return ProgramNode(command, args, self.use_cuda)
+        elif k == 'pipeline':
+            comp = CompoundCommandNode()
+            for part in n.parts:
+                comp.append(self._parse_node(part))
+            return comp
+        elif k == 'pipe':
+            return PipeNode()
         else:
             raise CmdParseError("Unexpected kind", k)
 
     def parse(self, cmd):
         lexedProgram = bashlex.parse(cmd)
-        return self._parse_node(lexedProgram[0])
+        n = CompoundCommandNode()
+        n.append(self._parse_node(lexedProgram[0]))
+        return n
 
     #def visitcommand(self, n, parts):
     #    print("Hey look a command", n, parts)

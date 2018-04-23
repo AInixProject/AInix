@@ -26,6 +26,7 @@ lsDesc = AIProgramDescription(
 all_descs.append(lsDesc)
 lsdata = [
     ("list all files", "ls"),
+    ("print all files and directories here", "ls"),
     ("list all files here", "ls"),
     ("list my files", "ls"),
     ("list what is here", "ls"),
@@ -127,6 +128,7 @@ lsdata = [
     ("list all jpg files here", "ls *.jpg"),
     ("list all text files here", "ls *.txt"),
     ("list inode numbers of *.h", "ls -i *.h"),
+    ("get the inode numbers of *.java", "ls -i *.java"),
     ("list root directory", "ls /"),
     ("list parent directory", "ls .."),
     ("list directories only", "ls -d */"),
@@ -147,6 +149,7 @@ pwddata = [
     ("where am I", "pwd"),
     ("print current dir", "pwd"),
     ("what file am I in", "pwd"),
+    ("get my current directory", "pwd"),
     ("print working dir", "pwd"),
     ("get current path", "pwd"),
     ("what directory am I in", "pwd"),
@@ -154,6 +157,7 @@ pwddata = [
     ("print out what directory am in", "pwd"),
     ("get my current directory", "pwd"),
     ("print current working directory", "pwd"),
+    ("get my cur path", "pwd"),
 ]
 
 ### CD ###
@@ -164,17 +168,21 @@ cdDesc = AIProgramDescription(
 all_descs.append(cdDesc)
 cddata = [
     ("go up one directory", "cd .."),
+    ("cd up one directory", "cd .."),
+    ("cd to parent dir", "cd .."),
     ("go home", "cd ~"),
     ("cd to home directory", "cd ~"),
     ("go into pictures dir", "cd pictures"),
     ("go up two directories", "cd ../.."),
     ("cd to my home dir", "cd ~"),
+    ("change directory to home directory", "cd ~"),
     ("cd to my home directory", "cd ~"),
     ("cd to where I was before", "cd -"),
     ("go back to where I was", "cd -"),
     ("go back to directory was in before last cd", "cd -"),
     ("cd up three directories", "cd ../../.."),
     ("go up to parent directory", "cd .."),
+    ("go to tmp directory", "cd /tmp"),
 ]
 
 ### ECHO ###
@@ -205,8 +213,10 @@ rmdata = [
     ("force delete everything here", "rm -rf *"),
     ("remove everything here", "rm -r *"),
     ("delete [-[FILENAME]-]", "rm [-[FILENAME]-]"),
+    ("delete file named [-[FILENAME]-]", "rm [-[FILENAME]-]"),
     ("delete [-[FILENAME]-] with interactive deletion", "rm -i [-[FILENAME]-]"),
     ("delete all jpg files here", "rm *.jpg"),
+    ("delete all jpg and png files here", "rm *.jpg *.png"),
     ("delete all png files here", "rm *.png"),
     ("delete all text files here", "rm *.txt"),
     ("remove all txt files", "rm *.txt"),
@@ -243,7 +253,8 @@ mkdirData = [
     ("make a directory named foo", "mkdir foo"),
     ("make a foo directory", "mkdir foo"),
     ("make a directory named testdir", "mkdir testdir"),
-    ("make a dir named testdir", "mkdir testdir")
+    ("make a dir named testdir", "mkdir testdir"),
+    ("make a hidden directory named cache", "mkdir .cache"),
 ]
 
 ### touch ###
@@ -262,6 +273,7 @@ touchData = [
     ("setup this dir as a python module", "touch __init__.py"),
     ("make a blank gitignore", "touch .gitignore"),
     ("make a gitignore", "touch .gitignore"),
+    ("make a .gitignore file", "touch .gitignore"),
     ("make an empty gitignore", "touch .gitignore"),
     ("create an empty file named [-[FILENAME]-]", "touch [-[FILENAME]-]"),
     ("add empty file named [-[FILENAME]-] here", "touch [-[FILENAME]-]"),
@@ -282,13 +294,19 @@ all_descs.append(catDesc)
 catData = [
     ("print the contents of [-[FILENAME]-]", "cat [-[FILENAME]-]"),
     ("print whats in [-[FILENAME]-]", "cat [-[FILENAME]-]"),
+    ("print what's in [-[FILENAME]-]", "cat [-[FILENAME]-]"),
     ("print out [-[FILENAME]-]", "cat [-[FILENAME]-]"),
     ("print the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
     ("write out the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
     ("print the content of [-[FILENAME]-]", "cat [-[FILENAME]-]"),
+    ("output the stuff in [-[FILENAME]-]", "cat [-[FILENAME]-]"),
+    ("output the content of [-[FILENAME]-]", "cat [-[FILENAME]-]"),
     ("cat [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
+    ("cat the contents of [-[FILENAME]-] with line numbers", "cat -n [-[FILENAME]-]"),
     ("concatenate * together", "cat *"),
+    ("concatenate all csv files here together", "cat *.csv"),
     ("concatenate [-[1.FILENAME]-] and [-[2.FILENAME]-] together", "cat [-[1.FILENAME]-] [-[2.FILENAME]-]"),
+    ("concatenate [-[1.FILENAME]-], [-[2.FILENAME]-], and [-[3.FILENAME]-] together", "cat [-[1.FILENAME]-] [-[2.FILENAME]-] [-[3.FILENAME]-]"),
 ]
 
 ###########
