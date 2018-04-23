@@ -54,8 +54,9 @@ class ProgramNode():
 class JoinNode():
     pass
 
-class PipeNode():
-    pass
+class PipeNode(JoinNode):
+    def as_shell_string(self):
+        return "|"
 
 class CompoundCommandNode():
     def __init__(self):
@@ -72,6 +73,10 @@ class CompoundCommandNode():
 
     def __len__(self):
         return len(self.program_list)
+
+    def as_shell_string(self):
+        astrings = [p.as_shell_string() for p in self.program_list]
+        return " ".join(astrings)
 
 
 class CmdParseError(Exception):

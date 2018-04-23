@@ -217,6 +217,11 @@ def test_as_shell_string2():
     out = parser.parse("valprog -c foo")
     assert out[0].as_shell_string() == "valprog -c foo"
 
+def test_as_shell_pipe():
+    parser = CmdParser([valprog, posandtwo])
+    out = parser.parse("valprog -c foo | posandtwo")
+    assert out.as_shell_string() == "valprog -c foo | posandtwo"
+
 
 @pytest.mark.skip(reason="will need to fix this when implement custom parser")
 def test_as_shell_string_quotes():
