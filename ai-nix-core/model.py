@@ -64,7 +64,7 @@ class SimpleCmd():
 
         def train_predict_command(encodings, gt_ast, output_states):
             firstCommands, newAsts = zip(*[a.pop_front() for a in gt_ast])
-            expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands)
+            expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands) 
             encodingsAndHidden = encodings + output_states
             pred = self.predictProgram(encodingsAndHidden)
             loss = self.criterion(pred, expectedProgIndicies)
@@ -119,30 +119,45 @@ class SimpleCmd():
         self.all_modules.eval()
         (query, query_lengths), nlexamples = batch.nl
         ast = batch.command
-        firstCommands = [a[0] for a in ast]
-        expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands)
+
+        def eval_predict_command(encodings, output_states, cur_predictions):
+            """Predicts one command. Called recursively for each command in compound command"""
+            encodingsAndHidden = encodings + output_states
+            predPrograms = self.predictProgram(encodings)
+            vals, predProgramsMaxs =  predPrograms.max(1)
+            # Go through and predict each argument
+            predProgramDescs = [self.run_context.descriptions[m.data[0]] for m in predProgramsMaxs]
+            for i, predProgragmD in enumerate(predProgramDescs):
+                setArgs = []
+                if len(predProgragmD.arguments) > 0:
+                    argDots = torch.mv(predProgragmD.model_data_grouped['top_v'], encodings[i])
+                    argSig = F.sigmoid(argDots)
+                    for aIndex, arg in enumerate(predProgragmD.arguments):
+                        thisArgPredicted = argSig[aIndex].data[0] > 0.5
+                        if thisArgPredicted and arg.argtype.requires_val:
+                            predVal = arg.argtype.eval_value(encodings[i], self.run_context, self, nlexamples[i])
+                        else:
+                            predVal = thisArgPredicted
+
+                        setArgs.append(ArgumentNode(arg, thisArgPredicted, predVal))
+
+                pred[i].append(ProgramNode(predProgragmD, setArgs, self.run_context.use_cuda))
+
+            # Predict if done or next join node type for compound commands
+            _, joinNodePreds = self.predictJoinNode(encodingsAndHidden).max(1)
+            not_done_compound_nodes = []
+            for nodePredIndex, curCompound in zip(joinNodePreds, cur_predictions):
+                predNodeType = self.join_types[nodePredIndex]
+                curCompound.append(predNodeType())
+                if not isinstance(predNodeType, EndOfCommandNode):
+                    not_done_compound_nodes.append(curCompound)
+            non_end_mask = joinNodePreds != EndOfCommandNode.join_type_index
+            eval_predict_command(encodings[non_end_mask], output_states[non_end_mask], not_done_compound_nodes)
+
         encodings = self.encoder(query)
-        predPrograms = self.predictProgram(encodings)
-        vals, predProgramsMaxs =  predPrograms.max(1)
+        pred = [CompoundCommandNode() for b in ast]
 
-        # Go through and predict each argument
-        pred = [CompoundCommandNode() for b in firstCommands]
-        predProgramDescs = [self.run_context.descriptions[m.data[0]] for m in predProgramsMaxs]
-        for i, predProgragmD in enumerate(predProgramDescs):
-            setArgs = []
-            if len(predProgragmD.arguments) > 0:
-                argDots = torch.mv(predProgragmD.model_data_grouped['top_v'], encodings[i])
-                argSig = F.sigmoid(argDots)
-                for aIndex, arg in enumerate(predProgragmD.arguments):
-                    thisArgPredicted = argSig[aIndex].data[0] > 0.5
-                    if thisArgPredicted and arg.argtype.requires_val:
-                        predVal = arg.argtype.eval_value(encodings[i], self.run_context, self, nlexamples[i])
-                    else:
-                        predVal = thisArgPredicted
-
-                    setArgs.append(ArgumentNode(arg, thisArgPredicted, predVal))
-
-            pred[i].append(ProgramNode(predProgragmD, setArgs, self.run_context.use_cuda))
+        eval_predict_command(encodings, Variable(torch.zeros(len(query), self.run_context.std_word_size)), pred)
 
         return pred, batch.command
 
