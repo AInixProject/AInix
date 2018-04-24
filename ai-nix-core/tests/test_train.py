@@ -115,6 +115,29 @@ def test_copy_mechanism():
     train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98, "Did not generalize to val"
 
+def test_pipe_select():
+    posArg = Argument("aposarg", "Stringlike", position = 0)
+    cow = AIProgramDescription(
+        name = "cow"
+    )
+    dog = AIProgramDescription(
+        name = "dog"
+    )
+    data = [
+        ("I need a plumber", "cow | dog"),
+        ("no plumber needed", "cow"),
+        ("dog in my pipes", "dog | cow")
+    ] * 100
+    random.shuffle(data)
+    # Do training
+    train_output = train.run_with_data_list(data, [cow, dog], False, quiet_mode = True, num_epochs = 5)
+    meta_model, final_state, train_iter, val_iter = train_output
+    
+    # eval the model. Expect should get basically perfect progam picking
+    bashmetric = BashMetric()
+    train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
+    assert bashmetric.exact_match_acc() >= 0.98
+
 def test_case_sensitive():
     posArg = Argument("aposarg", "Stringlike", position = 0)
     cow = AIProgramDescription(

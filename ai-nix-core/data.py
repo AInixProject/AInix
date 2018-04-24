@@ -118,6 +118,7 @@ lsdata = [
     ("display files with file size in human readable form", "ls -lh"),
     ("ls order files based on last modified time in dec-ending order", "ls -lrt"),
     ("list all subdirectories", "ls *"),
+    ("ls -r with i-node numbers", "ls -ir"),
     ("list display file Inode number one per line", "ls -i -1"),
     ("ls sort files with size", "ls -lS"),
     ("check inode number of files and directories", "ls -i"),
@@ -196,7 +197,8 @@ echodata = [
     ("print out \"hello world\"", "echo hello world"),
     ("print out hello world", "echo hello world"),
     ("print an empty new line", "echo"),
-    ("print an empty line", "echo")
+    ("print an empty line", "echo"),
+    ("output empty line", "echo"),
 ]
 
 ### RM ###

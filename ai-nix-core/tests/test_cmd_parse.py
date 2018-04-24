@@ -178,10 +178,10 @@ def test_pipe():
     out = parser.parse("posandtwo | valprog")
     assert isinstance(out[0], ProgramNode)
     assert out[0].program_desc == posandtwo
-
     assert isinstance(out[1], PipeNode)
     assert isinstance(out[2], ProgramNode)
     assert out[2].program_desc == valprog
+    assert isinstance(out[3], EndOfCommandNode)
 
 def test_pipe2():
     """A test of whether argument value parsing works when there is no
@@ -193,6 +193,7 @@ def test_pipe2():
     assert isinstance(out[2], ProgramNode)
     assert isinstance(out[3], PipeNode)
     assert isinstance(out[4], ProgramNode)
+    assert isinstance(out[5], EndOfCommandNode)
 
 ###
 # Test correct as_shell_string

@@ -52,15 +52,19 @@ class ProgramNode():
 
 
 class JoinNode():
-    pass
+    join_type_index = None
 
 class PipeNode(JoinNode):
     def as_shell_string(self):
         return "|"
 
+class EndOfCommandNode(JoinNode):
+    def as_shell_string(self):
+        return ""
+
 class CompoundCommandNode():
-    def __init__(self):
-        self.program_list = []
+    def __init__(self, init_list = None):
+        self.program_list = init_list if init_list else []
 
     def append(self, new_node):
         if isinstance(new_node, CompoundCommandNode):
@@ -73,6 +77,11 @@ class CompoundCommandNode():
 
     def __len__(self):
         return len(self.program_list)
+
+    def pop_front(self):
+        """returns the first element, and a new CompoundCommandNode with the first element removed"""
+        new_copy = CompoundCommandNode(self.program_list[1:]) if len(self.program_list) > 1 else CompoundCommandNode()
+        return self.program_list[0], new_copy
 
     def as_shell_string(self):
         astrings = [p.as_shell_string() for p in self.program_list]
@@ -174,6 +183,7 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         lexedProgram = bashlex.parse(cmd)
         n = CompoundCommandNode()
         n.append(self._parse_node(lexedProgram[0]))
+        n.append(EndOfCommandNode())
         return n
 
     #def visitcommand(self, n, parts):

@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import pudb 
 import itertools
 import math
-from cmd_parse import ProgramNode, ArgumentNode
+from cmd_parse import ProgramNode, ArgumentNode, EndOfCommandNode, PipeNode, CompoundCommandNode
 import constants
 
 class SimpleCmd():
@@ -37,10 +37,19 @@ class SimpleCmd():
             run_context.std_word_size, run_context.nl_vocab_size)
         self.predictProgram = PredictProgramModel(
             run_context.std_word_size, run_context.num_of_descriptions)
-        self.all_modules = nn.ModuleList([self.encoder, self.decoder, self.predictProgram])
+
+        # Join nodes stuff
+        self.join_types = [EndOfCommandNode, PipeNode]
+        for i, n in enumerate(self.join_types):
+            # allow for reverse lookup
+            setattr(n, 'join_type_index', i)
+        self.num_of_join_nodes = len(self.join_types)
+        self.predictJoinNode = nn.Linear(run_context.std_word_size, self.num_of_join_nodes)
+        self.predictNextJoinHidden = nn.Linear(run_context.std_word_size, run_context.std_word_size)
+
+        self.all_modules = nn.ModuleList([self.encoder, self.decoder, self.predictProgram, self.predictJoinNode, self.predictNextJoinHidden])
         if run_context.use_cuda:
             self.all_modules.cuda()
-
 
         self.optimizer = optim.Adam(list(self.all_modules.parameters()) + all_arg_params)
 
@@ -50,25 +59,56 @@ class SimpleCmd():
 
         (query, query_lengths), nlexamples = batch.nl
         ast = batch.command
-        firstCommands = [a[0] for a in ast]
-        expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands)
+        loss = 0
         encodings = self.encoder(query)
-        pred = self.predictProgram(encodings)
-        loss = self.criterion(pred, expectedProgIndicies)
-        
-        for i, firstCmd in enumerate(firstCommands):
-            # Go through and predict each argument present or not
-            if len(firstCmd.program_desc.arguments) > 0:
-                argDots = torch.mv(firstCmd.program_desc.model_data_grouped['top_v'], encodings[i])
-                argLoss = F.binary_cross_entropy_with_logits(argDots, firstCmd.arg_present_tensor,
-                        size_average = False)
-                loss += argLoss
-            # Go through and predict the value of present nodes
-            for arg_node in firstCmd.arguments:
-                if arg_node.present and arg_node.value is not None:
-                    argtype = arg_node.arg.argtype
-                    parsed_value = argtype.parse_value(arg_node.value, self.run_context, nlexamples[i])
-                    loss += argtype.train_value(encodings[i], parsed_value, self.run_context, self)
+
+        def train_predict_command(encodings, gt_ast, output_states):
+            firstCommands, newAsts = zip(*[a.pop_front() for a in gt_ast])
+            expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands)
+            encodingsAndHidden = encodings + output_states
+            pred = self.predictProgram(encodingsAndHidden)
+            loss = self.criterion(pred, expectedProgIndicies)
+            
+            incomplete_asts = []
+            incomplete_next_hiddens = []
+            for i, (firstCmd, newAst) in enumerate(zip(firstCommands, newAsts)):
+                # Go through and predict each argument present or not
+                if len(firstCmd.program_desc.arguments) > 0:
+                    argDots = torch.mv(firstCmd.program_desc.model_data_grouped['top_v'], encodings[i])
+                    argLoss = F.binary_cross_entropy_with_logits(argDots, firstCmd.arg_present_tensor,
+                            size_average = False)
+                    loss += argLoss
+                # Go through and predict the value of present nodes
+                for arg_node in firstCmd.arguments:
+                    if arg_node.present and arg_node.value is not None:
+                        argtype = arg_node.arg.argtype
+                        parsed_value = argtype.parse_value(arg_node.value, self.run_context, nlexamples[i])
+                        loss += argtype.train_value(encodings[i], parsed_value, self.run_context, self)
+
+            # Try and predict if there will be a next node
+            joinNodePred = F.log_softmax(self.predictJoinNode(encodingsAndHidden), dim=1)
+            encodeType = torch.cuda.LongTensor if self.run_context.use_cuda else torch.LongTensor
+            next_node_types, next_asts = zip(*[ast.pop_front() for ast in newAsts])
+            expectedIndex = Variable(encodeType([n.join_type_index for n in next_node_types]), requires_grad=False)
+            loss += F.nll_loss(joinNodePred, expectedIndex)
+
+            # Collect the nodes with still things to predict
+            non_end_asts = []
+            for ast, node in zip(next_asts, next_node_types):
+                if not isinstance(node, EndOfCommandNode):
+                    non_end_asts.append(ast)
+            if non_end_asts:
+                non_end_mask = expectedIndex != EndOfCommandNode.join_type_index
+                non_end_encodings = encodings[non_end_mask]
+                non_end_hiddens = self.predictNextJoinHidden(non_end_encodings + output_states[non_end_mask])
+                if len(non_end_asts) == 1:
+                    non_end_encodings = non_end_encodings.unsqueeze(0)
+                    non_end_hiddens = non_end_hiddens.unsqueeze(0)
+                train_predict_command(non_end_encodings, non_end_asts, non_end_hiddens)
+
+            return loss
+
+        loss += train_predict_command(encodings, ast, Variable(torch.zeros(len(query), self.run_context.std_word_size), requires_grad = False))
 
         loss.backward()
         self.optimizer.step()
@@ -84,10 +124,9 @@ class SimpleCmd():
         encodings = self.encoder(query)
         predPrograms = self.predictProgram(encodings)
         vals, predProgramsMaxs =  predPrograms.max(1)
-        #print("pred ", predPrograms, "gt", expectedProgIndicies)
 
         # Go through and predict each argument
-        pred = [[] for b in firstCommands]
+        pred = [CompoundCommandNode() for b in firstCommands]
         predProgramDescs = [self.run_context.descriptions[m.data[0]] for m in predProgramsMaxs]
         for i, predProgragmD in enumerate(predProgramDescs):
             setArgs = []
