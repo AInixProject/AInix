@@ -85,7 +85,7 @@ class CompoundCommandNode():
 
     def as_shell_string(self):
         astrings = [p.as_shell_string() for p in self.program_list]
-        return " ".join(astrings)
+        return " ".join(astrings).rstrip()
 
 
 class CmdParseError(Exception):

@@ -116,7 +116,6 @@ def test_copy_mechanism():
     assert bashmetric.exact_match_acc() >= 0.98, "Did not generalize to val"
 
 def test_pipe_select():
-    posArg = Argument("aposarg", "Stringlike", position = 0)
     cow = AIProgramDescription(
         name = "cow"
     )

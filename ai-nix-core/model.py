@@ -38,6 +38,7 @@ class SimpleCmd():
         self.predictProgram = PredictProgramModel(
             run_context.std_word_size, run_context.num_of_descriptions)
 
+
         # Join nodes stuff
         self.join_types = [EndOfCommandNode, PipeNode]
         for i, n in enumerate(self.join_types):
@@ -47,7 +48,8 @@ class SimpleCmd():
         self.predictJoinNode = nn.Linear(run_context.std_word_size, self.num_of_join_nodes)
         self.predictNextJoinHidden = nn.Linear(run_context.std_word_size, run_context.std_word_size)
 
-        self.all_modules = nn.ModuleList([self.encoder, self.decoder, self.predictProgram, self.predictJoinNode, self.predictNextJoinHidden])
+        self.all_modules = nn.ModuleList([self.encoder, self.decoder, self.predictProgram,
+            self.predictJoinNode, self.predictNextJoinHidden])
         if run_context.use_cuda:
             self.all_modules.cuda()
 
@@ -90,7 +92,8 @@ class SimpleCmd():
             encodeType = torch.cuda.LongTensor if self.run_context.use_cuda else torch.LongTensor
             next_node_types, next_asts = zip(*[ast.pop_front() for ast in newAsts])
             expectedIndex = Variable(encodeType([n.join_type_index for n in next_node_types]), requires_grad=False)
-            loss += F.nll_loss(joinNodePred, expectedIndex)
+            node_loss = F.nll_loss(joinNodePred, expectedIndex)
+            loss += node_loss
 
             # Collect the nodes with still things to predict
             non_end_asts = []
@@ -100,11 +103,11 @@ class SimpleCmd():
             if non_end_asts:
                 non_end_mask = expectedIndex != EndOfCommandNode.join_type_index
                 non_end_encodings = encodings[non_end_mask]
-                non_end_hiddens = self.predictNextJoinHidden(non_end_encodings + output_states[non_end_mask])
+                non_end_hiddens = self.predictNextJoinHidden(encodingsAndHidden[non_end_mask])
                 if len(non_end_asts) == 1:
                     non_end_encodings = non_end_encodings.unsqueeze(0)
                     non_end_hiddens = non_end_hiddens.unsqueeze(0)
-                train_predict_command(non_end_encodings, non_end_asts, non_end_hiddens)
+                loss += train_predict_command(non_end_encodings, non_end_asts, non_end_hiddens)
 
             return loss
 
@@ -147,12 +150,18 @@ class SimpleCmd():
             _, joinNodePreds = self.predictJoinNode(encodingsAndHidden).max(1)
             not_done_compound_nodes = []
             for nodePredIndex, curCompound in zip(joinNodePreds, cur_predictions):
-                predNodeType = self.join_types[nodePredIndex]
+                predNodeType = self.join_types[int(nodePredIndex.data)]
                 curCompound.append(predNodeType())
-                if not isinstance(predNodeType, EndOfCommandNode):
+                if len(curCompound) <= constants.MAX_COMMAND_LEN and predNodeType != EndOfCommandNode:
                     not_done_compound_nodes.append(curCompound)
-            non_end_mask = joinNodePreds != EndOfCommandNode.join_type_index
-            eval_predict_command(encodings[non_end_mask], output_states[non_end_mask], not_done_compound_nodes)
+            if not_done_compound_nodes:
+                non_end_mask = joinNodePreds != EndOfCommandNode.join_type_index
+                non_end_encodings = encodings[non_end_mask]
+                non_end_hiddens = self.predictNextJoinHidden(encodingsAndHidden[non_end_mask])
+                if len(not_done_compound_nodes) == 1:
+                    non_end_encodings = non_end_encodings.unsqueeze(0)
+                    non_end_hiddens = non_end_hiddens.unsqueeze(0)
+                eval_predict_command(non_end_encodings, non_end_hiddens, not_done_compound_nodes)
 
         encodings = self.encoder(query)
         pred = [CompoundCommandNode() for b in ast]
