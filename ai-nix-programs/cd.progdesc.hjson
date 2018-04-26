@@ -1,0 +1,93 @@
+{
+  name: cd
+  aruments:
+  [
+    {
+      name: fileList
+      type: Stringlike
+      position: 1
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        go home
+        cd to home directory
+        cd to my home dir
+        change directory to home directory
+        cd to my home directory
+      ]
+      cmd:
+      [
+        cd ~
+      ]
+    }
+    {
+      lang:
+      [
+        go up one directory
+        cd up one directory
+        cd to parent dir
+        go up to parent directory
+      ]
+      cmd:
+      [
+        cd ..
+      ]
+    }
+    {
+      lang:
+      [
+        cd to where I was before
+        go back to where I was
+        go back to directory was in before last cd
+      ]
+      cmd:
+      [
+        cd -
+      ]
+    }
+    {
+      lang:
+      [
+        go to tmp directory
+      ]
+      cmd:
+      [
+        cd /tmp
+      ]
+    }
+    {
+      lang:
+      [
+        go up two directories
+      ]
+      cmd:
+      [
+        cd ../..
+      ]
+    }
+    {
+      lang:
+      [
+        cd up three directories
+      ]
+      cmd:
+      [
+        cd ../../..
+      ]
+    }
+    {
+      lang:
+      [
+        go into pictures dir
+      ]
+      cmd:
+      [
+        cd pictures
+      ]
+    }
+  ]
+}

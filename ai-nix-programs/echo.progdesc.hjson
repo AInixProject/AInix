@@ -1,0 +1,47 @@
+{
+  name: echo
+  aruments:
+  [
+    {
+      name: fileList
+      type: Stringlike
+      position: 1
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        print an empty new line
+        print an empty line
+        output empty line
+      ]
+      cmd:
+      [
+        echo
+      ]
+    }
+    {
+      lang:
+      [
+        print out "hello world"
+        print out hello world
+      ]
+      cmd:
+      [
+        echo hello world
+      ]
+    }
+    {
+      lang:
+      [
+        say hello
+      ]
+      cmd:
+      [
+        echo hello
+      ]
+    }
+  ]
+}

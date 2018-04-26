@@ -1,0 +1,46 @@
+{
+  name: mkdir
+  aruments:
+  [
+    {
+      name: fileList
+      type: Stringlike
+      position: 1
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        make a directory named foo
+        make a foo directory
+      ]
+      cmd:
+      [
+        mkdir foo
+      ]
+    }
+    {
+      lang:
+      [
+        make a directory named testdir
+        make a dir named testdir
+      ]
+      cmd:
+      [
+        mkdir testdir
+      ]
+    }
+    {
+      lang:
+      [
+        make a hidden directory named cache
+      ]
+      cmd:
+      [
+        mkdir .cache
+      ]
+    }
+  ]
+}

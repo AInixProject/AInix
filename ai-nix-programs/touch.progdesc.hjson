@@ -1,0 +1,83 @@
+{
+  name: touch
+  aruments:
+  [
+    {
+      name: fileList
+      type: Stringlike
+      position: 1
+    }
+    {
+      name: r
+      type: StoreTrue
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        make a file named [-[FILENAME]-]
+        create a file named [-[FILENAME]-]
+        create an empty file named [-[FILENAME]-]
+        add empty file named [-[FILENAME]-] here
+        set the last mod time of [-[FILENAME]-] to now
+        set the last accessed and modified time of [-[FILENAME]-] to now
+        reset the last modified time of [-[FILENAME]-] to now
+        set last mod time of [-[FILENAME]-] to current time
+      ]
+      cmd:
+      [
+        touch [-[FILENAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        make a blank gitignore
+        make a gitignore
+        make a .gitignore file
+        make an empty gitignore
+      ]
+      cmd:
+      [
+        touch .gitignore
+      ]
+    }
+    {
+      lang:
+      [
+        make a file named __init__.py
+        create a __init__.py
+        make this a python module
+        setup this dir as a python module
+      ]
+      cmd:
+      [
+        touch __init__.py
+      ]
+    }
+    {
+      lang:
+      [
+        create a file name [-[FILENAME]-] in ..
+        make an empty file name [-[FILENAME]-] in my parent directory
+      ]
+      cmd:
+      [
+        touch ../[-[FILENAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        set the last modified time of [-[1.FILENAME]-] to be the same as [-[2.FILENAME]-]
+        touch [-[1.FILENAME]-] using last modified and access times of [-[2.FILENAME]-]
+      ]
+      cmd:
+      [
+        touch -r [-[2.FILENAME]-] [-[1.FILENAME]-]
+      ]
+    }
+  ]
+}

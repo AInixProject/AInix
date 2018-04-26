@@ -1,0 +1,87 @@
+{
+  name: cat
+  aruments:
+  [
+    {
+      name: n
+      type: StoreTrue
+    }
+    {
+      name: fileList
+      type: Stringlike
+      position: 1
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        print the contents of [-[FILENAME]-]
+        print whats in [-[FILENAME]-]
+        print what's in [-[FILENAME]-]
+        print out [-[FILENAME]-]
+        print the content of [-[FILENAME]-]
+        output the stuff in [-[FILENAME]-]
+        output the content of [-[FILENAME]-]
+      ]
+      cmd:
+      [
+        cat [-[FILENAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        print the contents of [-[FILENAME]-] with line numbers
+        write out the contents of [-[FILENAME]-] with line numbers
+        cat [-[FILENAME]-] with line numbers
+        cat the contents of [-[FILENAME]-] with line numbers
+      ]
+      cmd:
+      [
+        cat -n [-[FILENAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        concatenate * together
+      ]
+      cmd:
+      [
+        cat *
+      ]
+    }
+    {
+      lang:
+      [
+        concatenate all csv files here together
+      ]
+      cmd:
+      [
+        cat *.csv
+      ]
+    }
+    {
+      lang:
+      [
+        concatenate [-[1.FILENAME]-] and [-[2.FILENAME]-] together
+      ]
+      cmd:
+      [
+        cat [-[1.FILENAME]-] [-[2.FILENAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        concatenate [-[1.FILENAME]-], [-[2.FILENAME]-], and [-[3.FILENAME]-] together
+      ]
+      cmd:
+      [
+        cat [-[1.FILENAME]-] [-[2.FILENAME]-] [-[3.FILENAME]-]
+      ]
+    }
+  ]
+}

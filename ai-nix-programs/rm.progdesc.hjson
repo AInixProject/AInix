@@ -1,0 +1,267 @@
+{
+  name: rm
+  aruments:
+  [
+    {
+      name: r
+      type: StoreTrue
+    }
+    {
+      name: f
+      type: StoreTrue
+    }
+    {
+      name: i
+      type: StoreTrue
+    }
+    {
+      name: fileList
+      type: Stringlike
+      position: 1
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        delete all text files here
+        remove all txt files
+        remove all text files
+      ]
+      cmd:
+      [
+        rm *.txt
+      ]
+    }
+    {
+      lang:
+      [
+        rm [-[FILENAME]-] even if protected
+        force delete [-[FILENAME]-]
+        rm [-[FILENAME]-] override write protected
+      ]
+      cmd:
+      [
+        rm -f [-[FILENAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        delete all md files here
+        remove all markdown files
+      ]
+      cmd:
+      [
+        rm *.md
+      ]
+    }
+    {
+      lang:
+      [
+        delete everything here
+        remove everything here
+      ]
+      cmd:
+      [
+        rm -r *
+      ]
+    }
+    {
+      lang:
+      [
+        rm -r * with confirmation
+        rm everything here with prompt before removal
+      ]
+      cmd:
+      [
+        rm -ir *
+      ]
+    }
+    {
+      lang:
+      [
+        rm everything here with confirmation first
+        rm everything here but ask me first
+      ]
+      cmd:
+      [
+        rm -ri *
+      ]
+    }
+    {
+      lang:
+      [
+        rm *.txt with confirmation
+        rm all txt files with confirmation
+      ]
+      cmd:
+      [
+        rm -i *.txt
+      ]
+    }
+    {
+      lang:
+      [
+        delete [-[FILENAME]-]
+        delete file named [-[FILENAME]-]
+      ]
+      cmd:
+      [
+        rm [-[FILENAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        delete [-[1.FILENAME]-] and [-[2.FILENAME]-]
+        remove [-[1.FILENAME]-] and [-[2.FILENAME]-]
+      ]
+      cmd:
+      [
+        rm [-[1.FILENAME]-] [-[2.FILENAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        delete all header files here
+      ]
+      cmd:
+      [
+        rm *.h
+      ]
+    }
+    {
+      lang:
+      [
+        remove all c files
+      ]
+      cmd:
+      [
+        rm *.c
+      ]
+    }
+    {
+      lang:
+      [
+        rm * with confirmation
+      ]
+      cmd:
+      [
+        rm -i *
+      ]
+    }
+    {
+      lang:
+      [
+        force delete everything here
+      ]
+      cmd:
+      [
+        rm -rf *
+      ]
+    }
+    {
+      lang:
+      [
+        delete all png files here
+      ]
+      cmd:
+      [
+        rm *.png
+      ]
+    }
+    {
+      lang:
+      [
+        delete all jpg files here
+      ]
+      cmd:
+      [
+        rm *.jpg
+      ]
+    }
+    {
+      lang:
+      [
+        remove all .csv files in this dir
+      ]
+      cmd:
+      [
+        rm *.csv
+      ]
+    }
+    {
+      lang:
+      [
+        rm -rf * with confirmation
+      ]
+      cmd:
+      [
+        rm -irf *
+      ]
+    }
+    {
+      lang:
+      [
+        delete all jpg files with confirmation first
+      ]
+      cmd:
+      [
+        rm -i *.jpg
+      ]
+    }
+    {
+      lang:
+      [
+        rm *.png with confirmation
+      ]
+      cmd:
+      [
+        rm -i *.png
+      ]
+    }
+    {
+      lang:
+      [
+        delete all jpg and png files here
+      ]
+      cmd:
+      [
+        rm *.jpg *.png
+      ]
+    }
+    {
+      lang:
+      [
+        delete [-[FILENAME]-] with interactive deletion
+      ]
+      cmd:
+      [
+        rm -i [-[FILENAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        rm *.jpg *.png *.gif with confirmation
+      ]
+      cmd:
+      [
+        rm -i *.jpg *.png *.gif
+      ]
+    }
+    {
+      lang:
+      [
+        remove [-[1.FILENAME]-], [-[2.FILENAME]-] and [-[3.FILENAME]-]
+      ]
+      cmd:
+      [
+        rm [-[1.FILENAME]-] [-[2.FILENAME]-] [-[3.FILENAME]-]
+      ]
+    }
+  ]
+}

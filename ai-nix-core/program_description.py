@@ -29,7 +29,7 @@ def _verify_keys(keys, valid_keys = None, required_keys = None):
 class ArgumentType():
     def __init__(self):
         self.model_data = None
-        self.requires_val = False
+        self.requires_value = False
 
 class StoreTrue(ArgumentType):
     def as_shell_string(self, value):
@@ -38,7 +38,7 @@ class StoreTrue(ArgumentType):
 class Stringlike(ArgumentType):
     def __init__(self):
         super(Stringlike, self).__init__()
-        self.requires_val = True
+        self.requires_value = True
 
     def parse_value(self, value, run_context, copyfromexample, is_eval = False):
         """Takes in a value and converts it to friendly representation"""
@@ -86,6 +86,7 @@ class Argument():
     def __init__(self, name, argtype, shorthand = None, position = None, required = False):
         self.name = name
         self.shorthand = shorthand
+        self.type_name = argtype
         if argtype == "StoreTrue":
             self.argtype = StoreTrue()
         elif argtype == "Stringlike":

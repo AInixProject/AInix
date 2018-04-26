@@ -1,0 +1,526 @@
+{
+  name: ls
+  aruments:
+  [
+    {
+      name: a
+      type: StoreTrue
+    }
+    {
+      name: A
+      type: StoreTrue
+    }
+    {
+      name: l
+      type: StoreTrue
+    }
+    {
+      name: S
+      type: StoreTrue
+    }
+    {
+      name: s
+      type: StoreTrue
+    }
+    {
+      name: t
+      type: StoreTrue
+    }
+    {
+      name: r
+      type: StoreTrue
+    }
+    {
+      name: i
+      type: StoreTrue
+    }
+    {
+      name: R
+      type: StoreTrue
+    }
+    {
+      name: h
+      type: StoreTrue
+    }
+    {
+      name: X
+      type: StoreTrue
+    }
+    {
+      name: d
+      type: StoreTrue
+    }
+    {
+      name: "1"
+      type: StoreTrue
+    }
+    {
+      name: d
+      type: StoreTrue
+    }
+    {
+      name: fileList
+      type: Stringlike
+      position: 1
+    }
+  ]
+
+  #######################################################
+
+  examples:
+  [
+    {
+      lang:
+      [
+        list all files
+        print all files and directories here
+        list all files here
+        list my files
+        list what is here
+        list files and dirs here
+        list
+        print the contents of this directory
+        what files are here
+        list all files here please
+        list all files and directories here
+        list all files and dirs in this dir
+        display a list of files and or directories only
+      ]
+      cmd:
+      [
+        ls
+      ]
+    }
+    {
+      lang:
+      [
+        ls sorted by file size
+        ls biggest files first
+        list files here biggest files first
+        list files largest files first
+        ls in order of decreasing size
+        ls order with decreasing file size
+        list filese here sorted by files size decending
+        ls sorted smallest to biggest
+        ls -l sorted by size
+        display files in order of size
+        display files biggest files first
+        list files sort by the largest file size first
+        ls sort files with size
+      ]
+      cmd:
+      [
+        ls -lS
+      ]
+    }
+    {
+      lang:
+      [
+        list all files with stuff like file size
+        list all files in long format
+        ls with date changed and size
+        show info about files here
+        ls with long format
+        ls in long format
+        what files are here with file information
+        list with long format - show permissions
+        display a long list of the content of current directory
+        show long listing information about each file/directory here
+        display total information about Files/Directories
+      ]
+      cmd:
+      [
+        ls -l
+      ]
+    }
+    {
+      lang:
+      [
+        list all files with dot files
+        list all files with hidden files
+        list all including dot files
+        ls with dot files
+        ls with hidden files
+        list with dot files
+        list all files including hidden file starting with '.'
+      ]
+      cmd:
+      [
+        ls -a
+      ]
+    }
+    {
+      lang:
+      [
+        list files here sorted by modified data
+        ls sorted newest to oldest
+        ls -l sorted by change data
+        ls -l sorted by modification data
+        ls -l sorted by mod data
+        ls -l sort by mod data
+        ls -l sort the list by modification time which the newest first
+      ]
+      cmd:
+      [
+        ls -lt
+      ]
+    }
+    {
+      lang:
+      [
+        list inode numbers of files here
+        find inode numbers of files
+        print inode numbers of files here
+        ls with inode numbers
+        list file's inode index number
+        check inode number of files and directories
+      ]
+      cmd:
+      [
+        ls -i
+      ]
+    }
+    {
+      lang:
+      [
+        ls recursively down all dirs
+        list files recursively exploring directories
+        list recursively directory tree
+        show all files recursively
+      ]
+      cmd:
+      [
+        ls -R
+      ]
+    }
+    {
+      lang:
+      [
+        ls sort by extension name
+        ls group extension together
+        list files grouped by file extension
+        ls sort list by extension
+      ]
+      cmd:
+      [
+        ls -X
+      ]
+    }
+    {
+      lang:
+      [
+        ls sort by time & date
+        list files sort by date/time
+        ls order files based on last modified time
+      ]
+      cmd:
+      [
+        ls -t
+      ]
+    }
+    {
+      lang:
+      [
+        ls one file per line
+        ls single entry per line
+        display files one file per line
+      ]
+      cmd:
+      [
+        ls -1
+      ]
+    }
+    {
+      lang:
+      [
+        ls in reverse alphabetical order
+        list in reverse order
+        ls in reverse order
+      ]
+      cmd:
+      [
+        ls -r
+      ]
+    }
+    {
+      lang:
+      [
+        list long format with readable file size
+        ls -l with human readable file sizes
+        display files with file size in human readable form
+      ]
+      cmd:
+      [
+        ls -lh
+      ]
+    }
+    {
+      lang:
+      [
+        list all subdirectories
+        list all subdirectories
+      ]
+      cmd:
+      [
+        ls *
+      ]
+    }
+    {
+      lang:
+      [
+        list files in home dir
+        list my home directory
+      ]
+      cmd:
+      [
+        ls ~
+      ]
+    }
+    {
+      lang:
+      [
+        ls -a but dont include . or ..
+        list hidden files but dont include . or ..
+      ]
+      cmd:
+      [
+        ls -A
+      ]
+    }
+    {
+      lang:
+      [
+        list all files in ..
+        list parent directory
+      ]
+      cmd:
+      [
+        ls ..
+      ]
+    }
+    {
+      lang:
+      [
+        ls sorted oldest to newest
+        ls with latest modified file or directory date as last
+      ]
+      cmd:
+      [
+        ls -ltr
+      ]
+    }
+    {
+      lang:
+      [
+        ls sorted biggest to smallest
+        display files smallest files first
+      ]
+      cmd:
+      [
+        ls -lSr
+      ]
+    }
+    {
+      lang:
+      [
+        list only text files
+        list all text files here
+      ]
+      cmd:
+      [
+        ls *.txt
+      ]
+    }
+    {
+      lang:
+      [
+        list directories only
+        list directory entries only
+      ]
+      cmd:
+      [
+        ls -d */
+      ]
+    }
+    {
+      lang:
+      [
+        list root directory
+      ]
+      cmd:
+      [
+        ls /
+      ]
+    }
+    {
+      lang:
+      [
+        list file size
+      ]
+      cmd:
+      [
+        ls -s
+      ]
+    }
+    {
+      lang:
+      [
+        ls -a with inode index number
+      ]
+      cmd:
+      [
+        ls -ai
+      ]
+    }
+    {
+      lang:
+      [
+        list long format including hidden files
+      ]
+      cmd:
+      [
+        ls -la
+      ]
+    }
+    {
+      lang:
+      [
+        list with long format with file size
+      ]
+      cmd:
+      [
+        ls -ls
+      ]
+    }
+    {
+      lang:
+      [
+        ls -r with i-node numbers
+      ]
+      cmd:
+      [
+        ls -ir
+      ]
+    }
+    {
+      lang:
+      [
+        ls -l sort by file extension
+      ]
+      cmd:
+      [
+        ls -lX
+      ]
+    }
+    {
+      lang:
+      [
+        list files sort by extension with hidden files
+      ]
+      cmd:
+      [
+        ls -Xa
+      ]
+    }
+    {
+      lang:
+      [
+        ls order files based on last modified time in dec-ending order
+      ]
+      cmd:
+      [
+        ls -lrt
+      ]
+    }
+    {
+      lang:
+      [
+        list files here sorted by file size with dot files
+      ]
+      cmd:
+      [
+        ls -lSa
+      ]
+    }
+    {
+      lang:
+      [
+        list all jpg files here
+      ]
+      cmd:
+      [
+        ls *.jpg
+      ]
+    }
+    {
+      lang:
+      [
+        ls in long format with dot files
+      ]
+      cmd:
+      [
+        ls -l -a
+      ]
+    }
+    {
+      lang:
+      [
+        list display file Inode number one per line
+      ]
+      cmd:
+      [
+        ls -i -1
+      ]
+    }
+    {
+      lang:
+      [
+        list inode numbers of *.h
+      ]
+      cmd:
+      [
+        ls -i *.h
+      ]
+    }
+    {
+      lang:
+      [
+        ls all files in pictures
+      ]
+      cmd:
+      [
+        ls pictures
+      ]
+    }
+    {
+      lang:
+      [
+        ls *.txt sorted by file size
+      ]
+      cmd:
+      [
+        ls -lS *.txt
+      ]
+    }
+    {
+      lang:
+      [
+        get the inode numbers of *.java
+      ]
+      cmd:
+      [
+        ls -i *.java
+      ]
+    }
+    {
+      lang:
+      [
+        ls all files in pictures and home
+      ]
+      cmd:
+      [
+        ls pictures ~
+      ]
+    }
+  ]
+}
