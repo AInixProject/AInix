@@ -11,6 +11,7 @@ except ImportError:
     from yaml import Loader, Dumper
 import pudb
 import constants
+import hjson
 
 class ProgramParseError(Exception):
     pass
@@ -119,20 +120,15 @@ class Argument():
     @classmethod
     def load(cls, data):
         """Instantiate an Argument from a dict that came from loading a yaml"""
-        if len(data) is not 1:
-            raise ProgramParseError(
-                "Invalid Argument. There should only be one type specified", data)
-        print("Argument", list(data.items()))
-        type_name, keys = list(data.items())[0]
-        _verify_keys(keys, ['name'], None)
-        return cls(keys['name'], type_name, keys.get('shorthand', None))
+        _verify_keys(data.keys(), valid_keys=['name','type','shorthand'], required_keys=['name','type'])
+        return cls(data['name'], data['type'], data.get('shorthand', None))
 
 def load(program_description):
-    """Parse the contents of a program.yaml into an AIProgramDescription"""
-    data = yaml.safe_load(program_description)
+    """Parse the contents of a progdesc.hjson into an AIProgramDescription"""
+    data = hjson.loads(program_description)
     print(data)
 
-    valid_top_level_keys = ['name', 'arguments', 'training-data']
+    valid_top_level_keys = ['name', 'arguments', 'examples']
     required_top_level_keys = ['name']
     _verify_keys(data.keys(), valid_top_level_keys, required_top_level_keys)
      
@@ -147,18 +143,18 @@ def load(program_description):
     # Construct the final output
     out_desc = AIProgramDescription(
         name = data.get('name'),
-        arguments = args
+        arguments = args,
+        examples = data.get('examples', [])
     )
     return out_desc
 
 class AIProgramDescription():
     """Describes an AI program. This is the deserialized instantiation
     that comes from a program.yaml"""
-    def __init__(self, name, arguments = [], in_data_file = None, out_data_file = None):
+    def __init__(self, name, arguments = [], examples = []):
         self.name = name
         self.arguments = arguments 
-        self.in_data_file = in_data_file
-        self.out_data_file = out_data_file
+        self.examples = []
         # Program index is set during training to catagorize programs
         self.program_index = None
         self.model_data_grouped = None
