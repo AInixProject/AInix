@@ -137,7 +137,7 @@ class SimpleCmd():
                     argSig = F.sigmoid(argDots)
                     for aIndex, arg in enumerate(predProgragmD.arguments):
                         thisArgPredicted = argSig[aIndex].data[0] > 0.5
-                        if thisArgPredicted and arg.argtype.requires_val:
+                        if thisArgPredicted and arg.argtype.requires_value:
                             predVal = arg.argtype.eval_value(encodings[i], self.run_context, self, nlexamples[i])
                         else:
                             predVal = thisArgPredicted

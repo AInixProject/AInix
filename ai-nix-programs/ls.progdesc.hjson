@@ -1,6 +1,6 @@
 {
   name: ls
-  aruments:
+  arguments:
   [
     {
       name: a
@@ -257,7 +257,6 @@
     {
       lang:
       [
-        list all subdirectories
         list all subdirectories
       ]
       cmd:

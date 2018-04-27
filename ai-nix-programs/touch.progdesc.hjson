@@ -1,6 +1,6 @@
 {
   name: touch
-  aruments:
+  arguments:
   [
     {
       name: fileList

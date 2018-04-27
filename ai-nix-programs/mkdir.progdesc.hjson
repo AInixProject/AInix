@@ -1,6 +1,6 @@
 {
   name: mkdir
-  aruments:
+  arguments:
   [
     {
       name: fileList
@@ -26,6 +26,7 @@
       [
         make a directory named testdir
         make a dir named testdir
+        create a emptry directory named testdir
       ]
       cmd:
       [

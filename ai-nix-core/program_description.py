@@ -120,13 +120,13 @@ class Argument():
     @classmethod
     def load(cls, data):
         """Instantiate an Argument from a dict that came from loading a yaml"""
-        _verify_keys(data.keys(), valid_keys=['name','type','shorthand'], required_keys=['name','type'])
-        return cls(data['name'], data['type'], data.get('shorthand', None))
+        _verify_keys(data.keys(), valid_keys=['name','type','shorthand','position'], required_keys=['name','type'])
+        return cls(data['name'], data['type'], data.get('shorthand', None), 
+                position = data.get('position',None))
 
 def load(program_description):
     """Parse the contents of a progdesc.hjson into an AIProgramDescription"""
     data = hjson.loads(program_description)
-    print(data)
 
     valid_top_level_keys = ['name', 'arguments', 'examples']
     required_top_level_keys = ['name']
@@ -154,10 +154,17 @@ class AIProgramDescription():
     def __init__(self, name, arguments = [], examples = []):
         self.name = name
         self.arguments = arguments 
-        self.examples = []
+        self.examples = examples
         # Program index is set during training to catagorize programs
         self.program_index = None
         self.model_data_grouped = None
 
     def get_examples(self):
         return self.examples
+
+    def get_example_tuples(self):
+        out = []
+        for example in self.examples:
+            for x in example['lang']:
+                out.append((x, example['cmd'][0]))
+        return out

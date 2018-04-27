@@ -1,6 +1,6 @@
 {
   name: cd
-  aruments:
+  arguments:
   [
     {
       name: fileList

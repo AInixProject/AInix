@@ -1,6 +1,6 @@
 {
   name: rm
-  aruments:
+  arguments:
   [
     {
       name: r

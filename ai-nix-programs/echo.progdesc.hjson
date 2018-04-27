@@ -1,6 +1,6 @@
 {
   name: echo
-  aruments:
+  arguments:
   [
     {
       name: fileList
