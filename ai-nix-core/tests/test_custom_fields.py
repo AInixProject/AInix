@@ -1,5 +1,7 @@
 from custom_fields import Replacer, ReplacementGroup, Replacement, WeightedRandomChooser
 from collections import Counter
+from unittest.mock import MagicMock
+
 
 def test_replacer1():
     replacement = Replacement("foo", "boo", 1) 
@@ -37,8 +39,8 @@ def test_replacer4():
     samples = [replacer.strings_replace("hello [-[TEST]-]", "yo [-[TEST]-]") for i in range(1000)]
     nlres, cmdres = zip(*samples)
     nlcount = Counter(nlres)
-    assert abs(nlcount["hello foo"] - 250) < 30
-    assert abs(nlcount["hello moo"] - 750) < 30
+    assert abs(nlcount["hello foo"] - 250) < 40
+    assert abs(nlcount["hello moo"] - 750) < 40
 
 def test_replacer5():
     """Test reusing same thing multiple times in cmd"""
@@ -57,3 +59,12 @@ def test_replacer6():
     nl, cmd = replacer.strings_replace("hello [-[1=TEST]-] [-[2=TEST]-]", "run [-[$1]-] [-[$2]-]")
     assert nl == "hello foo foo"
     assert cmd == "run bar bar"
+
+def test_replacer7():
+    """Test replacement args"""
+    replacement = Replacement("foo", "bar", 1) 
+    rg = ReplacementGroup('TEST', [replacement])
+    rg.sample_replacement = MagicMock(return_value=("foo", "bar"))
+    replacer = Replacer([rg])
+    nl, cmd = replacer.strings_replace("hello [-[TEST -t foo]-]", "run")
+    rg.sample_replacement.assert_called_once_with(["TEST", '-t', "foo"])

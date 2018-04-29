@@ -67,21 +67,21 @@
     {
       lang:
       [
-        concatenate [-[1.FILENAME]-] and [-[2.FILENAME]-] together
+        concatenate [-[1=FILENAME]-] and [-[2=FILENAME]-] together
       ]
       cmd:
       [
-        cat [-[1.FILENAME]-] [-[2.FILENAME]-]
+        cat [-[$1]-] [-[$2]-]
       ]
     }
     {
       lang:
       [
-        concatenate [-[1.FILENAME]-], [-[2.FILENAME]-], and [-[3.FILENAME]-] together
+        concatenate [-[1=FILENAME]-], [-[2=FILENAME]-], and [-[3=FILENAME]-] together
       ]
       cmd:
       [
-        cat [-[1.FILENAME]-] [-[2.FILENAME]-] [-[3.FILENAME]-]
+        cat [-[$1]-] [-[$2]-] [-[$3]-]
       ]
     }
   ]

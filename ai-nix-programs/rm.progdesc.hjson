@@ -115,12 +115,12 @@
     {
       lang:
       [
-        delete [-[1.FILENAME]-] and [-[2.FILENAME]-]
-        remove [-[1.FILENAME]-] and [-[2.FILENAME]-]
+        delete [-[1=FILENAME]-] and [-[2=FILENAME]-]
+        remove [-[1=FILENAME]-] and [-[2=FILENAME]-]
       ]
       cmd:
       [
-        rm [-[1.FILENAME]-] [-[2.FILENAME]-]
+        rm [-[$1]-] [-[$2]-]
       ]
     }
     {
@@ -256,11 +256,11 @@
     {
       lang:
       [
-        remove [-[1.FILENAME]-], [-[2.FILENAME]-] and [-[3.FILENAME]-]
+        remove [-[1=FILENAME]-], [-[2=FILENAME]-] and [-[3=FILENAME]-]
       ]
       cmd:
       [
-        rm [-[1.FILENAME]-] [-[2.FILENAME]-] [-[3.FILENAME]-]
+        rm [-[$1]-] [-[$2]-] [-[$3]-]
       ]
     }
   ]

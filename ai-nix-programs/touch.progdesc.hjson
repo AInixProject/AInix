@@ -71,12 +71,12 @@
     {
       lang:
       [
-        set the last modified time of [-[1.FILENAME]-] to be the same as [-[2.FILENAME]-]
-        touch [-[1.FILENAME]-] using last modified and access times of [-[2.FILENAME]-]
+        set the last modified time of [-[1=FILENAME]-] to be the same as [-[2=FILENAME]-]
+        touch [-[1=FILENAME]-] using last modified and access times of [-[2=FILENAME]-]
       ]
       cmd:
       [
-        touch -r [-[2.FILENAME]-] [-[1.FILENAME]-]
+        touch -r [-[$2]-] [-[$1]-]
       ]
     }
   ]
