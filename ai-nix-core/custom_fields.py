@@ -10,6 +10,9 @@ import csv
 import constants
 from collections import Counter, OrderedDict
 
+class ReplacementError(ValueError):
+    pass
+
 class Replacer():
     pattern = r"\[-\[.+?\]-\]"
     reg = re.compile(pattern)
@@ -20,39 +23,56 @@ class Replacer():
     def strings_replace(self, nl, cmd):
         nlmatches = Replacer.reg.findall(nl)
         cmdmatches = Replacer.reg.findall(cmd)
-        # check that has a correspondence
-        nlset = set(nlmatches)
-        cmdset = set(cmdmatches)
-        intersection = nlset & cmdset
+        # Go through and find variable assignments
+        varToValMap = {}
+        def parseAsignment(nobrackets):
+            varAndVal = nobrackets.split("=")
+            if len(varAndVal) != 2:
+                raise ReplacementError("Only one equal sign expected. Got", match)
+            varname, val = varAndVal
+            varname.strip()
+            val.strip()
+            return varname, val
+
+        for match in nlmatches + cmdmatches:
+            nobrackets = match[3:-3]
+            replaceExpression = None
+            if "=" in nobrackets:
+                varname, val = parseAsignment(nobrackets)
+                # an assignment
+                if not varname.isalnum() or not varname.lower() == varname:
+                    raise ReplacementError("Assignment name should be lowercase alphanumeric. Got", varname)
+                if varname in varToValMap:
+                    raise ReplacementError("Duplicate assignment in: ", nl, ", ", cmd)
+                varToValMap[varname] = val
         # replace
         newnl, newcmd = nl, cmd
         for match in nlmatches:
-            # A match will have be surrounded with dash-brackets with .'s seperating args
-            vals = match[3:-3].split(".")
-            otherArgs = None
-            if len(vals) > 1:
-                try:
-                    int(vals[0])
-                    matchtypename = vals[1]
-                    if len(vals) > 2:
-                        otherArgs = vals[2:]
-                except ValueError:
-                    # if the first one is not an int, then the type must come first
-                    matchtypename = vals[0]
-                    if len(vals) > 1:
-                        otherArgs = vals[2:]
-            else:
-                matchtypename = vals[0]
+            # A match will have be surrounded with dash-brackets
+            nobrackets = match[3:-3]
+            val = nobrackets
+            varname = None
+            if "=" in nobrackets:
+                varname, val = parseAsignment(nobrackets)
+            elif nobrackets[0] == "$":
+                varname = nobrackets[1:]
+                if varname not in varToValMap:
+                    raise ReplacementError("Use of unassigned value : ", nobrackets, " cmd ", cmd, " nl ", nl)
+                val = varToValMap[varname]
+
+            valWords = val.split(" ")
+            matchtypename = valWords[0]
                 
             # sample 
             if matchtypename not in self.nameToTypes:
                 raise ValueError("unrecognized replacement type", matchtypename, "accepted = ", self.nameToTypes)
-            if otherArgs:
-                nlreplace, cmdreplace = self.nameToTypes[matchtypename].sample_replacement(*otherArgs)
-            else:
-                nlreplace, cmdreplace = self.nameToTypes[matchtypename].sample_replacement()
+            nlreplace, cmdreplace = self.nameToTypes[matchtypename].sample_replacement(valWords)
             newnl = newnl.replace(match, nlreplace)
             newcmd = newcmd.replace(match, cmdreplace)
+            if varname:
+                newnl = newnl.replace("[-[$"+varname+"]-]", nlreplace)
+                newcmd = newcmd.replace("[-[$"+varname+"]-]", cmdreplace)
+
         return newnl, newcmd
 
 class ReplacementGroup():
@@ -62,7 +82,7 @@ class ReplacementGroup():
         weights = [r.weight for r in replacements]
         self._sampler = WeightedRandomChooser(replacements, weights)
 
-    def sample_replacement(self, *args):
+    def sample_replacement(self, argwords = []):
         return self._sampler.sample().get_replacement()
 
 class Replacement():

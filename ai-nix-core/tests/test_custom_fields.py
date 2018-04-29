@@ -13,7 +13,7 @@ def test_replacer2():
     replacement = Replacement("foo", "boo", 1) 
     rg = ReplacementGroup('TEST', [replacement])
     replacer = Replacer([rg])
-    nl, cmd = replacer.strings_replace("hello [-[TEST]-] [-[2.TEST]-]", "run [-[TEST]-] [-[2.TEST]-]")
+    nl, cmd = replacer.strings_replace("hello [-[TEST]-] [-[2=TEST]-]", "run [-[TEST]-] [-[$2]-]")
     assert nl == "hello foo foo"
     assert cmd == "run boo boo"
 
@@ -54,6 +54,6 @@ def test_replacer6():
     replacement = Replacement("foo", "bar", 1) 
     rg = ReplacementGroup('TEST', [replacement])
     replacer = Replacer([rg])
-    nl, cmd = replacer.strings_replace("hello [-[1.TEST]-] [-[2.TEST]-]", "run [-[1.TEST]-] [-[2.TEST]-]")
+    nl, cmd = replacer.strings_replace("hello [-[1=TEST]-] [-[2=TEST]-]", "run [-[$1]-] [-[$2]-]")
     assert nl == "hello foo foo"
     assert cmd == "run bar bar"
