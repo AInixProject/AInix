@@ -45,6 +45,12 @@ twosingleword = program_description.AIProgramDescription(
     arguments = [singleWordArg1, singleWordArg2] 
 )
 
+multiWordArg = program_description.Argument("bposarg", "FileList", position = 0)
+twowmulti = program_description.AIProgramDescription(
+    name = "twowmulti",
+    arguments = [multiWordArg, singleWordArg2] 
+)
+
 
 def test_noarg_parse():
     parser = CmdParser([noArgs])
@@ -208,7 +214,17 @@ def test_two_single_word_pos():
     assert out[0].arguments[0].value == "foo"
     assert out[0].arguments[1].value == "bar"
     assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1])))
+    assert out[0].as_shell_string() == "twosingleword foo bar"
 
+def test_multi_word_pos():
+    parser = CmdParser([twowmulti])
+    out = parser.parse("twowmulti why hello there bar")
+    assert out[0].arguments[0].present == True
+    assert out[0].arguments[1].present == True
+    assert out[0].arguments[0].value == "why hello there"
+    assert out[0].arguments[1].value == "bar"
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1])))
+    assert out[0].as_shell_string() == "twowmulti why hello there bar"
 
 ###
 # Test correct as_shell_string
