@@ -226,6 +226,9 @@ def test_multi_word_pos():
     assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1])))
     assert out[0].as_shell_string() == "twowmulti why hello there bar"
 
+# TODO (dngros): should really add test all the failure cases of positional args
+# TODO (dngros): need to handle non-required positional word parsing (like touch)
+
 ###
 # Test correct as_shell_string
 ###
