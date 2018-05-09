@@ -18,6 +18,7 @@ class SimpleCmd():
         # Build the argument data for this model
         encodeType = torch.cuda.FloatTensor if run_context.use_cuda else torch.FloatTensor
         all_arg_params = []
+        self.arg_type_transforms = {}
         for prog in run_context.descriptions:
             all_top_v = []
             all_value_v = []
@@ -33,6 +34,11 @@ class SimpleCmd():
                     all_value_v.append(valuev)
                     all_arg_params.extend(list(valuev.parameters()))
                     arg.model_data['value_forward'] = valuev
+                # See if this arg has a type we haven't seen before and create a type transform for it
+                if arg.type_name not in self.arg_type_transforms:
+                    typeTransform = nn.Linear(run_context.small_word_size, run_context.std_word_size)
+                    all_arg_params.extend(list(typeTransform.parameters()))
+                    self.arg_type_transforms[arg.type_name] = typeTransform
             prog.model_data_grouped = {"top_v": torch.stack(all_top_v) if all_top_v else None}
 
         # Create layers
@@ -44,6 +50,8 @@ class SimpleCmd():
         self.predictProgram = PredictProgramModel(
             run_context.std_word_size, run_context.num_of_descriptions)
         self.value_transform_bottleneck = nn.Linear(
+            run_context.std_word_size, run_context.small_word_size)
+        self.type_transform_bottleneck = nn.Linear(
             run_context.std_word_size, run_context.small_word_size)
 
 
@@ -57,7 +65,8 @@ class SimpleCmd():
         self.predictNextJoinHidden = nn.Linear(run_context.std_word_size, run_context.std_word_size)
 
         self.all_modules = nn.ModuleList([self.encoder, self.decoder, self.predictProgram,
-            self.predictJoinNode, self.predictNextJoinHidden])
+            self.predictJoinNode, self.predictNextJoinHidden, self.value_transform_bottleneck,
+            self.type_transform_bottleneck])
         if run_context.use_cuda:
             self.all_modules.cuda()
 
@@ -94,9 +103,13 @@ class SimpleCmd():
                         argtype = arg_node.arg.argtype
                         parsed_value = argtype.parse_value(arg_node.value, self.run_context, nlexamples[i])
                         value_forward = arg_node.arg.model_data['value_forward']
-                        # Step feature size down 1/4 as bottleneck. Distill only features relevant to value
-                        valueBottleneck = self.value_transform_bottleneck(encodings[i])
-                        valueProcessedEncoding = value_forward(valueBottleneck) + encodings[i]
+                        # Go through type transform 
+                        typeBottleneck = self.type_transform_bottleneck(encodings[i])
+                        typeProcessedEncoding = value_forward(typeBottleneck) + encodings[i]
+                        # Go through the value transform
+                        valueBottleneck = self.value_transform_bottleneck(typeProcessedEncoding)
+                        valueProcessedEncoding = value_forward(valueBottleneck) + typeProcessedEncoding
+                        # predict
                         loss += argtype.train_value(valueProcessedEncoding, parsed_value, self.run_context, self)
 
             # Try and predict if there will be a next node
@@ -151,8 +164,13 @@ class SimpleCmd():
                         thisArgPredicted = argSig[aIndex].data[0] > 0.5
                         if thisArgPredicted and arg.argtype.requires_value:
                             value_forward = arg.model_data['value_forward']
-                            valueBottleneck = self.value_transform_bottleneck(encodings[i])
-                            valueProcessedEncoding = value_forward(valueBottleneck) + encodings[i]
+                            # Go through type transform 
+                            typeBottleneck = self.type_transform_bottleneck(encodings[i])
+                            typeProcessedEncoding = value_forward(typeBottleneck) + encodings[i]
+                            # Go through the value transform
+                            valueBottleneck = self.value_transform_bottleneck(typeProcessedEncoding)
+                            valueProcessedEncoding = value_forward(valueBottleneck) + typeProcessedEncoding
+                            # predict
                             predVal = arg.argtype.eval_value(valueProcessedEncoding, self.run_context, self, nlexamples[i])
                         else:
                             predVal = thisArgPredicted
