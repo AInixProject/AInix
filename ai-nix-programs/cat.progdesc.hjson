@@ -8,8 +8,8 @@
     }
     {
       name: fileList
-      type: Stringlike
-      position: 1
+      type: FileList
+      position: 0
     }
   ]
   examples:

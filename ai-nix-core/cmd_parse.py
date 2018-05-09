@@ -116,7 +116,7 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         longargs = []
         for arg in cmd_desc.arguments:
             if arg.position is None:
-                needValue = type(arg.argtype).__name__ != "StoreTrue"
+                needValue = arg.argtype.requires_value
                 if len(arg.name) == 1:
                     optstring.append(arg.name)
                     if needValue:
@@ -138,13 +138,32 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         
         return dictoptlist, args
 
+    def _parse_positional_args(self, positional_args, words):
+        """Takes in a list positional_args and a list string words and returns
+        a list where each element is a list representing the value for pos arg"""
+        remaining_words = [w for w in words]
+        remaining_words.reverse() # we reverse for efficient poping
+        out = []
+        for argIndex, arg in enumerate(positional_args):
+            if arg.argtype.is_multi_word:
+                new_val = []
+                for i in range(len(remaining_words) - (len(positional_args) - argIndex - 1)):
+                    if len(remaining_words) == 0 and arg.required:
+                        raise ValueError("Error when parsing positional args. \
+                                No remaining words for multi consume")
+                    new_val.append(remaining_words.pop())
+                out.append(new_val)
+            else:
+                if len(remaining_words) == 0 and arg.required:
+                    raise ValueError("Error when parsing positional args. No remaining words for single consume")
+                out.append([remaining_words.pop()])
+        return out
 
     def _parse_node(self, n):
         k = n.kind
         if k == 'command':
             parts = n.parts
             if(len(parts) == 0):
-                pudb.set_trace()
                 raise CmdParseError("Command has no parts", n)
             commandName = parts.pop(0).word
             if commandName not in self.command_by_name:
@@ -153,6 +172,8 @@ class CmdParser(): #bashlex.ast.nodevisitor):
             # Figure out all of its arguments
             args = []
             optlist, non_opt_args = self._getopt(command, parts)
+            positional_vals = self._parse_positional_args(command.positional_args, non_opt_args)
+
             for arg in command.arguments:
                 if arg.position is None:
                     if ("-" if len(arg.name) == 1 else "--") + arg.name in optlist:
@@ -163,8 +184,9 @@ class CmdParser(): #bashlex.ast.nodevisitor):
                         args.append(ArgumentNode(arg, True, "-" + optlist["-" + arg.shorthand]))
                         continue
                 else:
-                    if(len(non_opt_args) > 0):
-                        args.append(ArgumentNode(arg, True, " ".join(non_opt_args)))
+                    this_arg_vals = positional_vals[arg.position]
+                    if len(this_arg_vals) > 0:
+                        args.append(ArgumentNode(arg, True, " ".join(this_arg_vals)))
                         continue
                 args.append(ArgumentNode(arg, False, None))
             #cur_parse.append(ProgramNode(command, args, self.use_cuda))

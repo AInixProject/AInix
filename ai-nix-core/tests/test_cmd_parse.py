@@ -38,6 +38,13 @@ valprog = program_description.AIProgramDescription(
     arguments = [aArg, bArg, cValArg, posArg] 
 )
 
+singleWordArg1 = program_description.Argument("bposarg", "SingleFile", position = 0)
+singleWordArg2 = program_description.Argument("bposarg", "SingleFile", position = 1)
+twosingleword = program_description.AIProgramDescription(
+    name = "twosingleword",
+    arguments = [singleWordArg1, singleWordArg2] 
+)
+
 
 def test_noarg_parse():
     parser = CmdParser([noArgs])
@@ -172,8 +179,7 @@ def test_val_combined():
     assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([0,0,1,0])))
 
 def test_pipe():
-    """A test of whether argument value parsing works when there is no
-    space between the flag and the value"""
+    """Test whether can parse a pipe"""
     parser = CmdParser([posandtwo, valprog])
     out = parser.parse("posandtwo | valprog")
     assert isinstance(out[0], ProgramNode)
@@ -184,8 +190,7 @@ def test_pipe():
     assert isinstance(out[3], EndOfCommandNode)
 
 def test_pipe2():
-    """A test of whether argument value parsing works when there is no
-    space between the flag and the value"""
+    """Test whether can parse several pipes"""
     parser = CmdParser([posandtwo, valprog])
     out = parser.parse("posandtwo | valprog | posandtwo")
     assert isinstance(out[0], ProgramNode)
@@ -194,6 +199,16 @@ def test_pipe2():
     assert isinstance(out[3], PipeNode)
     assert isinstance(out[4], ProgramNode)
     assert isinstance(out[5], EndOfCommandNode)
+
+def test_two_single_word_pos():
+    parser = CmdParser([twosingleword])
+    out = parser.parse("twosingleword foo bar")
+    assert out[0].arguments[0].present == True
+    assert out[0].arguments[1].present == True
+    assert out[0].arguments[0].value == "foo"
+    assert out[0].arguments[1].value == "bar"
+    assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1])))
+
 
 ###
 # Test correct as_shell_string

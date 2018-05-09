@@ -12,6 +12,7 @@ except ImportError:
 import pudb
 import constants
 import hjson
+import arg_types
 
 class ProgramParseError(Exception):
     pass
@@ -27,73 +28,19 @@ def _verify_keys(keys, valid_keys = None, required_keys = None):
             raise ProgramParseError("Missing Required Top level attributes", 
                 set(required_keys) - set(keys))
 
-class ArgumentType():
-    def __init__(self):
-        self.model_data = None
-        self.requires_value = False
-
-class StoreTrue(ArgumentType):
-    def as_shell_string(self, value):
-        return ''
-
-class Stringlike(ArgumentType):
-    def __init__(self):
-        super(Stringlike, self).__init__()
-        self.requires_value = True
-
-    def parse_value(self, value, run_context, copyfromexample, is_eval = False):
-        """Takes in a value and converts it to friendly representation"""
-        #preproc = run_context.nl_field.preprocess(value)
-        #return run_context.nl_field.process([preproc], 
-        #        device = 0 if run_context.use_cuda else -1,
-        #        train = not is_eval)[0] # take 0th since a tuple with length
-
-        preproc = run_context.nl_field.preprocess(value)
-    
-        # hacky copy
-        for sequence, copytoken in copyfromexample.subsequence_to_copy.items():
-            if len(sequence) > 1:
-                raise NotImplementedError("havent made actual subsequencs work", sequence)
-            lookVal = sequence[0]
-            if lookVal in preproc:
-                preproc[preproc.index(lookVal)] = copytoken
-
-        padded = run_context.nl_field.pad([preproc])
-        (tensor, lengths) = run_context.nl_field.numericalize(padded, device=0 if run_context.use_cuda else -1, train=not is_eval)
-        return tensor
-
-    def train_value(self, encoding, expected_value, run_context, meta_model):
-        return meta_model.std_decode_train(encoding, run_context, expected_value)
-
-    def eval_value(self, encoding, run_context, meta_model, copyfromexample):
-        predSequence = meta_model.std_decode_eval(encoding, run_context)
-        copied = []
-        for p in predSequence:
-            if p in constants.COPY_TOKENS:
-                if p in copyfromexample.copy_to_sequence:
-                    copied += list(copyfromexample.copy_to_sequence[p])
-                else:
-                    copied.append(p)
-            else:
-                copied.append(p)
-
-        return " ".join(copied)
-
-    def as_shell_string(self, value):
-        return value
-
 class Argument():
     """Represents an argument in a AIProgramDescription"""
     def __init__(self, name, argtype, shorthand = None, position = None, required = False):
         self.name = name
         self.shorthand = shorthand
         self.type_name = argtype
-        if argtype == "StoreTrue":
-            self.argtype = StoreTrue()
-        elif argtype == "Stringlike":
-            self.argtype = Stringlike()
-        else:
+        # Figure out arg type
+        if argtype not in arg_types.__dict__:
             raise ValueError("unknown arg type ", argtype)
+        if not issubclass(arg_types.__dict__[argtype], arg_types.ArgumentType):
+            raise ValueError("Attempt to assign argtype of non-argtype", argtype)
+        self.argtype = arg_types.__dict__[argtype]()
+
         self.position = position
         self.required = required
 
@@ -155,6 +102,21 @@ class AIProgramDescription():
         self.name = name
         self.arguments = arguments 
         self.examples = examples
+
+        # Check to make sure valid positional arguments
+        positional_args = [arg for arg in arguments if arg.position is not None]
+        positional_args.sort(key = lambda a: a.position)
+        if sum([1 if a.argtype.is_multi_word else 0 for a in positional_args]) > 1:
+            raise ValueError("Cannont create description with more than one \
+                    multiword postional args. Leads to ambigious parsing. Name:", self.name)
+        actual_pos_numbers = tuple([a.position for a in positional_args])
+        expectedActualPosNumbers = tuple(range(len(positional_args)))
+        if actual_pos_numbers != expectedActualPosNumbers:
+            raise ValueError("Description", self.name, 
+                    " has non-sequential positional arguments", actual_pos_numbers, 
+                    ". Expect", expectedActualPosNumbers)
+        self.positional_args = positional_args
+
         # Program index is set during training to catagorize programs
         self.program_index = None
         self.model_data_grouped = None

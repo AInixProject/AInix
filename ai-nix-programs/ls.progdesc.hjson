@@ -61,7 +61,7 @@
     {
       name: fileList
       type: Stringlike
-      position: 1
+      position: 0
     }
   ]
 
