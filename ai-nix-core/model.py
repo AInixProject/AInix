@@ -29,7 +29,7 @@ class SimpleCmd():
                 all_arg_params.append(topv)
                 arg.model_data = {"top_v": topv} 
                 if arg.argtype.requires_value:
-                    valuev = nn.Linear(run_context.std_word_size, run_context.std_word_size)
+                    valuev = nn.Linear(run_context.small_word_size, run_context.std_word_size)
                     all_value_v.append(valuev)
                     all_arg_params.extend(list(valuev.parameters()))
                     arg.model_data['value_forward'] = valuev
@@ -43,6 +43,8 @@ class SimpleCmd():
             run_context.std_word_size, run_context.nl_vocab_size)
         self.predictProgram = PredictProgramModel(
             run_context.std_word_size, run_context.num_of_descriptions)
+        self.value_transform_bottleneck = nn.Linear(
+            run_context.std_word_size, run_context.small_word_size)
 
 
         # Join nodes stuff
@@ -92,7 +94,9 @@ class SimpleCmd():
                         argtype = arg_node.arg.argtype
                         parsed_value = argtype.parse_value(arg_node.value, self.run_context, nlexamples[i])
                         value_forward = arg_node.arg.model_data['value_forward']
-                        valueProcessedEncoding = value_forward(encodings[i])
+                        # Step feature size down 1/4 as bottleneck. Distill only features relevant to value
+                        valueBottleneck = self.value_transform_bottleneck(encodings[i])
+                        valueProcessedEncoding = value_forward(valueBottleneck) + encodings[i]
                         loss += argtype.train_value(valueProcessedEncoding, parsed_value, self.run_context, self)
 
             # Try and predict if there will be a next node
@@ -147,7 +151,8 @@ class SimpleCmd():
                         thisArgPredicted = argSig[aIndex].data[0] > 0.5
                         if thisArgPredicted and arg.argtype.requires_value:
                             value_forward = arg.model_data['value_forward']
-                            valueProcessedEncoding = value_forward(encodings[i])
+                            valueBottleneck = self.value_transform_bottleneck(encodings[i])
+                            valueProcessedEncoding = value_forward(valueBottleneck) + encodings[i]
                             predVal = arg.argtype.eval_value(valueProcessedEncoding, self.run_context, self, nlexamples[i])
                         else:
                             predVal = thisArgPredicted

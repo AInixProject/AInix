@@ -6,6 +6,7 @@ class RunContext():
     """This class stores data useful during the run of models"""
     def __init__(self, std_word_size, nl_field, cmd_field, program_descriptions, use_cuda, batch_size = 1, debug = False, quiet_mode = False):
         self.std_word_size = std_word_size
+        self.small_word_size = int(std_word_size / 4)
         self.nl_field = nl_field
         self.cmd_field = cmd_field
         self.descriptions = program_descriptions
