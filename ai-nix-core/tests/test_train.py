@@ -161,3 +161,25 @@ def test_case_sensitive():
     bashmetric = BashMetric()
     train.eval_model(meta_model, train_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98, "Did not fully learn to gen case sensitive"
+
+def test_fill_multival():
+    aArg = Argument("a", "Stringlike")
+    bArg = Argument("b", "Stringlike")
+    cow = AIProgramDescription(
+        name = "foo",
+        arguments = [aArg, bArg]
+    )
+    data = [
+        ("how are you", "foo -a good -b bad"),
+        ("are you good or bad", "foo -a good -b bad"),
+        ("flip please", "foo -a bad -b good")
+    ] * 100
+    random.shuffle(data)
+    # Do training
+    train_output = train.run_with_data_list(data, [cow], False, quiet_mode = True, num_epochs = 3)
+    meta_model, final_state, train_iter, val_iter = train_output
+    
+    # eval the model. Expect should get basically perfect progam picking
+    bashmetric = BashMetric()
+    train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
+    assert bashmetric.exact_match_acc() >= 0.98

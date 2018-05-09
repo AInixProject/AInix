@@ -20,6 +20,7 @@ class SimpleCmd():
         all_arg_params = []
         for prog in run_context.descriptions:
             all_top_v = []
+            all_value_v = []
             if prog.arguments is None:
                 continue
             for arg in prog.arguments:
@@ -27,6 +28,11 @@ class SimpleCmd():
                 all_top_v.append(topv)
                 all_arg_params.append(topv)
                 arg.model_data = {"top_v": topv} 
+                if arg.argtype.requires_value:
+                    valuev = nn.Linear(run_context.std_word_size, run_context.std_word_size)
+                    all_value_v.append(valuev)
+                    all_arg_params.extend(list(valuev.parameters()))
+                    arg.model_data['value_forward'] = valuev
             prog.model_data_grouped = {"top_v": torch.stack(all_top_v) if all_top_v else None}
 
         # Create layers
@@ -85,7 +91,9 @@ class SimpleCmd():
                     if arg_node.present and arg_node.value is not None:
                         argtype = arg_node.arg.argtype
                         parsed_value = argtype.parse_value(arg_node.value, self.run_context, nlexamples[i])
-                        loss += argtype.train_value(encodings[i], parsed_value, self.run_context, self)
+                        value_forward = arg_node.arg.model_data['value_forward']
+                        valueProcessedEncoding = value_forward(encodings[i])
+                        loss += argtype.train_value(valueProcessedEncoding, parsed_value, self.run_context, self)
 
             # Try and predict if there will be a next node
             joinNodePred = F.log_softmax(self.predictJoinNode(encodingsAndHidden), dim=1)
@@ -138,7 +146,9 @@ class SimpleCmd():
                     for aIndex, arg in enumerate(predProgragmD.arguments):
                         thisArgPredicted = argSig[aIndex].data[0] > 0.5
                         if thisArgPredicted and arg.argtype.requires_value:
-                            predVal = arg.argtype.eval_value(encodings[i], self.run_context, self, nlexamples[i])
+                            value_forward = arg.model_data['value_forward']
+                            valueProcessedEncoding = value_forward(encodings[i])
+                            predVal = arg.argtype.eval_value(valueProcessedEncoding, self.run_context, self, nlexamples[i])
                         else:
                             predVal = thisArgPredicted
 
