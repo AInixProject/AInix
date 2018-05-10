@@ -102,12 +102,15 @@ class SimpleCmd():
                     if arg_node.present and arg_node.value is not None:
                         argtype = arg_node.arg.argtype
                         parsed_value = argtype.parse_value(arg_node.value, self.run_context, nlexamples[i])
-                        value_forward = arg_node.arg.model_data['value_forward']
                         # Go through type transform 
                         typeBottleneck = self.type_transform_bottleneck(encodings[i])
-                        typeProcessedEncoding = value_forward(typeBottleneck) + encodings[i]
+                        typeBottleneck = F.relu(typeBottleneck, inplace = True)
+                        type_transform = self.arg_type_transforms[arg_node.arg.type_name]
+                        typeProcessedEncoding = type_transform(typeBottleneck) + encodings[i]
                         # Go through the value transform
                         valueBottleneck = self.value_transform_bottleneck(typeProcessedEncoding)
+                        valueBottleneck = F.relu(valueBottleneck, inplace = True)
+                        value_forward = arg_node.arg.model_data['value_forward']
                         valueProcessedEncoding = value_forward(valueBottleneck) + typeProcessedEncoding
                         # predict
                         loss += argtype.train_value(valueProcessedEncoding, parsed_value, self.run_context, self)
@@ -163,12 +166,15 @@ class SimpleCmd():
                     for aIndex, arg in enumerate(predProgragmD.arguments):
                         thisArgPredicted = argSig[aIndex].data[0] > 0.5
                         if thisArgPredicted and arg.argtype.requires_value:
-                            value_forward = arg.model_data['value_forward']
                             # Go through type transform 
                             typeBottleneck = self.type_transform_bottleneck(encodings[i])
-                            typeProcessedEncoding = value_forward(typeBottleneck) + encodings[i]
+                            typeBottleneck = F.relu(typeBottleneck, inplace = True)
+                            type_transform = self.arg_type_transforms[arg.type_name]
+                            typeProcessedEncoding = type_transform(typeBottleneck) + encodings[i]
                             # Go through the value transform
                             valueBottleneck = self.value_transform_bottleneck(typeProcessedEncoding)
+                            valueBottleneck = F.relu(valueBottleneck, inplace = True)
+                            value_forward = arg.model_data['value_forward']
                             valueProcessedEncoding = value_forward(valueBottleneck) + typeProcessedEncoding
                             # predict
                             predVal = arg.argtype.eval_value(valueProcessedEncoding, self.run_context, self, nlexamples[i])
