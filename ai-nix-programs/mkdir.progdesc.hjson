@@ -3,6 +3,10 @@
   arguments:
   [
     {
+      name: p
+      type: StoreTrue
+    }
+    {
       name: fileList
       type: FileList
       position: 0
@@ -41,6 +45,26 @@
       cmd:
       [
         mkdir .cache
+      ]
+    }
+    {
+      lang:
+      [
+        make a directory named [-[DIRNAME]-]
+      ]
+      cmd:
+      [
+        mkdir [-[DIRNAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        make a directory named test in ~
+      ]
+      cmd:
+      [
+        mkdir ~/test
       ]
     }
   ]

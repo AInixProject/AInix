@@ -9,6 +9,7 @@ import pudb
 import csv
 import constants
 from collections import Counter, OrderedDict
+import tokenizers
 
 class ReplacementError(ValueError):
     pass
@@ -142,7 +143,6 @@ class NLField(torchtext.data.Field):
             x = self.tokenize(x.rstrip('\n'))
         if self.lower:
             x = Pipeline(six.text_type.lower)(x)
-
 
         if self.preprocessing is not None:
             return self.preprocessing(x)

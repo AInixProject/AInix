@@ -256,6 +256,16 @@
     {
       lang:
       [
+        delete all pyc files
+      ]
+      cmd:
+      [
+        rm *.pyc
+      ]
+    }
+    {
+      lang:
+      [
         remove [-[1=FILENAME]-], [-[2=FILENAME]-] and [-[3=FILENAME]-]
       ]
       cmd:

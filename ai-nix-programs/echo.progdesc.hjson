@@ -43,5 +43,16 @@
         echo hello
       ]
     }
+    {
+      lang:
+      [
+        print my home directory
+        where is my home directory
+      ]
+      cmd:
+      [
+        echo ~
+      ]
+    }
   ]
 }

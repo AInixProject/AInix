@@ -3,11 +3,7 @@ from program_description import Argument, AIProgramDescription
 from cmd_parse import CmdParser, CmdParseError
 from bashmetrics import BashMetric
 import argparse
-def nonascii_untokenize(s):
-    s = s.replace(" ", "")
-    s = s.replace("<SPACE>", " ")
-    return s
-
+import tokenizers
 
 parsefaildesc = AIProgramDescription(
     name = "astparsefail", arguments = []
@@ -20,9 +16,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(args)
     with open(args.eval) as file:
-        eval_parses = [nonascii_untokenize(l.strip()) for l in file]
+        eval_parses = [tokenizers.nonascii_untokenize(l.strip()) for l in file]
     with open(args.ground_truth) as file:
-        gt_parses = [nonascii_untokenize(l.strip()) for l in file]
+        gt_parses = [tokenizers.nonascii_untokenize(l.strip()) for l in file]
 
     parser = CmdParser(sampledata.all_descs + [parsefaildesc])
     metric = BashMetric()

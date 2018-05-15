@@ -1,6 +1,7 @@
 SOS = "<SOS>"
 EOS = "<EOS>"
 UNK = "<UNK>"
+SPACE = "<SPACE>"
 
 COPY_TOKENS = tuple(["COPY_P%d" % c for c in range(10)])
 # This is the max number of nodes in a compound command. 

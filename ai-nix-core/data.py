@@ -1,6 +1,7 @@
 from program_description import Argument, AIProgramDescription
 import program_description
 from custom_fields import Replacer, ReplacementGroup, Replacement
+import tokenizers
 import random
 import glob
 
@@ -18,7 +19,8 @@ for desc in all_descs:
 random.shuffle(all_data)
 
 filename_repl = ReplacementGroup('FILENAME', Replacement.from_tsv("./data/FILENAME.tsv"))
-replacer = Replacer([filename_repl])
+dirname_repl = ReplacementGroup('DIRNAME', Replacement.from_tsv("./data/DIRNAME.tsv"))
+replacer = Replacer([filename_repl, dirname_repl])
 
 def get_all_data_replaced(num_duplicates = 1, num_val_duplicates = None, trainsplit = .7):
     train = all_data[:int(len(all_data)*trainsplit)]*num_duplicates
@@ -29,5 +31,18 @@ def get_all_data_replaced(num_duplicates = 1, num_val_duplicates = None, trainsp
     replaced_val = [replacer.strings_replace(*d) for d in val]
     return replaced_train, replaced_val
 
+def get_all_data_from_files(train_nl, train_cmd, val_nl, val_cmd):
+    with open(train_nl) as file:
+        train_nl = [tokenizers.nonascii_untokenize(l.strip()) for l in file]
+    with open(train_cmd) as file:
+        train_cmd = [tokenizers.nonascii_untokenize(l.strip()) for l in file]
+    with open(val_nl) as file:
+        val_nl = [tokenizers.nonascii_untokenize(l.strip()) for l in file]
+    with open(val_cmd) as file:
+        val_cmd = [tokenizers.nonascii_untokenize(l.strip()) for l in file]
+    return zip(train_nl, train_cmd), zip(val_nl, val_cmd)
+
 if __name__ == "__main__":
     print("Found %d examples and %d descriptions" % (len(all_data), len(all_descs)))
+    print(list(map(list, get_all_data_from_files("./splits/src-train.txt", "./splits/trg-val.txt",
+            "./splits/src-val.txt", "./splits/trg-val.txt"))))

@@ -36,7 +36,8 @@ class SimpleCmd():
                     arg.model_data['value_forward'] = valuev
                 # See if this arg has a type we haven't seen before and create a type transform for it
                 if arg.type_name not in self.arg_type_transforms:
-                    typeTransform = nn.Linear(run_context.small_word_size, run_context.std_word_size)
+                    typeTransform = nn.Linear(run_context.small_word_size, 
+                        run_context.std_word_size)
                     all_arg_params.extend(list(typeTransform.parameters()))
                     self.arg_type_transforms[arg.type_name] = typeTransform
             prog.model_data_grouped = {"top_v": torch.stack(all_top_v) if all_top_v else None}
@@ -86,8 +87,10 @@ class SimpleCmd():
             expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands) 
             encodingsAndHidden = encodings + output_states
             pred = self.predictProgram(encodingsAndHidden)
-            loss = self.criterion(pred, expectedProgIndicies)
-            
+            try:
+                loss = self.criterion(pred, expectedProgIndicies)
+            except:
+                pudb.set_trace()
             incomplete_asts = []
             incomplete_next_hiddens = []
             for i, (firstCmd, newAst) in enumerate(zip(firstCommands, newAsts)):
@@ -132,9 +135,9 @@ class SimpleCmd():
                 non_end_mask = expectedIndex != EndOfCommandNode.join_type_index
                 non_end_encodings = encodings[non_end_mask]
                 non_end_hiddens = self.predictNextJoinHidden(encodingsAndHidden[non_end_mask])
-                if len(non_end_asts) == 1:
-                    non_end_encodings = non_end_encodings.unsqueeze(0)
-                    non_end_hiddens = non_end_hiddens.unsqueeze(0)
+                #if len(non_end_asts) == 1:
+                #    non_end_encodings = non_end_encodings.unsqueeze(0)
+                #    non_end_hiddens = non_end_hiddens.unsqueeze(0)
                 loss += train_predict_command(non_end_encodings, non_end_asts, non_end_hiddens)
 
             return loss
@@ -144,7 +147,7 @@ class SimpleCmd():
         loss.backward()
         self.optimizer.step()
 
-        return loss.data[0]
+        return loss.data.item()
 
     def eval_step(self, engine, batch):
         self.all_modules.eval()
@@ -157,14 +160,14 @@ class SimpleCmd():
             predPrograms = self.predictProgram(encodings)
             vals, predProgramsMaxs =  predPrograms.max(1)
             # Go through and predict each argument
-            predProgramDescs = [self.run_context.descriptions[m.data[0]] for m in predProgramsMaxs]
+            predProgramDescs = [self.run_context.descriptions[m.data.item()] for m in predProgramsMaxs]
             for i, predProgragmD in enumerate(predProgramDescs):
                 setArgs = []
                 if len(predProgragmD.arguments) > 0:
                     argDots = torch.mv(predProgragmD.model_data_grouped['top_v'], encodings[i])
                     argSig = F.sigmoid(argDots)
                     for aIndex, arg in enumerate(predProgragmD.arguments):
-                        thisArgPredicted = argSig[aIndex].data[0] > 0.5
+                        thisArgPredicted = argSig[aIndex].data.item() > 0.5
                         if thisArgPredicted and arg.argtype.requires_value:
                             # Go through type transform 
                             typeBottleneck = self.type_transform_bottleneck(encodings[i])
@@ -197,9 +200,9 @@ class SimpleCmd():
                 non_end_mask = joinNodePreds != EndOfCommandNode.join_type_index
                 non_end_encodings = encodings[non_end_mask]
                 non_end_hiddens = self.predictNextJoinHidden(encodingsAndHidden[non_end_mask])
-                if len(not_done_compound_nodes) == 1:
-                    non_end_encodings = non_end_encodings.unsqueeze(0)
-                    non_end_hiddens = non_end_hiddens.unsqueeze(0)
+                #if len(not_done_compound_nodes) == 1:
+                #    non_end_encodings = non_end_encodings.unsqueeze(0)
+                #    non_end_hiddens = non_end_hiddens.unsqueeze(0)
                 eval_predict_command(non_end_encodings, non_end_hiddens, not_done_compound_nodes)
 
         encodings = self.encoder(query)
@@ -221,8 +224,9 @@ class SimpleCmd():
         for di in range(1, target_length):
             decoder_output, decoder_hidden = self.decoder(
                 decoder_input, decoder_hidden)
-            loss += criterion(decoder_output, expected_tensor[0][di])
-            decoder_input = expected_tensor[0][di]  # Teacher forcing
+            expected = expected_tensor[0][di].unsqueeze(0)
+            loss += criterion(decoder_output, expected)
+            decoder_input = expected  # Teacher forcing
         return loss
     
     def std_decode_eval(self, encodeing, run_context, max_length = 5):

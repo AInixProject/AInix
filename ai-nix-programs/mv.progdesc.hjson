@@ -1,0 +1,119 @@
+{
+  name: mv
+  arguments:
+  [
+    {
+      name: srcs
+      type: FileList
+      position: 0
+    }
+    {
+      name: dest
+      type: SingleFile
+      position: 1
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        move [-[1=FILENAME]-] to [-[2=FILENAME]-]
+        rename [-[1=FILENAME]-] to be [-[2=FILENAME]-]
+        change the name of [-[1=FILENAME]-] to be [-[2=FILENAME]-]
+        set the name of [-[1=FILENAME]-] to [-[2=FILENAME]-]
+      ]
+      cmd:
+      [
+        mv [-[$1]-] [-[$2]-]
+      ]
+    }
+    {
+      lang:
+      [
+        move [-[1=DIRNAME]-] to [-[2=DIRNAME]-]
+        rename [-[1=DIRNAME]-] to be [-[2=DIRNAME]-]
+        set the name of [-[1=DIRNAME]-] to [-[2=DIRNAME]-]
+      ]
+      cmd:
+      [
+        mv [-[$1]-] [-[$2]-]
+      ]
+    }
+    {
+      lang:
+      [
+        move [-[1=FILENAME]-] to [-[2=DIRNAME]-]
+        move [-[1=FILENAME]-] into [-[2=DIRNAME]-]
+      ]
+      cmd:
+      [
+        mv [-[$1]-] [-[$2]-]
+      ]
+    }
+    {
+      lang:
+      [
+        move [-[1=FILENAME]-] and [-[2=FILENAME]-] to [-[DIRNAME]-]
+        move [-[1=FILENAME]-] [-[2=FILENAME]-] into [-[DIRNAME]-]
+      ]
+      cmd:
+      [
+        mv [-[$1]-] [-[$2]-] [-[DIRNAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        move [-[1=FILENAME]-] to parent directory
+        move [-[1=FILENAME]-] up one dir
+      ]
+      cmd:
+      [
+        mv [-[$1]-] ..
+      ]
+    }
+    {
+      lang:
+      [
+        move all text files into [-[DIRNAME]-]
+        mv al txt files into [-[DIRNAME]-]
+        #  ^ this is a spelling mistake, but just going to leave it
+      ]
+      cmd:
+      [
+        mv *.txt [-[DIRNAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        move all text files in parent directory into [-[DIRNAME]-]
+      ]
+      cmd:
+      [
+        mv ../*.txt [-[DIRNAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        move all png and jpg files into [-[DIRNAME]-]
+      ]
+      cmd:
+      [
+        mv *.png *.jpg [-[DIRNAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        move all python files here into [-[DIRNAME]-]
+      ]
+      cmd:
+      [
+        mv *.py [-[DIRNAME]-]
+      ]
+    }
+  ]
+}

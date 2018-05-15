@@ -212,6 +212,7 @@
         ls sort by time & date
         list files sort by date/time
         ls order files based on last modified time
+        list files with newest file first
       ]
       cmd:
       [
@@ -333,6 +334,7 @@
     {
       lang:
       [
+        ls but only list directories
         list directories only
         list directory entries only
       ]
@@ -425,6 +427,8 @@
       lang:
       [
         ls order files based on last modified time in dec-ending order
+        list files here ordering by last mod time with oldest files first
+        ls -l sorted by last modified time oldest first
       ]
       cmd:
       [
@@ -445,6 +449,7 @@
       lang:
       [
         list all jpg files here
+        ls all jpg files
       ]
       cmd:
       [
@@ -519,6 +524,17 @@
       cmd:
       [
         ls pictures ~
+      ]
+    }
+    {
+      lang:
+      [
+        what files are in [-[DIRNAME]-]
+        list the files that are in [-[DIRNAME]-]
+      ]
+      cmd:
+      [
+        ls [-[DIRNAME]-]
       ]
     }
   ]

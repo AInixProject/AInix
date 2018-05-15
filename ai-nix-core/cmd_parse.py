@@ -14,12 +14,11 @@ class ArgumentNode():
 
         # Filled in by model
         self.parsed_value = None
-        
 
     def __repr__(self):
         out = "<ArgumentNode: "
         out += self.arg.name
-        out += " NOT present" if self.present else " IS present"
+        out += " IS present" if self.present else " NOT present"
         if self.present and self.value is not None:
             out += " val=" + self.value
         return out 
@@ -199,7 +198,7 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         elif k == 'pipe':
             return PipeNode()
         else:
-            raise CmdParseError("Unexpected kind", k)
+            raise CmdParseError("Unexpected kind", k, n)
 
     def parse(self, cmd):
         lexedProgram = bashlex.parse(cmd)
