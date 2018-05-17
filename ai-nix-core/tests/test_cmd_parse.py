@@ -172,7 +172,7 @@ def test_val_arg():
     assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,0,1,1])))
 
     out = parser.parse("valprog -ba -c \"foo bar\" main.c")
-    assert out[0].arguments[2].value == "foo bar"
+    assert out[0].arguments[2].value == '"foo bar"'
     assert out[0].arguments[3].value == "main.c"
     assert out[0].arg_present_tensor.equal(Variable(torch.FloatTensor([1,1,1,1])))
 
@@ -257,8 +257,6 @@ def test_as_shell_pipe():
     out = parser.parse("valprog -c foo | posandtwo")
     assert out.as_shell_string() == "valprog -c foo | posandtwo"
 
-
-@pytest.mark.skip(reason="will need to fix this when implement custom parser")
 def test_as_shell_string_quotes():
     parser = CmdParser([valprog])
     out = parser.parse("valprog -c \"foo bar\" main.c")

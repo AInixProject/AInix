@@ -108,8 +108,25 @@ class CmdParser(): #bashlex.ast.nodevisitor):
 
         return False
     
+    def _expand_quotes(self, cmd_part):
+        """This takes in a bashlex part and returns a string of the word. It adds
+        quotes as needed. If a word was quoted but it doesn't contain anything
+        that is effected by the quote, the quotes are removed."""
+        word = cmd_part.word
+        tilde = "~" in word
+        space = " " in word
+        # TODO (DNGros): this is a hack. Should look in ast for a var or cmd substitution
+        dollar = "$" in word
+        glob = "*" in word
+        backtick = "`" in word
+        if cmd_part.doublequoted and (tilde or space or glob):
+            return '"' + word + '"'
+        elif cmd_part.singlequoted and (tilde or space or dollar or glob or backtick):
+            return "'" + word + "'"
+        return word
+
     def _getopt(self, cmd_desc, cmd_parts):
-        """custom modification of getopt to based off a bashlex ast and stuff like cmd substitution"""
+        """custom modification of getopt to based off a bashlex ast"""
         # build the optstring
         optstring = []
         longargs = []
@@ -127,7 +144,7 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         optstring = ''.join(optstring)
 
         # figure out what the input args are
-        inargs = [p.word for p in cmd_parts]
+        inargs = [self._expand_quotes(p) for p in cmd_parts]
 
         # use normal getopt to parse
         optlist, args = getopt.getopt(inargs, optstring, longargs)
@@ -146,7 +163,8 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         for argIndex, arg in enumerate(positional_args):
             if arg.argtype.is_multi_word:
                 new_val = []
-                for i in range(len(remaining_words) - (len(positional_args) - argIndex - 1)):
+                num_words_to_take = len(remaining_words) - (len(positional_args) - argIndex - 1) 
+                for i in range(num_words_to_take):
                     if len(remaining_words) == 0 and arg.required:
                         raise ValueError("Error when parsing positional args. \
                                 No remaining words for multi consume")

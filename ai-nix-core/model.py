@@ -232,7 +232,7 @@ class SimpleCmd():
 
         decoder_hidden = encodeing.view(1,1,-1) # double unsqueeze
         target_length = expected_tensor.size()[1]
-        for di in range(1, target_length):
+        for di in range(1, target_length): # start at 1 b/c of SOS token
             decoder_output, decoder_hidden = self.decoder(
                 decoder_input, decoder_hidden)
             expected = expected_tensor[0][di].unsqueeze(0)
@@ -240,7 +240,7 @@ class SimpleCmd():
             decoder_input = expected  # Teacher forcing
         return loss
     
-    def std_decode_eval(self, encodeing, run_context, max_length = 5):
+    def std_decode_eval(self, encodeing, run_context, max_length = 12):
         decoder_input = Variable(torch.LongTensor([[run_context.nl_field.vocab.stoi[constants.SOS]]]))  
         decoder_input = decoder_input.cuda() if run_context.use_cuda else decoder_input
 

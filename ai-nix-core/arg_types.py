@@ -1,4 +1,5 @@
 import constants
+import tokenizers
 class ArgumentType():
     def __init__(self):
         self.model_data = None
@@ -49,7 +50,7 @@ class Stringlike(ArgumentType):
             else:
                 copied.append(p)
 
-        return " ".join(copied)
+        return tokenizers.nonascii_untokenize(" ".join(copied))
 
     def as_shell_string(self, value):
         return value

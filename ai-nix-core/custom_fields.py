@@ -189,6 +189,7 @@ class NLField(torchtext.data.Field):
             tok for tok in [self.unk_token, self.pad_token, self.init_token,
                             self.eos_token]
             if tok is not None))
+        specials += [constants.SPACE]
         specials += constants.COPY_TOKENS
         self.vocab = self.vocab_cls(counter, specials=specials, **kwargs)
 

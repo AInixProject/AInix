@@ -1,7 +1,11 @@
 """Module defines several useful for evaluating effectiveness of the system"""
+from __future__ import print_function
 from ignite.metrics import CategoricalAccuracy, Loss, Metric
 import pudb
 from cmd_parse import ProgramNode, EndOfCommandNode
+from colorama import init
+init()
+from colorama import Fore, Back, Style
 class BashMetric(Metric):
     def reset(self):
         self._num_examples = 0
@@ -45,15 +49,23 @@ class BashMetric(Metric):
 
                             if gtArg.value is not None:
                                 self._num_values_seen += 1
-                                print("expected value", gtArg.value, " got arg value", pArg.value)
+                                #print("expected value", gtArg.value, " got arg value", pArg.value)
                                 if gtArg.value == pArg.value:
                                     self._num_values_exact_match += 1
                                 else:
                                     fullMatch = False
+                    else:
+                        fullMatch = False
                 isFirstCommand = False
 
             if fullMatch:
                 self._num_exact_match += 1
+
+            print("---")
+            print(Fore.GREEN if fullMatch else Fore.RED, end = '')
+            print("Epected:", gt.as_shell_string())
+            print("Predicted:", p.as_shell_string())
+            print(Style.RESET_ALL, end='')
 
 
     def first_cmd_acc(self):

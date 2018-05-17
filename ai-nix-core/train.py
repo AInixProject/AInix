@@ -25,14 +25,15 @@ import constants
 import random
 import tokenizers
 
-LOG_INTERVAL = 1
+LOG_INTERVAL = 50
 
 def build_dataset(train, val, descs, use_cuda, test = None):
     datasplits = [x for x in (train, val, test) if x is not None]
     NL_field = NLField(lower=False, include_lengths=True,
         batch_first=True, 
         init_token = constants.SOS, eos_token = constants.EOS, unk_token = constants.UNK,
-        tensor_type = torch.cuda.LongTensor if use_cuda else torch.LongTensor)
+        tensor_type = torch.cuda.LongTensor if use_cuda else torch.LongTensor,
+        tokenize = tokenizers.nonascii_tokenizer)
     Command_field = CommandField(descs, use_cuda)
 
     fields = [('nl', NL_field), ('command', Command_field)]
@@ -44,7 +45,7 @@ def build_dataset(train, val, descs, use_cuda, test = None):
             splitexamples.append(torchtext.data.Example.fromlist([x, y], fields))
         datasets.append(torchtext.data.Dataset(splitexamples, fields))
 
-    NL_field.build_vocab(datasets[0], max_size=1000)
+    NL_field.build_vocab(datasets[0], max_size=1000, min_freq = 1)
 
     return tuple(datasets), fields
 
@@ -136,5 +137,5 @@ if __name__ == "__main__":
             "./splits/src-train.txt", "./splits/trg-train.txt",
             "./splits/src-val.txt", "./splits/trg-val.txt")
     run_with_specific_split(train, val, sampledata.all_descs, use_cuda,
-            quiet_mode = False, num_epochs=50//num_train_duplicates)
+            quiet_mode = False, num_epochs=100//num_train_duplicates)
 
