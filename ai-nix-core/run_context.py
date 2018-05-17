@@ -16,6 +16,7 @@ class RunContext():
         self.batch_size = batch_size
         self.debug = debug
         self.quiet_mode = quiet_mode
+        self.device = torch.device("cuda" if self.use_cuda else "cpu")
 
         # Set the program index on all programs.
         # TODO (dngros): figure out a way to do this without mutate program_descriotiosn

@@ -33,7 +33,7 @@ def build_dataset(train, val, descs, use_cuda, test = None):
         batch_first=True, 
         init_token = constants.SOS, eos_token = constants.EOS, unk_token = constants.UNK,
         tensor_type = torch.cuda.LongTensor if use_cuda else torch.LongTensor)
-    Command_field = CommandField(descs)
+    Command_field = CommandField(descs, use_cuda)
 
     fields = [('nl', NL_field), ('command', Command_field)]
     examples_per_split = [[] for l in datasplits]
@@ -66,8 +66,8 @@ def run_train(meta_model, train_iter, val_iter, run_context, test = None, num_ep
     #print(textVocabLen)
     #labelVocabLen = len(LABEL.vocab.itos)
     #print("nl vocab", NL_field.vocab.itos)
-    numOfBatchesPerEpoch = math.ceil(len(train_iter)/run_context.batch_size)
-    numOfBatchesPerEpochVAL = math.ceil(len(val_iter)/run_context.batch_size)
+    numOfBatchesPerEpoch = len(train_iter)
+    numOfBatchesPerEpochVAL = len(val_iter)
 
     trainer = Engine(meta_model.train_step)
 
@@ -85,6 +85,8 @@ def run_train(meta_model, train_iter, val_iter, run_context, test = None, num_ep
             state = engine.state
             bashmetric = BashMetric()
             eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
+            print("num val examples seen", bashmetric._num_examples)
+            print("num values seen", bashmetric._num_values_seen)
             print("""Validation Results - Epoch: {} 
                 FirstCmdAcc: {:.2f} ArgAcc: {:.2f} ValExactAcc: {:.2f} ExactAcc: {:.2f}"""
                 .format(state.epoch, bashmetric.first_cmd_acc(), bashmetric.arg_acc(),
@@ -129,10 +131,10 @@ if __name__ == "__main__":
     use_cuda = False #torch.cuda.is_available()
     #run_with_data_list(sampledata.all_data, sampledata.all_descs, use_cuda)
     num_train_duplicates = 5
-    train, val = sampledata.get_all_data_replaced(num_train_duplicates,2)
-    #train, val = sampledata.get_all_data_from_files(
-    #        "./splits/src-train.txt", "./splits/trg-train.txt",
-    #        "./splits/src-val.txt", "./splits/trg-val.txt")
+    #train, val = sampledata.get_all_data_replaced(num_train_duplicates,2)
+    train, val = sampledata.get_all_data_from_files(
+            "./splits/src-train.txt", "./splits/trg-train.txt",
+            "./splits/src-val.txt", "./splits/trg-val.txt")
     run_with_specific_split(train, val, sampledata.all_descs, use_cuda,
             quiet_mode = False, num_epochs=50//num_train_duplicates)
 

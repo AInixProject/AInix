@@ -196,9 +196,9 @@ class CommandField(torchtext.data.RawField):
     """A torch text field specifically for commands. Will parse
     the raw string commands into an AST and label programs into
     catagories"""
-    def __init__(self, descriptions):
+    def __init__(self, descriptions, use_cuda):
         self.descriptions = descriptions
-        self.cmd_parser = cmd_parse.CmdParser(descriptions)
+        self.cmd_parser = cmd_parse.CmdParser(descriptions, use_cuda = use_cuda)
 
     def preprocess(self, x):
         # Use code from torchtext Textfield to make sure unicode

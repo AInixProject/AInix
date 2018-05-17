@@ -31,6 +31,8 @@ class SimpleCmd():
                 arg.model_data = {"top_v": topv} 
                 if arg.argtype.requires_value:
                     valuev = nn.Linear(run_context.small_word_size, run_context.std_word_size)
+                    if run_context.use_cuda:
+                        valuev.cuda()
                     all_value_v.append(valuev)
                     all_arg_params.extend(list(valuev.parameters()))
                     arg.model_data['value_forward'] = valuev
@@ -38,6 +40,8 @@ class SimpleCmd():
                 if arg.type_name not in self.arg_type_transforms:
                     typeTransform = nn.Linear(run_context.small_word_size, 
                         run_context.std_word_size)
+                    if run_context.use_cuda:
+                        typeTransform.cuda()
                     all_arg_params.extend(list(typeTransform.parameters()))
                     self.arg_type_transforms[arg.type_name] = typeTransform
             prog.model_data_grouped = {"top_v": torch.stack(all_top_v) if all_top_v else None}
@@ -85,7 +89,10 @@ class SimpleCmd():
         def train_predict_command(encodings, gt_ast, output_states):
             firstCommands, newAsts = zip(*[a.pop_front() for a in gt_ast])
             expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands) 
-            encodingsAndHidden = encodings + output_states
+            try:
+                encodingsAndHidden = encodings + output_states
+            except:
+                pudb.set_trace()
             pred = self.predictProgram(encodingsAndHidden)
             try:
                 loss = self.criterion(pred, expectedProgIndicies)
@@ -142,7 +149,9 @@ class SimpleCmd():
 
             return loss
 
-        loss += train_predict_command(encodings, ast, Variable(torch.zeros(len(query), self.run_context.std_word_size), requires_grad = False))
+        starting_hidden = torch.zeros(len(query), self.run_context.std_word_size, 
+                requires_grad = False, device = self.run_context.device)
+        loss += train_predict_command(encodings, ast, starting_hidden)
 
         loss.backward()
         self.optimizer.step()
@@ -208,7 +217,9 @@ class SimpleCmd():
         encodings = self.encoder(query)
         pred = [CompoundCommandNode() for b in ast]
 
-        eval_predict_command(encodings, Variable(torch.zeros(len(query), self.run_context.std_word_size)), pred)
+        starting_hidden = torch.zeros(len(query), self.run_context.std_word_size, 
+                requires_grad = False, device = self.run_context.device)
+        eval_predict_command(encodings, starting_hidden, pred)
 
         return pred, batch.command
 
