@@ -132,10 +132,10 @@ if __name__ == "__main__":
     use_cuda = False #torch.cuda.is_available()
     #run_with_data_list(sampledata.all_data, sampledata.all_descs, use_cuda)
     num_train_duplicates = 5
-    #train, val = sampledata.get_all_data_replaced(num_train_duplicates,2)
-    train, val = sampledata.get_all_data_from_files(
-            "./splits/src-train.txt", "./splits/trg-train.txt",
-            "./splits/src-val.txt", "./splits/trg-val.txt")
+    train, val = sampledata.get_all_data_replaced(num_train_duplicates,2)
+    #train, val = sampledata.get_all_data_from_files(
+    #        "./splits/src-train.txt", "./splits/trg-train.txt",
+    #        "./splits/src-val.txt", "./splits/trg-val.txt")
     run_with_specific_split(train, val, sampledata.all_descs, use_cuda,
             quiet_mode = False, num_epochs=100//num_train_duplicates)
 

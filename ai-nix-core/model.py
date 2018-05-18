@@ -10,6 +10,7 @@ import itertools
 import math
 from cmd_parse import ProgramNode, ArgumentNode, EndOfCommandNode, PipeNode, CompoundCommandNode
 import constants
+import tokenizers
 
 class SimpleCmd():
     def __init__(self, run_context):
@@ -218,7 +219,13 @@ class SimpleCmd():
                 requires_grad = False, device = self.run_context.device)
         eval_predict_command(encodings, starting_hidden, pred)
 
-        return pred, batch.command
+        def nltensor_to_string(tensor):
+            string_tokens = map(self.run_context.nl_field.vocab.itos.__getitem__, tensor) 
+            string_tokens = list(string_tokens)[1:-1] # remove SOS and EOS.
+            string = " ".join(string_tokens)
+            return tokenizers.nonascii_untokenize(string)  
+        queries_as_string = map(nltensor_to_string, query)
+        return pred, batch.command, queries_as_string
 
     def std_decode_train(self, encodeing, run_context, expected_tensor):
         decoder_input = Variable(torch.LongTensor([[run_context.nl_field.vocab.stoi[constants.SOS]]]))  

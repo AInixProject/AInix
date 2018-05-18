@@ -302,6 +302,7 @@
       lang:
       [
         ls sorted oldest to newest
+        ls sorted oldest to newest modified date
         ls with latest modified file or directory date as last
       ]
       cmd:
@@ -429,6 +430,8 @@
         ls order files based on last modified time in dec-ending order
         list files here ordering by last mod time with oldest files first
         ls -l sorted by last modified time oldest first
+        ls -lt in reverse
+        ls -lr by modified date
       ]
       cmd:
       [
@@ -535,6 +538,16 @@
       cmd:
       [
         ls [-[DIRNAME]-]
+      ]
+    }
+    {
+      lang:
+      [
+        list the files in [-[DIRNAME]-] sorted by file size
+      ]
+      cmd:
+      [
+        ls -lS [-[DIRNAME]-]
       ]
     }
   ]

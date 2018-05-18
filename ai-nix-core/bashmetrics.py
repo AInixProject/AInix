@@ -21,9 +21,9 @@ class BashMetric(Metric):
         self._num_values_exact_match = 0
 
     def update(self, output):
-        y_pred, y = output
+        y_pred, y, queries = output
         self._num_examples += len(y_pred)
-        for p, gt in zip(y_pred, y):
+        for p, gt, query in zip(y_pred, y, queries):
             isFirstCommand = True
             fullMatch = True
             for i, gtCmd in enumerate(gt):
@@ -62,9 +62,17 @@ class BashMetric(Metric):
                 self._num_exact_match += 1
 
             print("---")
-            print(Fore.GREEN if fullMatch else Fore.RED, end = '')
-            print(" Expected:", gt.as_shell_string())
-            print("Predicted:", p.as_shell_string())
+            if query is not None:
+                print(query)
+            if fullMatch:
+                print(Fore.GREEN, end='')
+                if gt.as_shell_string() != p.as_shell_string():
+                    print(" Expected:", gt.as_shell_string())
+                print("Predicted:", p.as_shell_string())
+            else:
+                print(Fore.RED, end='')
+                print(" Expected:", gt.as_shell_string())
+                print("Predicted:", p.as_shell_string())
             print(Style.RESET_ALL, end='')
 
 
