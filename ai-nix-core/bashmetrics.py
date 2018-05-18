@@ -20,6 +20,8 @@ class BashMetric(Metric):
         self._num_values_seen = 0
         self._num_values_exact_match = 0
 
+        self.seen_query_set = set()
+
     def update(self, output):
         y_pred, y, queries = output
         self._num_examples += len(y_pred)
@@ -61,19 +63,25 @@ class BashMetric(Metric):
             if fullMatch:
                 self._num_exact_match += 1
 
-            print("---")
-            if query is not None:
+            # Print some log information on whether we got it right or wrong
+            # The seen_query_set is used because we duplicate entries
+            # as a hacky way of doing the replacments. Examples without
+            # any replacements might appear multiple times. We don't want to
+            # print them again
+            if query not in self.seen_query_set:
+                print("---")
                 print(query)
-            if fullMatch:
-                print(Fore.GREEN, end='')
-                if gt.as_shell_string() != p.as_shell_string():
+                if fullMatch:
+                    print(Fore.GREEN, end='')
+                    if gt.as_shell_string() != p.as_shell_string():
+                        print(" Expected:", gt.as_shell_string())
+                    print("Predicted:", p.as_shell_string())
+                else:
+                    print(Fore.RED, end='')
                     print(" Expected:", gt.as_shell_string())
-                print("Predicted:", p.as_shell_string())
-            else:
-                print(Fore.RED, end='')
-                print(" Expected:", gt.as_shell_string())
-                print("Predicted:", p.as_shell_string())
-            print(Style.RESET_ALL, end='')
+                    print("Predicted:", p.as_shell_string())
+                print(Style.RESET_ALL, end='')
+                self.seen_query_set.add(query)
 
 
     def first_cmd_acc(self):
