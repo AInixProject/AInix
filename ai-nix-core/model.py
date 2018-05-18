@@ -89,15 +89,9 @@ class SimpleCmd():
         def train_predict_command(encodings, gt_ast, output_states):
             firstCommands, newAsts = zip(*[a.pop_front() for a in gt_ast])
             expectedProgIndicies = self.run_context.make_choice_tensor(firstCommands) 
-            try:
-                encodingsAndHidden = encodings + output_states
-            except:
-                pudb.set_trace()
+            encodingsAndHidden = encodings + output_states
             pred = self.predictProgram(encodingsAndHidden)
-            try:
-                loss = self.criterion(pred, expectedProgIndicies)
-            except:
-                pudb.set_trace()
+            loss = self.criterion(pred, expectedProgIndicies)
             incomplete_asts = []
             incomplete_next_hiddens = []
             for i, (firstCmd, newAst) in enumerate(zip(firstCommands, newAsts)):
@@ -139,7 +133,9 @@ class SimpleCmd():
                 if not isinstance(node, EndOfCommandNode):
                     non_end_asts.append(ast)
             if non_end_asts:
+                # Create a mask that is true everywhere which is not an end node
                 non_end_mask = expectedIndex != EndOfCommandNode.join_type_index
+                # Select those non-endings
                 non_end_encodings = encodings[non_end_mask]
                 non_end_hiddens = self.predictNextJoinHidden(encodingsAndHidden[non_end_mask])
                 #if len(non_end_asts) == 1:
@@ -166,7 +162,7 @@ class SimpleCmd():
         def eval_predict_command(encodings, output_states, cur_predictions):
             """Predicts one command. Called recursively for each command in compound command"""
             encodingsAndHidden = encodings + output_states
-            predPrograms = self.predictProgram(encodings)
+            predPrograms = self.predictProgram(encodingsAndHidden)
             vals, predProgramsMaxs =  predPrograms.max(1)
             # Go through and predict each argument
             predProgramDescs = [self.run_context.descriptions[m.data.item()] for m in predProgramsMaxs]
@@ -189,7 +185,8 @@ class SimpleCmd():
                             value_forward = arg.model_data['value_forward']
                             valueProcessedEncoding = value_forward(valueBottleneck) + typeProcessedEncoding
                             # predict
-                            predVal = arg.argtype.eval_value(valueProcessedEncoding, self.run_context, self, nlexamples[i])
+                            predVal = arg.argtype.eval_value(
+                                    valueProcessedEncoding, self.run_context, self, nlexamples[i])
                         else:
                             predVal = thisArgPredicted
 

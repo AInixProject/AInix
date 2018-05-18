@@ -63,7 +63,7 @@ class BashMetric(Metric):
 
             print("---")
             print(Fore.GREEN if fullMatch else Fore.RED, end = '')
-            print("Epected:", gt.as_shell_string())
+            print(" Expected:", gt.as_shell_string())
             print("Predicted:", p.as_shell_string())
             print(Style.RESET_ALL, end='')
 
