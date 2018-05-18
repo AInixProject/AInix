@@ -183,3 +183,33 @@ def test_fill_multival():
     bashmetric = BashMetric()
     train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98
+
+def test_non_bow():
+    """Test if can learn programs that based of queries that require something
+    stronger than a bag-of-words assumption"""
+    sad = AIProgramDescription(
+        name = "sad",
+    )
+    what = AIProgramDescription(
+        name = "what",
+    )
+    weird = AIProgramDescription(
+        name = "weird",
+    )
+    traindata = [
+        ("the dog bit bob", "sad"),
+        ("bob bit the dog", "weird"),
+        ("the bit dog bob", "what"),
+        ("bob dog the bit", "what"),
+    ]
+    valdata = traindata
+
+    # Do training
+    train_output = train.run_with_specific_split(traindata, valdata, [sad, what, weird], 
+            False, quiet_mode = True, num_epochs = 200)
+    meta_model, final_state, train_iter, val_iter = train_output
+    
+    # eval the model. Expect should get basically perfect progam picking
+    bashmetric = BashMetric()
+    train.eval_model(meta_model, train_iter, [(bashmetric, 'bashmetric')])
+    assert bashmetric.exact_match_acc() >= 0.98, "Did not fully learn non-bag-of-words"

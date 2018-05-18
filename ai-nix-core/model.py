@@ -160,7 +160,7 @@ class SimpleCmd():
         ast = batch.command
 
         def eval_predict_command(encodings, output_states, cur_predictions):
-            """Predicts one command. Called recursively for each command in compound command"""
+            """Predicts one command. Called recursively for each command in compound command (like a pipe)"""
             encodingsAndHidden = encodings + output_states
             predPrograms = self.predictProgram(encodingsAndHidden)
             vals, predProgramsMaxs =  predPrograms.max(1)
@@ -269,10 +269,17 @@ class SimpleEncodeModel(nn.Module):
 
         # forward pass stuff
         self.embed = nn.Embedding(nl_vocab_size, std_word_size)
+        self.conv1 = nn.Conv1d(std_word_size, std_word_size, 5, padding=2, groups = 8)
 
     def forward(self, x):
         x = self.embed(x)
-        x = x.mean(1)
+
+        # embed outputs (batch, length, channels). Conv expects (batch, channels, length)
+        x = x.permute(0,2,1)
+
+        x = self.conv1(x)
+        x = F.elu_(x)
+        x = x.mean(2) # condense sentence into single std_word_size vector
         return x
 
 class PredictProgramModel(nn.Module):
