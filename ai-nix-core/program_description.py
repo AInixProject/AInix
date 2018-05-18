@@ -116,6 +116,7 @@ class AIProgramDescription():
                     " has non-sequential positional arguments", actual_pos_numbers, 
                     ". Expect", expectedActualPosNumbers)
         self.positional_args = positional_args
+        # TODO (dngros): this should check if there are duplicate arguments with the same name
 
         # Program index is set during training to catagorize programs
         self.program_index = None

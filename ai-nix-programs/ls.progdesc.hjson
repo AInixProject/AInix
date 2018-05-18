@@ -55,10 +55,6 @@
       type: StoreTrue
     }
     {
-      name: d
-      type: StoreTrue
-    }
-    {
       name: fileList
       type: Stringlike
       position: 0
