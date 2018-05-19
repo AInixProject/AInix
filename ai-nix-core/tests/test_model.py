@@ -25,7 +25,7 @@ def test_arg_params_training():
     (train, val), fields = trainmodule.build_dataset(data[:-10], data[-10:], [cow], False)
     (_, nl_field), (_, cmd_field) = fields 
 
-    STD_WORD_SIZE = 5
+    STD_WORD_SIZE = 8
     batch_size = 1
     context = RunContext(STD_WORD_SIZE, nl_field, cmd_field, [cow], False,
             batch_size = batch_size, debug = True, quiet_mode = True)
