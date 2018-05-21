@@ -110,6 +110,7 @@ class NLExample():
         self.copy_to_sequence = {}
         newTok = []
         onCopyIndex = 0
+        # sdf
         for e in sequence:
             shouldHaveCopy = True
             shouldHaveCopy = shouldHaveCopy and (e in (constants.SOS, constants.EOS))

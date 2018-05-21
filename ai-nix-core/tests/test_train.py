@@ -149,6 +149,40 @@ def test_copy_in_quotes():
     train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98, "Did not generalize to val"
 
+def test_copy_long_seq():
+    posArg = Argument("aposarg", "Stringlike", position = 0)
+    cow = AIProgramDescription(
+        name = "hello",
+        arguments = [posArg]
+    )
+    traindata = [
+        ("my name is a/b/c", "hello a/b/c"),
+        ("my name is ab91.sb01", "hello ab91.sb01"),
+        ("my name is John", "hello John"),
+        ("my name is a/b/c/d/e/f/g", "hello a/b/c/d/e/f/g"),
+        ("my name is a.b.cd.e.f.g", "hello a.b.cd.e.f.g"),
+        ("my name is t.h.i.s.has.g.o.n.e.t.o.o.f.a.r", "hello t.h.i.s.has.g.o.n.e.t.o.o.f.a.r"),
+    ]
+    valdata = [
+        ("my name is c/d/e/f/g/h/q", "hello c/d/e/f/g/h/q"),
+        ("my name is how.long_can_this_be", "hello how.long_can_this_be"),
+        ("my name is real.l.l.l.l.l.l.y", "hello  real.l.l.l.l.l.l.y"),
+        ("my name is yo", "hello yo"),
+    ]
+
+    # Do training
+    train_output = train.run_with_specific_split(traindata, valdata, [cow], 
+            False, quiet_mode = True, num_epochs = 200)
+    meta_model, final_state, train_iter, val_iter = train_output
+    
+    # eval the model. Expect should get basically perfect progam picking
+    bashmetric = BashMetric()
+    train.eval_model(meta_model, train_iter, [(bashmetric, 'bashmetric')])
+    assert bashmetric.exact_match_acc() >= 0.98, "Did not fully learn train"
+    bashmetric = BashMetric()
+    train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
+    assert bashmetric.exact_match_acc() >= 0.98, "Did not generalize to val"
+
 def test_pipe_select():
     cow = AIProgramDescription(
         name = "cow"
