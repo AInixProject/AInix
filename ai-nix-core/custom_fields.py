@@ -110,23 +110,25 @@ class NLExample():
         self.copy_to_sequence = {}
         newTok = []
         onCopyIndex = 0
-        # sdf
-        for e in sequence:
-            shouldHaveCopy = True
-            shouldHaveCopy = shouldHaveCopy and (e in (constants.SOS, constants.EOS))
-            shouldHaveCopy = shouldHaveCopy or (e == constants.UNK or field.vocab.freqs[e] < 3)
-            shouldHaveCopy = shouldHaveCopy and (onCopyIndex < len(constants.COPY_TOKENS))
+
+        split_words = tokenizers.split_tokenization(sequence)
+        for word_tokens in split_words:
+            combined_word = "".join(word_tokens)
+            shouldHaveCopy = False
+            shouldHaveCopy |= combined_word == constants.UNK
+            shouldHaveCopy |= field.vocab.freqs[combined_word] < 3
+            shouldHaveCopy &= onCopyIndex < len(constants.COPY_TOKENS)
             if shouldHaveCopy:
-                newCopyVal = (e,)
+                newCopyVal = word_tokens
                 if newCopyVal in self.subsequence_to_copy:
-                    newTok.append(self.subsequence_to_copy[(e,)])
+                    newTok.append(self.subsequence_to_copy[newCopyVal])
                 else:
                     useCopyTok = constants.COPY_TOKENS[onCopyIndex]
                     newTok.append(useCopyTok)
                     self.subsequence_to_copy[newCopyVal] = useCopyTok
                     self.copy_to_sequence[useCopyTok] = newCopyVal
                     onCopyIndex += 1
-            newTok.append(e)
+            newTok.extend(word_tokens)
         self.mod_text = newTok
 
 class NLField(torchtext.data.Field):

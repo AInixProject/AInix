@@ -21,6 +21,27 @@ def nonascii_untokenize(s):
     s = s.replace("<SPACE>", " ")
     return s
 
+def split_tokenization(sequence, 
+        split_on = (constants.SPACE, constants.SOS, constants.EOS)):
+    """This takes a sequence which is a list of tokens and
+    return a list of tuples which are the tokens split on each
+    occurance of anything in split_on.
+    Note: The split_on tokens will appear as single element tuples
+    in the output list."""
+    out_groups = []
+    newGroup = []
+    for e in sequence:
+        if e in split_on:
+            if newGroup:
+                out_groups.append(tuple(newGroup))
+            out_groups.append((e,))
+            newGroup = []
+        else:
+            newGroup.append(e)
+    if newGroup:
+        out_groups.append(tuple(newGroup))
+    return out_groups
+
 def quick_tokenizer(input_string):
     out = [[]]
     for c in input_string:

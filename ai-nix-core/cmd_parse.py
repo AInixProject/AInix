@@ -49,7 +49,6 @@ class ProgramNode():
                 out += " " + arg.as_shell_string()
         return out
 
-
 class JoinNode():
     join_type_index = None
 
