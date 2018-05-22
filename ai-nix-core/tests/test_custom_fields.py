@@ -82,7 +82,7 @@ def test_replacer8():
 ######################################################################
 
 def test_copy_tok():
-    """Test replacement args with vars"""
+    """Test inserting copy tokens"""
     vocab = Mock()
     exunk = "AnUnk"
     vocab.freqs.__getitem__ = lambda self, word: 0 if word == exunk else 10
@@ -93,11 +93,24 @@ def test_copy_tok():
     expected_mod = [constants.SOS, "hello", constants.SPACE, "there", constants.SPACE, 
             constants.COPY_TOKENS[0], exunk, constants.EOS]
     assert example.mod_text == expected_mod
-    #assert example.subsequence_to_copy[(exunk,)] == constants.COPY_TOKENS[0]
     # try and replace
     val_with_cp = example.insert_copies(["foo", exunk])
     assert val_with_cp == ["foo", constants.COPY_TOKENS[0]]
 
-
-
+def test_copy_tok2():
+    """Test inserting copy tokens for a longer sequence"""
+    vocab = Mock()
+    exunk = "AnUnk.foo.f"
+    splitexunk = ['AnUnk', '.', 'foo', '.', 'f']
+    vocab.freqs.__getitem__ = lambda self, word: 0 if word == exunk else 10
+    test_seq = [constants.SOS, "hello", constants.SPACE, "there", constants.SPACE] + splitexunk + [constants.EOS]
+    field = Mock()
+    field.vocab = vocab
+    example = NLExample(test_seq, field)
+    expected_mod = [constants.SOS, "hello", constants.SPACE, "there", constants.SPACE, 
+            constants.COPY_TOKENS[0]] + splitexunk + [constants.EOS]
+    assert example.mod_text == expected_mod
+    # try and replace
+    val_with_cp = example.insert_copies(["yo"] + splitexunk + ["boop"])
+    assert val_with_cp == ["yo", constants.COPY_TOKENS[0], "boop"]
 

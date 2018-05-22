@@ -141,7 +141,6 @@ class NLExample():
         """Takes in a tokenized value and returns copy tokens replacing the appropriate values.
         This is used during training where given an string expected argument value, all the
         proper substitutions."""
-        pudb.set_trace()
         val_with_cp = []
         i = 0
         while i < len(value):
@@ -150,7 +149,7 @@ class NLExample():
                     for si in range(len(sequence))])
                 if match:
                     val_with_cp.append(copytoken)
-                    i += len(sequence) + 1
+                    i += len(sequence)
                     break
             else:
                 val_with_cp.append(value[i])
