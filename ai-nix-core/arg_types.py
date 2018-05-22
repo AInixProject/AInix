@@ -20,7 +20,7 @@ class Stringlike(ArgumentType):
         preproc = run_context.nl_field.preprocess(value)
     
         # hacky copy
-        preproc = run_context.insert_copies(value)
+        preproc = copyfromexample.insert_copies(value)
 
         padded = run_context.nl_field.pad([preproc])
         (tensor, lengths) = run_context.nl_field.numericalize(
