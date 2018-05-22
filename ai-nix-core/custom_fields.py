@@ -106,30 +106,56 @@ class NLExample():
     def __init__(self, sequence, field):
         self.raw_sequence = sequence
         # Add in copy tokens
-        self.subsequence_to_copy = {}
-        self.copy_to_sequence = {}
+        self.subsequence_to_copy, self.copy_to_sequence, self.mod_text = \
+                NLExample.create_copies(sequence, field.vocab)
+
+    @staticmethod
+    def create_copies(sequence, vocab):
+        """Creates a set of relevant copy tokens from sequence and vocab"""
+        subsequence_to_copy = {}
+        copy_to_sequence = {}
         newTok = []
         onCopyIndex = 0
 
+        assert constants.UNK not in sequence, "Unexpected unk in sequence?"
         split_words = tokenizers.split_tokenization(sequence)
         for word_tokens in split_words:
             combined_word = "".join(word_tokens)
             shouldHaveCopy = False
-            shouldHaveCopy |= combined_word == constants.UNK
-            shouldHaveCopy |= field.vocab.freqs[combined_word] < 3
+            shouldHaveCopy |= vocab.freqs[combined_word] < 3
             shouldHaveCopy &= onCopyIndex < len(constants.COPY_TOKENS)
             if shouldHaveCopy:
                 newCopyVal = word_tokens
-                if newCopyVal in self.subsequence_to_copy:
-                    newTok.append(self.subsequence_to_copy[newCopyVal])
+                if newCopyVal in subsequence_to_copy:
+                    newTok.append(subsequence_to_copy[newCopyVal])
                 else:
                     useCopyTok = constants.COPY_TOKENS[onCopyIndex]
                     newTok.append(useCopyTok)
-                    self.subsequence_to_copy[newCopyVal] = useCopyTok
-                    self.copy_to_sequence[useCopyTok] = newCopyVal
+                    subsequence_to_copy[newCopyVal] = useCopyTok
+                    copy_to_sequence[useCopyTok] = newCopyVal
                     onCopyIndex += 1
             newTok.extend(word_tokens)
-        self.mod_text = newTok
+        return subsequence_to_copy, copy_to_sequence, newTok
+
+    def insert_copies(self, value):
+        """Takes in a tokenized value and returns copy tokens replacing the appropriate values.
+        This is used during training where given an string expected argument value, all the
+        proper substitutions."""
+        pudb.set_trace()
+        val_with_cp = []
+        i = 0
+        while i < len(value):
+            for sequence, copytoken in self.subsequence_to_copy.items():
+                match = all([i + si < len(value) and sequence[si] == value[i + si] 
+                    for si in range(len(sequence))])
+                if match:
+                    val_with_cp.append(copytoken)
+                    i += len(sequence) + 1
+                    break
+            else:
+                val_with_cp.append(value[i])
+                i += 1
+        return val_with_cp
 
 class NLField(torchtext.data.Field):
     """A torch text field field for the NL/hybrid utterenece input commands"""

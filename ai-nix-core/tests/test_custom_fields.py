@@ -1,6 +1,6 @@
-from custom_fields import Replacer, ReplacementGroup, Replacement, WeightedRandomChooser
+from custom_fields import *
 from collections import Counter
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
 
 def test_replacer1():
@@ -77,3 +77,27 @@ def test_replacer8():
     replacer = Replacer([rg])
     nl, cmd = replacer.strings_replace("hello [-[1=TEST -t foo]-]", "run")
     rg.sample_replacement.assert_called_once_with(["TEST", '-t', "foo"])
+
+
+######################################################################
+
+def test_copy_tok():
+    """Test replacement args with vars"""
+    vocab = Mock()
+    exunk = "AnUnk"
+    vocab.freqs.__getitem__ = lambda self, word: 0 if word == exunk else 10
+    test_seq = [constants.SOS, "hello", constants.SPACE, "there", constants.SPACE, exunk, constants.EOS]
+    field = Mock()
+    field.vocab = vocab
+    example = NLExample(test_seq, field)
+    expected_mod = [constants.SOS, "hello", constants.SPACE, "there", constants.SPACE, 
+            constants.COPY_TOKENS[0], exunk, constants.EOS]
+    assert example.mod_text == expected_mod
+    #assert example.subsequence_to_copy[(exunk,)] == constants.COPY_TOKENS[0]
+    # try and replace
+    val_with_cp = example.insert_copies(["foo", exunk])
+    assert val_with_cp == ["foo", constants.COPY_TOKENS[0]]
+
+
+
+

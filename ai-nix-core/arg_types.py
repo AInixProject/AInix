@@ -20,12 +20,7 @@ class Stringlike(ArgumentType):
         preproc = run_context.nl_field.preprocess(value)
     
         # hacky copy
-        for sequence, copytoken in copyfromexample.subsequence_to_copy.items():
-            if len(sequence) > 1:
-                raise NotImplementedError("havent made actual subsequencs work", sequence)
-            lookVal = sequence[0]
-            if lookVal in preproc:
-                preproc[preproc.index(lookVal)] = copytoken
+        preproc = run_context.insert_copies(value)
 
         padded = run_context.nl_field.pad([preproc])
         (tensor, lengths) = run_context.nl_field.numericalize(

@@ -63,7 +63,7 @@ class BashMetric(Metric):
             if fullMatch:
                 self._num_exact_match += 1
 
-            # Print some log information on whether we got it right or wrong
+            # Print some log information on whether we got it right or wrong.
             # The seen_query_set is used because we duplicate entries
             # as a hacky way of doing the replacments. Examples without
             # any replacements might appear multiple times. We don't want to
