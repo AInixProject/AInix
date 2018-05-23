@@ -145,9 +145,10 @@ class NLExample():
         i = 0
         while i < len(value):
             for sequence, copytoken in self.subsequence_to_copy.items():
-                match = all([i + si < len(value) and sequence[si] == value[i + si] 
-                    for si in range(len(sequence))])
-                if match:
+                inBounds = lambda si: i + si < len(value)
+                elementMatch = lambda si: sequence[si] == value[i + si]
+                seqMatch = all(inBounds(si) and elementMatch(si) for si in range(len(sequence)))
+                if seqMatch:
                     val_with_cp.append(copytoken)
                     i += len(sequence)
                     break
