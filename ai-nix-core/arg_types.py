@@ -1,5 +1,6 @@
 import constants
 import tokenizers
+import pudb
 class ArgumentType():
     def __init__(self):
         self.model_data = None
@@ -19,14 +20,15 @@ class Stringlike(ArgumentType):
         """Takes in a value and converts it to friendly representation"""
         preproc = run_context.nl_field.preprocess(value)
     
+        #pudb.set_trace()
         # hacky copy
-        preproc = copyfromexample.insert_copies(value)
+        preproc_cp = copyfromexample.insert_copies(preproc)
 
-        padded = run_context.nl_field.pad([preproc])
+        padded = run_context.nl_field.pad([preproc_cp])
         (tensor, lengths) = run_context.nl_field.numericalize(
                 padded, 
                 device = 0 if run_context.use_cuda else -1, 
-                train=not is_eval
+                train = not is_eval
         )
         return tensor
 
@@ -35,11 +37,12 @@ class Stringlike(ArgumentType):
 
     def eval_value(self, encoding, run_context, meta_model, copyfromexample):
         predSequence = meta_model.std_decode_eval(encoding, run_context)
+        #pudb.set_trace()
         copied = []
         for p in predSequence:
             if p in constants.COPY_TOKENS:
                 if p in copyfromexample.copy_to_sequence:
-                    copied += list(copyfromexample.copy_to_sequence[p])
+                    copied.extend(copyfromexample.copy_to_sequence[p])
                 else:
                     copied.append(p)
             else:
