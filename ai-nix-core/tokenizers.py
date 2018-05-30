@@ -13,7 +13,7 @@ def nonascii_tokenizer(input_string):
             out.append([])
         else:
             out[-1].append(c)
-    out = ["".join(toklist) for toklist in out]
+    out = ["".join(toklist) for toklist in out if len(toklist) >= 1]
     return out
 
 def nonascii_untokenize(s):

@@ -125,8 +125,20 @@ class NLExample():
             shouldHaveCopy |= vocab.freqs[combined_word] < 3
             shouldHaveCopy &= onCopyIndex < len(constants.COPY_TOKENS)
             if shouldHaveCopy:
-                newCopyVal = word_tokens
-                if newCopyVal in subsequence_to_copy:
+                isLongEnoughForQuotes = len(word_tokens) >= 3
+                leadsWithQuote = word_tokens[0] in ('"', "'")
+                endsWithQuotes = word_tokens[-1] in ('"', "'")
+                isInQuotes = isLongEnoughForQuotes and \
+                             leadsWithQuote and endsWithQuotes
+                isInParen = word_tokens[0] == '(' and word_tokens[-1] == ')'
+                isInBrackets = word_tokens[0] == '[' and word_tokens[-1] == ']'
+                if isInQuotes or isInParen or isInBrackets:
+                    newCopyVal = word_tokens[1:-1]
+                else:
+                    newCopyVal = word_tokens
+
+                alreadyHaveSeenCopySeq = newCopyVal in subsequence_to_copy
+                if alreadyHaveSeenCopySeq:
                     newTok.append(subsequence_to_copy[newCopyVal])
                 else:
                     useCopyTok = constants.COPY_TOKENS[onCopyIndex]
@@ -141,7 +153,6 @@ class NLExample():
         """Takes in a tokenized value and returns copy tokens replacing the appropriate values.
         This is used during training where given an string expected argument value, all the
         proper substitutions."""
-        #pudb.set_trace()
         val_with_cp = []
         i = 0
         while i < len(value):

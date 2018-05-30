@@ -20,7 +20,6 @@ class Stringlike(ArgumentType):
         """Takes in a value and converts it to friendly representation"""
         preproc = run_context.nl_field.preprocess(value)
     
-        #pudb.set_trace()
         # hacky copy
         preproc_cp = copyfromexample.insert_copies(preproc)
 
@@ -37,7 +36,6 @@ class Stringlike(ArgumentType):
 
     def eval_value(self, encoding, run_context, meta_model, copyfromexample):
         predSequence = meta_model.std_decode_eval(encoding, run_context)
-        #pudb.set_trace()
         copied = []
         for p in predSequence:
             if p in constants.COPY_TOKENS:

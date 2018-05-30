@@ -149,6 +149,10 @@ def test_copy_in_quotes():
     train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98, "Did not generalize to val"
 
+# TODO (dngros): add version of the copy in quotes test to check whether it can
+# actually see whether it is in quotes or not. So like it being in quotes effects
+# the command chosen or something.
+
 def test_copy_long_seq():
     posArg = Argument("aposarg", "Stringlike", position = 0)
     cow = AIProgramDescription(
