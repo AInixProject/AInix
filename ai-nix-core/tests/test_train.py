@@ -152,6 +152,7 @@ def test_copy_in_quotes():
 # TODO (dngros): add version of the copy in quotes test to check whether it can
 # actually see whether it is in quotes or not. So like it being in quotes effects
 # the command chosen or something.
+# TODO (dngros): test able to actually copy a true quote as well
 
 def test_copy_long_seq():
     posArg = Argument("aposarg", "Stringlike", position = 0)
