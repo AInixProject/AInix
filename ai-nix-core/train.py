@@ -59,7 +59,6 @@ def eval_model(meta_model, val_iter, metrics):
 
 
 def run_train(meta_model, train_iter, val_iter, run_context, test = None, num_epochs = 50):
-
     batch = next(iter(train_iter))
     print(batch.nl)
     print(batch.command)
@@ -133,9 +132,11 @@ if __name__ == "__main__":
     #run_with_data_list(sampledata.all_data, sampledata.all_descs, use_cuda)
     num_train_duplicates = 5
     train, val = sampledata.get_all_data_replaced(num_train_duplicates,2)
+    # Uncomment this to use a predefined dataset split. exportforother.py will create this.
     #train, val = sampledata.get_all_data_from_files(
     #        "./splits/src-train.txt", "./splits/trg-train.txt",
     #        "./splits/src-val.txt", "./splits/trg-val.txt")
+    # Uncomment this to to use a random split
     run_with_specific_split(train, val, sampledata.all_descs, use_cuda,
             quiet_mode = False, num_epochs=100//num_train_duplicates)
 

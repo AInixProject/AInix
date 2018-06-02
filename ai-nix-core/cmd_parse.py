@@ -139,11 +139,20 @@ class CmdParser(): #bashlex.ast.nodevisitor):
                 else:
                     if arg.shorthand:
                         optstring.append(arg.shorthand)
-                    longargs.append(arg.name + "=" if needValue else arg.name)
+                    longargs.append((arg.name + "=") if needValue else arg.name)
         optstring = ''.join(optstring)
 
         # figure out what the input args are
         inargs = [self._expand_quotes(p) for p in cmd_parts]
+
+        # Add a hack to be able to parse find-like single dash args
+        # If we see a single dashed argument convert it to have two tashes
+        for arg in cmd_desc.arguments:
+            if arg.long_single_dash:
+                for i in range(len(inargs)):
+                    v = inargs[i]
+                    if len(v) > 2 and v[0] == "-" and v[1:] == arg.name:
+                        inargs[i] = "--" + arg.name
 
         # use normal getopt to parse
         optlist, args = getopt.getopt(inargs, optstring, longargs)

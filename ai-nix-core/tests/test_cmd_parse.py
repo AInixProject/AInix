@@ -4,6 +4,7 @@ import program_description
 import torch
 from torch.autograd import Variable
 
+# Define a bunch of args and programs
 noArgs = program_description.AIProgramDescription(
     name = "noarg"
 )
@@ -50,6 +51,7 @@ twowmulti = program_description.AIProgramDescription(
     name = "twowmulti",
     arguments = [multiWordArg, singleWordArg2] 
 )
+
 
 
 def test_noarg_parse():
@@ -228,6 +230,19 @@ def test_multi_word_pos():
 
 # TODO (dngros): should really add test all the failure cases of positional args
 # TODO (dngros): need to handle non-required positional word parsing (like touch)
+
+oneDashArg = program_description.Argument("name", "Stringlike", long_single_dash = True)
+findlike = program_description.AIProgramDescription(
+    name = "findlike",
+    arguments = [oneDashArg] 
+)
+
+def test_dash_arg():
+    parser = CmdParser([findlike])
+    out = parser.parse("findlike -name foo")
+    assert out[0].arguments[0].present == True
+    assert out[0].arguments[0].value == "foo"
+    
 
 ###
 # Test correct as_shell_string

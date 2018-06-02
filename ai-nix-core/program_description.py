@@ -30,7 +30,8 @@ def _verify_keys(keys, valid_keys = None, required_keys = None):
 
 class Argument():
     """Represents an argument in a AIProgramDescription"""
-    def __init__(self, name, argtype, shorthand = None, position = None, required = False):
+    def __init__(self, name, argtype, shorthand = None, position = None, 
+        required = False, long_single_dash = False):
         self.name = name
         self.shorthand = shorthand
         self.type_name = argtype
@@ -43,6 +44,7 @@ class Argument():
 
         self.position = position
         self.required = required
+        self.long_single_dash = long_single_dash
 
         # stores argument specific data for models
         self.model_data = None
