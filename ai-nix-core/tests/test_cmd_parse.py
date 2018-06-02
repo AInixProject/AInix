@@ -242,6 +242,7 @@ def test_dash_arg():
     out = parser.parse("findlike -name foo")
     assert out[0].arguments[0].present == True
     assert out[0].arguments[0].value == "foo"
+    assert out[0].as_shell_string() == "findlike -name foo"
     
 
 ###
