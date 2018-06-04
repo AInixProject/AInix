@@ -145,6 +145,11 @@ class CmdParser(): #bashlex.ast.nodevisitor):
         # figure out what the input args are
         inargs = [self._expand_quotes(p) for p in cmd_parts]
 
+        justArgsWithDash = [a for a in inargs if a[0] == '-']
+        duplicateFlags = len(justArgsWithDash) != len(set(justArgsWithDash))
+        if duplicateFlags:
+            raise CmdParseError("Unexpected duplicate flags")
+
         # Add a hack to be able to parse find-like single dash args
         # If we see a single dashed argument convert it to have two tashes
         for arg in cmd_desc.arguments:

@@ -243,7 +243,12 @@ def test_dash_arg():
     assert out[0].arguments[0].present == True
     assert out[0].arguments[0].value == "foo"
     assert out[0].as_shell_string() == "findlike -name foo"
-    
+
+def test_onearg_parse():
+    """Dont expect duplicate flags unless told."""
+    parser = CmdParser([noArgs, onearg])
+    with pytest.raises(CmdParseError):
+        out = parser.parse("onearg -a -a")
 
 ###
 # Test correct as_shell_string
