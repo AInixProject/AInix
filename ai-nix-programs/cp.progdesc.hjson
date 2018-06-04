@@ -1,0 +1,140 @@
+{
+  name: cp
+  arguments:
+  [
+    {
+      name: r
+      type: StoreTrue
+    }
+    {
+      name: v
+      type: StoreTrue
+    }
+    {
+      name: i
+      type: StoreTrue
+    }
+    {
+      name: source
+      type: SingleFile
+      position: 0
+    }
+    {
+      name: dest
+      type: SingleFile
+      position: 1
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        copy [-[1=FILENAME]-] to [-[2=FILENAME]-]
+        create a copy of [-[1=FILENAME]-] as [-[2=FILENAME]-]
+        make a new version [-[1=FILENAME]-] named [-[2=FILENAME]-]
+      ]
+      cmd:
+      [
+        cp [-[$1]-] [-[$2]-]
+      ]
+    }
+    {
+      lang:
+      [
+        copy [-[1=FILENAME]-] into [-[2=DIRNAME]-]
+      ]
+      cmd:
+      [
+        cp [-[$1]-] [-[$2]-]
+      ]
+    }
+    {
+      lang:
+      [
+        make a copy of [-[1=FILENAME]-] in parent dir
+        copy [-[1=FILENAME]-] to parent directory
+        copy [-[1=FILENAME]-] up one directory
+      ]
+      cmd:
+      [
+        cp [-[$1]-] ..
+      ]
+    }
+    {
+      lang:
+      [
+        copy [-[1=DIRNAME]-] to [-[2=DIRNAME]-]
+        create a copy of everything in [-[1=DIRNAME]-] to [-[2=DIRNAME]-]
+        recursive copy [-[1=DIRNAME]-] to [-[2=DIRNAME]-]
+        cp [-[1=DIRNAME]-] [-[2=DIRNAME]-] but recursively
+        cp for directories [-[1=DIRNAME]-] [-[2=DIRNAME]-]
+        cp a folder [-[1=DIRNAME]-] into [-[2=DIRNAME]-]
+      ]
+      cmd:
+      [
+        cp -r [-[$1]-] [-[$2]-]
+      ]
+    }
+    {
+      lang:
+      [
+        copy everything in pictures dir to piccopy
+      ]
+      cmd:
+      [
+        cp -r pictures/* piccopy
+      ]
+    }
+    {
+      lang:
+      [
+        cp all files in src to current directory
+      ]
+      cmd:
+      [
+        cp -r src/* .
+      ]
+    }
+    {
+      lang:
+      [
+        copy [-[1=DIRNAME]-] to [-[2=DIRNAME]-] displaying the name of every file copied
+        cp -r [-[1=DIRNAME]-] [-[2=DIRNAME]-] but print each file copied
+      ]
+      cmd:
+      [
+        cp -vr [-[$1]-] [-[$2]-]
+      ]
+    }
+    {
+      lang:
+      [
+        cp -r [-[1=DIRNAME]-] [-[2=DIRNAME]-] but prompt before every copy
+        copy recursive [-[1=DIRNAME]-] [-[2=DIRNAME]-] ask me first
+      ]
+      cmd:
+      [
+        cp -ir [-[$1]-] [-[$2]-]
+      ]
+    }
+    {
+      lang:
+      [
+        cp everything here to home dir
+      ]
+      cmd:
+      [
+        cp -r * ~
+      ]
+    }
+    {
+      lang: [
+        cp everything here to [-[1=DIRNAME]-]
+      ]
+      cmd: [
+        cp -r * [-[$1]-]
+      ]
+    }
+  ]
+}

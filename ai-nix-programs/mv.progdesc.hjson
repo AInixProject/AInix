@@ -115,5 +115,15 @@
         mv *.py [-[DIRNAME]-]
       ]
     }
+    {
+      lang:
+      [
+        change the extension of foo.txt to be csv 
+      ]
+      cmd:
+      [
+        mv foo.txt foo.csv
+      ]
+    }
   ]
 }
