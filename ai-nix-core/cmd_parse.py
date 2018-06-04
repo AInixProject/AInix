@@ -160,7 +160,16 @@ class CmdParser(): #bashlex.ast.nodevisitor):
                         inargs[i] = "--" + arg.name
 
         # use normal getopt to parse
-        optlist, args = getopt.getopt(inargs, optstring, longargs)
+        try:
+            optlist, args = getopt.gnu_getopt(inargs, optstring, longargs)
+        except getopt.GetoptError as e:
+            raise CmdParseError(e)
+
+        # A hack to fix the issue with extraneous find args being
+        # identified as just positional args
+        #for arg in args:
+        #    if len(arg) >= 3 and arg[:1] == '--':
+        #        raise CmdParseError("Got a potentially extraneous arg", arg)
 
         # convert to a dict
         dictoptlist = {arg:val if val != '' else None for arg, val in optlist}

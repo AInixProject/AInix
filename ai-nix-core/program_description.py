@@ -69,9 +69,11 @@ class Argument():
     @classmethod
     def load(cls, data):
         """Instantiate an Argument from a dict that came from loading a yaml"""
-        _verify_keys(data.keys(), valid_keys=['name','type','shorthand','position'], required_keys=['name','type'])
+        _verify_keys(data.keys(), valid_keys=['name','type','shorthand','position', 'long_single_dash'], required_keys=['name','type'])
+        # TODO (DNGros) I dont like the deplicate code with specifying defaults. Could
+        # get out of sync and be an annoying bug. Look into.
         return cls(data['name'], data['type'], data.get('shorthand', None), 
-                position = data.get('position',None))
+                position = data.get('position',None), long_single_dash = data.get('long_single_dash', False))
 
 def load(program_description):
     """Parse the contents of a progdesc.hjson into an AIProgramDescription"""

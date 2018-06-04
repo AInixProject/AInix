@@ -1,0 +1,37 @@
+{
+  name: find
+  arguments:
+  [
+    {
+      name: name
+      long_single_dash: True
+      type: StoreTrue
+    }
+    {
+      name: root_path
+      type: SingleFile
+      position: 0
+    }
+  ]
+  examples:
+  [
+    {
+      lang: [
+        find all jpg files starting here
+        search for all files that end in .jpg
+      ]
+      cmd: [
+        find . -name '*.jpg'
+      ]
+    }
+    {
+      lang: [
+        find a file named '[-[1=FILENAME]-]' starting in [-[2=DIRNAME]-]
+        starting in [-[2=DIRNAME]-] look for a file named [-[1=FILENAME]-]
+      ]
+      cmd: [
+        find '[-[$2]-]' -name '[-[$1]-]'
+      ]
+    }
+  ]
+}

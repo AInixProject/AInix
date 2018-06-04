@@ -250,6 +250,17 @@ def test_onearg_parse():
     with pytest.raises(CmdParseError):
         out = parser.parse("onearg -a -a")
 
+def test_unrecognized_flag():
+    """If use a flag that is not specified, should error"""
+    parser = CmdParser([noArgs, onearg])
+    with pytest.raises(CmdParseError):
+        out = parser.parse("onearg -a -b")
+
+def test_unrecognized_find_flag():
+    parser = CmdParser([findlike])
+    with pytest.raises(CmdParseError):
+        out = parser.parse("findlike foo -name foo -size 1")
+
 ###
 # Test correct as_shell_string
 ###
