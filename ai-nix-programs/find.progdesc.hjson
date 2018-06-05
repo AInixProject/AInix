@@ -1,0 +1,66 @@
+{
+  name: find
+  arguments:
+  [
+    {
+      name: name
+      long_single_dash: True
+      type: Stringlike
+    }
+    {
+      name: path
+      long_single_dash: True
+      type: Stringlike
+    }
+    {
+      name: mtime
+      long_single_dash: True
+      type: Stringlike
+    }
+    {
+      name: size
+      long_single_dash: True
+      type: Stringlike
+    }
+    {
+      name: delete
+      long_single_dash: True
+      type: StoreTrue
+    }
+    {
+      name: root_path
+      type: SingleFile
+      position: -1
+    }
+  ]
+  examples:
+  [
+    {
+      lang: [
+        find all jpg files starting here
+        search for all files that end in .jpg
+      ]
+      cmd: [
+        find . -name '*.jpg'
+      ]
+    }
+    {
+      lang: [
+        find all jpg files modified in last week 
+        what jpg pictures are here that have been changed in the last week?
+      ]
+      cmd: [
+        find . -name '*.jpg' -mtime 7
+      ]
+    }
+    {
+      lang: [
+        find a file named '[-[1=FILENAME]-]' starting in [-[2=DIRNAME]-]
+        starting in [-[2=DIRNAME]-] look for a file named [-[1=FILENAME]-]
+      ]
+      cmd: [
+        find '[-[$2]-]' -name '[-[$1]-]'
+      ]
+    }
+  ]
+}
