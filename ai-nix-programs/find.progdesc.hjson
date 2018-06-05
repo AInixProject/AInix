@@ -15,12 +15,12 @@
     {
       name: mtime
       long_single_dash: True
-      type: Stringlike
+      type: Numberlike
     }
     {
       name: size
       long_single_dash: True
-      type: Stringlike
+      type: Numberlike
     }
     {
       name: delete
@@ -31,6 +31,11 @@
       name: type
       long_single_dash: True
       type: Stringlike
+    }
+    {
+      name: perm
+      long_single_dash: True
+      type: Permlike
     }
     {
       name: root_path

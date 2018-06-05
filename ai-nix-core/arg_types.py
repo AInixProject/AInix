@@ -60,3 +60,13 @@ class SingleFile(Stringlike):
     def __init__(self):
         super(SingleFile, self).__init__()
         self.is_multi_word = False
+
+class Numberlike(Stringlike):
+    def __init__(self):
+        super(Numberlike, self).__init__()
+        self.is_multi_word = False
+
+class Permlike(Stringlike):
+    def __init__(self):
+        super(Permlike, self).__init__()
+        self.is_multi_word = False
