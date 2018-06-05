@@ -200,8 +200,8 @@ class CmdParser(): #bashlex.ast.nodevisitor):
                 if len(remaining_words) == 0 and arg.required:
                     raise ValueError("Error when parsing positional args. No remaining words for single consume")
                 out.append([remaining_words.pop()])
-        #if remaining_words:
-        #    raise CmdParseError("Unexpected remaining words to parse", remaining_words)
+        if remaining_words:
+            raise CmdParseError("Unexpected remaining words to parse", remaining_words)
         return out
 
     def _parse_node(self, n):
