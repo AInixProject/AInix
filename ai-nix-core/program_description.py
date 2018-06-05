@@ -113,13 +113,22 @@ class AIProgramDescription():
         if sum([1 if a.argtype.is_multi_word else 0 for a in positional_args]) > 1:
             raise ValueError("Cannont create description with more than one \
                     multiword postional args. Leads to ambigious parsing. Name:", self.name)
-        actual_pos_numbers = tuple([a.position for a in positional_args])
-        expectedActualPosNumbers = tuple(range(len(positional_args)))
-        if actual_pos_numbers != expectedActualPosNumbers:
-            raise ValueError("Description", self.name, 
-                    " has non-sequential positional arguments", actual_pos_numbers, 
-                    ". Expect", expectedActualPosNumbers)
+        if positional_args:
+            actual_pos_numbers = tuple([a.position for a in positional_args])
+            smallest_pos_number = actual_pos_numbers[0]
+            largest_expected_pos = len(positional_args) + smallest_pos_number
+            if largest_expected_pos < 0:
+                raise ValueError("Description", self.name, 
+                        " has bad non-sequential positional arguments", actual_pos_numbers, 
+                        ". Too many negative values")
+            expectedActualPosNumbers = tuple(range(smallest_pos_number, 
+                largest_expected_pos))
+            if actual_pos_numbers != expectedActualPosNumbers:
+                raise ValueError("Description", self.name, 
+                        " has non-sequential positional arguments", actual_pos_numbers, 
+                        ". Expect", expectedActualPosNumbers)
         self.positional_args = positional_args
+        self.has_pos_args_before_flags = positional_args and positional_args[0].position < 0
         # TODO (dngros): this should check if there are duplicate arguments with the same name
 
         # Program index is set during training to catagorize programs

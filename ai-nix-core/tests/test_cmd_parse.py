@@ -232,17 +232,35 @@ def test_multi_word_pos():
 # TODO (dngros): need to handle non-required positional word parsing (like touch)
 
 oneDashArg = program_description.Argument("name", "Stringlike", long_single_dash = True)
-findlike = program_description.AIProgramDescription(
-    name = "findlike",
+dashtest = program_description.AIProgramDescription(
+    name = "dashtest",
     arguments = [oneDashArg] 
 )
 
 def test_dash_arg():
-    parser = CmdParser([findlike])
-    out = parser.parse("findlike -name foo")
+    """A test to see if can handle find-like single dash for long args"""
+    parser = CmdParser([dashtest])
+    out = parser.parse("dashtest -name foo")
     assert out[0].arguments[0].present == True
     assert out[0].arguments[0].value == "foo"
-    assert out[0].as_shell_string() == "findlike -name foo"
+    assert out[0].as_shell_string() == "dashtest -name foo"
+
+oneDashArg = program_description.Argument("name", "Stringlike", long_single_dash = True)
+findRoot = program_description.Argument("findroot", "SingleFile", position = -1)
+findlike = program_description.AIProgramDescription(
+    name = "findlike",
+    arguments = [oneDashArg, findRoot] 
+)
+
+def test_findlike():
+    """A test to see if can handle find-like single dash for long args"""
+    parser = CmdParser([findlike])
+    out = parser.parse("findlike . -name foo")
+    assert out[0].arguments[0].present == True
+    assert out[0].arguments[0].value == "foo"
+    assert out[0].arguments[1].present == True
+    assert out[0].arguments[1].value == "."
+    assert out[0].as_shell_string() == "findlike . -name foo"
 
 def test_onearg_parse():
     """Dont expect duplicate flags unless told."""
@@ -256,10 +274,22 @@ def test_unrecognized_flag():
     with pytest.raises(CmdParseError):
         out = parser.parse("onearg -a -b")
 
+def test_extra_positional():
+    """Make sure recognizes extra words at the end"""
+    parser = CmdParser([noArgs, onearg])
+    with pytest.raises(CmdParseError):
+        out = parser.parse("onearg -a thisShouldNotBeHere")
+
 def test_unrecognized_find_flag():
     parser = CmdParser([findlike])
     with pytest.raises(CmdParseError):
         out = parser.parse("findlike foo -name foo -size 1")
+
+def test_unrecognized_extra_word():
+    # NOTE: this test shouldnt be necessary once actually works correctly
+    parser = CmdParser([findlike])
+    with pytest.raises(CmdParseError):
+        out = parser.parse("findlike foo ! -name foo")
 
 ###
 # Test correct as_shell_string

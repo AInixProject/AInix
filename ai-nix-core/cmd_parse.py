@@ -44,8 +44,17 @@ class ProgramNode():
 
     def as_shell_string(self):
         out = self.program_desc.name
+        # First do the "negative" args that happen before flags
         for arg in self.arguments:
-            if arg.present:
+            if arg.arg.position is not None and arg.arg.position < 0 and arg.present:
+                out += " " + arg.as_shell_string()
+        # Normal args
+        for arg in self.arguments:
+            if arg.arg.position is None and arg.present:
+                out += " " + arg.as_shell_string()
+        # positive positional args
+        for arg in self.arguments:
+            if arg.arg.position is not None and arg.arg.position >= 0 and arg.present:
                 out += " " + arg.as_shell_string()
         return out
 
@@ -160,16 +169,11 @@ class CmdParser(): #bashlex.ast.nodevisitor):
                         inargs[i] = "--" + arg.name
 
         # use normal getopt to parse
+        parse_method = getopt.gnu_getopt if cmd_desc.has_pos_args_before_flags else getopt.getopt
         try:
-            optlist, args = getopt.gnu_getopt(inargs, optstring, longargs)
+            optlist, args = parse_method(inargs, optstring, longargs)
         except getopt.GetoptError as e:
             raise CmdParseError(e)
-
-        # A hack to fix the issue with extraneous find args being
-        # identified as just positional args
-        #for arg in args:
-        #    if len(arg) >= 3 and arg[:1] == '--':
-        #        raise CmdParseError("Got a potentially extraneous arg", arg)
 
         # convert to a dict
         dictoptlist = {arg:val if val != '' else None for arg, val in optlist}
@@ -196,6 +200,8 @@ class CmdParser(): #bashlex.ast.nodevisitor):
                 if len(remaining_words) == 0 and arg.required:
                     raise ValueError("Error when parsing positional args. No remaining words for single consume")
                 out.append([remaining_words.pop()])
+        #if remaining_words:
+        #    raise CmdParseError("Unexpected remaining words to parse", remaining_words)
         return out
 
     def _parse_node(self, n):
