@@ -28,6 +28,11 @@
       type: StoreTrue
     }
     {
+      name: type
+      long_single_dash: True
+      type: Stringlike
+    }
+    {
       name: root_path
       type: SingleFile
       position: -1
@@ -60,6 +65,15 @@
       ]
       cmd: [
         find '[-[$2]-]' -name '[-[$1]-]'
+      ]
+    }
+    {
+      lang: [
+        search whole file system for directories named [-[1=FILENAME]-]
+        find starting at root for dirs named [-[1=FILENAME]-]
+      ]
+      cmd: [
+        find / -type d -name '[-[$1]-]'
       ]
     }
   ]
