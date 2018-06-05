@@ -1,0 +1,41 @@
+{
+  name: chmod
+  arguments:
+  [
+    {
+      name: mode
+      type: Permlike
+      position: 0
+    }
+    {
+      name: R
+      type: StoreTrue
+    }
+    {
+      name: mode
+      type: SingleFile
+      position: 1
+    }
+  ]
+  examples:
+  [
+    {
+      lang: [
+        make [-[1=FILENAME]-] executable
+        add executable permision to [-[1=FILENAME]-]
+        make [-[1=FILENAME]-] so I can run it
+      ]
+      cmd: [
+        chmod +x [-[$1]-]
+      ]
+    }
+    {
+      lang: [
+        Change permisions of [-[1=DIRNAME]-] recursively giving group and other write access
+      ]
+      cmd: [
+        chmod -R g+w,o+w [-[$1]-]
+      ]
+    }
+  ]
+}
