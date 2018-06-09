@@ -70,3 +70,8 @@ class Permlike(Stringlike):
     def __init__(self):
         super(Permlike, self).__init__()
         self.is_multi_word = False
+
+class Regex(Stringlike):
+    def __init__(self):
+        super(Regex, self).__init__()
+        self.is_multi_word = False

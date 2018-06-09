@@ -246,10 +246,11 @@ def test_dash_arg():
     assert out[0].as_shell_string() == "dashtest -name foo"
 
 oneDashArg = program_description.Argument("name", "Stringlike", long_single_dash = True)
+typeArg = program_description.Argument("type", "Stringlike", long_single_dash = True)
 findRoot = program_description.Argument("findroot", "SingleFile", position = -1)
 findlike = program_description.AIProgramDescription(
     name = "findlike",
-    arguments = [oneDashArg, findRoot] 
+    arguments = [oneDashArg, findRoot, typeArg] 
 )
 
 def test_findlike():
@@ -262,7 +263,7 @@ def test_findlike():
     assert out[0].arguments[1].value == "."
     assert out[0].as_shell_string() == "findlike . -name foo"
 
-def test_onearg_parse():
+def test_duplicate_flags():
     """Dont expect duplicate flags unless told."""
     parser = CmdParser([noArgs, onearg])
     with pytest.raises(CmdParseError):
@@ -284,6 +285,15 @@ def test_unrecognized_find_flag():
     parser = CmdParser([findlike])
     with pytest.raises(CmdParseError):
         out = parser.parse("findlike foo -name foo -size 1")
+
+def test_no_root():
+    parser = CmdParser([findlike])
+    out = parser.parse("findlike -name foo -type f")
+    assert out[0].arguments[0].present == True
+    assert out[0].arguments[0].value == "foo"
+    assert out[0].arguments[1].present == False
+    assert out[0].arguments[2].present == True
+    assert out[0].arguments[2].value == "f"
 
 def test_unrecognized_extra_word():
     # NOTE: this test shouldnt be necessary once actually works correctly

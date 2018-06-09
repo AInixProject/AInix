@@ -199,7 +199,10 @@ class CmdParser(): #bashlex.ast.nodevisitor):
             else:
                 if len(remaining_words) == 0 and arg.required:
                     raise ValueError("Error when parsing positional args. No remaining words for single consume")
-                out.append([remaining_words.pop()])
+                if len(remaining_words) > 0:
+                    out.append([remaining_words.pop()])
+                else:
+                    out.append(None)
         if remaining_words:
             raise CmdParseError("Unexpected remaining words to parse", remaining_words)
         return out
@@ -229,8 +232,8 @@ class CmdParser(): #bashlex.ast.nodevisitor):
                         args.append(ArgumentNode(arg, True, "-" + optlist["-" + arg.shorthand]))
                         continue
                 else:
-                    this_arg_vals = positional_vals[arg.position]
-                    if len(this_arg_vals) > 0:
+                    this_arg_vals = positional_vals[arg.position - command.smallest_pos_number]
+                    if this_arg_vals is not None and len(this_arg_vals) > 0:
                         args.append(ArgumentNode(arg, True, " ".join(this_arg_vals)))
                         continue
                 args.append(ArgumentNode(arg, False, None))

@@ -1,8 +1,12 @@
+from __future__ import print_function
 import data as sampledata
 from program_description import Argument, AIProgramDescription
 from cmd_parse import CmdParser, CmdParseError
 from bashmetrics import BashMetric
 import argparse
+from colorama import init
+init()
+from colorama import Fore, Back, Style
 parsefaildesc = AIProgramDescription(
     name = "astparsefail", arguments = []
 )
@@ -33,5 +37,8 @@ if __name__ == "__main__":
             print("nl:",nl)
             print("cmd:", cmd)
         except:
+            print(Fore.RED, end='')
+            print("cmd:", cmd)
+            print(Style.RESET_ALL, end='')
             parseFails += 1
     print("parse failse", parseFails, " parse not fail", len(cmd_data) - parseFails)

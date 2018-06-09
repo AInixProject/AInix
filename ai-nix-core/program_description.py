@@ -113,9 +113,11 @@ class AIProgramDescription():
         if sum([1 if a.argtype.is_multi_word else 0 for a in positional_args]) > 1:
             raise ValueError("Cannont create description with more than one \
                     multiword postional args. Leads to ambigious parsing. Name:", self.name)
+        self.smallest_pos_number = None
         if positional_args:
             actual_pos_numbers = tuple([a.position for a in positional_args])
             smallest_pos_number = actual_pos_numbers[0]
+            self.smallest_pos_number = smallest_pos_number
             largest_expected_pos = len(positional_args) + smallest_pos_number
             if largest_expected_pos < 0:
                 raise ValueError("Description", self.name, 
