@@ -3,9 +3,19 @@
   arguments:
   [
     {
+      name: root_path
+      type: SingleFile
+      position: -1
+    }
+    {
       name: name
       long_single_dash: True
       type: Stringlike
+    }
+    {
+      name: iname
+      long_single_dash: True
+      type: SingleFile
     }
     {
       name: path
@@ -18,14 +28,24 @@
       type: Numberlike
     }
     {
-      name: size
+      name: mnewer
+      long_single_dash: True
+      type: SingleFile
+    }
+    {
+      name: atime
       long_single_dash: True
       type: Numberlike
     }
     {
-      name: delete
+      name: ctime
       long_single_dash: True
-      type: StoreTrue
+      type: Numberlike
+    }
+    {
+      name: size
+      long_single_dash: True
+      type: Numberlike
     }
     {
       name: type
@@ -38,9 +58,14 @@
       type: Permlike
     }
     {
-      name: root_path
-      type: SingleFile
-      position: -1
+      name: delete
+      long_single_dash: True
+      type: StoreTrue
+    }
+    {
+      name: print
+      long_single_dash: True
+      type: StoreTrue
     }
   ]
   examples:
