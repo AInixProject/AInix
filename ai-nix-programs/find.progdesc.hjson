@@ -43,12 +43,27 @@
       type: Numberlike
     }
     {
+      name: cmin
+      long_single_dash: True
+      type: Numberlike
+    }
+    {
+      name: amin
+      long_single_dash: True
+      type: Numberlike
+    }
+    {
       name: size
       long_single_dash: True
       type: Numberlike
     }
     {
       name: type
+      long_single_dash: True
+      type: Stringlike
+    }
+    {
+      name: user
       long_single_dash: True
       type: Stringlike
     }
@@ -64,6 +79,11 @@
     }
     {
       name: print
+      long_single_dash: True
+      type: StoreTrue
+    }
+    {
+      name: print0
       long_single_dash: True
       type: StoreTrue
     }

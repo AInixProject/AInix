@@ -1,0 +1,71 @@
+{
+  name: grep
+  arguments:
+  [
+    {
+      name: pattern
+      type: Regex
+      position: 0
+    }
+    {
+      name: i
+      type: StoreTrue
+    }
+    {
+      name: c
+      type: StoreTrue
+    }
+    {
+      name: C
+      type: Numberlike
+    }
+    {
+      name: B
+      type: Numberlike
+    }
+    {
+      name: A
+      type: Numberlike
+    }
+    {
+      name: R
+      type: StoreTrue
+    }
+    {
+      name: file
+      type: FileList
+      position: 1
+    }
+  ]
+  examples:
+  [
+    {
+      lang: [
+        grep [-[1=FILENAME]-] for lines that contain "error"
+        what lines in [-[1=FILENAME]-] have the word error
+      ]
+      cmd: [
+        grep error [-[$1]-]
+      ]
+    }
+    {
+      lang: [
+        find all uses of the word bench in [-[1=FILENAME]-] 
+      ]
+      cmd: [
+        grep bench [-[$1]-]
+      ]
+    }
+    {
+      lang: [
+        grep 'bob9' [-[1=FILENAME]-] but ignore case
+        grep 'bob9' [-[1=FILENAME]-] case insentive
+        grep 'bob9' [-[1=FILENAME]-] but don't care about case
+        search for bob9 in the file [-[1=FILENAME]-] but dont care about upper or lower case.
+      ]
+      cmd: [
+        grep -i bob9 [-[$1]-]
+      ]
+    }
+  ]
+}
