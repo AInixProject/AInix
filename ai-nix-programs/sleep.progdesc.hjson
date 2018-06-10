@@ -1,0 +1,26 @@
+{
+  name: sleep
+  arguments:
+  [
+    {
+      name: time
+      type: Numberlike
+      position: 0
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        sleep for one second
+        wait a sec
+        don't do anything for 1 second
+      ]
+      cmd:
+      [
+        sleep 1
+      ]
+    }
+  ]
+}
