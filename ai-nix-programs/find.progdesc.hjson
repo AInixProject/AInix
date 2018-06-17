@@ -78,6 +78,11 @@
       type: Stringlike
     }
     {
+      name: maxdepth
+      long_single_dash: True
+      type: Numberlike
+    }
+    {
       name: user
       long_single_dash: True
       type: Stringlike
