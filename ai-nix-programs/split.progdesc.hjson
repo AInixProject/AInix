@@ -14,6 +14,16 @@
       name: C
       type: Numberlike
     }
+    {
+      name: file
+      type: SingleFile
+      position: 0
+    }
+    {
+      name: prefix
+      type: Stringlike
+      position: 1
+    }
   ]
   examples:
   [

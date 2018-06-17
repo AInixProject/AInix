@@ -1,0 +1,62 @@
+{
+  name: wc
+  arguments:
+  [
+    {
+      name: l
+      type: StoreTrue
+    }
+    {
+      name: c
+      type: StoreTrue
+    }
+    {
+      name: m
+      type: StoreTrue
+    }
+    {
+      name: w
+      type: StoreTrue
+    }
+    {
+      name: file
+      type: SingleFile
+      position: 0
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        how many lines are in [-[1=FILENAME]-]?
+        count the number of lines in [-[1=FILENAME]-]
+        get the line count of [-[1=FILENAME]-]
+      ]
+      cmd:
+      [
+        wc -l [-[$1]-]
+      ]
+    }
+    {
+      lang:
+      [
+        how many words are in [-[1=FILENAME]-]?
+        "[-[1=FILENAME]-] word count"
+      ]
+      cmd:
+      [
+        wc -w [-[$1]-]
+      ]
+    }
+    {
+      lang:
+      [
+        how many bytes are in [-[1=FILENAME]-]?
+      ]
+      cmd: [
+        wc -c [-[$1]-]
+      ]
+    }
+  ]
+}

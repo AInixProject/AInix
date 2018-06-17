@@ -22,5 +22,47 @@
         sleep 1
       ]
     }
+    {
+      lang:
+      [
+        sleep for ten seconds
+      ]
+      cmd:
+      [
+        sleep 10
+      ]
+    }
+    {
+      lang:
+      [
+        wait for 5 seconds
+      ]
+      cmd:
+      [
+        sleep 5
+      ]
+    }
+    {
+      lang:
+      [
+        sleep for six seconds please
+      ]
+      cmd:
+      [
+        sleep 6
+      ]
+    }
+    {
+      lang:
+      [
+        sleep for half a minute
+        sleep for 30 secs
+        just chill for half a minute
+      ]
+      cmd:
+      [
+        sleep 30
+      ]
+    }
   ]
 }

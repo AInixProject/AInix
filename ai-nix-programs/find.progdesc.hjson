@@ -63,6 +63,11 @@
       type: Numberlike
     }
     {
+      name: mmin
+      long_single_dash: True
+      type: Numberlike
+    }
+    {
       name: size
       long_single_dash: True
       type: Numberlike
