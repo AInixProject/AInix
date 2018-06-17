@@ -7,6 +7,7 @@ import argparse
 from colorama import init
 init()
 from colorama import Fore, Back, Style
+from collections import Counter
 parsefaildesc = AIProgramDescription(
     name = "astparsefail", arguments = []
 )
@@ -27,6 +28,7 @@ if __name__ == "__main__":
     metric.reset()
     parseFails = 0
     
+    firstWordFails = Counter()
     print("lenghts", len(nl_data), len(cmd_data))
     for nl, cmd in zip(nl_data, cmd_data):
         if "`" in cmd or "{" in cmd or "$" in cmd or "#" in cmd:
@@ -40,5 +42,9 @@ if __name__ == "__main__":
             print(Fore.RED, end='')
             print("cmd:", cmd)
             print(Style.RESET_ALL, end='')
+            firstWordFails.update(cmd.split()[:1])
             parseFails += 1
     print("parse failse", parseFails, " parse not fail", len(cmd_data) - parseFails)
+    print("most fail first words:")
+    print(firstWordFails)
+

@@ -18,6 +18,16 @@
       type: SingleFile
     }
     {
+      name: wholename
+      long_single_dash: True
+      type: Stringlike
+    }
+    {
+      name: iwholename
+      long_single_dash: True
+      type: Stringlike
+    }
+    {
       name: path
       long_single_dash: True
       type: Stringlike
@@ -66,6 +76,11 @@
       name: user
       long_single_dash: True
       type: Stringlike
+    }
+    {
+      name: regex
+      long_single_dash: True
+      type: Regex
     }
     {
       name: perm

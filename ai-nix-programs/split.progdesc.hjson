@@ -1,0 +1,96 @@
+{
+  name: split
+  arguments:
+  [
+    {
+      name: l
+      type: Numberlike
+    }
+    {
+      name: n
+      type: Numberlike
+    }
+    {
+      name: C
+      type: Numberlike
+    }
+  ]
+  examples:
+  [
+    {
+      lang:
+      [
+        take [-[1=FILENAME]-] and split it into seperate files with ten lines
+        split [-[1=FILENAME]-] into chunks of 10 lines
+      ]
+      cmd:
+      [
+        split -l 10 [-[$1]-]
+      ]
+    }
+    {
+      lang:
+      [
+        split [-[1=FILENAME]-] into 5 equal sized files (except for last one)
+        split [-[1=FILENAME]-] into five different files
+        take [-[1=FILENAME]-] and output 5 files
+      ]
+      cmd:
+      [
+        split -n 5 [-[$1]-]
+      ]
+    }
+    {
+      lang:
+      [
+        split [-[1=FILENAME]-] into 3 files
+      ]
+      cmd:
+      [
+        split -n 3 [-[$1]-]
+      ]
+    }
+    {
+      lang:
+      [
+        split [-[1=FILENAME]-] into 8 files
+      ]
+      cmd:
+      [
+        split -n 8 [-[$1]-]
+      ]
+    }
+    {
+      lang:
+      [
+        split [-[1=FILENAME]-] into 2 files
+        split [-[1=FILENAME]-] in half
+      ]
+      cmd:
+      [
+        split -n 2 [-[$1]-]
+      ]
+    }
+    {
+      lang:
+      [
+        split [-[1=FILENAME]-] into 2 files
+        split [-[1=FILENAME]-] in half
+      ]
+      cmd:
+      [
+        split -n 2 [-[$1]-]
+      ]
+    }
+    {
+      lang:
+      [
+        split [-[1=FILENAME]-] into chunks with max of 100 bytes
+      ]
+      cmd:
+      [
+        split -C 100 [-[$1]-]
+      ]
+    }
+  ]
+}
