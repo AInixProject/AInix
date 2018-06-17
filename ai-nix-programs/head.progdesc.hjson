@@ -1,0 +1,62 @@
+{
+  name: head
+  arguments:
+  [
+    {
+      name: n
+      type: Numberlike
+    }
+    {
+      name: c
+      type: Numberlike
+    }
+    {
+      name: file
+      type: SingleFile
+      position: 0
+    }
+  ]
+  examples:
+  [
+    {
+      lang: [
+        print the first 12 lines of [-[1=FILENAME]-]
+      ]
+      cmd: [
+        head -n 12 [-[$1]-]
+      ]
+    }
+    {
+      lang: [
+        get first 8 lines of [-[1=FILENAME]-]
+      ]
+      cmd: [
+        head -n 8 [-[$1]-]
+      ]
+    }
+    {
+      lang: [
+        what are the top 20 lines of [-[1=FILENAME]-]
+      ]
+      cmd: [
+        head -n 20 [-[$1]-]
+      ]
+    }
+    {
+      lang: [
+        prnt first one hundred lines of [-[1=FILENAME]-]
+      ]
+      cmd: [
+        head -n 100 [-[$1]-]
+      ]
+    }
+    {
+      lang: [
+        print first fifty bytes of [-[1=FILENAME]-]
+      ]
+      cmd: [
+        head -c 50 [-[$1]-]
+      ]
+    }
+  ]
+}
