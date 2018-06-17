@@ -83,6 +83,11 @@
       type: Numberlike
     }
     {
+      name: mindepth
+      long_single_dash: True
+      type: Numberlike
+    }
+    {
       name: user
       long_single_dash: True
       type: Stringlike
