@@ -103,6 +103,11 @@
       type: Permlike
     }
     {
+      name: daystart
+      long_single_dash: True
+      type: StoreTrue
+    }
+    {
       name: delete
       long_single_dash: True
       type: StoreTrue

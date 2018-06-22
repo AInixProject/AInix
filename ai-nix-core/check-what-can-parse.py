@@ -31,7 +31,7 @@ if __name__ == "__main__":
     firstWordFails = Counter()
     print("lenghts", len(nl_data), len(cmd_data))
     for nl, cmd in zip(nl_data, cmd_data):
-        if "`" in cmd or "{" in cmd or "$" in cmd or "#" in cmd:
+        if "`" in cmd or "{" in cmd or "$(" in cmd or '<(' in cmd or "#" in cmd:
             print(Fore.LIGHTRED_EX, end='')
             print("cmd:", cmd)
             print(Style.RESET_ALL, end='')
