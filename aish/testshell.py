@@ -12,16 +12,32 @@ from pygments.lexers import BashLexer
 import subprocess
 import os
 
-session = PromptSession()
-myLexer = BashLexer()
+import pudb
+
 builtin_dict = { }
 
-class AishShell(BaseShell):
+class AishShell():
+    def __init__(self):
+        self.session = PromptSession()
+        self.lexer = BashLexer()
+
+    def singleline(self, store_in_history=True, auto_suggest=None,
+                   enable_history_search=True, multiline=True, **kwargs):
+        """Reads a single line of input from the shell. The store_in_history
+        kwarg flags whether the input should be stored in PTK's in-memory
+        history.
+        """
+        events.on_pre_prompt.fire()
+        env = builtins.__xonsh_env__
+        line = self.session.prompt('$ ', lexer=PygmentsLexer(BashLexer))
+        events.on_post_prompt.fire()
+        return line
+
     def cmdloop(self, intro=None):
         while not builtins.__xonsh_exit__:
             env = builtins.__xonsh_env__
-            text = session.prompt('$ ', lexer=PygmentsLexer(BashLexer))
-            lexed = pygments.lex(text, myLexer)
+            text =  self.singleline()
+            lexed = pygments.lex(text, self.lexer)
             words = []
             error = False
             for tokenType, value in lexed:

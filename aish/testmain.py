@@ -1,105 +1,70 @@
 from xonsh import main as xmain
+from xonsh.main import XonshMode
 import builtins
 import pudb
 import testshell
-
-class InjectShell(object):
-    """Taken from shell.py in xonsh. 
-    Main xonsh shell.
-
-    Initializes execution environment and decides if prompt_toolkit or
-    readline version of shell should be used.
-    """
-
-    shell_type_aliases = {
-        'b': 'best',
-        'ptk': 'prompt_toolkit',
-        'ptk1': 'prompt_toolkit1',
-        'ptk2': 'prompt_toolkit2',
-        'prompt-toolkit': 'prompt_toolkit',
-        'prompt-toolkit1': 'prompt_toolkit1',
-        'prompt-toolkit2': 'prompt_toolkit2',
-        'rand': 'random',
-        'rl': 'readline',
-        }
-
-    def __init__(self, execer, ctx=None, shell_type=None, **kwargs):
-        """
-        Parameters
-        ----------
-        execer : Execer
-            An execer instance capable of running xonsh code.
-        ctx : Mapping, optional
-            The execution context for the shell (e.g. the globals namespace).
-            If none, this is computed by loading the rc files. If not None,
-            this no additional context is computed and this is used
-            directly.
-        shell_type : str, optional
-            The shell type to start, such as 'readline', 'prompt_toolkit1',
-            or 'random'.
-        """
-        print("Sneaky sneak")
-        self.execer = execer
-        self.ctx = {} if ctx is None else ctx
-        env = builtins.__xonsh_env__
-        # build history backend before creating shell
-        builtins.__xonsh_history__ = hist = xhm.construct_history(
-            env=env.detype(), ts=[time.time(), None], locked=True)
-
-        # pick a valid shell -- if no shell is specified by the user,
-        # shell type is pulled from env
-        if shell_type is None:
-            shell_type = env.get('SHELL_TYPE')
-            if shell_type == 'none':
-                # This bricks interactive xonsh
-                # Can happen from the use of .xinitrc, .xsession, etc
-                shell_type = 'best'
-        shell_type = self.shell_type_aliases.get(shell_type, shell_type)
-        if shell_type == 'best' or shell_type is None:
-            shell_type = best_shell_type()
-        elif shell_type == 'random':
-            shell_type = random.choice(('readline', 'prompt_toolkit'))
-        if shell_type == 'prompt_toolkit':
-            if not has_prompt_toolkit():
-                warnings.warn('prompt_toolkit is not available, using '
-                              'readline instead.')
-                shell_type = 'readline'
-            elif not ptk_version_is_supported():
-                warnings.warn('prompt-toolkit version < v1.0.0 is not '
-                              'supported. Please update prompt-toolkit. Using '
-                              'readline instead.')
-                shell_type = 'readline'
-            else:
-                shell_type = ptk_shell_type()
-        self.shell_type = env['SHELL_TYPE'] = shell_type
-        # actually make the shell
-        if shell_type == 'none':
-            from xonsh.base_shell import BaseShell as shell_class
-        elif shell_type == 'prompt_toolkit2':
-            from xonsh.ptk2.shell import PromptToolkit2Shell as shell_class
-        elif shell_type == 'prompt_toolkit1':
-            from xonsh.ptk.shell import PromptToolkitShell as shell_class
-        elif shell_type == 'readline':
-            from xonsh.readline_shell import ReadlineShell as shell_class
-        else:
-            raise XonshError('{} is not recognized as a shell type'.format(
-                             shell_type))
-        self.shell = shell_class(execer=self.execer,
-                                 ctx=self.ctx, **kwargs)
-        # allows history garbage collector to start running
-        if hist.gc is not None:
-            hist.gc.wait_for_shell = False
-
-#xmain.Shell = InjectShell
+from xonsh.platform import HAS_PYGMENTS, ON_WINDOWS
+from xonsh.jobs import ignore_sigtstp
+import os
+import signal
 
 def main(argv=None):
     args = None
     try:
         args = xmain.premain(argv)
         realshell = builtins.__xonsh_shell__.shell 
-        builtins.__xonsh_shell__.shell = testshell.AishShell(realshell.execer, realshell.ctx)
-        return xmain.main_xonsh(args)
+        builtins.__xonsh_shell__.shell = testshell.AishShell()
+        return main_aish(args)
     except Exception as err:
         _failback_to_other_shells(args, err)
+
+def main_aish(args):
+    """Main entry point for aish cli. replaces main_xonsh in main.py of xonsh"""
+    if not ON_WINDOWS:
+        def func_sig_ttin_ttou(n, f):
+            pass
+        signal.signal(signal.SIGTTIN, func_sig_ttin_ttou)
+        signal.signal(signal.SIGTTOU, func_sig_ttin_ttou)
+
+    events.on_post_init.fire()
+    env = builtins.__xonsh_env__
+    shell = builtins.__xonsh_shell__
+    try:
+        if args.mode == XonshMode.interactive:
+            # enter the shell
+            env['XONSH_INTERACTIVE'] = True
+            ignore_sigtstp()
+            if (env['XONSH_INTERACTIVE'] and
+                    not any(os.path.isfile(i) for i in env['XONSHRC'])):
+                pass
+                #print_welcome_screen()
+            events.on_pre_cmdloop.fire()
+            try:
+                shell.shell.cmdloop()
+            finally:
+                events.on_post_cmdloop.fire()
+        elif args.mode == XonshMode.single_command:
+            # run a single command and exit
+            run_code_with_cache(args.command.lstrip(), shell.execer, mode='single')
+        elif args.mode == XonshMode.script_from_file:
+            # run a script contained in a file
+            path = os.path.abspath(os.path.expanduser(args.file))
+            if os.path.isfile(path):
+                sys.argv = [args.file] + args.args
+                env['ARGS'] = sys.argv[:]  # $ARGS is not sys.argv
+                env['XONSH_SOURCE'] = path
+                shell.ctx.update({'__file__': args.file, '__name__': '__main__'})
+                run_script_with_cache(args.file, shell.execer, glb=shell.ctx,
+                                      loc=None, mode='exec')
+            else:
+                print('xonsh: {0}: No such file or directory.'.format(args.file))
+        elif args.mode == XonshMode.script_from_stdin:
+            # run a script given on stdin
+            code = sys.stdin.read()
+            run_code_with_cache(code, shell.execer, glb=shell.ctx, loc=None,
+                                mode='exec')
+    finally:
+        events.on_exit.fire()
+    postmain(args)
 
 main(['--shell-type', 'readline'])
