@@ -1,6 +1,6 @@
 import pytest
-from cmd_parse import *
-import program_description
+from ainix_kernel.cmd_parse import *
+from ainix_kernel import program_description
 import torch
 from torch.autograd import Variable
 

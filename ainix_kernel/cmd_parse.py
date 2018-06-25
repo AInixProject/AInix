@@ -1,5 +1,5 @@
 import bashlex
-import program_description
+import ainix_kernel.program_description
 import sys, os
 import pudb
 import torch

@@ -1,7 +1,7 @@
-from program_description import Argument, AIProgramDescription
-import program_description
-from custom_fields import Replacer, ReplacementGroup, Replacement
-import tokenizers
+from ainix_kernel.program_description import Argument, AIProgramDescription
+from ainix_kernel import program_description
+from ainix_kernel.custom_fields import Replacer, ReplacementGroup, Replacement
+from ainix_kernel import tokenizers
 import random
 import glob
 
@@ -12,17 +12,18 @@ for progfile in glob.glob("../ai-nix-programs/*.progdesc.*"):
     all_descs.append(program_description.load(filetext))
 
 ###########
-all_data = []
-for desc in all_descs:
-    all_data.extend(desc.get_example_tuples()) 
-#all_data = lsdata + pwddata + cddata + echodata + rmdata + mkdirData + touchData + catData
-random.shuffle(all_data)
-
-filename_repl = ReplacementGroup('FILENAME', Replacement.from_tsv("./data/FILENAME.tsv"))
-dirname_repl = ReplacementGroup('DIRNAME', Replacement.from_tsv("./data/DIRNAME.tsv"))
-replacer = Replacer([filename_repl, dirname_repl])
 
 def get_all_data_replaced(num_duplicates = 1, num_val_duplicates = None, trainsplit = .7):
+    all_data = []
+    for desc in all_descs:
+        all_data.extend(desc.get_example_tuples()) 
+    random.shuffle(all_data)
+
+    filename_repl = ReplacementGroup('FILENAME', Replacement.from_tsv("./data/FILENAME.tsv"))
+    dirname_repl = ReplacementGroup('DIRNAME', Replacement.from_tsv("./data/DIRNAME.tsv"))
+    replacer = Replacer([filename_repl, dirname_repl])
+
+
     train = all_data[:int(len(all_data)*trainsplit)]*num_duplicates
     if num_val_duplicates is None:
         num_val_duplicates = num_duplicates

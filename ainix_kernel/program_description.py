@@ -10,9 +10,9 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 import pudb
-import constants
+from ainix_kernel import constants
 import hjson
-import arg_types
+from ainix_kernel import arg_types
 
 class ProgramParseError(Exception):
     pass

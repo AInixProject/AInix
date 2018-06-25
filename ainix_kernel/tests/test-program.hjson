@@ -1,0 +1,51 @@
+{
+    # First specify basic info about our program
+    name: test
+    #name-space: org.ainix.coreprograms
+    ## This is a path to what to run when our program is invoked
+    #main: ls.py
+    #
+    ## Here we include any types we are going to be using in this program
+    #includes:
+    #    - org.ainix.*
+    #    # Here we include a type we define specifically for our program.
+    #    # The use of a dot at the begining represents the current path
+    #    - .types.*
+    #
+    ## Here we describe all the arguments of our program
+    arguments: [
+        {
+          type: StoreTrue
+          name: "-a"
+        }
+        {
+          type: StoreTrue
+          name: "-A"
+        }
+    ]
+    #    - MutualExclusion:
+    #        argments:
+    #            - StoreTrue:
+    #                name: "-1"
+    #            - StoreTrue:
+    #                name: "-C"
+    #        settle-by: "take-last"
+    #    - Path:
+    #        positional: True
+
+    #
+    ##unimplemented-arguments: ["-@", "-A"]
+    #
+    ## Here we specify what program will do for various arguments it is passed in.
+    ## Output types are completely optional, but it makes it easier for AI-NIX
+    #invocations:
+    #    - default:
+    #        out-types: List<Path>
+    #    - "-l":
+    #        out-types: List<LongLSFormat>
+    #
+    ## Here we get to AI parts of an AIProgram
+    #training-data:
+    #    in-filename: "../../ai-nix-programs/ls/data.in"
+    #    out-filename: "../../ai-nix-programs/ls/data.out"
+}

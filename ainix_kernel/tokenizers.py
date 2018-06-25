@@ -1,4 +1,4 @@
-import constants
+from ainix_kernel import constants
 def nonascii_tokenizer(input_string):
     out = [[]]
     for c in input_string:

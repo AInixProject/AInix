@@ -3,8 +3,8 @@ should be able to learn"""
 import pytest
 import pudb
 import train
-from program_description import AIProgramDescription, Argument
-from bashmetrics import BashMetric
+from ainix_kernel.program_description import AIProgramDescription, Argument
+from ainix_kernel.bashmetrics import BashMetric
 import random
 
 def test_pick_program():

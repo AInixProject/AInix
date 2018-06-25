@@ -1,4 +1,7 @@
-from custom_fields import *
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
+from ainix_kernel.custom_fields import *
 from collections import Counter
 from unittest.mock import MagicMock, Mock
 

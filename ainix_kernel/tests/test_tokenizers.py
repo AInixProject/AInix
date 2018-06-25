@@ -1,5 +1,5 @@
-import constants
-from tokenizers import *
+from ainix_kernel import constants
+from ainix_kernel.tokenizers import *
 
 def test_non_ascii():
     data = "my name is 'eve'"

@@ -1,7 +1,7 @@
 import pytest
 import pudb
-from program_description import AIProgramDescription, Argument
-from bashmetrics import BashMetric
+from ainix_kernel.program_description import AIProgramDescription, Argument
+from ainix_kernel.bashmetrics import BashMetric
 import random
 from model import SimpleCmd
 import torchtext

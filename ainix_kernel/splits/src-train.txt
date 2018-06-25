@@ -1,0 +1,895 @@
+list <SPACE> long <SPACE> format <SPACE> including <SPACE> hidden <SPACE> files
+ls <SPACE> group <SPACE> extension <SPACE> together
+list
+print <SPACE> out <SPACE> " hello <SPACE> world " 
+list <SPACE> files <SPACE> sort <SPACE> by <SPACE> extension <SPACE> with <SPACE> hidden <SPACE> files
+show <SPACE> info <SPACE> about <SPACE> files <SPACE> here
+ls <SPACE> with <SPACE> hidden <SPACE> files
+display <SPACE> files <SPACE> smallest <SPACE> files <SPACE> first
+ls <SPACE> order <SPACE> files <SPACE> based <SPACE> on <SPACE> last <SPACE> modified <SPACE> time
+force <SPACE> delete <SPACE> SugarCE . zip
+list <SPACE> all <SPACE> subdirectories
+list <SPACE> the <SPACE> files <SPACE> in <SPACE> ~ / tarballprep <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+print <SPACE> an <SPACE> empty <SPACE> new <SPACE> line
+make <SPACE> an <SPACE> empty <SPACE> file <SPACE> name <SPACE> persist . radio . ramdump <SPACE> in <SPACE> my <SPACE> parent <SPACE> directory
+print <SPACE> my <SPACE> home <SPACE> directory
+delete <SPACE> all <SPACE> png <SPACE> files <SPACE> here
+move <SPACE> data_state . py <SPACE> and <SPACE> . DS_Store <SPACE> to <SPACE> libvpx
+make <SPACE> a <SPACE> file <SPACE> named <SPACE> __init__ . py
+print <SPACE> the <SPACE> contents <SPACE> of <SPACE> GlyphsInLabelColor . glyphsReporter
+ls <SPACE> order <SPACE> with <SPACE> decreasing <SPACE> file <SPACE> size
+show <SPACE> long <SPACE> listing <SPACE> information <SPACE> about <SPACE> each <SPACE> file / directory <SPACE> here
+create <SPACE> a <SPACE> emptry <SPACE> directory <SPACE> named <SPACE> testdir
+list <SPACE> all <SPACE> files <SPACE> here
+ls <SPACE> with <SPACE> inode <SPACE> numbers
+change <SPACE> the <SPACE> name <SPACE> of <SPACE> com . apple . messageshelper . MessageController <SPACE> to <SPACE> be <SPACE> / etc / sysctl . conf
+remove <SPACE> all <SPACE> markdown <SPACE> files
+list <SPACE> all <SPACE> files <SPACE> and <SPACE> directories <SPACE> here
+remove <SPACE> all <SPACE> text <SPACE> files
+what <SPACE> files <SPACE> are <SPACE> here
+display <SPACE> a <SPACE> long <SPACE> list <SPACE> of <SPACE> the <SPACE> content <SPACE> of <SPACE> current <SPACE> directory
+concat <SPACE> all <SPACE> comma <SPACE> seperated <SPACE> files <SPACE> here
+get <SPACE> the <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> * . java
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> stuff <SPACE> like <SPACE> file <SPACE> size
+ls <SPACE> all <SPACE> jpg <SPACE> files
+delete <SPACE> all <SPACE> pyc <SPACE> files
+print <SPACE> what ' s <SPACE> in <SPACE> rsa 1 0 0 . 5 1 . m
+list <SPACE> all <SPACE> files <SPACE> here <SPACE> please
+delete <SPACE> all <SPACE> text <SPACE> files <SPACE> here
+set <SPACE> the <SPACE> last <SPACE> mod <SPACE> time <SPACE> of <SPACE> diacritic - removal . gv <SPACE> to <SPACE> now
+ls <SPACE> in <SPACE> order <SPACE> of <SPACE> decreasing <SPACE> size
+cd <SPACE> to <SPACE> where <SPACE> I <SPACE> was <SPACE> before
+move <SPACE> all <SPACE> text <SPACE> files <SPACE> into <SPACE> dist
+list <SPACE> my <SPACE> files
+list <SPACE> display <SPACE> file <SPACE> Inode <SPACE> number <SPACE> one <SPACE> per <SPACE> line
+rm <SPACE> vep_install . pl <SPACE> override <SPACE> write <SPACE> protected
+list <SPACE> files <SPACE> here <SPACE> biggest <SPACE> files <SPACE> first
+delete <SPACE> src / typebetter . js <SPACE> and <SPACE> out_test 3 _dem . tif
+rename <SPACE> / var / tmp / learner <SPACE> to <SPACE> be <SPACE> / tmp / spark - submit
+print <SPACE> the <SPACE> contents <SPACE> of <SPACE> kernel . asm <SPACE> with <SPACE> line <SPACE> numbers
+say <SPACE> hello
+remove <SPACE> everything <SPACE> here
+where <SPACE> am <SPACE> I
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> modification <SPACE> data
+set <SPACE> the <SPACE> name <SPACE> of <SPACE> twitter_secret . json <SPACE> to <SPACE> body . template
+what <SPACE> file <SPACE> am <SPACE> I <SPACE> in
+create <SPACE> a <SPACE> file <SPACE> name <SPACE> cs_ 0 0 6 . data <SPACE> in <SPACE> . . 
+delete <SPACE> all <SPACE> jpg <SPACE> files <SPACE> here
+cd <SPACE> to <SPACE> parent <SPACE> dir
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> foo
+list <SPACE> only <SPACE> text <SPACE> files
+ls <SPACE> sort <SPACE> list <SPACE> by <SPACE> extension
+list <SPACE> with <SPACE> dot <SPACE> files
+delete <SPACE> file <SPACE> named <SPACE> fake_qmake . cpp
+remove <SPACE> all <SPACE> c <SPACE> files
+cd <SPACE> to <SPACE> my <SPACE> home <SPACE> directory
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> hidden <SPACE> files
+make <SPACE> an <SPACE> empty <SPACE> gitignore
+list <SPACE> files <SPACE> sort <SPACE> by <SPACE> date / time
+list <SPACE> files <SPACE> and <SPACE> dirs <SPACE> here
+ls <SPACE> * . txt <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+ls <SPACE> with <SPACE> long <SPACE> format
+ls <SPACE> order <SPACE> files <SPACE> based <SPACE> on <SPACE> last <SPACE> modified <SPACE> time <SPACE> in <SPACE> dec - ending <SPACE> order
+ls <SPACE> in <SPACE> long <SPACE> format <SPACE> with <SPACE> dot <SPACE> files
+print <SPACE> working <SPACE> dir
+list <SPACE> all <SPACE> including <SPACE> dot <SPACE> files
+ls <SPACE> all <SPACE> files <SPACE> in <SPACE> pictures <SPACE> and <SPACE> home
+list <SPACE> directories <SPACE> only
+remove <SPACE> all <SPACE> . csv <SPACE> files <SPACE> in <SPACE> this <SPACE> dir
+list <SPACE> all <SPACE> files <SPACE> in <SPACE> . . 
+move <SPACE> Event . old . streamed . root <SPACE> schema . TREE_LIVE . sql <SPACE> into <SPACE> out / csServerComp
+ls <SPACE> biggest <SPACE> files <SPACE> first
+go <SPACE> up <SPACE> one <SPACE> directory
+make <SPACE> a <SPACE> file <SPACE> named <SPACE> plugin_common_test_ 1 . o . syms : 
+reset <SPACE> the <SPACE> last <SPACE> modified <SPACE> time <SPACE> of <SPACE> logs / sVa_BigO_L 1 0 . log <SPACE> to <SPACE> now
+list <SPACE> hidden <SPACE> files <SPACE> but <SPACE> dont <SPACE> include <SPACE> . <SPACE> or <SPACE> . . 
+print <SPACE> current <SPACE> working <SPACE> directory
+print <SPACE> working <SPACE> directory
+list <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> * . h
+list <SPACE> what <SPACE> is <SPACE> here
+list <SPACE> with <SPACE> long <SPACE> format <SPACE> - <SPACE> show <SPACE> permissions
+delete <SPACE> libapplication . so <SPACE> with <SPACE> interactive <SPACE> deletion
+go <SPACE> up <SPACE> two <SPACE> directories
+concatenate <SPACE> all <SPACE> csv <SPACE> files <SPACE> here <SPACE> together
+go <SPACE> back <SPACE> to <SPACE> directory <SPACE> was <SPACE> in <SPACE> before <SPACE> last <SPACE> cd
+ls <SPACE> in <SPACE> reverse <SPACE> alphabetical <SPACE> order
+ls <SPACE> with <SPACE> dot <SPACE> files
+cd <SPACE> up <SPACE> one <SPACE> directory
+list <SPACE> file <SPACE> size
+list <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> files <SPACE> here
+cd <SPACE> to <SPACE> home <SPACE> directory
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> last <SPACE> modified <SPACE> time <SPACE> oldest <SPACE> first
+ls <SPACE> with <SPACE> date <SPACE> changed <SPACE> and <SPACE> size
+print <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> files <SPACE> here
+move <SPACE> thinClient . gfxd <SPACE> into <SPACE> / home / vagrant / src / dbstream
+ls <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+what <SPACE> files <SPACE> are <SPACE> in <SPACE> . . 
+ls <SPACE> in <SPACE> reverse <SPACE> order
+list <SPACE> recursively <SPACE> directory <SPACE> tree
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> test <SPACE> in <SPACE> ~ 
+delete <SPACE> all <SPACE> md <SPACE> files <SPACE> here
+list <SPACE> files <SPACE> recursively <SPACE> exploring <SPACE> directories
+ls <SPACE> but <SPACE> only <SPACE> list <SPACE> directories
+rm <SPACE> * . jpg <SPACE> * . png <SPACE> * . gif <SPACE> with <SPACE> confirmation
+list <SPACE> parent <SPACE> directory
+list <SPACE> the <SPACE> files <SPACE> that <SPACE> are <SPACE> in <SPACE> website / webapps / django / myproject
+make <SPACE> a <SPACE> hidden <SPACE> directory <SPACE> named <SPACE> cache
+what <SPACE> directory <SPACE> am <SPACE> I <SPACE> in
+ls <SPACE> sorted <SPACE> smallest <SPACE> to <SPACE> biggest
+display <SPACE> files <SPACE> in <SPACE> order <SPACE> of <SPACE> size
+print <SPACE> out <SPACE> hello <SPACE> world
+concatenate <SPACE> * <SPACE> together
+remove <SPACE> all <SPACE> txt <SPACE> files
+display <SPACE> a <SPACE> list <SPACE> of <SPACE> files <SPACE> and <SPACE> or <SPACE> directories <SPACE> only
+rm <SPACE> all <SPACE> txt <SPACE> files <SPACE> with <SPACE> confirmation
+make <SPACE> a <SPACE> foo <SPACE> directory
+display <SPACE> files <SPACE> with <SPACE> file <SPACE> size <SPACE> in <SPACE> human <SPACE> readable <SPACE> form
+get <SPACE> current <SPACE> path
+list <SPACE> directory <SPACE> entries <SPACE> only
+add <SPACE> empty <SPACE> file <SPACE> named <SPACE> com . canonical . indicator . power <SPACE> here
+ls <SPACE> - l <SPACE> with <SPACE> human <SPACE> readable <SPACE> file <SPACE> sizes
+print <SPACE> out <SPACE> plugin_common_test_ 1 . o . syms : 
+ls <SPACE> - lr <SPACE> by <SPACE> modified <SPACE> date
+rm <SPACE> - r <SPACE> * <SPACE> with <SPACE> confirmation
+move <SPACE> sos / normalize_factors . sql <SPACE> up <SPACE> one <SPACE> dir
+output <SPACE> the <SPACE> content <SPACE> of <SPACE> controller . global_configuration_cluster
+go <SPACE> home
+move <SPACE> all <SPACE> text <SPACE> files <SPACE> in <SPACE> parent <SPACE> directory <SPACE> into <SPACE> release
+move <SPACE> / srv / tftp / arch / x 8 6 _ 6 4 / <SPACE> to <SPACE> dist
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> change <SPACE> data
+display <SPACE> files <SPACE> biggest <SPACE> files <SPACE> first
+make <SPACE> a <SPACE> blank <SPACE> gitignore
+list <SPACE> file ' s <SPACE> inode <SPACE> index <SPACE> number
+get <SPACE> my <SPACE> cur <SPACE> path
+move <SPACE> server . go <SPACE> to <SPACE> parent <SPACE> directory
+cat <SPACE> the <SPACE> contents <SPACE> of <SPACE> dev - clean . scp <SPACE> with <SPACE> line <SPACE> numbers
+list <SPACE> root <SPACE> directory
+rm <SPACE> * . txt <SPACE> with <SPACE> confirmation
+touch <SPACE> test - requirements . txt <SPACE> using <SPACE> last <SPACE> modified <SPACE> and <SPACE> access <SPACE> times <SPACE> of <SPACE> temp . xml
+rm <SPACE> * . png <SPACE> with <SPACE> confirmation
+print <SPACE> out <SPACE> what <SPACE> directory <SPACE> am <SPACE> in
+remove <SPACE> number . for <SPACE> and <SPACE> veyepar . db
+delete <SPACE> all <SPACE> jpg <SPACE> and <SPACE> png <SPACE> files <SPACE> here
+delete <SPACE> everything <SPACE> here
+print <SPACE> the <SPACE> content <SPACE> of <SPACE> config . log
+go <SPACE> back <SPACE> to <SPACE> where <SPACE> I <SPACE> was
+delete <SPACE> all <SPACE> header <SPACE> files <SPACE> here
+list <SPACE> in <SPACE> reverse <SPACE> order
+go <SPACE> up <SPACE> to <SPACE> parent <SPACE> directory
+list <SPACE> filese <SPACE> here <SPACE> sorted <SPACE> by <SPACE> files <SPACE> size <SPACE> decending
+get <SPACE> my <SPACE> current <SPACE> directory
+list <SPACE> all <SPACE> files <SPACE> including <SPACE> hidden <SPACE> file <SPACE> starting <SPACE> with <SPACE> ' . ' 
+go <SPACE> to <SPACE> tmp <SPACE> directory
+make <SPACE> a <SPACE> dir <SPACE> named <SPACE> testdir
+list <SPACE> all <SPACE> text <SPACE> files <SPACE> here
+what <SPACE> files <SPACE> are <SPACE> here <SPACE> with <SPACE> file <SPACE> information
+ls <SPACE> recursively <SPACE> down <SPACE> all <SPACE> dirs
+list <SPACE> with <SPACE> long <SPACE> format <SPACE> with <SPACE> file <SPACE> size
+ls <SPACE> - l <SPACE> sort <SPACE> by <SPACE> file <SPACE> extension
+create <SPACE> a <SPACE> __init__ . py
+ls <SPACE> all <SPACE> files <SPACE> in <SPACE> pictures
+ls <SPACE> in <SPACE> long <SPACE> format
+set <SPACE> last <SPACE> mod <SPACE> time <SPACE> of <SPACE> setup . py <SPACE> to <SPACE> current <SPACE> time
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> testdir
+what <SPACE> file <SPACE> am <SPACE> I <SPACE> in
+set <SPACE> the <SPACE> last <SPACE> accessed <SPACE> and <SPACE> modified <SPACE> time <SPACE> of <SPACE> . / test - lib . sh <SPACE> to <SPACE> now
+make <SPACE> this <SPACE> a <SPACE> python <SPACE> module
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> dot <SPACE> files
+ls <SPACE> - r <SPACE> with <SPACE> i - node <SPACE> numbers
+show <SPACE> all <SPACE> files <SPACE> recursively
+list <SPACE> long <SPACE> format <SPACE> including <SPACE> hidden <SPACE> files
+ls <SPACE> group <SPACE> extension <SPACE> together
+list
+print <SPACE> out <SPACE> " hello <SPACE> world " 
+list <SPACE> files <SPACE> sort <SPACE> by <SPACE> extension <SPACE> with <SPACE> hidden <SPACE> files
+show <SPACE> info <SPACE> about <SPACE> files <SPACE> here
+ls <SPACE> with <SPACE> hidden <SPACE> files
+display <SPACE> files <SPACE> smallest <SPACE> files <SPACE> first
+ls <SPACE> order <SPACE> files <SPACE> based <SPACE> on <SPACE> last <SPACE> modified <SPACE> time
+force <SPACE> delete <SPACE> _build / qsort . inferred . mli
+list <SPACE> all <SPACE> subdirectories
+list <SPACE> the <SPACE> files <SPACE> in <SPACE> / topbeat / data <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+print <SPACE> an <SPACE> empty <SPACE> new <SPACE> line
+make <SPACE> an <SPACE> empty <SPACE> file <SPACE> name <SPACE> icon - 3 2 . png <SPACE> in <SPACE> my <SPACE> parent <SPACE> directory
+print <SPACE> my <SPACE> home <SPACE> directory
+delete <SPACE> all <SPACE> png <SPACE> files <SPACE> here
+move <SPACE> reducer . py <SPACE> and <SPACE> test_rotary_class . py <SPACE> to <SPACE> php - composer
+make <SPACE> a <SPACE> file <SPACE> named <SPACE> __init__ . py
+print <SPACE> the <SPACE> contents <SPACE> of <SPACE> xil_defaultlib . glbl
+ls <SPACE> order <SPACE> with <SPACE> decreasing <SPACE> file <SPACE> size
+show <SPACE> long <SPACE> listing <SPACE> information <SPACE> about <SPACE> each <SPACE> file / directory <SPACE> here
+create <SPACE> a <SPACE> emptry <SPACE> directory <SPACE> named <SPACE> testdir
+list <SPACE> all <SPACE> files <SPACE> here
+ls <SPACE> with <SPACE> inode <SPACE> numbers
+change <SPACE> the <SPACE> name <SPACE> of <SPACE> test . fastg <SPACE> to <SPACE> be <SPACE> a . bed
+remove <SPACE> all <SPACE> markdown <SPACE> files
+list <SPACE> all <SPACE> files <SPACE> and <SPACE> directories <SPACE> here
+remove <SPACE> all <SPACE> text <SPACE> files
+what <SPACE> files <SPACE> are <SPACE> here
+display <SPACE> a <SPACE> long <SPACE> list <SPACE> of <SPACE> the <SPACE> content <SPACE> of <SPACE> current <SPACE> directory
+concat <SPACE> all <SPACE> comma <SPACE> seperated <SPACE> files <SPACE> here
+get <SPACE> the <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> * . java
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> stuff <SPACE> like <SPACE> file <SPACE> size
+ls <SPACE> all <SPACE> jpg <SPACE> files
+delete <SPACE> all <SPACE> pyc <SPACE> files
+print <SPACE> what ' s <SPACE> in <SPACE> png / frame - part 0 2 . png
+list <SPACE> all <SPACE> files <SPACE> here <SPACE> please
+delete <SPACE> all <SPACE> text <SPACE> files <SPACE> here
+set <SPACE> the <SPACE> last <SPACE> mod <SPACE> time <SPACE> of <SPACE> systemvm . img <SPACE> to <SPACE> now
+ls <SPACE> in <SPACE> order <SPACE> of <SPACE> decreasing <SPACE> size
+cd <SPACE> to <SPACE> where <SPACE> I <SPACE> was <SPACE> before
+move <SPACE> all <SPACE> text <SPACE> files <SPACE> into <SPACE> . . 
+list <SPACE> my <SPACE> files
+list <SPACE> display <SPACE> file <SPACE> Inode <SPACE> number <SPACE> one <SPACE> per <SPACE> line
+rm <SPACE> jsonc . tar . gz <SPACE> override <SPACE> write <SPACE> protected
+list <SPACE> files <SPACE> here <SPACE> biggest <SPACE> files <SPACE> first
+delete <SPACE> config / puma . rb <SPACE> and <SPACE> cacert . pem
+rename <SPACE> / opt / dell / barclamps <SPACE> to <SPACE> be <SPACE> original / 1 6 _A 1 2 _pUn_down
+print <SPACE> the <SPACE> contents <SPACE> of <SPACE> . pg <SPACE> with <SPACE> line <SPACE> numbers
+say <SPACE> hello
+remove <SPACE> everything <SPACE> here
+where <SPACE> am <SPACE> I
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> modification <SPACE> data
+set <SPACE> the <SPACE> name <SPACE> of <SPACE> build . ninja <SPACE> to <SPACE> build - curl . sh
+what <SPACE> file <SPACE> am <SPACE> I <SPACE> in
+create <SPACE> a <SPACE> file <SPACE> name <SPACE> signatures . f <SPACE> in <SPACE> . . 
+delete <SPACE> all <SPACE> jpg <SPACE> files <SPACE> here
+cd <SPACE> to <SPACE> parent <SPACE> dir
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> foo
+list <SPACE> only <SPACE> text <SPACE> files
+ls <SPACE> sort <SPACE> list <SPACE> by <SPACE> extension
+list <SPACE> with <SPACE> dot <SPACE> files
+delete <SPACE> file <SPACE> named <SPACE> sqlite 2 mysql . py
+remove <SPACE> all <SPACE> c <SPACE> files
+cd <SPACE> to <SPACE> my <SPACE> home <SPACE> directory
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> hidden <SPACE> files
+make <SPACE> an <SPACE> empty <SPACE> gitignore
+list <SPACE> files <SPACE> sort <SPACE> by <SPACE> date / time
+list <SPACE> files <SPACE> and <SPACE> dirs <SPACE> here
+ls <SPACE> * . txt <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+ls <SPACE> with <SPACE> long <SPACE> format
+ls <SPACE> order <SPACE> files <SPACE> based <SPACE> on <SPACE> last <SPACE> modified <SPACE> time <SPACE> in <SPACE> dec - ending <SPACE> order
+ls <SPACE> in <SPACE> long <SPACE> format <SPACE> with <SPACE> dot <SPACE> files
+print <SPACE> working <SPACE> dir
+list <SPACE> all <SPACE> including <SPACE> dot <SPACE> files
+ls <SPACE> all <SPACE> files <SPACE> in <SPACE> pictures <SPACE> and <SPACE> home
+list <SPACE> directories <SPACE> only
+remove <SPACE> all <SPACE> . csv <SPACE> files <SPACE> in <SPACE> this <SPACE> dir
+list <SPACE> all <SPACE> files <SPACE> in <SPACE> . . 
+move <SPACE> server . csr <SPACE> 7 . x - 1 . x <SPACE> into <SPACE> / var / spool / lpd
+ls <SPACE> biggest <SPACE> files <SPACE> first
+go <SPACE> up <SPACE> one <SPACE> directory
+make <SPACE> a <SPACE> file <SPACE> named <SPACE> good . sh
+reset <SPACE> the <SPACE> last <SPACE> modified <SPACE> time <SPACE> of <SPACE> sos / current_ranking . txt <SPACE> to <SPACE> now
+list <SPACE> hidden <SPACE> files <SPACE> but <SPACE> dont <SPACE> include <SPACE> . <SPACE> or <SPACE> . . 
+print <SPACE> current <SPACE> working <SPACE> directory
+print <SPACE> working <SPACE> directory
+list <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> * . h
+list <SPACE> what <SPACE> is <SPACE> here
+list <SPACE> with <SPACE> long <SPACE> format <SPACE> - <SPACE> show <SPACE> permissions
+delete <SPACE> Event . new . split 0 . root <SPACE> with <SPACE> interactive <SPACE> deletion
+go <SPACE> up <SPACE> two <SPACE> directories
+concatenate <SPACE> all <SPACE> csv <SPACE> files <SPACE> here <SPACE> together
+go <SPACE> back <SPACE> to <SPACE> directory <SPACE> was <SPACE> in <SPACE> before <SPACE> last <SPACE> cd
+ls <SPACE> in <SPACE> reverse <SPACE> alphabetical <SPACE> order
+ls <SPACE> with <SPACE> dot <SPACE> files
+cd <SPACE> up <SPACE> one <SPACE> directory
+list <SPACE> file <SPACE> size
+list <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> files <SPACE> here
+cd <SPACE> to <SPACE> home <SPACE> directory
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> last <SPACE> modified <SPACE> time <SPACE> oldest <SPACE> first
+ls <SPACE> with <SPACE> date <SPACE> changed <SPACE> and <SPACE> size
+print <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> files <SPACE> here
+move <SPACE> simple - tailoring . xml <SPACE> into <SPACE> data
+ls <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+what <SPACE> files <SPACE> are <SPACE> in <SPACE> / var / log / apache 2 / domains / 
+ls <SPACE> in <SPACE> reverse <SPACE> order
+list <SPACE> recursively <SPACE> directory <SPACE> tree
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> test <SPACE> in <SPACE> ~ 
+delete <SPACE> all <SPACE> md <SPACE> files <SPACE> here
+list <SPACE> files <SPACE> recursively <SPACE> exploring <SPACE> directories
+ls <SPACE> but <SPACE> only <SPACE> list <SPACE> directories
+rm <SPACE> * . jpg <SPACE> * . png <SPACE> * . gif <SPACE> with <SPACE> confirmation
+list <SPACE> parent <SPACE> directory
+list <SPACE> the <SPACE> files <SPACE> that <SPACE> are <SPACE> in <SPACE> robotframework - 2 . 7 . 3 
+make <SPACE> a <SPACE> hidden <SPACE> directory <SPACE> named <SPACE> cache
+what <SPACE> directory <SPACE> am <SPACE> I <SPACE> in
+ls <SPACE> sorted <SPACE> smallest <SPACE> to <SPACE> biggest
+display <SPACE> files <SPACE> in <SPACE> order <SPACE> of <SPACE> size
+print <SPACE> out <SPACE> hello <SPACE> world
+concatenate <SPACE> * <SPACE> together
+remove <SPACE> all <SPACE> txt <SPACE> files
+display <SPACE> a <SPACE> list <SPACE> of <SPACE> files <SPACE> and <SPACE> or <SPACE> directories <SPACE> only
+rm <SPACE> all <SPACE> txt <SPACE> files <SPACE> with <SPACE> confirmation
+make <SPACE> a <SPACE> foo <SPACE> directory
+display <SPACE> files <SPACE> with <SPACE> file <SPACE> size <SPACE> in <SPACE> human <SPACE> readable <SPACE> form
+get <SPACE> current <SPACE> path
+list <SPACE> directory <SPACE> entries <SPACE> only
+add <SPACE> empty <SPACE> file <SPACE> named <SPACE> httpd . service <SPACE> here
+ls <SPACE> - l <SPACE> with <SPACE> human <SPACE> readable <SPACE> file <SPACE> sizes
+print <SPACE> out <SPACE> redrect . svg
+ls <SPACE> - lr <SPACE> by <SPACE> modified <SPACE> date
+rm <SPACE> - r <SPACE> * <SPACE> with <SPACE> confirmation
+move <SPACE> temp . xml <SPACE> up <SPACE> one <SPACE> dir
+output <SPACE> the <SPACE> content <SPACE> of <SPACE> mailparse . tar . gz
+go <SPACE> home
+move <SPACE> all <SPACE> text <SPACE> files <SPACE> in <SPACE> parent <SPACE> directory <SPACE> into <SPACE> . . / restaurante
+move <SPACE> networkmodels <SPACE> to <SPACE> / tmp / setup - web 2 py
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> change <SPACE> data
+display <SPACE> files <SPACE> biggest <SPACE> files <SPACE> first
+make <SPACE> a <SPACE> blank <SPACE> gitignore
+list <SPACE> file ' s <SPACE> inode <SPACE> index <SPACE> number
+get <SPACE> my <SPACE> cur <SPACE> path
+move <SPACE> a . txt <SPACE> to <SPACE> parent <SPACE> directory
+cat <SPACE> the <SPACE> contents <SPACE> of <SPACE> MyIcon . iconset <SPACE> with <SPACE> line <SPACE> numbers
+list <SPACE> root <SPACE> directory
+rm <SPACE> * . txt <SPACE> with <SPACE> confirmation
+touch <SPACE> . libs / avfilter - 2 . dll <SPACE> using <SPACE> last <SPACE> modified <SPACE> and <SPACE> access <SPACE> times <SPACE> of <SPACE> rnn_preprocess . py
+rm <SPACE> * . png <SPACE> with <SPACE> confirmation
+print <SPACE> out <SPACE> what <SPACE> directory <SPACE> am <SPACE> in
+remove <SPACE> setup . py <SPACE> and <SPACE> b . bed
+delete <SPACE> all <SPACE> jpg <SPACE> and <SPACE> png <SPACE> files <SPACE> here
+delete <SPACE> everything <SPACE> here
+print <SPACE> the <SPACE> content <SPACE> of <SPACE> conf . xml
+go <SPACE> back <SPACE> to <SPACE> where <SPACE> I <SPACE> was
+delete <SPACE> all <SPACE> header <SPACE> files <SPACE> here
+list <SPACE> in <SPACE> reverse <SPACE> order
+go <SPACE> up <SPACE> to <SPACE> parent <SPACE> directory
+list <SPACE> filese <SPACE> here <SPACE> sorted <SPACE> by <SPACE> files <SPACE> size <SPACE> decending
+get <SPACE> my <SPACE> current <SPACE> directory
+list <SPACE> all <SPACE> files <SPACE> including <SPACE> hidden <SPACE> file <SPACE> starting <SPACE> with <SPACE> ' . ' 
+go <SPACE> to <SPACE> tmp <SPACE> directory
+make <SPACE> a <SPACE> dir <SPACE> named <SPACE> testdir
+list <SPACE> all <SPACE> text <SPACE> files <SPACE> here
+what <SPACE> files <SPACE> are <SPACE> here <SPACE> with <SPACE> file <SPACE> information
+ls <SPACE> recursively <SPACE> down <SPACE> all <SPACE> dirs
+list <SPACE> with <SPACE> long <SPACE> format <SPACE> with <SPACE> file <SPACE> size
+ls <SPACE> - l <SPACE> sort <SPACE> by <SPACE> file <SPACE> extension
+create <SPACE> a <SPACE> __init__ . py
+ls <SPACE> all <SPACE> files <SPACE> in <SPACE> pictures
+ls <SPACE> in <SPACE> long <SPACE> format
+set <SPACE> last <SPACE> mod <SPACE> time <SPACE> of <SPACE> create_playlists . py <SPACE> to <SPACE> current <SPACE> time
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> testdir
+what <SPACE> file <SPACE> am <SPACE> I <SPACE> in
+set <SPACE> the <SPACE> last <SPACE> accessed <SPACE> and <SPACE> modified <SPACE> time <SPACE> of <SPACE> kadu - core / kadu . icns <SPACE> to <SPACE> now
+make <SPACE> this <SPACE> a <SPACE> python <SPACE> module
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> dot <SPACE> files
+ls <SPACE> - r <SPACE> with <SPACE> i - node <SPACE> numbers
+show <SPACE> all <SPACE> files <SPACE> recursively
+list <SPACE> long <SPACE> format <SPACE> including <SPACE> hidden <SPACE> files
+ls <SPACE> group <SPACE> extension <SPACE> together
+list
+print <SPACE> out <SPACE> " hello <SPACE> world " 
+list <SPACE> files <SPACE> sort <SPACE> by <SPACE> extension <SPACE> with <SPACE> hidden <SPACE> files
+show <SPACE> info <SPACE> about <SPACE> files <SPACE> here
+ls <SPACE> with <SPACE> hidden <SPACE> files
+display <SPACE> files <SPACE> smallest <SPACE> files <SPACE> first
+ls <SPACE> order <SPACE> files <SPACE> based <SPACE> on <SPACE> last <SPACE> modified <SPACE> time
+force <SPACE> delete <SPACE> src / loader - module . js
+list <SPACE> all <SPACE> subdirectories
+list <SPACE> the <SPACE> files <SPACE> in <SPACE> pkgroot / Applications <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+print <SPACE> an <SPACE> empty <SPACE> new <SPACE> line
+make <SPACE> an <SPACE> empty <SPACE> file <SPACE> name <SPACE> benchmarks / results . tsv <SPACE> in <SPACE> my <SPACE> parent <SPACE> directory
+print <SPACE> my <SPACE> home <SPACE> directory
+delete <SPACE> all <SPACE> png <SPACE> files <SPACE> here
+move <SPACE> bugtags . log <SPACE> and <SPACE> anno . bed . gz <SPACE> to <SPACE> potigol
+make <SPACE> a <SPACE> file <SPACE> named <SPACE> __init__ . py
+print <SPACE> the <SPACE> contents <SPACE> of <SPACE> test - 1 - r 2 . groups
+ls <SPACE> order <SPACE> with <SPACE> decreasing <SPACE> file <SPACE> size
+show <SPACE> long <SPACE> listing <SPACE> information <SPACE> about <SPACE> each <SPACE> file / directory <SPACE> here
+create <SPACE> a <SPACE> emptry <SPACE> directory <SPACE> named <SPACE> testdir
+list <SPACE> all <SPACE> files <SPACE> here
+ls <SPACE> with <SPACE> inode <SPACE> numbers
+change <SPACE> the <SPACE> name <SPACE> of <SPACE> output . log <SPACE> to <SPACE> be <SPACE> my_first_generator_multi . a
+remove <SPACE> all <SPACE> markdown <SPACE> files
+list <SPACE> all <SPACE> files <SPACE> and <SPACE> directories <SPACE> here
+remove <SPACE> all <SPACE> text <SPACE> files
+what <SPACE> files <SPACE> are <SPACE> here
+display <SPACE> a <SPACE> long <SPACE> list <SPACE> of <SPACE> the <SPACE> content <SPACE> of <SPACE> current <SPACE> directory
+concat <SPACE> all <SPACE> comma <SPACE> seperated <SPACE> files <SPACE> here
+get <SPACE> the <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> * . java
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> stuff <SPACE> like <SPACE> file <SPACE> size
+ls <SPACE> all <SPACE> jpg <SPACE> files
+delete <SPACE> all <SPACE> pyc <SPACE> files
+print <SPACE> what ' s <SPACE> in <SPACE> GeoLite 2 - City . mmdb . gz
+list <SPACE> all <SPACE> files <SPACE> here <SPACE> please
+delete <SPACE> all <SPACE> text <SPACE> files <SPACE> here
+set <SPACE> the <SPACE> last <SPACE> mod <SPACE> time <SPACE> of <SPACE> anno . bed . gz <SPACE> to <SPACE> now
+ls <SPACE> in <SPACE> order <SPACE> of <SPACE> decreasing <SPACE> size
+cd <SPACE> to <SPACE> where <SPACE> I <SPACE> was <SPACE> before
+move <SPACE> all <SPACE> text <SPACE> files <SPACE> into <SPACE> kivy - ios
+list <SPACE> my <SPACE> files
+list <SPACE> display <SPACE> file <SPACE> Inode <SPACE> number <SPACE> one <SPACE> per <SPACE> line
+rm <SPACE> ches_ 2 0 1 5 _whitebox_rom_break . c <SPACE> override <SPACE> write <SPACE> protected
+list <SPACE> files <SPACE> here <SPACE> biggest <SPACE> files <SPACE> first
+delete <SPACE> common . sh <SPACE> and <SPACE> init . d
+rename <SPACE> . . / Simple - Multiparty / <SPACE> to <SPACE> be <SPACE> / home - 3 / karoraw 1 @ jhu . edu / work / kaw / GLM_Wrapper / GLM_Executables / examples_ 2 . 2 / coldlake / fabm
+print <SPACE> the <SPACE> contents <SPACE> of <SPACE> drawpile - 2 5 6 x 2 5 6 . png <SPACE> with <SPACE> line <SPACE> numbers
+say <SPACE> hello
+remove <SPACE> everything <SPACE> here
+where <SPACE> am <SPACE> I
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> modification <SPACE> data
+set <SPACE> the <SPACE> name <SPACE> of <SPACE> routed . vhd <SPACE> to <SPACE> SugarCE . zip
+what <SPACE> file <SPACE> am <SPACE> I <SPACE> in
+create <SPACE> a <SPACE> file <SPACE> name <SPACE> arm_farcall_thumb_thumb_ 6 m . stdout <SPACE> in <SPACE> . . 
+delete <SPACE> all <SPACE> jpg <SPACE> files <SPACE> here
+cd <SPACE> to <SPACE> parent <SPACE> dir
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> foo
+list <SPACE> only <SPACE> text <SPACE> files
+ls <SPACE> sort <SPACE> list <SPACE> by <SPACE> extension
+list <SPACE> with <SPACE> dot <SPACE> files
+delete <SPACE> file <SPACE> named <SPACE> images / groupSecond . png
+remove <SPACE> all <SPACE> c <SPACE> files
+cd <SPACE> to <SPACE> my <SPACE> home <SPACE> directory
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> hidden <SPACE> files
+make <SPACE> an <SPACE> empty <SPACE> gitignore
+list <SPACE> files <SPACE> sort <SPACE> by <SPACE> date / time
+list <SPACE> files <SPACE> and <SPACE> dirs <SPACE> here
+ls <SPACE> * . txt <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+ls <SPACE> with <SPACE> long <SPACE> format
+ls <SPACE> order <SPACE> files <SPACE> based <SPACE> on <SPACE> last <SPACE> modified <SPACE> time <SPACE> in <SPACE> dec - ending <SPACE> order
+ls <SPACE> in <SPACE> long <SPACE> format <SPACE> with <SPACE> dot <SPACE> files
+print <SPACE> working <SPACE> dir
+list <SPACE> all <SPACE> including <SPACE> dot <SPACE> files
+ls <SPACE> all <SPACE> files <SPACE> in <SPACE> pictures <SPACE> and <SPACE> home
+list <SPACE> directories <SPACE> only
+remove <SPACE> all <SPACE> . csv <SPACE> files <SPACE> in <SPACE> this <SPACE> dir
+list <SPACE> all <SPACE> files <SPACE> in <SPACE> . . 
+move <SPACE> a . bed <SPACE> functions . sh <SPACE> into <SPACE> . . / 
+ls <SPACE> biggest <SPACE> files <SPACE> first
+go <SPACE> up <SPACE> one <SPACE> directory
+make <SPACE> a <SPACE> file <SPACE> named <SPACE> . git
+reset <SPACE> the <SPACE> last <SPACE> modified <SPACE> time <SPACE> of <SPACE> util / import_unicode . py <SPACE> to <SPACE> now
+list <SPACE> hidden <SPACE> files <SPACE> but <SPACE> dont <SPACE> include <SPACE> . <SPACE> or <SPACE> . . 
+print <SPACE> current <SPACE> working <SPACE> directory
+print <SPACE> working <SPACE> directory
+list <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> * . h
+list <SPACE> what <SPACE> is <SPACE> here
+list <SPACE> with <SPACE> long <SPACE> format <SPACE> - <SPACE> show <SPACE> permissions
+delete <SPACE> eval . py <SPACE> with <SPACE> interactive <SPACE> deletion
+go <SPACE> up <SPACE> two <SPACE> directories
+concatenate <SPACE> all <SPACE> csv <SPACE> files <SPACE> here <SPACE> together
+go <SPACE> back <SPACE> to <SPACE> directory <SPACE> was <SPACE> in <SPACE> before <SPACE> last <SPACE> cd
+ls <SPACE> in <SPACE> reverse <SPACE> alphabetical <SPACE> order
+ls <SPACE> with <SPACE> dot <SPACE> files
+cd <SPACE> up <SPACE> one <SPACE> directory
+list <SPACE> file <SPACE> size
+list <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> files <SPACE> here
+cd <SPACE> to <SPACE> home <SPACE> directory
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> last <SPACE> modified <SPACE> time <SPACE> oldest <SPACE> first
+ls <SPACE> with <SPACE> date <SPACE> changed <SPACE> and <SPACE> size
+print <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> files <SPACE> here
+move <SPACE> Catia . zip <SPACE> into <SPACE> / etc
+ls <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+what <SPACE> files <SPACE> are <SPACE> in <SPACE> / root
+ls <SPACE> in <SPACE> reverse <SPACE> order
+list <SPACE> recursively <SPACE> directory <SPACE> tree
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> test <SPACE> in <SPACE> ~ 
+delete <SPACE> all <SPACE> md <SPACE> files <SPACE> here
+list <SPACE> files <SPACE> recursively <SPACE> exploring <SPACE> directories
+ls <SPACE> but <SPACE> only <SPACE> list <SPACE> directories
+rm <SPACE> * . jpg <SPACE> * . png <SPACE> * . gif <SPACE> with <SPACE> confirmation
+list <SPACE> parent <SPACE> directory
+list <SPACE> the <SPACE> files <SPACE> that <SPACE> are <SPACE> in <SPACE> libpng - 1 . 5 . 9 
+make <SPACE> a <SPACE> hidden <SPACE> directory <SPACE> named <SPACE> cache
+what <SPACE> directory <SPACE> am <SPACE> I <SPACE> in
+ls <SPACE> sorted <SPACE> smallest <SPACE> to <SPACE> biggest
+display <SPACE> files <SPACE> in <SPACE> order <SPACE> of <SPACE> size
+print <SPACE> out <SPACE> hello <SPACE> world
+concatenate <SPACE> * <SPACE> together
+remove <SPACE> all <SPACE> txt <SPACE> files
+display <SPACE> a <SPACE> list <SPACE> of <SPACE> files <SPACE> and <SPACE> or <SPACE> directories <SPACE> only
+rm <SPACE> all <SPACE> txt <SPACE> files <SPACE> with <SPACE> confirmation
+make <SPACE> a <SPACE> foo <SPACE> directory
+display <SPACE> files <SPACE> with <SPACE> file <SPACE> size <SPACE> in <SPACE> human <SPACE> readable <SPACE> form
+get <SPACE> current <SPACE> path
+list <SPACE> directory <SPACE> entries <SPACE> only
+add <SPACE> empty <SPACE> file <SPACE> named <SPACE> 7 . 1 . app / Contents / Frameworks / libtnzstdfx . 1 . dylib <SPACE> here
+ls <SPACE> - l <SPACE> with <SPACE> human <SPACE> readable <SPACE> file <SPACE> sizes
+print <SPACE> out <SPACE> run . out
+ls <SPACE> - lr <SPACE> by <SPACE> modified <SPACE> date
+rm <SPACE> - r <SPACE> * <SPACE> with <SPACE> confirmation
+move <SPACE> store . expected . json <SPACE> up <SPACE> one <SPACE> dir
+output <SPACE> the <SPACE> content <SPACE> of <SPACE> rc . cpp
+go <SPACE> home
+move <SPACE> all <SPACE> text <SPACE> files <SPACE> in <SPACE> parent <SPACE> directory <SPACE> into <SPACE> model
+move <SPACE> / mnt / save / minecraft - louve / daily / <SPACE> to <SPACE> github / app - gradle - plugin
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> change <SPACE> data
+display <SPACE> files <SPACE> biggest <SPACE> files <SPACE> first
+make <SPACE> a <SPACE> blank <SPACE> gitignore
+list <SPACE> file ' s <SPACE> inode <SPACE> index <SPACE> number
+get <SPACE> my <SPACE> cur <SPACE> path
+move <SPACE> process_log . txt <SPACE> to <SPACE> parent <SPACE> directory
+cat <SPACE> the <SPACE> contents <SPACE> of <SPACE> mysql . user <SPACE> with <SPACE> line <SPACE> numbers
+list <SPACE> root <SPACE> directory
+rm <SPACE> * . txt <SPACE> with <SPACE> confirmation
+touch <SPACE> oldxml . pdf <SPACE> using <SPACE> last <SPACE> modified <SPACE> and <SPACE> access <SPACE> times <SPACE> of <SPACE> Tests / COLLADASchema_ 1 4 1 . xsd
+rm <SPACE> * . png <SPACE> with <SPACE> confirmation
+print <SPACE> out <SPACE> what <SPACE> directory <SPACE> am <SPACE> in
+remove <SPACE> test_cvss 2 . py <SPACE> and <SPACE> youtube . c
+delete <SPACE> all <SPACE> jpg <SPACE> and <SPACE> png <SPACE> files <SPACE> here
+delete <SPACE> everything <SPACE> here
+print <SPACE> the <SPACE> content <SPACE> of <SPACE> Tests / COLLADASchema_ 1 4 1 . xsd
+go <SPACE> back <SPACE> to <SPACE> where <SPACE> I <SPACE> was
+delete <SPACE> all <SPACE> header <SPACE> files <SPACE> here
+list <SPACE> in <SPACE> reverse <SPACE> order
+go <SPACE> up <SPACE> to <SPACE> parent <SPACE> directory
+list <SPACE> filese <SPACE> here <SPACE> sorted <SPACE> by <SPACE> files <SPACE> size <SPACE> decending
+get <SPACE> my <SPACE> current <SPACE> directory
+list <SPACE> all <SPACE> files <SPACE> including <SPACE> hidden <SPACE> file <SPACE> starting <SPACE> with <SPACE> ' . ' 
+go <SPACE> to <SPACE> tmp <SPACE> directory
+make <SPACE> a <SPACE> dir <SPACE> named <SPACE> testdir
+list <SPACE> all <SPACE> text <SPACE> files <SPACE> here
+what <SPACE> files <SPACE> are <SPACE> here <SPACE> with <SPACE> file <SPACE> information
+ls <SPACE> recursively <SPACE> down <SPACE> all <SPACE> dirs
+list <SPACE> with <SPACE> long <SPACE> format <SPACE> with <SPACE> file <SPACE> size
+ls <SPACE> - l <SPACE> sort <SPACE> by <SPACE> file <SPACE> extension
+create <SPACE> a <SPACE> __init__ . py
+ls <SPACE> all <SPACE> files <SPACE> in <SPACE> pictures
+ls <SPACE> in <SPACE> long <SPACE> format
+set <SPACE> last <SPACE> mod <SPACE> time <SPACE> of <SPACE> rules - forward . cpp <SPACE> to <SPACE> current <SPACE> time
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> testdir
+what <SPACE> file <SPACE> am <SPACE> I <SPACE> in
+set <SPACE> the <SPACE> last <SPACE> accessed <SPACE> and <SPACE> modified <SPACE> time <SPACE> of <SPACE> manage . py <SPACE> to <SPACE> now
+make <SPACE> this <SPACE> a <SPACE> python <SPACE> module
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> dot <SPACE> files
+ls <SPACE> - r <SPACE> with <SPACE> i - node <SPACE> numbers
+show <SPACE> all <SPACE> files <SPACE> recursively
+list <SPACE> long <SPACE> format <SPACE> including <SPACE> hidden <SPACE> files
+ls <SPACE> group <SPACE> extension <SPACE> together
+list
+print <SPACE> out <SPACE> " hello <SPACE> world " 
+list <SPACE> files <SPACE> sort <SPACE> by <SPACE> extension <SPACE> with <SPACE> hidden <SPACE> files
+show <SPACE> info <SPACE> about <SPACE> files <SPACE> here
+ls <SPACE> with <SPACE> hidden <SPACE> files
+display <SPACE> files <SPACE> smallest <SPACE> files <SPACE> first
+ls <SPACE> order <SPACE> files <SPACE> based <SPACE> on <SPACE> last <SPACE> modified <SPACE> time
+force <SPACE> delete <SPACE> . git
+list <SPACE> all <SPACE> subdirectories
+list <SPACE> the <SPACE> files <SPACE> in <SPACE> / usr / share / statdns <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+print <SPACE> an <SPACE> empty <SPACE> new <SPACE> line
+make <SPACE> an <SPACE> empty <SPACE> file <SPACE> name <SPACE> temp . xml <SPACE> in <SPACE> my <SPACE> parent <SPACE> directory
+print <SPACE> my <SPACE> home <SPACE> directory
+delete <SPACE> all <SPACE> png <SPACE> files <SPACE> here
+move <SPACE> yaourt . tar . gz <SPACE> and <SPACE> tst_fillbug . cdl <SPACE> to <SPACE> out
+make <SPACE> a <SPACE> file <SPACE> named <SPACE> __init__ . py
+print <SPACE> the <SPACE> contents <SPACE> of <SPACE> qmljsgrammar_p . h
+ls <SPACE> order <SPACE> with <SPACE> decreasing <SPACE> file <SPACE> size
+show <SPACE> long <SPACE> listing <SPACE> information <SPACE> about <SPACE> each <SPACE> file / directory <SPACE> here
+create <SPACE> a <SPACE> emptry <SPACE> directory <SPACE> named <SPACE> testdir
+list <SPACE> all <SPACE> files <SPACE> here
+ls <SPACE> with <SPACE> inode <SPACE> numbers
+change <SPACE> the <SPACE> name <SPACE> of <SPACE> conf / main . conf <SPACE> to <SPACE> be <SPACE> file . d
+remove <SPACE> all <SPACE> markdown <SPACE> files
+list <SPACE> all <SPACE> files <SPACE> and <SPACE> directories <SPACE> here
+remove <SPACE> all <SPACE> text <SPACE> files
+what <SPACE> files <SPACE> are <SPACE> here
+display <SPACE> a <SPACE> long <SPACE> list <SPACE> of <SPACE> the <SPACE> content <SPACE> of <SPACE> current <SPACE> directory
+concat <SPACE> all <SPACE> comma <SPACE> seperated <SPACE> files <SPACE> here
+get <SPACE> the <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> * . java
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> stuff <SPACE> like <SPACE> file <SPACE> size
+ls <SPACE> all <SPACE> jpg <SPACE> files
+delete <SPACE> all <SPACE> pyc <SPACE> files
+print <SPACE> what ' s <SPACE> in <SPACE> configs / config - ccm - psk - tls 1 _ 2 . h
+list <SPACE> all <SPACE> files <SPACE> here <SPACE> please
+delete <SPACE> all <SPACE> text <SPACE> files <SPACE> here
+set <SPACE> the <SPACE> last <SPACE> mod <SPACE> time <SPACE> of <SPACE> Server . app <SPACE> to <SPACE> now
+ls <SPACE> in <SPACE> order <SPACE> of <SPACE> decreasing <SPACE> size
+cd <SPACE> to <SPACE> where <SPACE> I <SPACE> was <SPACE> before
+move <SPACE> all <SPACE> text <SPACE> files <SPACE> into <SPACE> shadowsocks - libev / 
+list <SPACE> my <SPACE> files
+list <SPACE> display <SPACE> file <SPACE> Inode <SPACE> number <SPACE> one <SPACE> per <SPACE> line
+rm <SPACE> client - key . pem <SPACE> override <SPACE> write <SPACE> protected
+list <SPACE> files <SPACE> here <SPACE> biggest <SPACE> files <SPACE> first
+delete <SPACE> post . sql <SPACE> and <SPACE> ezusb . ihx
+rename <SPACE> / etc / salt / minion . d <SPACE> to <SPACE> be <SPACE> / tmp / tst / d 2 / 
+print <SPACE> the <SPACE> contents <SPACE> of <SPACE> firehose - to - syslog . tgz <SPACE> with <SPACE> line <SPACE> numbers
+say <SPACE> hello
+remove <SPACE> everything <SPACE> here
+where <SPACE> am <SPACE> I
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> modification <SPACE> data
+set <SPACE> the <SPACE> name <SPACE> of <SPACE> http : / / nginx . org / download / nginx - 1 . 8 . 0 . tar . gz <SPACE> to <SPACE> emcssl_ca . key
+what <SPACE> file <SPACE> am <SPACE> I <SPACE> in
+create <SPACE> a <SPACE> file <SPACE> name <SPACE> rd . shell <SPACE> in <SPACE> . . 
+delete <SPACE> all <SPACE> jpg <SPACE> files <SPACE> here
+cd <SPACE> to <SPACE> parent <SPACE> dir
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> foo
+list <SPACE> only <SPACE> text <SPACE> files
+ls <SPACE> sort <SPACE> list <SPACE> by <SPACE> extension
+list <SPACE> with <SPACE> dot <SPACE> files
+delete <SPACE> file <SPACE> named <SPACE> data / vector . txt
+remove <SPACE> all <SPACE> c <SPACE> files
+cd <SPACE> to <SPACE> my <SPACE> home <SPACE> directory
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> hidden <SPACE> files
+make <SPACE> an <SPACE> empty <SPACE> gitignore
+list <SPACE> files <SPACE> sort <SPACE> by <SPACE> date / time
+list <SPACE> files <SPACE> and <SPACE> dirs <SPACE> here
+ls <SPACE> * . txt <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+ls <SPACE> with <SPACE> long <SPACE> format
+ls <SPACE> order <SPACE> files <SPACE> based <SPACE> on <SPACE> last <SPACE> modified <SPACE> time <SPACE> in <SPACE> dec - ending <SPACE> order
+ls <SPACE> in <SPACE> long <SPACE> format <SPACE> with <SPACE> dot <SPACE> files
+print <SPACE> working <SPACE> dir
+list <SPACE> all <SPACE> including <SPACE> dot <SPACE> files
+ls <SPACE> all <SPACE> files <SPACE> in <SPACE> pictures <SPACE> and <SPACE> home
+list <SPACE> directories <SPACE> only
+remove <SPACE> all <SPACE> . csv <SPACE> files <SPACE> in <SPACE> this <SPACE> dir
+list <SPACE> all <SPACE> files <SPACE> in <SPACE> . . 
+move <SPACE> suhosin . tar . gz <SPACE> ee - cert . pem <SPACE> into <SPACE> / tmp
+ls <SPACE> biggest <SPACE> files <SPACE> first
+go <SPACE> up <SPACE> one <SPACE> directory
+make <SPACE> a <SPACE> file <SPACE> named <SPACE> check - caps . sh
+reset <SPACE> the <SPACE> last <SPACE> modified <SPACE> time <SPACE> of <SPACE> src / ext_mongo . php <SPACE> to <SPACE> now
+list <SPACE> hidden <SPACE> files <SPACE> but <SPACE> dont <SPACE> include <SPACE> . <SPACE> or <SPACE> . . 
+print <SPACE> current <SPACE> working <SPACE> directory
+print <SPACE> working <SPACE> directory
+list <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> * . h
+list <SPACE> what <SPACE> is <SPACE> here
+list <SPACE> with <SPACE> long <SPACE> format <SPACE> - <SPACE> show <SPACE> permissions
+delete <SPACE> log . lammps <SPACE> with <SPACE> interactive <SPACE> deletion
+go <SPACE> up <SPACE> two <SPACE> directories
+concatenate <SPACE> all <SPACE> csv <SPACE> files <SPACE> here <SPACE> together
+go <SPACE> back <SPACE> to <SPACE> directory <SPACE> was <SPACE> in <SPACE> before <SPACE> last <SPACE> cd
+ls <SPACE> in <SPACE> reverse <SPACE> alphabetical <SPACE> order
+ls <SPACE> with <SPACE> dot <SPACE> files
+cd <SPACE> up <SPACE> one <SPACE> directory
+list <SPACE> file <SPACE> size
+list <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> files <SPACE> here
+cd <SPACE> to <SPACE> home <SPACE> directory
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> last <SPACE> modified <SPACE> time <SPACE> oldest <SPACE> first
+ls <SPACE> with <SPACE> date <SPACE> changed <SPACE> and <SPACE> size
+print <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> files <SPACE> here
+move <SPACE> openbazaard . py <SPACE> into <SPACE> openssl - 1 . 0 . 0 a
+ls <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+what <SPACE> files <SPACE> are <SPACE> in <SPACE> / mnt / ram 2 
+ls <SPACE> in <SPACE> reverse <SPACE> order
+list <SPACE> recursively <SPACE> directory <SPACE> tree
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> test <SPACE> in <SPACE> ~ 
+delete <SPACE> all <SPACE> md <SPACE> files <SPACE> here
+list <SPACE> files <SPACE> recursively <SPACE> exploring <SPACE> directories
+ls <SPACE> but <SPACE> only <SPACE> list <SPACE> directories
+rm <SPACE> * . jpg <SPACE> * . png <SPACE> * . gif <SPACE> with <SPACE> confirmation
+list <SPACE> parent <SPACE> directory
+list <SPACE> the <SPACE> files <SPACE> that <SPACE> are <SPACE> in <SPACE> . . / . . / . . / 
+make <SPACE> a <SPACE> hidden <SPACE> directory <SPACE> named <SPACE> cache
+what <SPACE> directory <SPACE> am <SPACE> I <SPACE> in
+ls <SPACE> sorted <SPACE> smallest <SPACE> to <SPACE> biggest
+display <SPACE> files <SPACE> in <SPACE> order <SPACE> of <SPACE> size
+print <SPACE> out <SPACE> hello <SPACE> world
+concatenate <SPACE> * <SPACE> together
+remove <SPACE> all <SPACE> txt <SPACE> files
+display <SPACE> a <SPACE> list <SPACE> of <SPACE> files <SPACE> and <SPACE> or <SPACE> directories <SPACE> only
+rm <SPACE> all <SPACE> txt <SPACE> files <SPACE> with <SPACE> confirmation
+make <SPACE> a <SPACE> foo <SPACE> directory
+display <SPACE> files <SPACE> with <SPACE> file <SPACE> size <SPACE> in <SPACE> human <SPACE> readable <SPACE> form
+get <SPACE> current <SPACE> path
+list <SPACE> directory <SPACE> entries <SPACE> only
+add <SPACE> empty <SPACE> file <SPACE> named <SPACE> ca . pem <SPACE> here
+ls <SPACE> - l <SPACE> with <SPACE> human <SPACE> readable <SPACE> file <SPACE> sizes
+print <SPACE> out <SPACE> config . cache
+ls <SPACE> - lr <SPACE> by <SPACE> modified <SPACE> date
+rm <SPACE> - r <SPACE> * <SPACE> with <SPACE> confirmation
+move <SPACE> / . grafana_configured <SPACE> up <SPACE> one <SPACE> dir
+output <SPACE> the <SPACE> content <SPACE> of <SPACE> bunkum . us : www / hb_data
+go <SPACE> home
+move <SPACE> all <SPACE> text <SPACE> files <SPACE> in <SPACE> parent <SPACE> directory <SPACE> into <SPACE> . . / docs
+move <SPACE> cd - hit - auxtools <SPACE> to <SPACE> / tmp / kernel
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> change <SPACE> data
+display <SPACE> files <SPACE> biggest <SPACE> files <SPACE> first
+make <SPACE> a <SPACE> blank <SPACE> gitignore
+list <SPACE> file ' s <SPACE> inode <SPACE> index <SPACE> number
+get <SPACE> my <SPACE> cur <SPACE> path
+move <SPACE> maintenance / update . php <SPACE> to <SPACE> parent <SPACE> directory
+cat <SPACE> the <SPACE> contents <SPACE> of <SPACE> alchemy_output . result <SPACE> with <SPACE> line <SPACE> numbers
+list <SPACE> root <SPACE> directory
+rm <SPACE> * . txt <SPACE> with <SPACE> confirmation
+touch <SPACE> var / ft_test . log <SPACE> using <SPACE> last <SPACE> modified <SPACE> and <SPACE> access <SPACE> times <SPACE> of <SPACE> apply_template . py
+rm <SPACE> * . png <SPACE> with <SPACE> confirmation
+print <SPACE> out <SPACE> what <SPACE> directory <SPACE> am <SPACE> in
+remove <SPACE> apply_template . py <SPACE> and <SPACE> badfile . txt
+delete <SPACE> all <SPACE> jpg <SPACE> and <SPACE> png <SPACE> files <SPACE> here
+delete <SPACE> everything <SPACE> here
+print <SPACE> the <SPACE> content <SPACE> of <SPACE> client . csr
+go <SPACE> back <SPACE> to <SPACE> where <SPACE> I <SPACE> was
+delete <SPACE> all <SPACE> header <SPACE> files <SPACE> here
+list <SPACE> in <SPACE> reverse <SPACE> order
+go <SPACE> up <SPACE> to <SPACE> parent <SPACE> directory
+list <SPACE> filese <SPACE> here <SPACE> sorted <SPACE> by <SPACE> files <SPACE> size <SPACE> decending
+get <SPACE> my <SPACE> current <SPACE> directory
+list <SPACE> all <SPACE> files <SPACE> including <SPACE> hidden <SPACE> file <SPACE> starting <SPACE> with <SPACE> ' . ' 
+go <SPACE> to <SPACE> tmp <SPACE> directory
+make <SPACE> a <SPACE> dir <SPACE> named <SPACE> testdir
+list <SPACE> all <SPACE> text <SPACE> files <SPACE> here
+what <SPACE> files <SPACE> are <SPACE> here <SPACE> with <SPACE> file <SPACE> information
+ls <SPACE> recursively <SPACE> down <SPACE> all <SPACE> dirs
+list <SPACE> with <SPACE> long <SPACE> format <SPACE> with <SPACE> file <SPACE> size
+ls <SPACE> - l <SPACE> sort <SPACE> by <SPACE> file <SPACE> extension
+create <SPACE> a <SPACE> __init__ . py
+ls <SPACE> all <SPACE> files <SPACE> in <SPACE> pictures
+ls <SPACE> in <SPACE> long <SPACE> format
+set <SPACE> last <SPACE> mod <SPACE> time <SPACE> of <SPACE> src / libluajit . a <SPACE> to <SPACE> current <SPACE> time
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> testdir
+what <SPACE> file <SPACE> am <SPACE> I <SPACE> in
+set <SPACE> the <SPACE> last <SPACE> accessed <SPACE> and <SPACE> modified <SPACE> time <SPACE> of <SPACE> . git <SPACE> to <SPACE> now
+make <SPACE> this <SPACE> a <SPACE> python <SPACE> module
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> dot <SPACE> files
+ls <SPACE> - r <SPACE> with <SPACE> i - node <SPACE> numbers
+show <SPACE> all <SPACE> files <SPACE> recursively
+list <SPACE> long <SPACE> format <SPACE> including <SPACE> hidden <SPACE> files
+ls <SPACE> group <SPACE> extension <SPACE> together
+list
+print <SPACE> out <SPACE> " hello <SPACE> world " 
+list <SPACE> files <SPACE> sort <SPACE> by <SPACE> extension <SPACE> with <SPACE> hidden <SPACE> files
+show <SPACE> info <SPACE> about <SPACE> files <SPACE> here
+ls <SPACE> with <SPACE> hidden <SPACE> files
+display <SPACE> files <SPACE> smallest <SPACE> files <SPACE> first
+ls <SPACE> order <SPACE> files <SPACE> based <SPACE> on <SPACE> last <SPACE> modified <SPACE> time
+force <SPACE> delete <SPACE> . / dbTests / bin / Debug / fsTests . dll
+list <SPACE> all <SPACE> subdirectories
+list <SPACE> the <SPACE> files <SPACE> in <SPACE> / home / pi / smartmeter_release <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+print <SPACE> an <SPACE> empty <SPACE> new <SPACE> line
+make <SPACE> an <SPACE> empty <SPACE> file <SPACE> name <SPACE> container . builder <SPACE> in <SPACE> my <SPACE> parent <SPACE> directory
+print <SPACE> my <SPACE> home <SPACE> directory
+delete <SPACE> all <SPACE> png <SPACE> files <SPACE> here
+move <SPACE> mst_QU_ 1 0 2 4 / sevem_nu 0 _T_OrientQTUT_HAnorth . dat <SPACE> and <SPACE> . gradle <SPACE> to <SPACE> / var / www / dealer . flyfisheurope . com / zu / cli / log / 
+make <SPACE> a <SPACE> file <SPACE> named <SPACE> __init__ . py
+print <SPACE> the <SPACE> contents <SPACE> of <SPACE> . php
+ls <SPACE> order <SPACE> with <SPACE> decreasing <SPACE> file <SPACE> size
+show <SPACE> long <SPACE> listing <SPACE> information <SPACE> about <SPACE> each <SPACE> file / directory <SPACE> here
+create <SPACE> a <SPACE> emptry <SPACE> directory <SPACE> named <SPACE> testdir
+list <SPACE> all <SPACE> files <SPACE> here
+ls <SPACE> with <SPACE> inode <SPACE> numbers
+change <SPACE> the <SPACE> name <SPACE> of <SPACE> app . py <SPACE> to <SPACE> be <SPACE> dev - clean . utt 2 spk
+remove <SPACE> all <SPACE> markdown <SPACE> files
+list <SPACE> all <SPACE> files <SPACE> and <SPACE> directories <SPACE> here
+remove <SPACE> all <SPACE> text <SPACE> files
+what <SPACE> files <SPACE> are <SPACE> here
+display <SPACE> a <SPACE> long <SPACE> list <SPACE> of <SPACE> the <SPACE> content <SPACE> of <SPACE> current <SPACE> directory
+concat <SPACE> all <SPACE> comma <SPACE> seperated <SPACE> files <SPACE> here
+get <SPACE> the <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> * . java
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> stuff <SPACE> like <SPACE> file <SPACE> size
+ls <SPACE> all <SPACE> jpg <SPACE> files
+delete <SPACE> all <SPACE> pyc <SPACE> files
+print <SPACE> what ' s <SPACE> in <SPACE> include / compressor . inc . sh
+list <SPACE> all <SPACE> files <SPACE> here <SPACE> please
+delete <SPACE> all <SPACE> text <SPACE> files <SPACE> here
+set <SPACE> the <SPACE> last <SPACE> mod <SPACE> time <SPACE> of <SPACE> Import . py <SPACE> to <SPACE> now
+ls <SPACE> in <SPACE> order <SPACE> of <SPACE> decreasing <SPACE> size
+cd <SPACE> to <SPACE> where <SPACE> I <SPACE> was <SPACE> before
+move <SPACE> all <SPACE> text <SPACE> files <SPACE> into <SPACE> build
+list <SPACE> my <SPACE> files
+list <SPACE> display <SPACE> file <SPACE> Inode <SPACE> number <SPACE> one <SPACE> per <SPACE> line
+rm <SPACE> body . template <SPACE> override <SPACE> write <SPACE> protected
+list <SPACE> files <SPACE> here <SPACE> biggest <SPACE> files <SPACE> first
+delete <SPACE> i 2 c_class . py <SPACE> and <SPACE> file . line
+rename <SPACE> public <SPACE> to <SPACE> be <SPACE> vnstat
+print <SPACE> the <SPACE> contents <SPACE> of <SPACE> vm_config . sh <SPACE> with <SPACE> line <SPACE> numbers
+say <SPACE> hello
+remove <SPACE> everything <SPACE> here
+where <SPACE> am <SPACE> I
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> modification <SPACE> data
+set <SPACE> the <SPACE> name <SPACE> of <SPACE> facebook_key . json <SPACE> to <SPACE> gates_tests . py
+what <SPACE> file <SPACE> am <SPACE> I <SPACE> in
+create <SPACE> a <SPACE> file <SPACE> name <SPACE> workGenLogs / job - 3 1 . txt <SPACE> in <SPACE> . . 
+delete <SPACE> all <SPACE> jpg <SPACE> files <SPACE> here
+cd <SPACE> to <SPACE> parent <SPACE> dir
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> foo
+list <SPACE> only <SPACE> text <SPACE> files
+ls <SPACE> sort <SPACE> list <SPACE> by <SPACE> extension
+list <SPACE> with <SPACE> dot <SPACE> files
+delete <SPACE> file <SPACE> named <SPACE> omchaya . prod . js . map
+remove <SPACE> all <SPACE> c <SPACE> files
+cd <SPACE> to <SPACE> my <SPACE> home <SPACE> directory
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> hidden <SPACE> files
+make <SPACE> an <SPACE> empty <SPACE> gitignore
+list <SPACE> files <SPACE> sort <SPACE> by <SPACE> date / time
+list <SPACE> files <SPACE> and <SPACE> dirs <SPACE> here
+ls <SPACE> * . txt <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+ls <SPACE> with <SPACE> long <SPACE> format
+ls <SPACE> order <SPACE> files <SPACE> based <SPACE> on <SPACE> last <SPACE> modified <SPACE> time <SPACE> in <SPACE> dec - ending <SPACE> order
+ls <SPACE> in <SPACE> long <SPACE> format <SPACE> with <SPACE> dot <SPACE> files
+print <SPACE> working <SPACE> dir
+list <SPACE> all <SPACE> including <SPACE> dot <SPACE> files
+ls <SPACE> all <SPACE> files <SPACE> in <SPACE> pictures <SPACE> and <SPACE> home
+list <SPACE> directories <SPACE> only
+remove <SPACE> all <SPACE> . csv <SPACE> files <SPACE> in <SPACE> this <SPACE> dir
+list <SPACE> all <SPACE> files <SPACE> in <SPACE> . . 
+move <SPACE> generators / bld_flags . txt <SPACE> . c <SPACE> into <SPACE> . . / . . / regression - tests
+ls <SPACE> biggest <SPACE> files <SPACE> first
+go <SPACE> up <SPACE> one <SPACE> directory
+make <SPACE> a <SPACE> file <SPACE> named <SPACE> two_blocks . sam
+reset <SPACE> the <SPACE> last <SPACE> modified <SPACE> time <SPACE> of <SPACE> runtests . py <SPACE> to <SPACE> now
+list <SPACE> hidden <SPACE> files <SPACE> but <SPACE> dont <SPACE> include <SPACE> . <SPACE> or <SPACE> . . 
+print <SPACE> current <SPACE> working <SPACE> directory
+print <SPACE> working <SPACE> directory
+list <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> * . h
+list <SPACE> what <SPACE> is <SPACE> here
+list <SPACE> with <SPACE> long <SPACE> format <SPACE> - <SPACE> show <SPACE> permissions
+delete <SPACE> assembly . xml <SPACE> with <SPACE> interactive <SPACE> deletion
+go <SPACE> up <SPACE> two <SPACE> directories
+concatenate <SPACE> all <SPACE> csv <SPACE> files <SPACE> here <SPACE> together
+go <SPACE> back <SPACE> to <SPACE> directory <SPACE> was <SPACE> in <SPACE> before <SPACE> last <SPACE> cd
+ls <SPACE> in <SPACE> reverse <SPACE> alphabetical <SPACE> order
+ls <SPACE> with <SPACE> dot <SPACE> files
+cd <SPACE> up <SPACE> one <SPACE> directory
+list <SPACE> file <SPACE> size
+list <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> files <SPACE> here
+cd <SPACE> to <SPACE> home <SPACE> directory
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> last <SPACE> modified <SPACE> time <SPACE> oldest <SPACE> first
+ls <SPACE> with <SPACE> date <SPACE> changed <SPACE> and <SPACE> size
+print <SPACE> inode <SPACE> numbers <SPACE> of <SPACE> files <SPACE> here
+move <SPACE> uninstall . log <SPACE> into <SPACE> x 2 6 4 - snapshot * 
+ls <SPACE> sorted <SPACE> by <SPACE> file <SPACE> size
+what <SPACE> files <SPACE> are <SPACE> in <SPACE> results
+ls <SPACE> in <SPACE> reverse <SPACE> order
+list <SPACE> recursively <SPACE> directory <SPACE> tree
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> test <SPACE> in <SPACE> ~ 
+delete <SPACE> all <SPACE> md <SPACE> files <SPACE> here
+list <SPACE> files <SPACE> recursively <SPACE> exploring <SPACE> directories
+ls <SPACE> but <SPACE> only <SPACE> list <SPACE> directories
+rm <SPACE> * . jpg <SPACE> * . png <SPACE> * . gif <SPACE> with <SPACE> confirmation
+list <SPACE> parent <SPACE> directory
+list <SPACE> the <SPACE> files <SPACE> that <SPACE> are <SPACE> in <SPACE> isodir
+make <SPACE> a <SPACE> hidden <SPACE> directory <SPACE> named <SPACE> cache
+what <SPACE> directory <SPACE> am <SPACE> I <SPACE> in
+ls <SPACE> sorted <SPACE> smallest <SPACE> to <SPACE> biggest
+display <SPACE> files <SPACE> in <SPACE> order <SPACE> of <SPACE> size
+print <SPACE> out <SPACE> hello <SPACE> world
+concatenate <SPACE> * <SPACE> together
+remove <SPACE> all <SPACE> txt <SPACE> files
+display <SPACE> a <SPACE> list <SPACE> of <SPACE> files <SPACE> and <SPACE> or <SPACE> directories <SPACE> only
+rm <SPACE> all <SPACE> txt <SPACE> files <SPACE> with <SPACE> confirmation
+make <SPACE> a <SPACE> foo <SPACE> directory
+display <SPACE> files <SPACE> with <SPACE> file <SPACE> size <SPACE> in <SPACE> human <SPACE> readable <SPACE> form
+get <SPACE> current <SPACE> path
+list <SPACE> directory <SPACE> entries <SPACE> only
+add <SPACE> empty <SPACE> file <SPACE> named <SPACE> top 1 0 0 k . Left . fq <SPACE> here
+ls <SPACE> - l <SPACE> with <SPACE> human <SPACE> readable <SPACE> file <SPACE> sizes
+print <SPACE> out <SPACE> aloja 2 . SAR_switches
+ls <SPACE> - lr <SPACE> by <SPACE> modified <SPACE> date
+rm <SPACE> - r <SPACE> * <SPACE> with <SPACE> confirmation
+move <SPACE> dime - events . json <SPACE> up <SPACE> one <SPACE> dir
+output <SPACE> the <SPACE> content <SPACE> of <SPACE> arduino . desktop - bak
+go <SPACE> home
+move <SPACE> all <SPACE> text <SPACE> files <SPACE> in <SPACE> parent <SPACE> directory <SPACE> into <SPACE> target / classes
+move <SPACE> youBot_Monitor <SPACE> to <SPACE> work
+ls <SPACE> - l <SPACE> sorted <SPACE> by <SPACE> change <SPACE> data
+display <SPACE> files <SPACE> biggest <SPACE> files <SPACE> first
+make <SPACE> a <SPACE> blank <SPACE> gitignore
+list <SPACE> file ' s <SPACE> inode <SPACE> index <SPACE> number
+get <SPACE> my <SPACE> cur <SPACE> path
+move <SPACE> two_file_test_main . o : <SPACE> to <SPACE> parent <SPACE> directory
+cat <SPACE> the <SPACE> contents <SPACE> of <SPACE> report . txt <SPACE> with <SPACE> line <SPACE> numbers
+list <SPACE> root <SPACE> directory
+rm <SPACE> * . txt <SPACE> with <SPACE> confirmation
+touch <SPACE> manage . py <SPACE> using <SPACE> last <SPACE> modified <SPACE> and <SPACE> access <SPACE> times <SPACE> of <SPACE> store . expected . json
+rm <SPACE> * . png <SPACE> with <SPACE> confirmation
+print <SPACE> out <SPACE> what <SPACE> directory <SPACE> am <SPACE> in
+remove <SPACE> start . jar <SPACE> and <SPACE> wxc_top 5 myrain . py
+delete <SPACE> all <SPACE> jpg <SPACE> and <SPACE> png <SPACE> files <SPACE> here
+delete <SPACE> everything <SPACE> here
+print <SPACE> the <SPACE> content <SPACE> of <SPACE> main . bin
+go <SPACE> back <SPACE> to <SPACE> where <SPACE> I <SPACE> was
+delete <SPACE> all <SPACE> header <SPACE> files <SPACE> here
+list <SPACE> in <SPACE> reverse <SPACE> order
+go <SPACE> up <SPACE> to <SPACE> parent <SPACE> directory
+list <SPACE> filese <SPACE> here <SPACE> sorted <SPACE> by <SPACE> files <SPACE> size <SPACE> decending
+get <SPACE> my <SPACE> current <SPACE> directory
+list <SPACE> all <SPACE> files <SPACE> including <SPACE> hidden <SPACE> file <SPACE> starting <SPACE> with <SPACE> ' . ' 
+go <SPACE> to <SPACE> tmp <SPACE> directory
+make <SPACE> a <SPACE> dir <SPACE> named <SPACE> testdir
+list <SPACE> all <SPACE> text <SPACE> files <SPACE> here
+what <SPACE> files <SPACE> are <SPACE> here <SPACE> with <SPACE> file <SPACE> information
+ls <SPACE> recursively <SPACE> down <SPACE> all <SPACE> dirs
+list <SPACE> with <SPACE> long <SPACE> format <SPACE> with <SPACE> file <SPACE> size
+ls <SPACE> - l <SPACE> sort <SPACE> by <SPACE> file <SPACE> extension
+create <SPACE> a <SPACE> __init__ . py
+ls <SPACE> all <SPACE> files <SPACE> in <SPACE> pictures
+ls <SPACE> in <SPACE> long <SPACE> format
+set <SPACE> last <SPACE> mod <SPACE> time <SPACE> of <SPACE> Python 2 . x <SPACE> to <SPACE> current <SPACE> time
+make <SPACE> a <SPACE> directory <SPACE> named <SPACE> testdir
+what <SPACE> file <SPACE> am <SPACE> I <SPACE> in
+set <SPACE> the <SPACE> last <SPACE> accessed <SPACE> and <SPACE> modified <SPACE> time <SPACE> of <SPACE> symbols . txt <SPACE> to <SPACE> now
+make <SPACE> this <SPACE> a <SPACE> python <SPACE> module
+list <SPACE> all <SPACE> files <SPACE> with <SPACE> dot <SPACE> files
+ls <SPACE> - r <SPACE> with <SPACE> i - node <SPACE> numbers
+show <SPACE> all <SPACE> files <SPACE> recursively

@@ -1,15 +1,15 @@
-import cmd_parse
+from ainix_kernel import cmd_parse
 import torchtext
 from torchtext.data import Pipeline
 from torchtext.data.dataset import Dataset
 import six
-from utils import WeightedRandomChooser
+from ainix_kernel.utils import WeightedRandomChooser
 import re
 import pudb
 import csv
-import constants
+from ainix_kernel import constants
 from collections import Counter, OrderedDict
-import tokenizers
+from ainix_kernel import tokenizers
 
 class ReplacementError(ValueError):
     pass

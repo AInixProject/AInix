@@ -8,9 +8,10 @@ import torch.nn.functional as F
 import pudb 
 import itertools
 import math
-from cmd_parse import ProgramNode, ArgumentNode, EndOfCommandNode, PipeNode, CompoundCommandNode
-import constants
-import tokenizers
+from ainix_kernel.cmd_parse import (ProgramNode, ArgumentNode,
+    EndOfCommandNode, PipeNode, CompoundCommandNode)
+from ainix_kernel import constants
+from ainix_kernel import tokenizers
 
 class SimpleCmd():
     def __init__(self, run_context):

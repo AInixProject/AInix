@@ -1,6 +1,6 @@
 import pytest
-import program_description
-from program_description import ProgramParseError
+from ainix_kernel import program_description
+from ainix_kernel.program_description import ProgramParseError
 import sys, os
 from io import StringIO
 

@@ -1,5 +1,7 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
+import sys, os
+sys.path.insert(0, os.path.abspath('..'))
 import yaml
 import torchtext
 import torch
@@ -9,21 +11,21 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 import pudb
-from model import SimpleCmd
+from ainix_kernel.model import SimpleCmd
 from ignite.engine.engine import Events, Engine
 from ignite.metrics import CategoricalAccuracy, Loss, Metric
 from ignite.exceptions import NotComputableError
-import program_description
-from custom_fields import CommandField, NLField
-from run_context import RunContext
+import ainix_kernel.program_description
+from ainix_kernel.custom_fields import CommandField, NLField
+from ainix_kernel.run_context import RunContext
 import math
 import itertools
 import torch.nn.functional as F
-import data as sampledata
-from bashmetrics import BashMetric
-import constants
+import ainix_kernel.data as sampledata
+from ainix_kernel.bashmetrics import BashMetric
+from ainix_kernel import constants
 import random
-import tokenizers
+from ainix_kernel import tokenizers
 
 LOG_INTERVAL = 50
 

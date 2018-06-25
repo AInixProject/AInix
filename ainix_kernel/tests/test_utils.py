@@ -1,4 +1,4 @@
-from utils import WeightedRandomChooser
+from ainix_kernel.utils import WeightedRandomChooser
 from collections import Counter
 
 def test_rand_choser():

@@ -2,7 +2,7 @@
 from __future__ import print_function
 from ignite.metrics import CategoricalAccuracy, Loss, Metric
 import pudb
-from cmd_parse import ProgramNode, EndOfCommandNode
+from ainix_kernel.cmd_parse import ProgramNode, EndOfCommandNode
 from colorama import init
 init()
 from colorama import Fore, Back, Style

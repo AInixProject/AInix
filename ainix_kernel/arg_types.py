@@ -1,5 +1,5 @@
-import constants
-import tokenizers
+from ainix_kernel import constants
+from ainix_kernel import tokenizers
 import pudb
 class ArgumentType():
     def __init__(self):

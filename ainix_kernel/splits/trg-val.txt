@@ -1,0 +1,154 @@
+ls <SPACE> * . jpg
+ls <SPACE> - 1 
+mv <SPACE> * . txt <SPACE> . . 
+ls
+cat <SPACE> - n <SPACE> tup . config
+ls <SPACE> - l <SPACE> - S
+ls <SPACE> - l <SPACE> - t <SPACE> - r
+cat <SPACE> gnome - autogen . sh <SPACE> categ_list . mat
+ls <SPACE> - A
+ls <SPACE> - l <SPACE> - t
+ls <SPACE> - 1 
+ls <SPACE> - X
+rm <SPACE> - r <SPACE> - i <SPACE> * 
+ls <SPACE> - l <SPACE> - t
+rm <SPACE> - r <SPACE> - f <SPACE> - i <SPACE> * 
+mv <SPACE> actual / check - pcg 6 4 _once_insecure . out <SPACE> arm_farcall_thumb_thumb . stdout
+echo
+mkdir <SPACE> / var / run / crowbar
+ls
+ls <SPACE> - l
+ls <SPACE> - l <SPACE> - t
+ls <SPACE> ~ 
+rm <SPACE> base - plate 0 3 . scad <SPACE> arm_farcall_thumb_thumb . stdout <SPACE> sos / connectivity . sql
+mv <SPACE> ~ / tomcat - 8 . 0 . 2 8 / apache - tomcat - 8 . 0 . 2 8 / logs <SPACE> / home / vagrant
+ls <SPACE> - i
+cat <SPACE> process_log . txt <SPACE> bootstrap . sh <SPACE> / etc / motd . tmp
+ls
+mv <SPACE> * . png <SPACE> * . jpg <SPACE> src - x 8 6 / m 6 8 k
+ls <SPACE> - t
+rm <SPACE> 1 . 3 } } ] } 
+touch <SPACE> . gitignore
+echo
+ls <SPACE> - i
+rm <SPACE> - r <SPACE> - f <SPACE> * 
+ls <SPACE> - l <SPACE> - S <SPACE> - r
+pwd
+cd <SPACE> ~ 
+ls <SPACE> - X
+ls <SPACE> - 1 
+ls
+ls <SPACE> - l <SPACE> - t <SPACE> - r
+touch <SPACE> small . nc
+ls <SPACE> ~ 
+ls <SPACE> - t
+rm <SPACE> - i <SPACE> * . jpg
+rm <SPACE> - r <SPACE> - i <SPACE> * 
+pwd
+ls <SPACE> - l <SPACE> - S
+ls <SPACE> - l <SPACE> - t <SPACE> - r
+ls <SPACE> - l <SPACE> - t <SPACE> - r
+ls <SPACE> - l <SPACE> - t
+ls <SPACE> - a <SPACE> - i
+touch <SPACE> . gitignore
+ls <SPACE> - l <SPACE> - t <SPACE> - r
+ls <SPACE> - l <SPACE> - S
+cd <SPACE> pictures
+pwd
+cat <SPACE> apply_template . py
+cat <SPACE> scripts / extract_changelog . sh
+ls <SPACE> - a <SPACE> - l <SPACE> - S
+touch <SPACE> log . log <SPACE> swift - integration - tests . tar . gz <SPACE> - r
+ls <SPACE> - l
+mv <SPACE> * . py <SPACE> . . 
+ls <SPACE> - l <SPACE> - S
+rm <SPACE> - r <SPACE> - i <SPACE> * 
+touch <SPACE> __init__ . py
+rm <SPACE> - i <SPACE> * 
+mv <SPACE> Gemfile . lock <SPACE> . / libraries / lpm_ver / 
+cd <SPACE> ~ 
+touch <SPACE> locale / messages . pot
+echo <SPACE> ~ 
+ls <SPACE> - l <SPACE> - h
+mv <SPACE> gbuffer . h <SPACE> arduino . desktop
+cd <SPACE> . . / . . / . . 
+cat <SPACE> - n <SPACE> autoinstall . ini
+rm <SPACE> - f <SPACE> compiler . jar
+ls <SPACE> - l <SPACE> - t
+ls <SPACE> * . jpg
+ls <SPACE> - 1 
+mv <SPACE> * . txt <SPACE> . . / . . / tools
+ls
+cat <SPACE> - n <SPACE> work . log
+ls <SPACE> - l <SPACE> - S
+ls <SPACE> - l <SPACE> - t <SPACE> - r
+cat <SPACE> pecl . php . net <SPACE> a . dat
+ls <SPACE> - A
+ls <SPACE> - l <SPACE> - t
+ls <SPACE> - 1 
+ls <SPACE> - X
+rm <SPACE> - r <SPACE> - i <SPACE> * 
+ls <SPACE> - l <SPACE> - t
+rm <SPACE> - r <SPACE> - f <SPACE> - i <SPACE> * 
+mv <SPACE> conda_build . __version__ <SPACE> tex 1 . tex
+echo
+mkdir <SPACE> . . 
+ls
+ls <SPACE> - l
+ls <SPACE> - l <SPACE> - t
+ls <SPACE> ~ 
+rm <SPACE> test . php <SPACE> transport / libThriftSaslTransport . so <SPACE> __init__ . py
+mv <SPACE> . . / r 2 <SPACE> / var / www / loris / tools
+ls <SPACE> - i
+cat <SPACE> pom . xml <SPACE> compiler . jar <SPACE> Makefile . am
+ls
+mv <SPACE> * . png <SPACE> * . jpg <SPACE> / home / hpc / pr 6 3 so / di 6 9 fol / workspace / SWEET_ 2 0 1 5 _ 1 2 _ 2 6 / benchmarks_performance / rexi_tests_lrz_freq_waves / 2 0 1 6 _ 0 2 _ 0 6 _scalability_rexi_spec_dt_vs_M_run 2 
+ls <SPACE> - t
+rm <SPACE> useless . devtools . js
+touch <SPACE> . gitignore
+echo
+ls <SPACE> - i
+rm <SPACE> - r <SPACE> - f <SPACE> * 
+ls <SPACE> - l <SPACE> - S <SPACE> - r
+pwd
+cd <SPACE> ~ 
+ls <SPACE> - X
+ls <SPACE> - 1 
+ls
+ls <SPACE> - l <SPACE> - t <SPACE> - r
+touch <SPACE> DABPlayer 5 . 0 1 . zip
+ls <SPACE> ~ 
+ls <SPACE> - t
+rm <SPACE> - i <SPACE> * . jpg
+rm <SPACE> - r <SPACE> - i <SPACE> * 
+pwd
+ls <SPACE> - l <SPACE> - S
+ls <SPACE> - l <SPACE> - t <SPACE> - r
+ls <SPACE> - l <SPACE> - t <SPACE> - r
+ls <SPACE> - l <SPACE> - t
+ls <SPACE> - a <SPACE> - i
+touch <SPACE> . gitignore
+ls <SPACE> - l <SPACE> - t <SPACE> - r
+ls <SPACE> - l <SPACE> - S
+cd <SPACE> pictures
+pwd
+cat <SPACE> texput . log
+cat <SPACE> state . highstate
+ls <SPACE> - a <SPACE> - l <SPACE> - S
+touch <SPACE> . jscs . json <SPACE> logs / bitcoin . log <SPACE> - r
+ls <SPACE> - l
+mv <SPACE> * . py <SPACE> . . / 
+ls <SPACE> - l <SPACE> - S
+rm <SPACE> - r <SPACE> - i <SPACE> * 
+touch <SPACE> __init__ . py
+rm <SPACE> - i <SPACE> * 
+mv <SPACE> demoCA / index . txt <SPACE> pythia
+cd <SPACE> ~ 
+touch <SPACE> configure . ac
+echo <SPACE> ~ 
+ls <SPACE> - l <SPACE> - h
+mv <SPACE> dbserver . adempiere . org <SPACE> WiSubStg . vbs
+cd <SPACE> . . / . . / . . 
+cat <SPACE> - n <SPACE> final_layout . stdout
+rm <SPACE> - f <SPACE> simcmds . tcl
+ls <SPACE> - l <SPACE> - t

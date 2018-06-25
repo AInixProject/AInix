@@ -11,6 +11,9 @@ from pygments.token import Token
 from pygments.lexers import BashLexer
 import subprocess
 import os
+import sys, os
+sys.path.insert(0, os.path.abspath('..'))
+from ainix_kernel import interface
 
 import pudb
 
@@ -20,6 +23,7 @@ class AishShell():
     def __init__(self):
         self.session = PromptSession()
         self.lexer = BashLexer()
+        self.kernel_interface = interface.Interface
 
     def singleline(self, store_in_history=True, auto_suggest=None,
                    enable_history_search=True, multiline=True, **kwargs):
