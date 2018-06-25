@@ -23,7 +23,7 @@ class AishShell():
     def __init__(self):
         self.session = PromptSession()
         self.lexer = BashLexer()
-        self.kernel_interface = interface.Interface
+        self.kernel_interface = interface.Interface()
 
     def singleline(self, store_in_history=True, auto_suggest=None,
                    enable_history_search=True, multiline=True, **kwargs):
@@ -58,6 +58,7 @@ class AishShell():
                     builtin_dict[words[0]](words[1:], None, None, None, env)
                 else:
                     try:
+                        self.kernel_interface.predict(text)
                         cmdProc = subprocess.Popen(words, cwd = env['PWD'])
                         cmdProc.wait()
                     except Exception as e:

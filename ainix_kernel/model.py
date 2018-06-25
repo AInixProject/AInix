@@ -156,69 +156,72 @@ class SimpleCmd():
 
         return loss.data.item()
 
+    def _eval_predict_command(self, encodings, output_states, cur_predictions, nlexamples):
+        """Predicts one command. Called recursively for each command in 
+        compound command (like a pipe)"""
+        encodingsAndHidden = encodings + output_states
+        predPrograms = self.predictProgram(encodingsAndHidden)
+        vals, predProgramsMaxs =  predPrograms.max(1)
+        # Go through and predict each argument
+        predProgramDescs = [self.run_context.descriptions[m.data.item()] for m in predProgramsMaxs]
+        for i, predProgragmD in enumerate(predProgramDescs):
+            setArgs = []
+            if len(predProgragmD.arguments) > 0:
+                argDots = torch.mv(predProgragmD.model_data_grouped['top_v'], encodings[i])
+                argSig = F.sigmoid(argDots)
+                for aIndex, arg in enumerate(predProgragmD.arguments):
+                    thisArgPredicted = argSig[aIndex].data.item() > 0.5
+                    if thisArgPredicted and arg.argtype.requires_value:
+                        # Go through type transform 
+                        typeBottleneck = self.type_transform_bottleneck(encodings[i])
+                        typeBottleneck = F.relu(typeBottleneck, inplace = True)
+                        type_transform = self.arg_type_transforms[arg.type_name]
+                        typeProcessedEncoding = type_transform(typeBottleneck) + encodings[i]
+                        # Go through the value transform
+                        valueBottleneck = self.value_transform_bottleneck(typeProcessedEncoding)
+                        valueBottleneck = F.relu(valueBottleneck, inplace = True)
+                        value_forward = arg.model_data['value_forward']
+                        valueProcessedEncoding = value_forward(valueBottleneck) + typeProcessedEncoding
+                        # predict
+                        predVal = arg.argtype.eval_value(
+                                valueProcessedEncoding, self.run_context, self, nlexamples[i])
+                    else:
+                        predVal = thisArgPredicted
+
+                    setArgs.append(ArgumentNode(arg, thisArgPredicted, predVal))
+
+            cur_predictions[i].append(ProgramNode(predProgragmD, setArgs, self.run_context.use_cuda))
+
+        # Predict if done or next join node type for compound commands
+        _, joinNodePreds = self.predictJoinNode(encodingsAndHidden).max(1)
+        not_done_compound_nodes = []
+        for nodePredIndex, curCompound in zip(joinNodePreds, cur_predictions):
+            predNodeType = self.join_types[int(nodePredIndex.data)]
+            curCompound.append(predNodeType())
+            if len(curCompound) <= constants.MAX_COMMAND_LEN and predNodeType != EndOfCommandNode:
+                not_done_compound_nodes.append(curCompound)
+        if not_done_compound_nodes:
+            non_end_mask = joinNodePreds != EndOfCommandNode.join_type_index
+            non_end_encodings = encodings[non_end_mask]
+            non_end_hiddens = self.predictNextJoinHidden(encodingsAndHidden[non_end_mask])
+            #if len(not_done_compound_nodes) == 1:
+            #    non_end_encodings = non_end_encodings.unsqueeze(0)
+            #    non_end_hiddens = non_end_hiddens.unsqueeze(0)
+            self._eval_predict_command(
+                non_end_encodings, non_end_hiddens, not_done_compound_nodes, nlexamples)
+
     def eval_step(self, engine, batch):
+        """Evaluate when working with an ignite engine and batches"""
         self.all_modules.eval()
         (query, query_lengths), nlexamples = batch.nl
         ast = batch.command
-
-        def eval_predict_command(encodings, output_states, cur_predictions):
-            """Predicts one command. Called recursively for each command in compound command (like a pipe)"""
-            encodingsAndHidden = encodings + output_states
-            predPrograms = self.predictProgram(encodingsAndHidden)
-            vals, predProgramsMaxs =  predPrograms.max(1)
-            # Go through and predict each argument
-            predProgramDescs = [self.run_context.descriptions[m.data.item()] for m in predProgramsMaxs]
-            for i, predProgragmD in enumerate(predProgramDescs):
-                setArgs = []
-                if len(predProgragmD.arguments) > 0:
-                    argDots = torch.mv(predProgragmD.model_data_grouped['top_v'], encodings[i])
-                    argSig = F.sigmoid(argDots)
-                    for aIndex, arg in enumerate(predProgragmD.arguments):
-                        thisArgPredicted = argSig[aIndex].data.item() > 0.5
-                        if thisArgPredicted and arg.argtype.requires_value:
-                            # Go through type transform 
-                            typeBottleneck = self.type_transform_bottleneck(encodings[i])
-                            typeBottleneck = F.relu(typeBottleneck, inplace = True)
-                            type_transform = self.arg_type_transforms[arg.type_name]
-                            typeProcessedEncoding = type_transform(typeBottleneck) + encodings[i]
-                            # Go through the value transform
-                            valueBottleneck = self.value_transform_bottleneck(typeProcessedEncoding)
-                            valueBottleneck = F.relu(valueBottleneck, inplace = True)
-                            value_forward = arg.model_data['value_forward']
-                            valueProcessedEncoding = value_forward(valueBottleneck) + typeProcessedEncoding
-                            # predict
-                            predVal = arg.argtype.eval_value(
-                                    valueProcessedEncoding, self.run_context, self, nlexamples[i])
-                        else:
-                            predVal = thisArgPredicted
-
-                        setArgs.append(ArgumentNode(arg, thisArgPredicted, predVal))
-
-                pred[i].append(ProgramNode(predProgragmD, setArgs, self.run_context.use_cuda))
-
-            # Predict if done or next join node type for compound commands
-            _, joinNodePreds = self.predictJoinNode(encodingsAndHidden).max(1)
-            not_done_compound_nodes = []
-            for nodePredIndex, curCompound in zip(joinNodePreds, cur_predictions):
-                predNodeType = self.join_types[int(nodePredIndex.data)]
-                curCompound.append(predNodeType())
-                if len(curCompound) <= constants.MAX_COMMAND_LEN and predNodeType != EndOfCommandNode:
-                    not_done_compound_nodes.append(curCompound)
-            if not_done_compound_nodes:
-                non_end_mask = joinNodePreds != EndOfCommandNode.join_type_index
-                non_end_encodings = encodings[non_end_mask]
-                non_end_hiddens = self.predictNextJoinHidden(encodingsAndHidden[non_end_mask])
-                #if len(not_done_compound_nodes) == 1:
-                #    non_end_encodings = non_end_encodings.unsqueeze(0)
-                #    non_end_hiddens = non_end_hiddens.unsqueeze(0)
-                eval_predict_command(non_end_encodings, non_end_hiddens, not_done_compound_nodes)
 
         encodings = self.encoder(query)
         pred = [CompoundCommandNode() for b in ast]
 
         starting_hidden = torch.zeros(len(query), self.run_context.std_word_size, 
                 requires_grad = False, device = self.run_context.device)
-        eval_predict_command(encodings, starting_hidden, pred)
+        self._eval_predict_command(encodings, starting_hidden, pred, nlexamples)
 
         def nltensor_to_string(tensor):
             string_tokens = map(self.run_context.nl_field.vocab.itos.__getitem__, tensor) 

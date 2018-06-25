@@ -16,7 +16,7 @@ class RunContext():
         self.batch_size = batch_size
         self.debug = debug
         self.quiet_mode = quiet_mode
-        self.device = torch.device("cuda" if self.use_cuda else "cpu")
+        self._setdevice()
 
         # Set the program index on all programs.
         # TODO (dngros): figure out a way to do this without mutate program_descriotiosn
@@ -41,3 +41,17 @@ class RunContext():
         encodeType = torch.cuda.LongTensor if self.use_cuda else torch.LongTensor
         indicies = [d.program_desc.program_index for d in descs] 
         return Variable(encodeType(indicies), requires_grad = False)
+
+    def _setdevice(self):
+        self.device = torch.device("cuda" if self.use_cuda else "cpu")
+
+    def __getstate__(self):
+        odict = self.__dict__
+        # device doesnt like being serialized
+        del odict['device']
+        return odict
+
+    def __setstate__(self, sdict):
+        self.__dict__ = sdict
+        self._setdevice()
+        

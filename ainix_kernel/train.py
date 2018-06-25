@@ -26,6 +26,7 @@ from ainix_kernel.bashmetrics import BashMetric
 from ainix_kernel import constants
 import random
 from ainix_kernel import tokenizers
+import copy, pickle
 
 LOG_INTERVAL = 50
 
@@ -129,6 +130,11 @@ def run_with_data_list(data, descs, use_cuda, quiet_mode = False, num_epochs = 5
     val = data[int(len(data)*trainsplit):]
     return run_with_specific_split(train, val, descs, use_cuda, quiet_mode, num_epochs)
 
+def serialize(meta_model):
+    #model_cp = copy.deepcopy(meta_model)
+    with open(r"savedtest.pkl", "wb") as output_file:
+        pickle.dump(meta_model, output_file)    
+
 if __name__ == "__main__":
     use_cuda = False #torch.cuda.is_available()
     #run_with_data_list(sampledata.all_data, sampledata.all_descs, use_cuda)
@@ -139,6 +145,8 @@ if __name__ == "__main__":
     #        "./splits/src-train.txt", "./splits/trg-train.txt",
     #        "./splits/src-val.txt", "./splits/trg-val.txt")
     # Uncomment this to to use a random split
-    run_with_specific_split(train, val, sampledata.all_descs, use_cuda,
-            quiet_mode = False, num_epochs=100//num_train_duplicates)
+    meta_model, final_state, train_iter, val_iter = \
+        run_with_specific_split(train, val, sampledata.all_descs, use_cuda,
+            quiet_mode = False, num_epochs=5//num_train_duplicates)
+    serialize(meta_model)
 
