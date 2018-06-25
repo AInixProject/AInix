@@ -7,15 +7,16 @@ import pygments
 from pygments.token import Token
 import builtin_cmds as bltin
 import subprocess
-import os
-
+import os, sys
+sys.path.insert(0, os.path.abspath('..'))
+from ainix_kernel import interface
 
 session = PromptSession()
 myLexer = BashLexer()
 env = { 'PWD': os.getcwd() }
-
-    
-
+kernel_interface = interface.Interface()
+print("first test")
+kernel_interface.predict("go up one directory")
 
 def main():
     while True:
@@ -37,6 +38,7 @@ def main():
                 builtin_dict[words[0]](words[1:], None, None, None, env)
             else:
                 try:
+                    kernel_interface.predict(text)
                     cmdProc = subprocess.Popen(words, cwd = env['PWD'])
                     cmdProc.wait()
                 except Exception as e:

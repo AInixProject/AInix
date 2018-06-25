@@ -147,6 +147,6 @@ if __name__ == "__main__":
     # Uncomment this to to use a random split
     meta_model, final_state, train_iter, val_iter = \
         run_with_specific_split(train, val, sampledata.all_descs, use_cuda,
-            quiet_mode = False, num_epochs=5//num_train_duplicates)
+            quiet_mode = False, num_epochs=50//num_train_duplicates)
     serialize(meta_model)
 

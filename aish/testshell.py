@@ -40,6 +40,7 @@ class AishShell():
     def cmdloop(self, intro=None):
         while not builtins.__xonsh_exit__:
             env = builtins.__xonsh_env__
+            env['XONSH_SHOW_TRACEBACK'] = True
             text =  self.singleline()
             lexed = pygments.lex(text, self.lexer)
             words = []

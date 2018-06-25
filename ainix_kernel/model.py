@@ -147,8 +147,7 @@ class SimpleCmd():
 
             return loss
 
-        starting_hidden = torch.zeros(len(query), self.run_context.std_word_size, 
-                requires_grad = False, device = self.run_context.device)
+        starting_hidden = self.get_starting_hidden(len(query))
         loss += train_predict_command(encodings, ast, starting_hidden)
 
         loss.backward()
@@ -214,13 +213,11 @@ class SimpleCmd():
         """Evaluate when working with an ignite engine and batches"""
         self.all_modules.eval()
         (query, query_lengths), nlexamples = batch.nl
-        ast = batch.command
 
         encodings = self.encoder(query)
-        pred = [CompoundCommandNode() for b in ast]
+        pred = [CompoundCommandNode() for b in query]
 
-        starting_hidden = torch.zeros(len(query), self.run_context.std_word_size, 
-                requires_grad = False, device = self.run_context.device)
+        starting_hidden = self.get_starting_hidden(len(query))
         self._eval_predict_command(encodings, starting_hidden, pred, nlexamples)
 
         def nltensor_to_string(tensor):
@@ -230,6 +227,10 @@ class SimpleCmd():
             return tokenizers.nonascii_untokenize(string)  
         queries_as_string = map(nltensor_to_string, query)
         return pred, batch.command, queries_as_string
+
+    def get_starting_hidden(self, batch_size):
+        return torch.zeros(batch_size, self.run_context.std_word_size, 
+                requires_grad = False, device = self.run_context.device)
 
     def std_decode_train(self, encodeing, run_context, expected_tensor):
         decoder_input = Variable(torch.LongTensor([[run_context.nl_field.vocab.stoi[constants.SOS]]]))  
