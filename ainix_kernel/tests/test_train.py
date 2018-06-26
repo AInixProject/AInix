@@ -286,3 +286,40 @@ def test_non_bow():
     bashmetric = BashMetric()
     train.eval_model(meta_model, train_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98, "Did not fully learn non-bag-of-words"
+
+def test_serialization():
+    """Test a decently complex training task. Serialize the model. Then see if has same performance"""
+    aArg = Argument("a", "Stringlike")
+    bArg = Argument("b", "Stringlike")
+    cow = AIProgramDescription(
+        name = "cow",
+        arguments = [aArg, bArg]
+    )
+    cArg = Argument("a", "Stringlike")
+    dArg = Argument("b", "Stringlike")
+    dog = AIProgramDescription(
+        name = "dog",
+        arguments = [cArg, dArg]
+    )
+    data = [
+        ("have a bone puppy", "dog -a bone -b woof"),
+        ("have a snack puppy", "dog -a snack -b woof"),
+        ("have a apple puppy", "dog -a apple -b woof"),
+        ("woof please", "dog -b woof"),
+        ("nothin puppy", "dog"),
+        ("nothin cow", "cow"),
+        ("moo please", "cow -b moo"),
+        ("have a grass cow", "cow -a grass -b moo"), ("have a plant cow", "cow -a plant -b moo"),
+    ] * 100
+    random.shuffle(data)
+    # Do training
+    train_output = train.run_with_data_list(data, [cow, dog], False, quiet_mode = True, num_epochs = 3)
+    meta_model, final_state, train_iter, val_iter = train_output
+    
+    # eval the model. Expect should get basically perfect progam picking
+    bashmetric = BashMetric()
+    train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
+    assert bashmetric.exact_match_acc() >= 0.98
+# TODO make sure to actually get the filling in the serialization test
+
+# TODO (DNGros): check the commands for vocab too
