@@ -59,7 +59,7 @@ class ProgramNode():
         return out
 
 class JoinNode():
-    join_type_index = None
+    pass
 
 class PipeNode(JoinNode):
     def as_shell_string(self):

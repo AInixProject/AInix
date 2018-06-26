@@ -64,9 +64,7 @@ class SimpleCmd():
 
         # Join nodes stuff
         self.join_types = [EndOfCommandNode, PipeNode]
-        for i, n in enumerate(self.join_types):
-            # allow for reverse lookup
-            setattr(n, 'join_type_index', i)
+        self.join_type_name_to_index = {j.__name__ : i for i, j in enumerate(self.join_types)}
         self.num_of_join_nodes = len(self.join_types)
         self.predictJoinNode = nn.Linear(run_context.std_word_size, self.num_of_join_nodes)
         self.predictNextJoinHidden = nn.Linear(run_context.std_word_size, run_context.std_word_size)
@@ -78,6 +76,7 @@ class SimpleCmd():
             self.all_modules.cuda()
 
         self.optimizer = optim.Adam(list(self.all_modules.parameters()) + all_arg_params)
+
 
     def train_step(self, engine, batch):
         self.all_modules.train()
@@ -125,7 +124,8 @@ class SimpleCmd():
             joinNodePred = F.log_softmax(self.predictJoinNode(encodingsAndHidden), dim=1)
             encodeType = torch.cuda.LongTensor if self.run_context.use_cuda else torch.LongTensor
             next_node_types, next_asts = zip(*[ast.pop_front() for ast in newAsts])
-            expectedIndex = Variable(encodeType([n.join_type_index for n in next_node_types]), requires_grad=False)
+            expectedIndex = Variable(encodeType([self.join_type_name_to_index[n.__class__.__name__] 
+                for n in next_node_types]), requires_grad=False)
             node_loss = F.nll_loss(joinNodePred, expectedIndex)
             loss += node_loss
 
@@ -136,7 +136,8 @@ class SimpleCmd():
                     non_end_asts.append(ast)
             if non_end_asts:
                 # Create a mask that is true everywhere which is not an end node
-                non_end_mask = expectedIndex != EndOfCommandNode.join_type_index
+                end_node_index = self.join_type_name_to_index[EndOfCommandNode.__name__]
+                non_end_mask = expectedIndex != end_node_index
                 # Select those non-endings
                 non_end_encodings = encodings[non_end_mask]
                 non_end_hiddens = self.predictNextJoinHidden(encodingsAndHidden[non_end_mask])
@@ -200,7 +201,11 @@ class SimpleCmd():
             if len(curCompound) <= constants.MAX_COMMAND_LEN and predNodeType != EndOfCommandNode:
                 not_done_compound_nodes.append(curCompound)
         if not_done_compound_nodes:
-            non_end_mask = joinNodePreds != EndOfCommandNode.join_type_index
+            try:
+                end_type_index = self.join_type_name_to_index[EndOfCommandNode.__name__]
+                non_end_mask = joinNodePreds != end_type_index
+            except:
+                pudb.set_trace()
             non_end_encodings = encodings[non_end_mask]
             non_end_hiddens = self.predictNextJoinHidden(encodingsAndHidden[non_end_mask])
             #if len(not_done_compound_nodes) == 1:

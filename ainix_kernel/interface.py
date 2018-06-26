@@ -10,7 +10,6 @@ class Bunch:
 
 class Interface():
     def __init__(self):
-        STD_WORD_SIZE = 80
         with open(r"../ainix_kernel/savedtest.pkl", "rb") as output_file:
             self.model = pickle.load(output_file)    
         self.nl_field = self.model.run_context.nl_field
