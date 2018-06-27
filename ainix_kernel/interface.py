@@ -1,6 +1,7 @@
 import pudb
 import pickle
 from ainix_kernel.custom_fields import NLExample
+from ainix_kernel import serialize_tools
 import torch
 
 class Bunch:
@@ -10,10 +11,9 @@ class Bunch:
 
 class Interface():
     def __init__(self):
-        with open(r"../ainix_kernel/savedtest.pkl", "rb") as output_file:
-            self.model = pickle.load(output_file)    
         self.nl_field = self.model.run_context.nl_field
         self.run_context = self.model.run_context
+        self.model = serialize_tools.restore()
 
     def predict(self, utterance):
         # NOTE (DNGros): when upgrade torch text will likely need to pass in actual

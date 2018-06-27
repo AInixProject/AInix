@@ -6,6 +6,7 @@ import train
 from ainix_kernel.program_description import AIProgramDescription, Argument
 from ainix_kernel.bashmetrics import BashMetric
 import random
+from ainix_kernel import serialize_tools
 
 def test_pick_program():
     """A test to see if can correctly learn to predict a program"""
@@ -320,6 +321,16 @@ def test_serialization():
     bashmetric = BashMetric()
     train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98
-# TODO make sure to actually get the filling in the serialization test
 
+    # Now serialize and restore
+    fn = ".tester.pkl"
+    serialize_tools.serialize(meta_model, fn)
+    restored_model = serialize_tools.restore(fn)
+
+    # check make sure has good preformance
+    newmetric = BashMetric()
+    train.eval_model(restored_model, val_iter, [(newmetric, 'bashmetric')])
+    assert newmetric.exact_match_acc() >= 0.98, "Performance loss after restore"
+
+# TODO make sure to actually get the filling in the serialization test
 # TODO (DNGros): check the commands for vocab too
