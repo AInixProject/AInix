@@ -325,6 +325,8 @@ def test_serialization():
     # Now serialize and restore
     fn = ".tester.pkl"
     serialize_tools.serialize(meta_model, fn)
+    # delete stuff because suspicious of lingering state
+    del meta_model, final_state, train_iter, bashmetric, aArg, bArg, cow, cArg, dArg, dog
     restored_model = serialize_tools.restore(fn)
 
     # check make sure has good preformance
