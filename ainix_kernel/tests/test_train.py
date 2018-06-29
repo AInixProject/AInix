@@ -288,8 +288,9 @@ def test_non_bow():
     train.eval_model(meta_model, train_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98, "Did not fully learn non-bag-of-words"
 
-def test_serialization():
-    """Test a decently complex training task. Serialize the model. Then see if has same performance"""
+
+@pytest.fixture()
+def train_and_serialize():
     aArg = Argument("a", "Stringlike")
     bArg = Argument("b", "Stringlike")
     cow = AIProgramDescription(
@@ -322,11 +323,14 @@ def test_serialization():
     train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
     assert bashmetric.exact_match_acc() >= 0.98
 
-    # Now serialize and restore
     fn = ".tester.pkl"
     serialize_tools.serialize(meta_model, fn)
-    # delete stuff because suspicious of lingering state
-    del meta_model, final_state, train_iter, bashmetric, aArg, bArg, cow, cArg, dArg, dog
+
+    return val_iter, data, fn
+
+def test_serialization(train_and_serialize):
+    """Test a decently complex training task. Serialize the model. Then see if has same performance"""
+    val_iter, data, fn = train_and_serialize
     restored_model = serialize_tools.restore(fn)
 
     # check make sure has good preformance

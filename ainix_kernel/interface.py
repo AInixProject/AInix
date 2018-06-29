@@ -11,9 +11,9 @@ class Bunch:
 
 class Interface():
     def __init__(self):
+        self.model = serialize_tools.restore("../ainix_kernel/.tester.pkl")
         self.nl_field = self.model.run_context.nl_field
         self.run_context = self.model.run_context
-        self.model = serialize_tools.restore()
 
     def predict(self, utterance):
         # NOTE (DNGros): when upgrade torch text will likely need to pass in actual
