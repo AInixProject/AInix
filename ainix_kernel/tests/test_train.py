@@ -289,7 +289,7 @@ def test_non_bow():
     assert bashmetric.exact_match_acc() >= 0.98, "Did not fully learn non-bag-of-words"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def train_and_serialize():
     aArg = Argument("a", "Stringlike")
     bArg = Argument("b", "Stringlike")
@@ -321,7 +321,7 @@ def train_and_serialize():
     # eval the model. Expect should get basically perfect progam picking
     bashmetric = BashMetric()
     train.eval_model(meta_model, val_iter, [(bashmetric, 'bashmetric')])
-    assert bashmetric.exact_match_acc() >= 0.98
+    assert bashmetric.exact_match_acc() == 1.00
 
     fn = ".tester.pkl"
     serialize_tools.serialize(meta_model, fn)
@@ -337,6 +337,15 @@ def test_serialization(train_and_serialize):
     newmetric = BashMetric()
     train.eval_model(restored_model, val_iter, [(newmetric, 'bashmetric')])
     assert newmetric.exact_match_acc() >= 0.98, "Performance loss after restore"
+
+from ainix_kernel import interface
+
+def test_predict(train_and_serialize):
+    val_iter, data, fn = train_and_serialize
+    instance = interface.Interface(fn)
+    for nl, cmd in data:
+        pred = instance.predict(nl)
+        assert pred == cmd
 
 # TODO make sure to actually get the filling in the serialization test
 # TODO (DNGros): check the commands for vocab too

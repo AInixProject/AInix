@@ -10,8 +10,8 @@ class Bunch:
         self.__dict__.update(kwds)
 
 class Interface():
-    def __init__(self):
-        self.model = serialize_tools.restore("../ainix_kernel/.tester.pkl")
+    def __init__(self, fn = "../ainix_kernel/savedtest.pkl"):
+        self.model = serialize_tools.restore(fn)
         self.nl_field = self.model.run_context.nl_field
         self.run_context = self.model.run_context
 
@@ -21,5 +21,5 @@ class Interface():
         processed = self.nl_field.process([utterance], -1, train=False)
         fake_batch = Bunch(nl = processed, command = None)
         pred, _, _ = self.model.eval_step(None, fake_batch)
-        print(pred[0].as_shell_string())
+        return pred[0].as_shell_string()
         
