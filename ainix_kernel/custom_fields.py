@@ -1,5 +1,5 @@
 from ainix_kernel import cmd_parse
-import torchtext
+import torch, torchtext
 from torchtext.data import Pipeline
 from torchtext.data.dataset import Dataset
 import six
@@ -191,7 +191,7 @@ class NLField(torchtext.data.Field):
         else:
             return x
 
-    def process(self, batch, device, train):
+    def process(self, batch, device):
         """ Process a list of examples to create a torch.Tensor.
         Pad, numericalize, and postprocess a batch and create a tensor.
         Args:
@@ -200,7 +200,10 @@ class NLField(torchtext.data.Field):
         asexamples = [NLExample(e, self) for e in batch]
         vals = [e.mod_text for e in asexamples]
         padded = self.pad(vals)
-        tensor = self.numericalize(padded, device=device, train=train)
+        if not hasattr(self, "dtype"):
+            # weirdly wont set when serialized
+            self.dtype = torch.long
+        tensor = self.numericalize(padded, device=device)
         return tensor, asexamples
     
     def build_vocab(self, *args, **kwargs):
@@ -234,6 +237,17 @@ class NLField(torchtext.data.Field):
         specials += [constants.SPACE]
         specials += constants.COPY_TOKENS
         self.vocab = self.vocab_cls(counter, specials=specials, **kwargs)
+
+    def __getstate__(self):
+        odict = self.__dict__
+        # dtype wont serialize
+        del odict['dtype']
+        return odict
+
+    def __setstate__(self, sdict):
+        self.__dict__ = sdict
+        self.dtype = torch.long
+        print("dtype", self.dtype)
 
 class CommandField(torchtext.data.RawField):
     """A torch text field specifically for commands. Will parse

@@ -19,7 +19,7 @@ class Interface():
         # NOTE (DNGros): when upgrade torch text will likely need to pass in actual
         # device instead of -1. Also, this wont work if cuda.
         prepoc = self.nl_field.preprocess(utterance)
-        processed = self.nl_field.process([prepoc], -1, train=False)
+        processed = self.nl_field.process([prepoc], self.run_context.device)
         fake_batch = Bunch(nl = processed, command = None)
         pred, _, _ = self.model.eval_step(None, fake_batch)
         return pred[0].as_shell_string()

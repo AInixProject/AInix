@@ -36,7 +36,6 @@ def build_dataset(train, val, descs, use_cuda, test = None):
     NL_field = NLField(lower=False, include_lengths=True,
         batch_first=True, 
         init_token = constants.SOS, eos_token = constants.EOS, unk_token = constants.UNK,
-        tensor_type = torch.cuda.LongTensor if use_cuda else torch.LongTensor,
         tokenize = tokenizers.nonascii_tokenizer)
     Command_field = CommandField(descs, use_cuda)
 

@@ -26,8 +26,7 @@ class Stringlike(ArgumentType):
         padded = run_context.nl_field.pad([preproc_cp])
         (tensor, lengths) = run_context.nl_field.numericalize(
                 padded, 
-                device = 0 if run_context.use_cuda else -1, 
-                train = not is_eval
+                device = run_context.device
         )
         return tensor
 

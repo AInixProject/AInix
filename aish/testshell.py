@@ -59,7 +59,8 @@ class AishShell():
                     builtin_dict[words[0]](words[1:], None, None, None, env)
                 else:
                     try:
-                        self.kernel_interface.predict(text)
+                        prediction = self.kernel_interface.predict(text)
+                        print(prediction)
                         cmdProc = subprocess.Popen(words, cwd = env['PWD'])
                         cmdProc.wait()
                     except Exception as e:
