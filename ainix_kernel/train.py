@@ -140,6 +140,7 @@ if __name__ == "__main__":
     #train, val = sampledata.get_all_data_from_files(
     #        "./splits/src-train.txt", "./splits/trg-train.txt",
     #        "./splits/src-val.txt", "./splits/trg-val.txt")
+
     # Uncomment this to to use a random split
     meta_model, final_state, train_iter, val_iter = \
         run_with_specific_split(train, val, sampledata.all_descs, use_cuda,

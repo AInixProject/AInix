@@ -7,6 +7,7 @@ from ainix_kernel.program_description import AIProgramDescription, Argument
 from ainix_kernel.bashmetrics import BashMetric
 import random
 from ainix_kernel import serialize_tools
+import torch
 
 def test_pick_program():
     """A test to see if can correctly learn to predict a program"""
@@ -326,11 +327,11 @@ def train_and_serialize():
     fn = ".tester.pkl"
     serialize_tools.serialize(meta_model, fn)
 
-    return val_iter, data, fn
+    return val_iter, data, fn, meta_model.run_context.nl_field
 
 def test_serialization(train_and_serialize):
     """Test a decently complex training task. Serialize the model. Then see if has same performance"""
-    val_iter, data, fn = train_and_serialize
+    val_iter, data, fn, _ = train_and_serialize
     restored_model = serialize_tools.restore(fn)
 
     # check make sure has good preformance
@@ -341,7 +342,7 @@ def test_serialization(train_and_serialize):
 from ainix_kernel import interface
 
 def test_predict(train_and_serialize):
-    val_iter, data, fn = train_and_serialize
+    val_iter, data, fn, _ = train_and_serialize
     instance = interface.Interface(fn)
     for nl, cmd in data:
         pred = instance.predict(nl)
