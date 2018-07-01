@@ -247,7 +247,6 @@ class NLField(torchtext.data.Field):
     def __setstate__(self, sdict):
         self.__dict__ = sdict
         self.dtype = torch.long
-        print("dtype", self.dtype)
 
 class CommandField(torchtext.data.RawField):
     """A torch text field specifically for commands. Will parse

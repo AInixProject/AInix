@@ -14,6 +14,7 @@ import os
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 from ainix_kernel import interface
+from execution_classifier import ExecutionClassifier
 
 import pudb
 
@@ -24,6 +25,7 @@ class AishShell():
         self.session = PromptSession()
         self.lexer = BashLexer()
         self.kernel_interface = interface.Interface()
+        self.exec_classifier = ExecutionClassifier()
 
     def singleline(self, store_in_history=True, auto_suggest=None,
                    enable_history_search=True, multiline=True, **kwargs):
@@ -45,6 +47,7 @@ class AishShell():
             lexed = pygments.lex(text, self.lexer)
             words = []
             error = False
+            lexed = list(lexed)
             for tokenType, value in lexed:
                 if tokenType in (Token.Text, Token.Literal.Number, Token.Name.Builtin):
                     stripped = value.strip()
@@ -55,13 +58,16 @@ class AishShell():
                     error = True
                     break
             if not error and len(words) > 0:
+                exec_type = self.exec_classifier.classify_string(lexed)
                 if words[0] in builtin_dict:
                     builtin_dict[words[0]](words[1:], None, None, None, env)
                 else:
                     try:
-                        prediction = self.kernel_interface.predict(text)
-                        print(prediction)
-                        cmdProc = subprocess.Popen(words, cwd = env['PWD'])
-                        cmdProc.wait()
+                        if exec_type.run_through_model:
+                            prediction = self.kernel_interface.predict(text)
+                            print("predict:", prediction)
+                        else:
+                            cmdProc = subprocess.Popen(words, cwd = env['PWD'])
+                            cmdProc.wait()
                     except Exception as e:
                         print(e)
