@@ -4,10 +4,11 @@ shell command or to run it through our model and run that result."""
 import attr
 from xonsh.xoreutils import _which
 import builtins
+from parser import ParseResult
 
 class ExecutionClassifier():
-    def classify_string(self, lexed_utterance): 
-        firstWordTokenType, firstWordValue = lexed_utterance[0]
+    def classify_string(self, parse : ParseResult): 
+        firstWordValue = parse.get_first_word()
         try:
             pathOfProgram = _which.which(firstWordValue, path=builtins.__xonsh_env__['PATH'])
             programOnPath = True
