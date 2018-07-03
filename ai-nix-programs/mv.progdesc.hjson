@@ -125,5 +125,16 @@
         mv foo.txt foo.csv
       ]
     }
+    {
+      lang:
+      [
+        move [-[FILENAME]-] up two directories
+        move [-[FILENAME]-] up two dirs
+      ]
+      cmd:
+      [
+        mv [-[FILENAME]-] ../..
+      ]
+    }
   ]
 }

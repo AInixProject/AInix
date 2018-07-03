@@ -58,5 +58,13 @@
         head -c 50 [-[$1]-]
       ]
     }
+    {
+      lang: [
+        print first 13 lines of [-[1=FILENAME]-]
+      ]
+      cmd: [
+        head -c 13 [-[$1]-]
+      ]
+    }
   ]
 }

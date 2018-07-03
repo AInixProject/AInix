@@ -32,6 +32,7 @@
         how many lines are in [-[1=FILENAME]-]?
         count the number of lines in [-[1=FILENAME]-]
         get the line count of [-[1=FILENAME]-]
+        how many lines in [-[1=FILENAME]-]
       ]
       cmd:
       [
@@ -56,6 +57,42 @@
       ]
       cmd: [
         wc -c [-[$1]-]
+      ]
+    }
+    {
+      lang:
+      [
+        count the number of files and directories in current directory without recursion
+        how many files or dirs are here?
+        how many things are here
+        ls count number of results
+        ls -1 | count the number of lines
+        ls but only one per line | wc -l
+        print each file or directory here but only one per line | wc -l
+      ]
+      cmd:
+      [
+        ls -1 | wc -l
+      ]
+    }
+    {
+      lang:
+      [
+        how many letters are in "foolumboo"
+      ]
+      cmd:
+      [
+        echo foolumboo | wc -c
+      ]
+    }
+    {
+      lang:
+      [
+        count the number of letters in "loopdado"
+      ]
+      cmd:
+      [
+        echo loopdado | wc -c
       ]
     }
   ]

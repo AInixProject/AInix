@@ -11,7 +11,7 @@ class BashParser():
         words = []
         error = False
         for tokenType, value in lexed:
-            if tokenType in (Token.Text, Token.Literal.Number, Token.Name.Builtin):
+            if tokenType in (Token.Text, Token.Literal.Number, Token.Name.Builtin, Token.Punctuation):
                 stripped = value.strip()
                 if len(stripped) > 0:
                     words.append(value)
