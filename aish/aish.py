@@ -2,7 +2,6 @@ from xonsh import main as xmain
 from xonsh.main import XonshMode
 import builtins
 import pudb
-import shell
 from xonsh.platform import HAS_PYGMENTS, ON_WINDOWS
 from xonsh.jobs import ignore_sigtstp
 import os
@@ -13,7 +12,8 @@ def main(argv=None):
     try:
         args = xmain.premain(argv)
         realshell = builtins.__xonsh_shell__.shell 
-        builtins.__xonsh_shell__.shell = shell.AishShell()
+        import shell
+        builtins.__xonsh_shell__.shell = shell.AishShell2()
         return main_aish(args)
     except Exception as err:
         _failback_to_other_shells(args, err)
@@ -67,4 +67,4 @@ def main_aish(args):
         events.on_exit.fire()
     postmain(args)
 
-main(['--shell-type', 'readline'])
+main()

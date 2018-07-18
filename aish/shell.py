@@ -1,7 +1,7 @@
 print("Preparing shell...")
 import xonsh
 from xonsh.base_shell import BaseShell
-from xonsh.readline_shell import ReadlineShell
+from xonsh.ptk2.shell import PromptToolkit2Shell
 import builtins
 
 from prompt_toolkit import PromptSession
@@ -15,6 +15,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 from ainix_kernel import interface
 from execution_classifier import ExecutionClassifier
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 import pudb
 
@@ -64,3 +65,47 @@ class AishShell(BaseShell):
                         self.exec_function(parse)
                 except Exception as e:
                     print(e)
+
+class AishShell2(PromptToolkit2Shell):
+    def __init__(self, **kwargs):
+        super().__init__(execer = None, ctx = None, **kwargs)
+
+        self.parser = BashParser()
+        self.kernel_interface = interface.Interface()
+        self.exec_classifier = ExecutionClassifier()
+        self.exec_function = execer.execute
+
+    def cmdloop(self, intro=None):
+        """Enters a loop that reads and execute input from user."""
+        if intro:
+            print(intro)
+        auto_suggest = AutoSuggestFromHistory()
+        while not builtins.__xonsh_exit__:
+            try:
+                line = self.singleline(auto_suggest=auto_suggest)
+                parse = self.parser.parse(line)
+                if parse.was_error:
+                    continue
+                exec_type = self.exec_classifier.classify_string(parse)
+                try:
+                    if exec_type.run_through_model:
+                        prediction = self.kernel_interface.predict(line)
+                        print("predict:", prediction)
+                    else:
+                        self.exec_function(parse)
+                except Exception as e:
+                    print(e)
+                #if not line:
+                #    self.emptyline()
+                #else:
+                #    line = self.precmd(line)
+                #    self.default(line)
+            except (KeyboardInterrupt, SystemExit):
+                self.reset_buffer()
+            except EOFError:
+                if builtins.__xonsh_env__.get("IGNOREEOF"):
+                    print('Use "exit" to leave the shell.', file=sys.stderr)
+                else:
+                    break
+
+
