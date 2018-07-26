@@ -108,4 +108,3 @@ class AishShell2(PromptToolkit2Shell):
                 else:
                     break
 
-
