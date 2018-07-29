@@ -10,8 +10,10 @@ class TypeParser:
     def _match_parse_data(self, key, value):
         return [o for o in self.type_implementations if o.parse_data[key] == value]
 
-    def parse_string(self, string: str):
-        return self._parse_string(string)
+    def parse_string(self, string: str) -> 'TypeParserResult':
+        result = TypeParserResult(self.type, string)
+        self._parse_string(string, result)
+        return result
 
     def _parse_string(self, string: str, result):
         pass

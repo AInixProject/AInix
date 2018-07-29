@@ -21,7 +21,8 @@ def init(typegraph):
 
 class CmdSeqParser(ObjectParser):
     def _get_location_of_operator(self, string):
-        inside_single_quotes = False inside_double_quotes = False
+        inside_single_quotes = False
+        inside_double_quotes = False
         lastWasSlashEscape = False
         lastChar = None
         for i, c in enumerate(string):
