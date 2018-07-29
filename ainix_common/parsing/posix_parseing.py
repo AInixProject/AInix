@@ -1,12 +1,13 @@
 from parse_primitives import AInixType, AInixObject, AInixArgument, \
-    ObjectParser, AInixParseError
+    ObjectParser, AInixParseError, ValueParser
 
 CompoundOperator = AInixType("CompoundOperator")
 CommandSequenceType = AInixType("CommandSequence")
 ProgramType = AInixType("Program")
 
 operators = [
-    AInixObject(op_name, CompoundOperator, AInixArgument(CommandSequenceType, required=True))
+    AInixObject(op_name, CompoundOperator,
+                [AInixArgument("nextCommand", CommandSequenceType, required=True)])
     for op_name in ("pipe","and","or")
 ]
 
@@ -23,7 +24,7 @@ class CmdSeqParser(ObjectParser):
         lastWasSlashEscape = False
         lastChar = None
         for i, c in enumerate(string):
-            if c == "|":
+            if c == "|" and not inside_double_quotes and not inside_single_quotes:
                 return i
             if c == "'" and not inside_double_quotes and not lastWasSlashEscape:
                 inside_single_quotes = not inside_double_quotes
@@ -42,3 +43,4 @@ class CmdSeqParser(ObjectParser):
         else:
             result.set_arg_present("program", 0, operator_index)
             result.set_sibling_present(operator_index, len(string))
+
