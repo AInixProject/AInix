@@ -1,20 +1,22 @@
-from parse_primitives import AInixType, AInixObject, AInixArgument, \
-    ObjectParser, AInixParseError, ValueParser
+from parse_primitives import ObjectParser, AInixParseError, ValueParser
+from typegraph import AInixArgument
 
-CompoundOperator = AInixType("CompoundOperator")
-CommandSequenceType = AInixType("CommandSequence")
-ProgramType = AInixType("Program")
 
-operators = [
-    AInixObject(op_name, CompoundOperator,
-                [AInixArgument("nextCommand", CommandSequenceType, required=True)])
-    for op_name in ("pipe","and","or")
-]
+def init(typegraph):
+    CompoundOperator = typegraph.create_type("CompoundOperator")
+    CommandSequenceType = typegraph.create_type("CommandSequence")
+    ProgramType = typegraph.create_type("Program")
 
-CommandSequenceObj = AInixObject(
-    "CommandSequenceO", CommandSequenceType,
-    [AInixArgument("program", ProgramType, required=True)],
-    AInixArgument("compoundOp", CompoundOperator))
+    operators = [
+        typegraph.create_object(op_name, CompoundOperator,
+                    [AInixArgument("nextCommand", CommandSequenceType, required=True)])
+        for op_name in ("pipe","and","or")
+    ]
+
+    CommandSequenceObj = typegraph.create_object(
+        "CommandSequenceO", CommandSequenceType,
+        [AInixArgument("program", ProgramType, required=True)],
+        AInixArgument("compoundOp", CompoundOperator))
 
 
 class CmdSeqParser(ObjectParser):
@@ -44,3 +46,7 @@ class CmdSeqParser(ObjectParser):
             result.set_arg_present("program", 0, operator_index)
             result.set_sibling_present(operator_index, len(string))
 
+
+class ProgramTypeParser(ValueParser):
+    def _parse_string(self, string, result):
+        pass
