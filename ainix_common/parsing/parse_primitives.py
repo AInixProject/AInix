@@ -1,10 +1,41 @@
 from collections import namedtuple
 
 
+class TypeParser:
+    def __init__(self, type):
+        self.type = type
+        type_graph = type.type_graph
+        self.type_implementations = type_graph.get_implementations(type)
 
-class ValueParser:
-    def __init__(self):
+    def _match_parse_data(self, key, value):
+        return [o for o in self.type_implementations if o.parse_data[key] == value]
+
+    def parse_string(self, string: str):
+        return self._parse_string(string)
+
+    def _parse_string(self, string: str, result):
         pass
+
+
+class TypeParserResult:
+    def __init__(self, type, string):
+        self.type = type
+        self.string = string
+        self._implementation = None
+        self._next_slice = None
+
+    def get_implementation(self):
+        return self._implementation
+
+    def get_next_string(self):
+        si, ei = self._next_slice
+        return self.string[si:ei].strip()
+
+    def set_valid_implementation(self, implementation):
+        self._implementation = implementation
+
+    def set_next_slice(self, start_idx, end_idx):
+        self._next_slice = (int(start_idx), int(end_idx))
 
 
 class ObjectParser:

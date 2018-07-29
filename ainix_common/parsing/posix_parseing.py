@@ -1,4 +1,4 @@
-from parse_primitives import ObjectParser, AInixParseError, ValueParser
+from parse_primitives import ObjectParser, AInixParseError, TypeParser
 from typegraph import AInixArgument
 
 
@@ -21,8 +21,7 @@ def init(typegraph):
 
 class CmdSeqParser(ObjectParser):
     def _get_location_of_operator(self, string):
-        inside_single_quotes = False
-        inside_double_quotes = False
+        inside_single_quotes = False inside_double_quotes = False
         lastWasSlashEscape = False
         lastChar = None
         for i, c in enumerate(string):
@@ -47,6 +46,15 @@ class CmdSeqParser(ObjectParser):
             result.set_sibling_present(operator_index, len(string))
 
 
-class ProgramTypeParser(ValueParser):
+class ProgramTypeParser(TypeParser):
     def _parse_string(self, string, result):
-        pass
+        first_word = string.split(" ")[0]
+        matching_programs = self._match_parse_data("invoke_name", first_word)
+        if matching_programs:
+            result.set_valid_implementation(matching_programs[0])
+            first_space_index = string.find(" ")
+            if first_space_index == -1:
+                first_space_index = len(string)
+            result.set_next_slice(first_space_index, len(string))
+        else:
+            raise AInixParseError("Unable to find program", first_word)
