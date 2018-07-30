@@ -7,8 +7,8 @@ class TypeParser:
         type_graph = type.type_graph
         self.type_implementations = type_graph.get_implementations(type)
 
-    def _match_parse_data(self, key, value):
-        return [o for o in self.type_implementations if o.parse_data[key] == value]
+    def _match_attribute(self, object_list, key, value):
+        return [o for o in object_list if o.type_data[key] == value]
 
     def parse_string(self, string: str) -> 'TypeParserResult':
         result = TypeParserResult(self.type, string)
