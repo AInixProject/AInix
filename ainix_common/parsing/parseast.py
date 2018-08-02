@@ -1,12 +1,12 @@
 from parse_primitives import TypeParser, TypeParserResult, ObjectParser, ObjectParserResult
 from typegraph import TypeGraph, AInixArgument
-from typing import List, Dict
+from typing import List, Dict, Optional
 from collections import namedtuple
 from attr import attrs, attrib
 
 
 class AstNode:
-    def __init__(self, parent: 'AstNode'):
+    def __init__(self, parent: Optional['AstNode']):
         self.parent = parent
 
 
@@ -16,7 +16,7 @@ class ObjectChoiceNode(AstNode):
         object_node = attrib()
         weight = attrib(default=0.0)
 
-    def __init__(self, type_to_choose: TypeGraph.AInixType, parent: AstNode):
+    def __init__(self, type_to_choose: TypeGraph.AInixType, parent: Optional[AstNode]):
         super(ObjectChoiceNode, self).__init__(parent)
         self.type_to_choose = type_to_choose
         self._normalized = False
@@ -48,7 +48,7 @@ class ArgPresentChoiceNode(AstNode):
 
 
 class ObjectNode(AstNode):
-    def __init__(self, implementation: TypeGraph.AInixObject, parent: AstNode):
+    def __init__(self, implementation: TypeGraph.AInixObject, parent: Optional[AstNode]):
         super(ObjectNode, self).__init__(parent)
         self.implementation = implementation
         self.arg_present_choices = {
@@ -56,7 +56,16 @@ class ObjectNode(AstNode):
             for arg in implementation.children if not arg.required
         }
         self.next_type_choices = {}
-        # TODO DNGros: handle direct siblings
+        if implementation.direct_sibling:
+            if not implementation.direct_sibling.required:
+                self.sibling_present_node = \
+                    ArgPresentChoiceNode(implementation.direct_sibling, self)
+            if implementation.direct_sibling.type is not None:
+                self.sibling_obj_choice_node = \
+                    ObjectChoiceNode(implementation.direct_sibling.type, self)
+        else:
+            self.sibling_present_node = None
+            self.sibling_obj_choice_node = None
 
     def set_arg_present(self, arg: AInixArgument):
         if arg.name in self.arg_present_choices:
@@ -67,6 +76,11 @@ class ObjectNode(AstNode):
             return new_obj_choice_node
         else:
             return None
+
+    def set_sibling_present(self):
+        if self.sibling_present_node:
+            self.sibling_present_node.set_choice(True)
+        return self.sibling_obj_choice_node
 
 
 class StringParser:
@@ -97,6 +111,7 @@ class StringParser:
             result.next_parser.parse_string(result.get_next_string())
 
         new_data_for_parse_stack = []
+        # Loop through children and add nodes for each that is present
         for arg in next_object.children:
             arg_present_data = object_parse.get_arg_present(arg.name)
             if arg_present_data:
@@ -104,6 +119,16 @@ class StringParser:
                 if next_type_choice is not None:
                     new_data_for_parse_stack.append(
                         (arg_present_data.slice_string, next_type_choice, arg.value_parser))
+        # Figure out if need to parse direct sibling
+        sibling_arg_data = object_parse.get_sibling_arg()
+        if sibling_arg_data:
+            next_type_choice = next_object_node.set_sibling_present()
+            if next_type_choice:
+                new_data_for_parse_stack.append(
+                    (sibling_arg_data.slice_string,
+                     next_type_choice,
+                     next_object.direct_sibling.value_parser))
+            
         return new_data_for_parse_stack
 
     def _extend_parse_tree(
@@ -123,7 +148,7 @@ class StringParser:
             parse_stack.extend(new_nodes_to_parse)
 
     def create_parse_tree(self, string: str, preference_weight: float = 1):
-        new_tree = ObjectChoiceNode(self._root_type, is_root=True)
+        new_tree = ObjectChoiceNode(self._root_type, parent=None)
         return self._extend_parse_tree(string, new_tree, preference_weight)
 
     def create_parse_tree_multi(
@@ -131,7 +156,7 @@ class StringParser:
         string: List[str],
         preference_weight: List[float]
     ):
-        raise NotImplemented("Need to do this")
+        raise NotImplementedError("Need to do this")
 
     def extend_parse_tree(
         self,
@@ -141,10 +166,3 @@ class StringParser:
     ):
         new_tree = self._extend_parse_tree(string, existing_tree, preference_weight)
         return new_tree
-
-# what should a ObjectParser return?
-#   - parse result object
-#   (basically dict. str arg name -> start and stop index to go to value parser)
-#
-#
-#
