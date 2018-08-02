@@ -97,8 +97,8 @@ class StringParser:
         else:
             self._root_parser = root_parser
 
+    @staticmethod
     def _parse_object_choice(
-        self,
         string: str,
         choice_node: ObjectChoiceNode,
         parser_to_use: TypeParser,
@@ -143,7 +143,7 @@ class StringParser:
         parse_stack = [(string, existing_tree, self._root_parser)]
         while parse_stack:
             cur_string, cur_node, cur_parser = parse_stack.pop()
-            new_nodes_to_parse = self._handle_parse_object_choice(
+            new_nodes_to_parse = StringParser._parse_object_choice(
                 cur_string, cur_node, cur_parser, preference_weight)
             parse_stack.extend(new_nodes_to_parse)
 
