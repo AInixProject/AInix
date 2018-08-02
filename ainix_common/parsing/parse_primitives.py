@@ -1,4 +1,5 @@
 from collections import namedtuple
+#from typegraph import TypeGraph
 
 
 class TypeParser:
@@ -7,7 +8,8 @@ class TypeParser:
         type_graph = type.type_graph
         self.type_implementations = type_graph.get_implementations(type)
 
-    def _match_attribute(self, object_list, key, value):
+    @staticmethod
+    def _match_attribute(object_list, key, value):
         return [o for o in object_list if o.type_data[key] == value]
 
     def parse_string(self, string: str) -> 'TypeParserResult':
@@ -16,7 +18,7 @@ class TypeParser:
         return result
 
     def _parse_string(self, string: str, result):
-        pass
+        raise NotImplementedError()
 
 
 class TypeParserResult:
@@ -25,6 +27,7 @@ class TypeParserResult:
         self.string = string
         self._implementation = None
         self._next_slice = None
+        self._next_parser = type.default_object_parser
 
     def get_implementation(self):
         return self._implementation
@@ -39,6 +42,10 @@ class TypeParserResult:
     def set_next_slice(self, start_idx, end_idx):
         self._next_slice = (int(start_idx), int(end_idx))
 
+    @property
+    def next_parser(self) -> 'ObjectParser':
+        return self._next_parser
+
 
 class ObjectParser:
     def __init__(self, object):
@@ -50,7 +57,7 @@ class ObjectParser:
         return result
 
     def _parse_string(self, string: str, result: 'ObjectParserResult'):
-        pass
+        raise NotImplementedError()
 
 
 class ObjectParserResult:
@@ -84,4 +91,16 @@ class ObjectParserResult:
 
 class AInixParseError(Exception):
     pass
+
+
+class SingleTypeImplParser(TypeParser):
+    def _parse_string(self, string: str, result):
+        num_impls = len(self.type_implementations)
+        if num_impls != 1:
+            raise AInixParseError("{self.__class__.name} expects exactly one implementation. "
+                                  "Found {num_impls} implementations.")
+
+        result.set_valid_implementation(self.type_implementations[0])
+        result.set_next_slice(0, len(string))
+
 

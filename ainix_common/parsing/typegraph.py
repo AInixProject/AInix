@@ -1,5 +1,9 @@
-from parse_primitives import TypeParser, ObjectParser
+import parse_primitives
+print(parse_primitives.__dict__)
+from parse_primitives import ObjectParser, TypeParser
 from collections import defaultdict
+from typing import List
+
 
 class TypeGraph:
     class AInixType:
@@ -24,12 +28,15 @@ class TypeGraph:
             self.default_object_parser = default_object_parser
             self.allowed_attributes = allowed_attributes
 
+        def __eq__(self, other):
+            return other.name == self.name and other.type_graph is self.type_graph
+
     class AInixObject:
         def __init__(
             self,
             name: str,
             type: 'AInixType',
-            children: list,
+            children: List['AInixArgument'],
             direct_sibling: 'AInixArgument',
             type_data: dict
         ):
@@ -100,7 +107,7 @@ class AInixArgument:
     def __init__(
         self,
         name: str,
-        type,
+        type: TypeGraph.AInixType,
         value_parser: TypeParser = None,
         required: bool = False,
         arg_data: dict = {}
@@ -108,12 +115,12 @@ class AInixArgument:
         self.name = name
         self.type = type
         self.required = required
-        if TypeParser is not None:
+        if value_parser is not None:
             self.value_parser = value_parser
         else:
-            if type.default_parser is None:
+            if type.default_type_parser is None:
                 raise ValueError("No value_parser provided for an AInixArgument. \
-                    However, type %s does not provide a default value_parser"
-                                 % (self.type.name,))
-            self.value_parser = type.value_parser
+                    However, type {self.type.name} does not provide a default \
+                    value_parser")
+            self.value_parser = type.default_type_parser
         self.arg_data = arg_data

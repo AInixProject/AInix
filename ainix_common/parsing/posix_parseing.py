@@ -1,12 +1,16 @@
 import shlex
 
-from parse_primitives import ObjectParser, AInixParseError, TypeParser
+from parse_primitives import ObjectParser, AInixParseError, \
+    TypeParser, SingleTypeImplParser
 from typegraph import AInixArgument
 
 
 def init(typegraph):
-    CommandSequenceType = typegraph.create_type("CommandSequence")
-    CompoundOperator = typegraph.create_type("CompoundOperator")
+    CommandSequenceType = typegraph.create_type("CommandSequence",
+                                                default_type_parser=SingleTypeImplParser)
+    CompoundOperator = typegraph.create_type("CompoundOperator",
+                                             default_type_parser=CommandOperatorParser,
+                                             default_object_parser=CommandOperatorObjParser)
     ProgramType = typegraph.create_type(
         "Program", default_type_parser=ProgramTypeParser,
         default_object_parser=ProgramObjectParser)
@@ -170,3 +174,9 @@ class ProgramObjectParser(ObjectParser):
         if remaining_required_args:
             raise AInixParseError("Unexpected unmatched args", remaining_required_args)
 
+
+class CommandOperatorParser(TypeParser):
+    pass
+
+class CommandOperatorObjParser(ObjectParser):
+    pass
