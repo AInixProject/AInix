@@ -44,6 +44,7 @@ class ArgPresentChoiceNode(AstNode):
         self.is_present = False
 
     def set_choice(self, is_present: bool):
+        # TODO (DNGros): add support for weight for and against being present
         self.is_present = is_present
 
 

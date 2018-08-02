@@ -1,6 +1,7 @@
 import pytest
 from parsing.posix_parseing import *
 from typegraph import TypeGraph
+from unittest.mock import MagicMock
 
 
 @pytest.fixture(scope="function")
@@ -102,10 +103,11 @@ def test_prog_object_parser(type_graph):
 
 
 def test_prog_object_parser2(type_graph):
-    type_graph.create_type("FooType")
+    fooType = type_graph.create_type("FooType",
+                                     default_type_parser=MagicMock())
     twoarg = type_graph.create_object(
         "FooProgram", "Program",
-        [AInixArgument("a", "FooType", arg_data = {"short_name": "a"})])
+        [AInixArgument("a", fooType, arg_data={"short_name": "a"})])
     instance = ProgramObjectParser(twoarg)
     result = instance.parse_string("-a hello")
     assert result.get_arg_present("a") is not None
@@ -113,10 +115,11 @@ def test_prog_object_parser2(type_graph):
 
 
 def test_prog_object_parser3(type_graph):
-    type_graph.create_type("FooType")
+    fooType = type_graph.create_type("FooType",
+                                     default_type_parser=MagicMock())
     twoarg = type_graph.create_object(
         "FooProgram", "Program",
-        [AInixArgument("a", "FooType", arg_data = {"short_name": "a"})])
+        [AInixArgument("a", fooType, arg_data={"short_name": "a"})])
     instance = ProgramObjectParser(twoarg)
     result = instance.parse_string("-ahela")
     assert result.get_arg_present("a") is not None

@@ -2,7 +2,7 @@ import parse_primitives
 print(parse_primitives.__dict__)
 from parse_primitives import ObjectParser, TypeParser
 from collections import defaultdict
-from typing import List
+from typing import List, Type
 
 
 class TypeGraph:
@@ -18,8 +18,8 @@ class TypeGraph:
             self,
             type_graph: 'TypeGraph',
             name: str,
-            default_type_parser: TypeParser,
-            default_object_parser: ObjectParser,
+            default_type_parser: Type[TypeParser],
+            default_object_parser: Type[ObjectParser],
             allowed_attributes
         ):
             self.type_graph = type_graph
@@ -108,19 +108,20 @@ class AInixArgument:
         self,
         name: str,
         type: TypeGraph.AInixType,
-        value_parser: TypeParser = None,
+        type_parser: Type[TypeParser] = None,
         required: bool = False,
         arg_data: dict = {}
     ):
         self.name = name
         self.type = type
         self.required = required
-        if value_parser is not None:
-            self.value_parser = value_parser
-        else:
-            if type.default_type_parser is None:
-                raise ValueError("No value_parser provided for an AInixArgument. \
-                    However, type {self.type.name} does not provide a default \
-                    value_parser")
-            self.value_parser = type.default_type_parser
+        if type is not None:
+            if type_parser is not None:
+                self.type_parser = type_parser(type)
+            else:
+                if type.default_type_parser is None:
+                    raise ValueError("No type_parser provided for an AInixArgument. \
+                        However, type {self.type.name} does not provide a default \
+                        type_parser")
+                self.type_parser = type.default_type_parser(type)
         self.arg_data = arg_data

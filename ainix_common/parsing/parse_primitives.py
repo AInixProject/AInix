@@ -1,5 +1,5 @@
 from collections import namedtuple
-#from typegraph import TypeGraph
+from typing import Type
 
 
 class TypeParser:
@@ -27,7 +27,7 @@ class TypeParserResult:
         self.string = string
         self._implementation = None
         self._next_slice = None
-        self._next_parser = type.default_object_parser
+        self._next_parser: Type[ObjectParser] = type.default_object_parser
 
     def get_implementation(self):
         return self._implementation
@@ -44,7 +44,7 @@ class TypeParserResult:
 
     @property
     def next_parser(self) -> 'ObjectParser':
-        return self._next_parser
+        return self._next_parser(self._implementation)
 
 
 class ObjectParser:
