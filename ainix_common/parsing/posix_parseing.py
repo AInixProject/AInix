@@ -126,7 +126,7 @@ class ProgramObjectParser(ObjectParser):
         return next_lex_slice
 
     def _parse_string(self, string, result):
-        remaining_args = self.object.children
+        remaining_args = list(self.object.children)
         parameter_end_seen = False
         lex_result = lex_bash(string)
         for (lex_index, (word, (start_idx, end_idx))) in enumerate(lex_result):
@@ -177,6 +177,7 @@ class ProgramObjectParser(ObjectParser):
 
 class CommandOperatorParser(TypeParser):
     pass
+
 
 class CommandOperatorObjParser(ObjectParser):
     pass

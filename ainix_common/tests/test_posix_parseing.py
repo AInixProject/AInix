@@ -92,7 +92,7 @@ def test_short_name_match(type_graph):
     assert result.name == "a"
 
 
-def test_prog_object_parser(type_graph):
+def test_prog_object_parser_basic(type_graph):
     onearg = type_graph.create_object(
         "FooProgram", "Program",
         [AInixArgument("a", None, arg_data = {"short_name": "a"})])
@@ -102,26 +102,40 @@ def test_prog_object_parser(type_graph):
     assert result.get_arg_present("a").slice_string == ""
 
 
-def test_prog_object_parser2(type_graph):
+def test_prog_object_parser_argval(type_graph):
     fooType = type_graph.create_type("FooType",
                                      default_type_parser=MagicMock())
-    twoarg = type_graph.create_object(
+    argval = type_graph.create_object(
         "FooProgram", "Program",
         [AInixArgument("a", fooType, arg_data={"short_name": "a"})])
-    instance = ProgramObjectParser(twoarg)
+    instance = ProgramObjectParser(argval)
     result = instance.parse_string("-a hello")
     assert result.get_arg_present("a") is not None
     assert result.get_arg_present("a").slice_string == "hello"
 
 
-def test_prog_object_parser3(type_graph):
+def test_prog_object_parser_combinedstyle(type_graph):
     fooType = type_graph.create_type("FooType",
                                      default_type_parser=MagicMock())
     twoarg = type_graph.create_object(
         "FooProgram", "Program",
         [AInixArgument("a", fooType, arg_data={"short_name": "a"})])
     instance = ProgramObjectParser(twoarg)
-    result = instance.parse_string("-ahela")
+    result = instance.parse_string("-afoo")
     assert result.get_arg_present("a") is not None
-    assert result.get_arg_present("a").slice_string == "hela"
+    assert result.get_arg_present("a").slice_string == "foo"
 
+
+def test_prog_object_parser_twoargs(type_graph):
+    twoargs = type_graph.create_object(
+        "FooProgram", "Program",
+        [AInixArgument("a", None, arg_data={"short_name": "a"}),
+         AInixArgument("barg", None, arg_data={"short_name": "b"})]
+    )
+    instance = ProgramObjectParser(twoargs)
+    result = instance.parse_string("-a -b")
+    assert result.get_arg_present("a") is not None
+    assert result.get_arg_present("barg") is not None
+    result = instance.parse_string("-b")
+    assert result.get_arg_present("a") is None
+    assert result.get_arg_present("barg") is not None
