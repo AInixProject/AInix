@@ -1,8 +1,6 @@
-import parse_primitives
-print(parse_primitives.__dict__)
 from parse_primitives import ObjectParser, TypeParser
 from collections import defaultdict
-from typing import List, Type
+from typing import List, Type, Optional
 
 
 class TypeGraph:
@@ -31,6 +29,9 @@ class TypeGraph:
         def __eq__(self, other):
             return other.name == self.name and other.type_graph is self.type_graph
 
+        def __ne__(self, other):
+            return not self.__eq__(other)
+
     class AInixObject:
         def __init__(
             self,
@@ -45,6 +46,9 @@ class TypeGraph:
             self.children = children
             self.type_data = type_data
             self.direct_sibling = direct_sibling
+
+        def __repr__(self):
+            return "<AInixObject " + self.name + ">"
 
     def __init__(self):
         self.name_to_type = {}
@@ -107,7 +111,7 @@ class AInixArgument:
     def __init__(
         self,
         name: str,
-        type: TypeGraph.AInixType,
+        type: Optional[TypeGraph.AInixType],
         type_parser: Type[TypeParser] = None,
         required: bool = False,
         arg_data: dict = {}

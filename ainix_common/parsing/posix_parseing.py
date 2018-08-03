@@ -7,7 +7,8 @@ from typegraph import AInixArgument
 
 def init(typegraph):
     CommandSequenceType = typegraph.create_type("CommandSequence",
-                                                default_type_parser=SingleTypeImplParser)
+                                                default_type_parser=SingleTypeImplParser,
+                                                default_object_parser=CmdSeqParser)
     CompoundOperator = typegraph.create_type("CompoundOperator",
                                              default_type_parser=CommandOperatorParser,
                                              default_object_parser=CommandOperatorObjParser)

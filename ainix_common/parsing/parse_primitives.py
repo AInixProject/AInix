@@ -44,6 +44,8 @@ class TypeParserResult:
 
     @property
     def next_parser(self) -> 'ObjectParser':
+        if self._next_parser is None:
+            return None
         return self._next_parser(self._implementation)
 
 
