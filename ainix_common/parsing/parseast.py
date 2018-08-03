@@ -36,6 +36,17 @@ class ObjectChoiceNode(AstNode):
         choice.weight += additional_weight
         return choice.object_node
 
+    def __eq__(self, other):
+        # Note we don't actually check parent because that
+        # would be recursive loop.
+        if not isinstance(other, ObjectChoiceNode):
+            return False
+        return self.type_to_choose == other.type_to_choose and \
+            self._valid_choices == other._valid_choices
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class ArgPresentChoiceNode(AstNode):
     def __init__(self, argument: AInixArgument, parent: AstNode):
@@ -47,6 +58,10 @@ class ArgPresentChoiceNode(AstNode):
         # TODO (DNGros): add support for weight for and against being present
         self.is_present = is_present
 
+    def __eq__(self, other):
+        assert self.argument == other.argument and \
+               self.is_present == other.is_present
+
 
 class ObjectNode(AstNode):
     def __init__(self, implementation: TypeGraph.AInixObject, parent: Optional[AstNode]):
@@ -57,6 +72,9 @@ class ObjectNode(AstNode):
             for arg in implementation.children if not arg.required
         }
         self.next_type_choices = {}
+        # Create a direct_sibling data if needed
+        self.sibling_present_node = None
+        self.sibling_obj_choice_node = None
         if implementation.direct_sibling:
             if not implementation.direct_sibling.required:
                 self.sibling_present_node = \
@@ -64,9 +82,6 @@ class ObjectNode(AstNode):
             if implementation.direct_sibling.type is not None:
                 self.sibling_obj_choice_node = \
                     ObjectChoiceNode(implementation.direct_sibling.type, self)
-        else:
-            self.sibling_present_node = None
-            self.sibling_obj_choice_node = None
 
     def set_arg_present(self, arg: AInixArgument):
         if arg.name in self.arg_present_choices:
@@ -82,6 +97,16 @@ class ObjectNode(AstNode):
         if self.sibling_present_node:
             self.sibling_present_node.set_choice(True)
         return self.sibling_obj_choice_node
+
+    def __eq__(self, other):
+        return self.implementation == other.implementation and \
+            self.arg_present_choices == other.arg_present_choices and \
+            self.next_type_choices == other.next_type_choices and \
+            self.sibling_present_node == other.sibling_present_node and \
+            self.sibling_obj_choice_node == other.sibling_obj_choice_node
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class StringParser:
@@ -129,7 +154,7 @@ class StringParser:
                     (sibling_arg_data.slice_string,
                      next_type_choice,
                      next_object.direct_sibling.value_parser))
-            
+
         return new_data_for_parse_stack
 
     def _extend_parse_tree(
