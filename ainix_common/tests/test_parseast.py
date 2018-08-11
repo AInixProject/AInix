@@ -3,6 +3,7 @@ from parseast import *
 import posix_parseing
 from unittest.mock import MagicMock
 
+
 @pytest.fixture(scope="function")
 def type_graph():
     tg = TypeGraph()

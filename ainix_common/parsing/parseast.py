@@ -13,6 +13,7 @@ class AstNode:
     def dump_str(self, indent = 0):
         return "  " * indent + str(self) + "\n"
 
+
 class ObjectChoiceNode(AstNode):
     @attrs
     class _Choice:
