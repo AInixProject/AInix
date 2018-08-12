@@ -5,7 +5,7 @@ from parse_primitives import ObjectParser, AInixParseError, \
 from typegraph import AInixArgument
 
 
-def init(typegraph):
+def init(typegraph) -> None:
     CommandSequenceType = typegraph.create_type("CommandSequence",
                                                 default_type_parser=SingleTypeImplParser,
                                                 default_object_parser=CmdSeqParser)
@@ -19,7 +19,8 @@ def init(typegraph):
     operators = [
         typegraph.create_object(op_name, CompoundOperator,
                     [AInixArgument("nextCommand", CommandSequenceType, required=True)])
-        for op_name in ("pipe","and","or") ]
+        for op_name in ("pipe","and","or")
+    ]
     CommandSequenceObj = typegraph.create_object(
         "CommandSequenceO", CommandSequenceType,
         [AInixArgument("program", ProgramType, required=True)],
