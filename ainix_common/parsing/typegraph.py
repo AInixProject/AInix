@@ -24,7 +24,7 @@ class TypeGraph:
             self.name = name
             self.default_type_parser = default_type_parser
             self.default_object_parser = default_object_parser
-            self.allowed_attributes = allowed_attributes
+            self.allowed_attributes = allowed_attributes if allowed_attributes else []
 
         def __eq__(self, other):
             return other.name == self.name and other.type_graph is self.type_graph
@@ -79,7 +79,7 @@ class TypeGraph:
         name: str,
         default_type_parser: TypeParser = None,
         default_object_parser:ObjectParser = None,
-        allowed_attributes = []
+        allowed_attributes = None
     ) -> 'AInixType':
         if name in self.name_to_type:
             raise ValueError("Type", name, "already exists")
@@ -114,7 +114,7 @@ class AInixArgument:
         type: Optional[TypeGraph.AInixType],
         type_parser: Type[TypeParser] = None,
         required: bool = False,
-        arg_data: dict = {}
+        arg_data: dict = None
     ):
         self.name = name
         self.type = type
@@ -128,4 +128,4 @@ class AInixArgument:
                         However, type {self.type.name} does not provide a default \
                         type_parser")
                 self.type_parser = type.default_type_parser(type)
-        self.arg_data = arg_data
+        self.arg_data = arg_data if arg_data else {}
