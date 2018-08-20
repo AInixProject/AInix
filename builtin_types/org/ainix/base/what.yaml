@@ -1,0 +1,7 @@
+---
+defines:
+    - define_new: type
+      name: foo
+      default_type_parser: foo_type_p
+      default_object_parser: foo_obj_p
+...

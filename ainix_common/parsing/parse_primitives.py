@@ -1,33 +1,96 @@
 from collections import namedtuple
-from typing import Type
+import typecontext
+from typing import Type, List, Callable
 
 
+# TODO (DNGros): lookup how you mark something as an abstract class in python
 class TypeParser:
-    def __init__(self, type):
-        self.type = type
-        type_graph = type.type_graph
-        self.type_implementations = type_graph.get_implementations(type)
+    """A TypeParser reads a string and selects the AInixObject
+    implementation that the string represents. It also selects the substring
+    that will be fed into the ObjectParser for the chosen implementation.
+
+    Args:
+          type_context : context this parser exists in.
+          parser_name : the string identifier to use for this parser
+          type_name : string identifier of the type this parser parses.
+          parse_function : a callable that is used when parsing the string.
+            when self.parse_string is called this function will be called
+            with three arguments provided.
+                1) This parser (self)
+                2) The string we would like to parse
+                3) An instance of TypeParserResult where the callable should put
+                   its result.
+    """
+    def __init__(
+        self,
+        type_context: 'typecontext.TypeContext',
+        parser_name: str,
+        type_name: str,
+        parse_function: Callable[['TypeParser', str, 'TypeParserResult'], None]
+    ):
+        self._type_context = type_context
+        self.type_name = type_name
+        self.parser_name = parser_name
+        self._parse_function = parse_function
+        self._type = None
+        self._type_implementations = None
+        self._type_context.register_type_parser(self)
 
     @staticmethod
-    def _match_attribute(object_list, key, value):
+    def match_attribute(
+        object_list: List['typecontext.AInixObject'],
+        key: str,
+        value: str
+    ) -> List['typecontext.AInixObject']:
+        """Helper that filters a list objects that only have a certain attribute
+
+        Args:
+            object_list : list to filter.
+            key : the string key of the attribute to filter on.
+            value : the value we want to key to match on.
+        """
         return [o for o in object_list if o.type_data[key] == value]
 
-    def parse_string(self, string: str) -> 'TypeParserResult':
-        result = TypeParserResult(self.type, string)
-        self._parse_string(string, result)
-        return result
+    def _resolve_type(self) -> None:
+        """Sets the internal reference to the actual python object_name
+        reference to the type from the type's string name,"""
+        if self._type is None:
+            self._type = self._type_context.get_type_by_name(self.type_name)
 
-    def _parse_string(self, string: str, result):
-        raise NotImplementedError()
+    @property
+    def type_implementations(self) -> List['typecontext.AInixObject']:
+        """Returns list of AInix objects that implement this parser's type"""
+        self._resolve_type()
+        if self._type_implementations is None:
+            self._type_implementations = \
+                self._type_context.get_implementations(self.type_name)
+        return self._type_implementations
+
+    def parse_string(self, string: str) -> 'TypeParserResult':
+        """
+        Args:
+            string : a string that you would like would like to parse and get
+                the implementation of.
+        """
+        self._resolve_type()
+        result = TypeParserResult(self._type, string)
+        self._parse_function(self, string, result)
+        return result
 
 
 class TypeParserResult:
-    def __init__(self, type, string):
-        self.type = type
+    """Stores the result of TypeParser.parse_string().
+
+    Args:
+        type_instance : type of the result.
+        string : string we parsed.
+    """
+    def __init__(self, type_instance: 'typecontext.AInixType', string: str):
+        self.type = type_instance
         self.string = string
-        self._implementation = None
+        self._implementation: typecontext.AInixObject = None
         self._next_slice = None
-        self._next_parser: Type[ObjectParser] = type.default_object_parser
+        self._next_parser = None
 
     def get_implementation(self):
         return self._implementation
@@ -44,27 +107,66 @@ class TypeParserResult:
 
     @property
     def next_parser(self) -> 'ObjectParser':
-        if self._next_parser is None:
-            return None
-        return self._next_parser(self._implementation)
+        """Gets the ObjectParser for the parsed object_name. Note, this
+        should only be called after a call to set_valid_implementation
+        and is primarily intended for receivers of the result, not
+        for the parser itself
+        """
+        if self._implementation is None:
+            raise AInixParseError("No implementation set during parsing")
+        next_parser = self._implementation.preferred_object_parser
+        if next_parser is None:
+            next_parser = self.type.default_type_parser
+        # TODO (DNGros): allow parsers to override the object parser
+        return next_parser
 
 
 class ObjectParser:
-    def __init__(self, object):
-        self.object = object
+    """An ObjectParser reads a string and determines which of the object's
+    arguments are present. If the argument is present, it also selects the
+    substring that will be fed into the TypeParser for the argument (assuming
+    the argument has a non-None type).
+
+    Args:
+          type_context : context this parser exists in.
+          object_name : the string identifier to use for this parser
+          parse_function : a callable that is used when parsing the string.
+            when self.parse_string() is called this function will be called
+            with three arguments provided.
+                1) This parser (self)
+                2) The string we would like to parse
+                3) An instance of ObjectParserResult which the callable should
+                   interact with to store the result of the parse
+            The callable itself is not expected to return any value.
+    """
+    def __init__(
+        self,
+        type_context: 'typecontext.TypeContext',
+        object_name: str,
+        parse_function: Callable[['ObjectParser', str, 'ObjectParserResult'], None]
+    ):
+        self._type_context = type_context
+        self.object_name = object_name
+        self._parse_function = parse_function
+        self._object = None
+
+    def _resolve_object(self) -> None:
+        """Sets the internal reference to the actual python object
+        reference to the object from the object's string name,"""
+        if self._object is None:
+            self._object = self._type_context.get_object_by_name(
+                self.object_name)
 
     def parse_string(self, string: str) -> 'ObjectParserResult':
-        result = ObjectParserResult(self.object, string)
-        self._parse_string(string, result)
+        self._resolve_object()
+        result = ObjectParserResult(self._object, string)
+        self._parse_function(self, string, result)
         return result
-
-    def _parse_string(self, string: str, result: 'ObjectParserResult'):
-        raise NotImplementedError()
 
 
 class ObjectParserResult:
-    def __init__(self, object, string):
-        self._object = object
+    def __init__(self, object_to_parse: 'typecontext.AInixObject', string: str):
+        self._object = object_to_parse
         self._result_dict = {}
         self._sibling_result = None
         self.string = string
@@ -95,14 +197,13 @@ class AInixParseError(Exception):
     pass
 
 
-class SingleTypeImplParser(TypeParser):
-    def _parse_string(self, string: str, result):
-        num_impls = len(self.type_implementations)
-        if num_impls != 1:
-            raise AInixParseError("{self.__class__.name} expects exactly one implementation. "
-                                  "Found {num_impls} implementations.")
-
-        result.set_valid_implementation(self.type_implementations[0])
-        result.set_next_slice(0, len(string))
-
+#@typecontext.builtin_type_parser
+#def SingleTypeImplParser(self, string: str, result):
+#    num_impls = len(self.type_implementations)
+#    if num_impls != 1:
+#        raise AInixParseError("{self.__class__.name} expects exactly one "
+#                              "implementation. Found {num_impls} implementations.")
+#
+#    result.set_valid_implementation(self.type_implementations[0])
+#    result.set_next_slice(0, len(string))
 

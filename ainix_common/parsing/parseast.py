@@ -1,6 +1,5 @@
-from parse_primitives import TypeParser, TypeParserResult, \
-    ObjectParser, ObjectParserResult, AInixParseError
-from typegraph import TypeGraph, AInixArgument
+import parse_primitives
+import typecontext
 from typing import List, Dict, Optional, Type
 from collections import namedtuple
 from attr import attrs, attrib
@@ -10,7 +9,7 @@ class AstNode:
     def __init__(self, parent: Optional['AstNode']):
         self.parent = parent
 
-    def dump_str(self, indent = 0):
+    def dump_str(self, indent=0):
         return "  " * indent + str(self) + "\n"
 
 
@@ -20,7 +19,7 @@ class ObjectChoiceNode(AstNode):
         object_node = attrib()
         weight = attrib(default=0.0)
 
-    def __init__(self, type_to_choose: TypeGraph.AInixType, parent: Optional[AstNode]):
+    def __init__(self, type_to_choose: typecontext.AInixType, parent: Optional[AstNode]):
         super(ObjectChoiceNode, self).__init__(parent)
         self.type_to_choose = type_to_choose
         self._normalized = False
@@ -29,7 +28,7 @@ class ObjectChoiceNode(AstNode):
 
     def add_valid_choice(
         self,
-        implementation: TypeGraph.AInixObject,
+        implementation: typecontext.AInixObject,
         additional_weight: float
     ) -> 'ObjectNode':
         if implementation.type != self.type_to_choose:
@@ -56,12 +55,12 @@ class ObjectChoiceNode(AstNode):
         return not self.__eq__(other)
 
     def __repr__(self):
-        s =  "<ObjectChoiceNode for " + str(self.type_to_choose.name)
+        s = "<ObjectChoiceNode for " + str(self.type_to_choose.name)
         s += " valid_choices=" + str(self._valid_choices)
         s += ">"
         return s
 
-    def dump_str(self, indent = 0):
+    def dump_str(self, indent=0):
         indent_str = "  " * indent
         s = indent_str + "<ObjectChoiceNode type " + self.type_to_choose.name + "> {\n"
         for name, choice in self._valid_choices.items():
@@ -72,7 +71,7 @@ class ObjectChoiceNode(AstNode):
 
 
 class ArgPresentChoiceNode(AstNode):
-    def __init__(self, argument: AInixArgument, parent: AstNode):
+    def __init__(self, argument: typecontext.AInixArgument, parent: AstNode):
         super(ArgPresentChoiceNode, self).__init__(parent)
         self.argument = argument
         self.is_present = False
@@ -92,7 +91,7 @@ class ArgPresentChoiceNode(AstNode):
         return "<ArgPresentChoiceNode for " + str(self.argument) + \
             ". " + str(self.is_present) + ">"
 
-    def dump_str(self, indent = 0):
+    def dump_str(self, indent=0):
         indent_str = "  " * indent
         s = indent_str + "<ArgPresentChoiceNode for " + self.argument.name +\
             ". " + str(self.is_present) + ">\n"
@@ -100,11 +99,11 @@ class ArgPresentChoiceNode(AstNode):
 
 
 class ObjectNode(AstNode):
-    def __init__(self, implementation: TypeGraph.AInixObject, parent: Optional[AstNode]):
+    def __init__(self, implementation: typecontext.AInixObject, parent: Optional[AstNode]):
         super(ObjectNode, self).__init__(parent)
         self.implementation = implementation
         self.arg_present_choices = {
-            arg.name : ArgPresentChoiceNode(arg, self)
+            arg.name: ArgPresentChoiceNode(arg, self)
             for arg in implementation.children if not arg.required
         }
         self.next_type_choices = {}
@@ -116,7 +115,7 @@ class ObjectNode(AstNode):
                 self.sibling_present_node = \
                     ArgPresentChoiceNode(implementation.direct_sibling, self)
 
-    def set_arg_present(self, arg: AInixArgument):
+    def set_arg_present(self, arg: typecontext.AInixArgument) -> Optional[ObjectChoiceNode]:
         if arg.name in self.arg_present_choices:
             self.arg_present_choices[arg.name].set_choice(True)
         if arg.type is not None:
@@ -147,7 +146,7 @@ class ObjectNode(AstNode):
     def __repr__(self):
         return "<ObjectNode for " + self.implementation.name + ">"
 
-    def dump_str(self, indent = 0):
+    def dump_str(self, indent=0):
         indent_str = "  " * indent
         s = indent_str + "<ObjectNode obj " + self.implementation.name + "> {\n"
         s += indent_str + "  arg_present_choices: {\n"
@@ -173,14 +172,14 @@ class ObjectNode(AstNode):
 class StringParser:
     def __init__(
         self,
-        root_type: TypeGraph.AInixType,
-        root_parser: Optional[Type[TypeParser]] = None
+        root_type: typecontext.AInixType,
+        root_parser: Optional[Type[parse_primitives.TypeParser]] = None
     ):
         self._root_type = root_type
         if root_parser is None:
             if root_type.default_type_parser is None:
                 raise ValueError("No default parser available for ", root_type)
-            self._root_parser = root_type.default_type_parser(root_type)
+            self._root_parser = root_type.default_type_parser
         else:
             self._root_parser = root_parser(root_type)
 
@@ -188,16 +187,19 @@ class StringParser:
     def _parse_object_choice(
         string: str,
         choice_node: ObjectChoiceNode,
-        parser_to_use: TypeParser,
+        parser_to_use: parse_primitives.TypeParser,
         preference_weight: float
     ) -> List:
-        result: TypeParserResult = parser_to_use.parse_string(string)
+        result: parse_primitives.TypeParserResult = parser_to_use.parse_string(string)
         next_object = result.get_implementation()
-        next_object_node = choice_node.add_valid_choice(next_object, preference_weight)
+        next_object_node = choice_node.add_valid_choice(
+            next_object, preference_weight)
         next_parser = result.next_parser
         if next_parser is None:
-            raise AInixParseError("No provided object parser for parsed object", next_object)
-        object_parse: ObjectParserResult = \
+            raise parse_primitives.AInixParseError(
+                "No provided object_name parser for parsed object_name",
+                next_object)
+        object_parse: parse_primitives.ObjectParserResult = \
             result.next_parser.parse_string(result.get_next_string())
 
         new_data_for_parse_stack = []
@@ -255,4 +257,4 @@ class StringParser:
         existing_tree: ObjectChoiceNode,
         preference_weight: float = 1
     ):
-        new_tree = self._extend_parse_tree(string, existing_tree, preference_weight)
+        self._extend_parse_tree(string, existing_tree, preference_weight)

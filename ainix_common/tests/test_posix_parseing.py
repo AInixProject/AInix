@@ -1,12 +1,12 @@
 import pytest
 from parsing.posix_parseing import *
-from typegraph import TypeGraph
+import typecontext
 from unittest.mock import MagicMock
 
 
 @pytest.fixture(scope="function")
 def type_graph():
-    tg = TypeGraph()
+    tg = typecontext.TypeContext()
     init(tg)
     return tg
 

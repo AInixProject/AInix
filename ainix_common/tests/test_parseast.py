@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 @pytest.fixture(scope="function")
 def type_graph():
-    tg = TypeGraph()
+    tg = TypeContext()
     posix_parseing.init(tg)
     return tg
 

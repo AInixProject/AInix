@@ -1,30 +1,27 @@
-import shlex
-
-from parse_primitives import ObjectParser, AInixParseError, \
-    TypeParser, SingleTypeImplParser
-from typegraph import AInixArgument
+import parse_primitives
+import typecontext
 
 
 def init(typegraph) -> None:
-    CommandSequenceType = typegraph.create_type("CommandSequence",
-                                                default_type_parser=SingleTypeImplParser,
+    CommandSequenceType = typecontext.AInixType(typegraph, "CommandSequence",
+                                                default_type_parser=parse_primitives.SingleTypeImplParser,
                                                 default_object_parser=CmdSeqParser)
-    CompoundOperator = typegraph.create_type("CompoundOperator",
+    CompoundOperator = typecontext.AInixType(typegraph, "CompoundOperator",
                                              default_type_parser=CommandOperatorParser,
                                              default_object_parser=CommandOperatorObjParser)
-    ProgramType = typegraph.create_type(
-        "Program", default_type_parser=ProgramTypeParser,
+    ProgramType = typecontext.AInixType(
+        typegraph, "Program", default_type_parser=ProgramTypeParser,
         default_object_parser=ProgramObjectParser)
 
     operators = [
-        typegraph.create_object(op_name, CompoundOperator,
-                    [AInixArgument("nextCommand", CommandSequenceType, required=True)])
+        typecontext.AInixType(typegraph, op_name, CompoundOperator,
+                              [typecontext.AInixArgument("nextCommand", CommandSequenceType, required=True)])
         for op_name in ("pipe","and","or")
     ]
     CommandSequenceObj = typegraph.create_object(
         "CommandSequenceO", CommandSequenceType,
-        [AInixArgument("program", ProgramType, required=True)],
-        AInixArgument("compoundOp", CompoundOperator))
+        [typecontext.AInixArgument("program", ProgramType, required=True)],
+        typecontext.AInixArgument("compoundOp", CompoundOperator))
 
 
 def lex_bash(string: str) -> tuple:
@@ -52,7 +49,7 @@ def lex_bash(string: str) -> tuple:
     return output
 
 
-class CmdSeqParser(ObjectParser):
+class CmdSeqParser(parse_primitives.ObjectParser):
     def _get_location_of_operator(self, string):
         inside_single_quotes = False
         inside_double_quotes = False
@@ -69,7 +66,7 @@ class CmdSeqParser(ObjectParser):
         
     def _parse_string(self, string, result):
         if string == "":
-            raise AInixParseError("Unable to parse empty string")
+            raise parse_primitives.AInixParseError("Unable to parse empty string")
         operator_index = self._get_location_of_operator(string)
         if operator_index is None:
             result.set_arg_present("program", 0, len(string))
@@ -78,7 +75,7 @@ class CmdSeqParser(ObjectParser):
             result.set_sibling_present(operator_index, len(string))
 
 
-class ProgramTypeParser(TypeParser):
+class ProgramTypeParser(parse_primitives.TypeParser):
     def _parse_string(self, string, result):
         first_word = string.split(" ")[0]
         matching_programs = self._match_attribute(
@@ -90,10 +87,10 @@ class ProgramTypeParser(TypeParser):
                 first_space_index = len(string)
             result.set_next_slice(first_space_index, len(string))
         else:
-            raise AInixParseError("Unable to find program", first_word)
+            raise parse_primitives.AInixParseError("Unable to find program", first_word)
 
 
-class ProgramObjectParser(ObjectParser):
+class ProgramObjectParser(parse_primitives.ObjectParser):
     @staticmethod
     def _get_arg_with_short_name(arg_list, short_name: str):
         assert len(short_name) == 1, "unexpectedly long short_name"
@@ -101,7 +98,7 @@ class ProgramObjectParser(ObjectParser):
         if not matches:
             return None
         if len(matches) > 1:
-            raise AInixParseError("Program has multiple args with same short_name", matches)
+            raise parse_primitives.AInixParseError("Program has multiple args with same short_name", matches)
         return matches[0]
 
     @staticmethod
@@ -110,8 +107,8 @@ class ProgramObjectParser(ObjectParser):
             lambda arg: arg.arg_data.get('long_name', None) == long_name)
         if exact_matches:
             if len(exact_matches) > 1:
-                raise AInixParseError("Program has multiple args with same long_name",
-                                      exact_matches)
+                raise parse_primitives.AInixParseError("Program has multiple args with same long_name",
+                                                       exact_matches)
             return exact_matches[0]
         else:
             # TODO (DNGros): implment "non-ambigious abbriviations" for args
@@ -122,13 +119,13 @@ class ProgramObjectParser(ObjectParser):
         # If nothing remaining, use next word
         no_next_word = current_index == len(lex_result) - 1
         if no_next_word:
-            raise AInixParseError(
+            raise parse_primitives.AInixParseError(
                 "Unable to find value for arg that requires one")
         next_lex_slice = lex_result[current_index + 1][1]
         return next_lex_slice
 
     def _parse_string(self, string, result):
-        remaining_args = list(self.object.children)
+        remaining_args = list(self.object_name.children)
         parameter_end_seen = False
         lex_result = lex_bash(string)
         for (lex_index, (word, (start_idx, end_idx))) in enumerate(lex_result):
@@ -174,12 +171,12 @@ class ProgramObjectParser(ObjectParser):
         # TODO (DNGros): handle positional args
         remaining_required_args = [a for a in remaining_args if a.required]
         if remaining_required_args:
-            raise AInixParseError("Unexpected unmatched args", remaining_required_args)
+            raise parse_primitives.AInixParseError("Unexpected unmatched args", remaining_required_args)
 
 
-class CommandOperatorParser(TypeParser):
+class CommandOperatorParser(parse_primitives.TypeParser):
     pass
 
 
-class CommandOperatorObjParser(ObjectParser):
+class CommandOperatorObjParser(parse_primitives.ObjectParser):
     pass

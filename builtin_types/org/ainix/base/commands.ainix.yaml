@@ -1,15 +1,15 @@
 ---
 defines:
     # Types
-    - define_new: type
+    - define_new: type_name
       name: CommandSequence
       default_type_parser: SingleTypeImplParser
       default_object_parser: CmdSeqParser
-    - define_new: type
+    - define_new: type_name
       name: CompoundOperator
       default_type_parser: CommandOperatorParser
       default_object_paser: CommandOperatorObjParser
-    - define_new: type
+    - define_new: type_name
       name: Program
       default_type_parser: ProgramTypeParser
       default_object_parser: ProgramObjectParser
@@ -17,7 +17,7 @@ defines:
     ###
     # Operators
     - &operator
-      define_new: object
+      define_new: object_name
       name: "PipeObj"
       children:
             - name: NextCommand
@@ -28,7 +28,7 @@ defines:
     - << : *operator
       name: "OrObj"
     ###
-    - define_new: object
+    - define_new: object_name
       name: CommandSequenceObj
       children:
             - name: ProgramArg
