@@ -23,9 +23,9 @@ defines:
       - name: ProgramArg
         type: Program
         required: True
-      direct_sibling:
-          name: compoundOp
-          type: CompoundOperator
+      - name: CompoundOp
+        type: CompoundOperator
+        required: False
 
     # Operators
     - &operator

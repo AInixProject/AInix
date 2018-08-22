@@ -42,7 +42,7 @@ def CmdSeqParser(
         result.set_arg_present("ProgramArg", 0, len(string))
     else:
         result.set_arg_present("ProgramArg", 0, operator_index)
-        result.set_sibling_present(operator_index, len(string))
+        result.set_arg_present("CompoundOp", operator_index, len(string))
 
 
 def _get_location_of_operator(string: str):

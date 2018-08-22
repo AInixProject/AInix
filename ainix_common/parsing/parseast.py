@@ -107,13 +107,6 @@ class ObjectNode(AstNode):
             for arg in implementation.children if not arg.required
         }
         self.next_type_choices = {}
-        # Create a direct_sibling data if needed
-        self.sibling_present_node = None
-        self.sibling_obj_choice_node = None
-        if implementation.direct_sibling:
-            if not implementation.direct_sibling.required:
-                self.sibling_present_node = \
-                    ArgPresentChoiceNode(implementation.direct_sibling, self)
 
     def set_arg_present(self, arg: typecontext.AInixArgument) -> Optional[ObjectChoiceNode]:
         if arg.name in self.arg_present_choices:
@@ -125,20 +118,10 @@ class ObjectNode(AstNode):
         else:
             return None
 
-    def set_sibling_present(self):
-        if self.sibling_present_node:
-            self.sibling_present_node.set_choice(True)
-        if self.implementation.direct_sibling.type is not None:
-            self.sibling_obj_choice_node = \
-                ObjectChoiceNode(self.implementation.direct_sibling.type, self)
-        return self.sibling_obj_choice_node
-
     def __eq__(self, other):
         return self.implementation == other.implementation and \
             self.arg_present_choices == other.arg_present_choices and \
-            self.next_type_choices == other.next_type_choices and \
-            self.sibling_present_node == other.sibling_present_node and \
-            self.sibling_obj_choice_node == other.sibling_obj_choice_node
+            self.next_type_choices == other.next_type_choices
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -157,14 +140,6 @@ class ObjectNode(AstNode):
         for name, choice in self.next_type_choices.items():
             s += choice.dump_str(indent + 2)
         s += indent_str + "  }\n"
-        if self.sibling_present_node:
-            s += indent_str + "  sibling_present_node: {\n"
-            s += self.sibling_present_node.dump_str(indent + 2)
-            s += indent_str + "  }\n"
-        if self.sibling_obj_choice_node:
-            s += indent_str + "  sibling_obj_choice_node: {\n"
-            s += self.sibling_obj_choice_node.dump_str(indent + 2)
-            s += indent_str + "  }\n"
         s += indent_str + "}\n"
         return s
 
@@ -211,15 +186,6 @@ class StringParser:
                 if next_type_choice is not None:
                     new_data_for_parse_stack.append(
                         (arg_present_data.slice_string, next_type_choice, arg.type_parser))
-        # Figure out if need to parse direct sibling
-        sibling_arg_data = object_parse.get_sibling_arg()
-        if sibling_arg_data:
-            next_type_choice = next_object_node.set_sibling_present()
-            if next_type_choice:
-                new_data_for_parse_stack.append(
-                    (sibling_arg_data.slice_string,
-                     next_type_choice,
-                     next_object.direct_sibling.value_parser))
 
         return new_data_for_parse_stack
 

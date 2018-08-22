@@ -1,6 +1,7 @@
 from collections import namedtuple
 import typecontext
-from typing import Type, List, Callable
+import attr
+from typing import List, Callable, Tuple, Dict, Optional
 
 
 class TypeParser:
@@ -180,36 +181,37 @@ class ObjectParser:
         return result
 
 
+@attr.s(auto_attribs=True)
+class ObjectParseArgData:
+    slice: Tuple[int, int]
+    slice_string: str
+
 class ObjectParserResult:
     def __init__(self, object_to_parse: 'typecontext.AInixObject', string: str):
         self._object = object_to_parse
-        self._result_dict = {}
+        self._result_dict: Dict[str, ObjectParseArgData] = \
+            {arg.name: None for arg in object_to_parse.children}
         self._sibling_result = None
         self.string = string
-        self.ArgData = namedtuple("PresentData", ['slice', 'slice_string'])
 
-    def _get_slice_string(self, start_idx: int, end_idx: int):
+    def _get_slice_string(self, start_idx: int, end_idx: int) -> str:
         return self.string[start_idx:end_idx].strip()
 
-    def get_arg_present(self, name):
+    def get_arg_present(self, name) -> Optional[ObjectParseArgData]:
         return self._result_dict.get(name, None)
 
-    def get_sibling_arg(self):
-        return self._sibling_result
-
-    def set_arg_present(self, arg_name: str, start_idx, end_idx):
+    def set_arg_present(self, arg_name: str, start_idx: int, end_idx: int):
         # TODO (DNGros): check that the argname exists
         si, ei = int(start_idx), int(end_idx)
-        self._result_dict[arg_name] = self.ArgData(
+        if arg_name not in self._result_dict:
+            raise AInixParseError(f"Invalid argument name {arg_name} for parse "
+                                  f"result of {self._object.name}. Valid options"
+                                  f"are [{', '.join(self._result_dict.keys())}]")
+        self._result_dict[arg_name] = ObjectParseArgData(
             (si, ei), self._get_slice_string(si, ei))
 
-    def set_sibling_present(self, start_idx, end_idx):
-        si, ei = int(start_idx), int(end_idx)
-        self._sibling_result = self.ArgData(
-            (si, ei), self._get_slice_string(si, ei))
 
-
-class AInixParseError(Exception):
+class AInixParseError(RuntimeError):
     pass
 
 

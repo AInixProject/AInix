@@ -85,7 +85,6 @@ class AInixObject:
         name: str,
         type_name: str,
         children: List['AInixArgument'] = None,
-        direct_sibling: 'AInixArgument' = None,
         preferred_object_parser_name: Optional[str] = None,
         type_data: Optional[dict] = None
     ):
@@ -96,7 +95,6 @@ class AInixObject:
         self.type_name = type_name
         self.children: List['AInixArgument'] = children
         self.type_data = type_data
-        self.direct_sibling: Optional[AInixArgument] = direct_sibling
         self.preferred_object_parser_name = preferred_object_parser_name
         self._type_context.register_object(self)
 
@@ -114,7 +112,7 @@ class AInixObject:
             self.preferred_object_parser_name)
 
     def __repr__(self):
-        return "<AInixObject " + self.name + ">"
+        return f"<AInixObject: {self.name}>"
 
 
 class AInixArgument:

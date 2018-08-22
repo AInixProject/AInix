@@ -100,7 +100,6 @@ def _parse_object(define, type_context: typecontext.TypeContext):
         name=define['name'],
         type_name=define.get("type"),
         children=_parse_arguments(define.get("children"), type_context),
-        direct_sibling=_parse_argument(define.get("direct_sibling"), type_context),
         preferred_object_parser_name=define.get("preferred_object_parser"),
         type_data=define.get("type_data")  # TODO: validate is a dict
     )

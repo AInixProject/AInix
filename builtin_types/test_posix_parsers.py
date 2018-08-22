@@ -18,19 +18,19 @@ def test_cmd_seq_parser(type_context):
     instance = type_context.get_object_parser_by_name("CmdSeqParser")
     result = instance.parse_string(cmd_seq_obj, "hello")
     assert result.get_arg_present("ProgramArg").slice == (0, 5)
-    assert result.get_sibling_arg() is None
+    assert result.get_arg_present("CompoundOp") is None
 
     result = instance.parse_string(cmd_seq_obj, "woo | foo")
     assert result.get_arg_present("ProgramArg").slice == (0, 4)
     assert result.get_arg_present("ProgramArg").slice_string == "woo"
-    assert result.get_sibling_arg().slice == (4, 9)
-    assert result.get_sibling_arg().slice_string == "| foo"
+    assert result.get_arg_present("CompoundOp").slice == (4, 9)
+    assert result.get_arg_present("CompoundOp").slice_string == "| foo"
 
     result = instance.parse_string(cmd_seq_obj, "woo | foo | go")
     assert result.get_arg_present("ProgramArg").slice == (0, 4)
     assert result.get_arg_present("ProgramArg").slice_string == "woo"
-    assert result.get_sibling_arg().slice == (4, 14)
-    assert result.get_sibling_arg().slice_string == "| foo | go"
+    assert result.get_arg_present("CompoundOp").slice == (4, 14)
+    assert result.get_arg_present("CompoundOp").slice_string == "| foo | go"
 
 
 def test_cmd_seq_parser_quotes(type_context):
@@ -39,14 +39,14 @@ def test_cmd_seq_parser_quotes(type_context):
     result = instance.parse_string(cmd_seq_obj, 'hello "pi |" | foo')
     assert result.get_arg_present("ProgramArg").slice == (0, 13)
     assert result.get_arg_present("ProgramArg").slice_string == 'hello "pi |"'
-    assert result.get_sibling_arg().slice == (13, 18)
-    assert result.get_sibling_arg().slice_string == "| foo"
+    assert result.get_arg_present("CompoundOp").slice == (13, 18)
+    assert result.get_arg_present("CompoundOp").slice_string == "| foo"
 
     result = instance.parse_string(cmd_seq_obj, r'he "\"pi\" |" | foo')
     assert result.get_arg_present("ProgramArg").slice == (0, 14)
     assert result.get_arg_present("ProgramArg").slice_string == r'he "\"pi\" |"'
-    assert result.get_sibling_arg().slice == (14, 19)
-    assert result.get_sibling_arg().slice_string == "| foo"
+    assert result.get_arg_present("CompoundOp").slice == (14, 19)
+    assert result.get_arg_present("CompoundOp").slice_string == "| foo"
 
 
 def test_prog_type_parser(type_context):
