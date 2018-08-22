@@ -246,7 +246,7 @@ def test_dash_arg():
     assert out[0].as_shell_string() == "dashtest -name foo"
 
 oneDashArg = program_description.Argument("name", "Stringlike", long_single_dash = True)
-typeArg = program_description.Argument("type", "Stringlike", long_single_dash = True)
+typeArg = program_description.Argument("type_name", "Stringlike", long_single_dash = True)
 findRoot = program_description.Argument("findroot", "SingleFile", position = -1)
 findlike = program_description.AIProgramDescription(
     name = "findlike",
@@ -288,7 +288,7 @@ def test_unrecognized_find_flag():
 
 def test_no_root():
     parser = CmdParser([findlike])
-    out = parser.parse("findlike -name foo -type f")
+    out = parser.parse("findlike -name foo -type_name f")
     assert out[0].arguments[0].present == True
     assert out[0].arguments[0].value == "foo"
     assert out[0].arguments[1].present == False

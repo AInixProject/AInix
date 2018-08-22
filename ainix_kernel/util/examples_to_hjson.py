@@ -30,7 +30,7 @@ def dump_desc(desc):
     for arg in desc.arguments:
         argsList.append(OrderedDict([
             ("name", arg.name),
-            ("type", arg.type_name),
+            ("type_name", arg.type_name),
         ]))
         if arg.position:
             argsList[-1]["position"] = arg.position

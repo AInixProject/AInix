@@ -149,9 +149,8 @@ class ObjectParser:
         type_context: 'typecontext.TypeContext',
         parser_name: str,
         type_name: str,
-        parse_function: Callable[
-            ['ObjectParser', typecontext.AInixObject, str, 'ObjectParserResult'],
-            None]
+        parse_function: Callable[['ObjectParser', 'typecontext.AInixObject',
+                                  str, 'ObjectParserResult'], None]
     ):
         self.name = parser_name
         self.parser_name = parser_name
@@ -169,7 +168,7 @@ class ObjectParser:
 
     def parse_string(
         self,
-        object_: typecontext.AInixObject,
+        object_: 'typecontext.AInixObject',
         string: str
     ) -> 'ObjectParserResult':
         if object_.type_name != self.type_name:

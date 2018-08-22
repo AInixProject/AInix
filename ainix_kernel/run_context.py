@@ -26,7 +26,7 @@ class RunContext():
     def fill_argument_data(self, argument_builder):
         """Used to initiallize the model data for all arguments.
             argument_builder (callable): a function that takes in a argument and returns
-                                         a object to set that argument model data to
+                                         a object_name to set that argument model data to
         """
         # Create argument model data
         for prog in self.descriptions:

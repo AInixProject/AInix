@@ -195,7 +195,7 @@ class NLField(torchtext.data.Field):
         """ Process a list of examples to create a torch.Tensor.
         Pad, numericalize, and postprocess a batch and create a tensor.
         Args:
-            batch (list(NLExample)): A list of object from a batch of examples.
+            batch (list(NLExample)): A list of object_name from a batch of examples.
         """
         asexamples = [NLExample(e, self) for e in batch]
         vals = [e.mod_text for e in asexamples]
@@ -207,12 +207,12 @@ class NLField(torchtext.data.Field):
         return tensor, asexamples
     
     def build_vocab(self, *args, **kwargs):
-        """Construct the Vocab object for this field from one or more datasets.
+        """Construct the Vocab object_name for this field from one or more datasets.
         Arguments:
             Positional arguments: Dataset objects or other iterable data
-                sources from which to construct the Vocab object that
+                sources from which to construct the Vocab object_name that
                 represents the set of possible values for this field. If
-                a Dataset object is provided, all columns corresponding
+                a Dataset object_name is provided, all columns corresponding
                 to this field are used; individual columns can also be
                 provided directly.
             Remaining keyword arguments: Passed to the constructor of Vocab.
