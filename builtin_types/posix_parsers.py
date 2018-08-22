@@ -39,9 +39,9 @@ def CmdSeqParser(
         raise parse_primitives.AInixParseError("Unable to parse empty string")
     operator_index = _get_location_of_operator(string)
     if operator_index is None:
-        result.set_arg_present("program", 0, len(string))
+        result.set_arg_present("ProgramArg", 0, len(string))
     else:
-        result.set_arg_present("program", 0, operator_index)
+        result.set_arg_present("ProgramArg", 0, operator_index)
         result.set_sibling_present(operator_index, len(string))
 
 

@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import List, Optional, Dict
 import parse_primitives
-
+SINGLE_TYPE_IMPL_BUILTIN = "SingleTypeImplParser"
 
 class AInixType:
     """Used to construct AInix types.
@@ -44,12 +44,32 @@ class AInixType:
     def default_type_parser(self) -> Optional['parse_primitives.TypeParser']:
         if self.default_type_parser_name is None:
             return None
-        return self._type_context.get_type_parser_by_name(
+        retrieved_parser = self._type_context.get_type_parser_by_name(
             self.default_type_parser_name)
+        if retrieved_parser is None:
+            raise RuntimeError(f"{self} unable to retrieve default_type_parser "
+                               f"{self.default_type_parser_name} from current "
+                               f"run context")
+        return retrieved_parser
+
+    @property
+    def default_object_parser(self) -> Optional['parse_primitives.ObjectParser']:
+        if self.default_object_parser_name is None:
+            return None
+        retrieved_parser =  self._type_context.get_object_parser_by_name(
+            self.default_object_parser_name)
+        if retrieved_parser is None:
+            raise RuntimeError(f"{self} unable to retrieve default_object_parser "
+                               f"{self.default_object_parser_name} from current "
+                               f"run context")
+        return retrieved_parser
 
     @property
     def type_context(self):
         return self._type_context
+
+    def __str__(self):
+        return f"<AInixType: {self.name}>"
 
     def __eq__(self, other):
         return other.name == self.name and other._type_context == self._type_context
@@ -74,9 +94,9 @@ class AInixObject:
         if type_name is None:
             raise ValueError(f"AInixObject {name} must have a non-None type_name")
         self.type_name = type_name
-        self.children = children
+        self.children: List['AInixArgument'] = children
         self.type_data = type_data
-        self.direct_sibling = direct_sibling
+        self.direct_sibling: Optional[AInixArgument] = direct_sibling
         self.preferred_object_parser_name = preferred_object_parser_name
         self._type_context.register_object(self)
 
@@ -120,6 +140,17 @@ class AInixArgument:
             return None
         return self._type_context.get_type_by_name(self.type_name)
 
+    @property
+    def type_parser(self) -> Optional['parse_primitives.TypeParser']:
+        if self.type_parser_name is None:
+            type_default_parser = self.type.default_type_parser
+            if type_default_parser is None:
+                raise ValueError(f"Argument {self.name} of type {type} does"
+                                 f"not have prefered parser name or default"
+                                 f"type parser")
+            return type_default_parser
+        return self._type_context.get_type_parser_by_name(self.type_name)
+
 
 class TypeContext:
     """Used to track a set types, objects, and parsers.
@@ -131,7 +162,7 @@ class TypeContext:
     def __init__(self):
         self._name_to_type: Dict[str, AInixType] = {}
         self._name_to_object: Dict[str, AInixObject] = {}
-        self._name_to_type_parser : Dict[str, parse_primitives.TypeParser]= {}
+        self._name_to_type_parser : Dict[str, parse_primitives.TypeParser] = {}
         self._name_to_object_parser: Dict[str, parse_primitives.ObjectParser] = {}
         self._type_name_to_implementations: Dict[str, List[AInixObject]] = \
             defaultdict(list)
@@ -163,10 +194,31 @@ class TypeContext:
 
     def register_type(self, new_type: AInixType) -> None:
         """Registers a type to be tracked. This should be called automatically when
-        instantiating new types."""
+        instantiating new types. This method may also mutate the new_type if
+        it uses a builtin parser for one of its parsers"""
         if new_type.name in self._name_to_type:
-            raise ValueError("Type", new_type.name, "already exists")
+            raise ValueError(f"Type {new_type.name} already exists")
+        self._link_builtin_type_parser(new_type)
         self._name_to_type[new_type.name] = new_type
+
+    def _link_builtin_type_parser(
+        self,
+        type_using_it: AInixType
+    ) -> None:
+        """Handles generation and linking of a special builtin type parser.
+
+        Args:
+            type_using_it: the AInixType that that wants to use the given builtin.
+                This object may be mutated by changing its default_type_parse_name
+                to appropriately link to the builtin. If its default_type_parse_name
+                is not a builtin, then it is left unmodified
+        """
+        if type_using_it.default_type_parser_name == SINGLE_TYPE_IMPL_BUILTIN:
+            link_name = f"__builtin.SingleTypeImplParser.{type_using_it.name}"
+            if not self.get_type_parser_by_name(link_name):
+                parse_primitives.TypeParser(self, link_name, type_using_it.name,
+                                            parse_primitives.SingleTypeImplParserFunc)
+            type_using_it.default_type_parser_name = link_name
 
     def register_type_parser(
         self,
@@ -188,8 +240,8 @@ class TypeContext:
         self._type_name_to_implementations[new_object.type_name].append(new_object)
 
     def register_object_parser(
-            self,
-            new_parser: "parse_primitives.ObjectParser"
+        self,
+        new_parser: "parse_primitives.ObjectParser"
     ) -> None:
         """Registers a type to be tracked. This should be called automatically when
         instantiating new types."""
@@ -203,14 +255,8 @@ class TypeContext:
         valid."""
         # TODO (DNGos): IMPLEMENT!
         # This method should check that all objects type's actually exist, and
-        # notify the user if they have tried reference things they did not create
-        pass
-
-
-# Define some decorators for creating builtin things
-_builtin_type_parsers = []
-
-
-def builtin_type_parser(parse_function):
-    _builtin_type_parsers.append((parse_function.__name__, parse_function))
-    return parse_function
+        # notify the user if they have tried reference things they did not create.
+        # It would also be nifty if it checked builtins to see if they were reasonable
+        # (so for example, that things that use the SingleTypeImplParser actually
+        #  only have one implementation)
+        raise NotImplemented("Verify not implemented")

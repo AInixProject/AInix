@@ -3,10 +3,11 @@ try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional, Callable, IO
 import typecontext
 import parse_primitives
 import importlib.util
+import os
 
 
 def load_path(path : str, type_context: typecontext.TypeContext) -> None:
@@ -14,19 +15,30 @@ def load_path(path : str, type_context: typecontext.TypeContext) -> None:
     or objects with the supplied type_context"""
     # TODO (DNGros): validate that is actually a *.ainix.yaml file
     # TODO (DNGros): allow for you to specify a  path and recurse down
+    load_root = os.path.dirname(path)
     with open(path, 'r') as f:
-        load_yaml(f, type_context)
+        load_yaml(f, type_context, load_root)
 
 
-def load_yaml(filelike, type_context: typecontext.TypeContext) -> None:
+def load_yaml(filelike: IO, type_context: typecontext.TypeContext, load_root=None) -> None:
     doc = yaml.safe_load(filelike)
-    _load(doc, type_context)
+    _load(doc, type_context, load_root)
 
 
-def _load(parsed_doc : Dict, type_context: typecontext.TypeContext) -> None:
+def _load(
+    parsed_doc: Dict,
+    type_context: typecontext.TypeContext,
+    load_root: str
+) -> None:
     """Same as load_path() but accepts an already parsed dict.
     This done as seperate method incase we wish to support
-    other serialization data formats in the future."""
+    other serialization data formats in the future.
+
+    Args:
+        parsed_doc: dict form of file we are loading from
+        type_context: type context we are loading into
+        load_root: jk
+    """
     for define in parsed_doc['defines']:
         what_to_define = define['define_new']
         if what_to_define == "type":
@@ -34,9 +46,9 @@ def _load(parsed_doc : Dict, type_context: typecontext.TypeContext) -> None:
         elif what_to_define == "object":
             _parse_object(define, type_context)
         elif what_to_define == "type_parser":
-            _parse_type_parser(define, type_context)
+            _parse_type_parser(define, type_context, load_root)
         elif what_to_define == "object_parser":
-            _parse_object_parser(define, type_context)
+            _parse_object_parser(define, type_context, load_root)
         else:
             raise ValueError(f"Unrecognized define_new value {what_to_define}")
 
@@ -94,9 +106,9 @@ def _parse_object(define, type_context: typecontext.TypeContext):
     )
 
 
-def _extract_parse_func_from_py_module(define: Dict) -> Callable:
+def _extract_parse_func_from_py_module(define: Dict, load_root: str) -> Callable:
     """Extracts a parse function when the source of the function a python module"""
-    file_name = define['file']
+    file_name = os.path.join(load_root, define['file'])
     name = define['name']
     parser_module_spec = importlib.util.spec_from_file_location(
         "imparser." + name, file_name)
@@ -111,13 +123,13 @@ def _extract_parse_func_from_py_module(define: Dict) -> Callable:
     return parse_func
 
 
-def _extract_parse_function(define: Dict) -> Callable:
+def _extract_parse_function(define: Dict, load_root: str) -> Callable:
     """Parses a define and gets out a parse_function for a parser. Currently
     this function works for both TypeParsers and ObjectParsers but this might
     change in the future if more sources are added."""
     source = define.get("source", "python_module")
     if source == "python_module":
-        return _extract_parse_func_from_py_module(define)
+        return _extract_parse_func_from_py_module(define, load_root)
     else:
         raise ValueError(f"Unrecognized source {source} for TypeParser "
                          f"{define['name']}")
@@ -125,14 +137,16 @@ def _extract_parse_function(define: Dict) -> Callable:
 
 def _parse_type_parser(
     define: Dict,
-    type_context: typecontext.TypeContext
+    type_context: typecontext.TypeContext,
+    load_root: str
 ) -> None:
     """
     Args:
         define: the serialized form of the define of a new TypeParser
         type_context: the context to define the parser in.
+        load_root: path to use the root for loading
     """
-    parse_func = _extract_parse_function(define)
+    parse_func = _extract_parse_function(define, load_root)
     parse_primitives.TypeParser(
         type_context,
         parser_name=define['name'],
@@ -143,14 +157,17 @@ def _parse_type_parser(
 
 def _parse_object_parser(
     define: Dict,
-    type_context: typecontext.TypeContext
+    type_context: typecontext.TypeContext,
+    load_root: str
 ) -> None:
     """
     Args:
         define: the serialized form of the define of a new ObjectParser
         type_context: the context to define the parser in.
+        load_root: The root load context. Used as the relative start point for
+            any file imports
     """
-    parse_func = _extract_parse_function(define)
+    parse_func = _extract_parse_function(define, load_root)
     parse_primitives.ObjectParser(
         type_context,
         parser_name=define['name'],

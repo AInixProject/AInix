@@ -23,7 +23,7 @@ def test_single_type():
         assert new_type.default_type_parser_name == "foo_type_p"
         assert new_type.default_object_parser_name == "foo_obj_p"
     mock_type_context.register_type = mock_register
-    load_yaml(f, mock_type_context)
+    load_yaml(f, mock_type_context, "")
 
 
 def test_single_obj():
@@ -56,6 +56,6 @@ def test_single_obj():
         assert arg1.name == "test_arg_2"
         assert arg1.type_name == "bar_type"
         assert arg1.required
-    load_yaml(f, mock_type_context)
+    load_yaml(f, mock_type_context, "")
     mock_type_context.register_object = mock_register
 

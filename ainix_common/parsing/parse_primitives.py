@@ -3,7 +3,6 @@ import typecontext
 from typing import Type, List, Callable
 
 
-# TODO (DNGros): lookup how you mark something as an abstract class in python
 class TypeParser:
     """A TypeParser reads a string and selects the AInixObject
     implementation that the string represents. It also selects the substring
@@ -95,7 +94,7 @@ class TypeParserResult:
         self._next_slice = None
         self._next_parser = None
 
-    def get_implementation(self):
+    def get_implementation(self) -> 'typecontext.AInixObject':
         return self._implementation
 
     def get_next_string(self):
@@ -119,7 +118,7 @@ class TypeParserResult:
             raise AInixParseError("No implementation set during parsing")
         next_parser = self._implementation.preferred_object_parser
         if next_parser is None:
-            next_parser = self.type.default_type_parser
+            next_parser = self.type.default_object_parser
         # TODO (DNGros): allow parsers to override the object parser
         return next_parser
 
@@ -214,13 +213,16 @@ class AInixParseError(Exception):
     pass
 
 
-#@typecontext.builtin_type_parser
-#def SingleTypeImplParser(self, string: str, result):
-#    num_impls = len(self.type_implementations)
-#    if num_impls != 1:
-#        raise AInixParseError("{self.__class__.name} expects exactly one "
-#                              "implementation. Found {num_impls} implementations.")
-#
-#    result.set_valid_implementation(self.type_implementations[0])
-#    result.set_next_slice(0, len(string))
-
+def SingleTypeImplParserFunc(
+    parser: TypeParser,
+    string: str,
+    result: TypeParserResult
+) -> None:
+    """The parser function for a special builtin TypeParser which works when
+    there is only one implementation of the specified type"""
+    num_impls = len(parser.type_implementations)
+    if num_impls != 1:
+        raise AInixParseError(f"{parser.parser_name} expects exactly one "
+                              f"implementation. Found {num_impls} implementations.")
+    result.set_valid_implementation(parser.type_implementations[0])
+    result.set_next_slice(0, len(string))

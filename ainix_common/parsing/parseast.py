@@ -178,7 +178,7 @@ class StringParser:
         self._root_type = root_type
         if root_parser is None:
             if root_type.default_type_parser is None:
-                raise ValueError("No default parser available for ", root_type)
+                raise ValueError(f"No default parser available for {root_type}")
             self._root_parser = root_type.default_type_parser
         else:
             self._root_parser = root_parser(root_type)
@@ -200,7 +200,7 @@ class StringParser:
                 "No provided object_name parser for parsed object_name",
                 next_object)
         object_parse: parse_primitives.ObjectParserResult = \
-            result.next_parser.parse_string(result.get_next_string())
+            result.next_parser.parse_string(next_object, result.get_next_string())
 
         new_data_for_parse_stack = []
         # Loop through children and add nodes for each that is present

@@ -17,18 +17,18 @@ def test_cmd_seq_parser(type_context):
     cmd_seq_obj = type_context.get_object_by_name("CommandSequenceObj")
     instance = type_context.get_object_parser_by_name("CmdSeqParser")
     result = instance.parse_string(cmd_seq_obj, "hello")
-    assert result.get_arg_present("program").slice == (0, 5)
+    assert result.get_arg_present("ProgramArg").slice == (0, 5)
     assert result.get_sibling_arg() is None
 
     result = instance.parse_string(cmd_seq_obj, "woo | foo")
-    assert result.get_arg_present("program").slice == (0, 4)
-    assert result.get_arg_present("program").slice_string == "woo"
+    assert result.get_arg_present("ProgramArg").slice == (0, 4)
+    assert result.get_arg_present("ProgramArg").slice_string == "woo"
     assert result.get_sibling_arg().slice == (4, 9)
     assert result.get_sibling_arg().slice_string == "| foo"
 
     result = instance.parse_string(cmd_seq_obj, "woo | foo | go")
-    assert result.get_arg_present("program").slice == (0, 4)
-    assert result.get_arg_present("program").slice_string == "woo"
+    assert result.get_arg_present("ProgramArg").slice == (0, 4)
+    assert result.get_arg_present("ProgramArg").slice_string == "woo"
     assert result.get_sibling_arg().slice == (4, 14)
     assert result.get_sibling_arg().slice_string == "| foo | go"
 
@@ -37,14 +37,14 @@ def test_cmd_seq_parser_quotes(type_context):
     cmd_seq_obj = type_context.get_object_by_name("CommandSequenceObj")
     instance = type_context.get_object_parser_by_name("CmdSeqParser")
     result = instance.parse_string(cmd_seq_obj, 'hello "pi |" | foo')
-    assert result.get_arg_present("program").slice == (0, 13)
-    assert result.get_arg_present("program").slice_string == 'hello "pi |"'
+    assert result.get_arg_present("ProgramArg").slice == (0, 13)
+    assert result.get_arg_present("ProgramArg").slice_string == 'hello "pi |"'
     assert result.get_sibling_arg().slice == (13, 18)
     assert result.get_sibling_arg().slice_string == "| foo"
 
     result = instance.parse_string(cmd_seq_obj, r'he "\"pi\" |" | foo')
-    assert result.get_arg_present("program").slice == (0, 14)
-    assert result.get_arg_present("program").slice_string == r'he "\"pi\" |"'
+    assert result.get_arg_present("ProgramArg").slice == (0, 14)
+    assert result.get_arg_present("ProgramArg").slice_string == r'he "\"pi\" |"'
     assert result.get_sibling_arg().slice == (14, 19)
     assert result.get_sibling_arg().slice_string == "| foo"
 
