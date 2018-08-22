@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Type, Optional, Union
+from typing import List, Optional, Dict
 import parse_primitives
 
 
@@ -7,8 +7,8 @@ class AInixType:
     """Used to construct AInix types.
 
     Types represent a collection of related objects. From a modeling perspective,
-    this defines a classification problem between all implementations (objects) that
-    you later register.
+    this defines a classification problem between all implementations (objects)
+    that you later register.
 
     Args:
         type_context : the type context to register this type in. Registration
@@ -41,7 +41,7 @@ class AInixType:
         type_context.register_type(self)
 
     @property
-    def default_type_parser(self) -> Optional[parse_primitives.TypeParser]:
+    def default_type_parser(self) -> Optional['parse_primitives.TypeParser']:
         if self.default_type_parser_name is None:
             return None
         return self._type_context.get_type_parser_by_name(
@@ -72,7 +72,7 @@ class AInixObject:
         self._type_context = type_context
         self.name = name
         if type_name is None:
-            raise ValueError("AInixObject must have a non-None type_name")
+            raise ValueError(f"AInixObject {name} must have a non-None type_name")
         self.type_name = type_name
         self.children = children
         self.type_data = type_data
@@ -86,11 +86,11 @@ class AInixObject:
 
     @property
     def preferred_object_parser(self) \
-            -> Optional[parse_primitives.ObjectParser]:
+            -> Optional['parse_primitives.ObjectParser']:
         """Returns the instance associated with the preferred_object_parser_name"""
         if self.preferred_object_parser_name is None:
             return None
-        return self._type_context.get_type_parser_by_name(
+        return self._type_context.get_object_parser_by_name(
             self.preferred_object_parser_name)
 
     def __repr__(self):
@@ -129,12 +129,12 @@ class TypeContext:
     or modeling.
     """
     def __init__(self):
-        self._name_to_type = {}
-        self._name_to_object = {}
-        self._name_to_type_parser = {}
-        self._type_name_to_implementations = defaultdict(list)
-        # TODO (DNGros): consider changing from "compile" to optional verify()
-        self._compiled = False
+        self._name_to_type: Dict[str, AInixType] = {}
+        self._name_to_object: Dict[str, AInixObject] = {}
+        self._name_to_type_parser : Dict[str, parse_primitives.TypeParser]= {}
+        self._name_to_object_parser: Dict[str, parse_primitives.ObjectParser] = {}
+        self._type_name_to_implementations: Dict[str, List[AInixObject]] = \
+            defaultdict(list)
 
     def _resolve_type(self, type):
         """Converts a string into a type object_name if needed"""
@@ -146,42 +146,34 @@ class TypeContext:
         return type
 
     def get_type_by_name(self, name: str) -> AInixType:
-        if not self._compiled:
-            raise ValueError("Please call compile() before querying the context")
         return self._name_to_type.get(name, None)
 
-    def get_object_by_name(self, name: str):
-        if not self._compiled:
-            raise ValueError("Please call compile() before querying the context")
+    def get_object_by_name(self, name: str) -> AInixObject:
         return self._name_to_object.get(name, None)
 
-    def get_type_parser_by_name(self, name: str):
-        return self._name_to_object.get(name, None)
+    def get_type_parser_by_name(self, name: str) -> 'parse_primitives.TypeParser':
+        return self._name_to_type_parser.get(name, None)
+
+    def get_object_parser_by_name(self, name: str) -> 'parse_primitives.ObjectParser':
+        return self._name_to_object_parser.get(name, None)
 
     def get_implementations(self, type):
-        if not self._compiled:
-            raise ValueError("Please call compile() before querying the context")
         type = self._resolve_type(type)
         return self._type_name_to_implementations[type.name]
 
     def register_type(self, new_type: AInixType) -> None:
         """Registers a type to be tracked. This should be called automatically when
         instantiating new types."""
-        if self._compiled:
-            # TODO (DNGros): think through if we actually need to not allow this
-            raise ValueError("Cannot register new types after compilation")
         if new_type.name in self._name_to_type:
             raise ValueError("Type", new_type.name, "already exists")
         self._name_to_type[new_type.name] = new_type
 
     def register_type_parser(
         self,
-        new_parser: parse_primitives.TypeParser
+        new_parser: "parse_primitives.TypeParser"
     ) -> None:
-        """Registers a type to be tracked. This should be called automatically when
-        instantiating new types."""
-        if self._compiled:
-            raise ValueError("Cannot register new parsers after compilation")
+        """Registers a parser to be tracked. This should be called automatically when
+        instantiating new TypeParsers."""
         if new_parser.parser_name in self._name_to_type_parser:
             raise ValueError("Type parser", new_parser.parser_name, "already exists")
         self._name_to_type_parser[new_parser.parser_name] = new_parser
@@ -189,22 +181,30 @@ class TypeContext:
     def register_object(self, new_object: AInixObject) -> None:
         """Registers a object_name to be tracked. This should be called
         automatically when instantiating new objects."""
-        if self._compiled:
-            # TODO (DNGros): think through if we actually need to not allow this
-            raise ValueError("Cannot register new types after compilation")
         name = new_object.name
         if name in self._name_to_object:
             raise ValueError("Object", name, "already exists")
         self._name_to_object[name] = new_object
         self._type_name_to_implementations[new_object.type_name].append(new_object)
 
-    def compile(self):
+    def register_object_parser(
+            self,
+            new_parser: "parse_primitives.ObjectParser"
+    ) -> None:
+        """Registers a type to be tracked. This should be called automatically when
+        instantiating new types."""
+        if new_parser.parser_name in self._name_to_object_parser:
+            raise ValueError("Object parser", new_parser.parser_name, "already exists")
+        self._name_to_object_parser[new_parser.parser_name] = new_parser
+
+    def verify(self):
         """After you have instantiated all the types and objects you need in this
-        context, you should call this method."""
+        context, you can call this method to verify all referenced types are
+        valid."""
         # TODO (DNGos): IMPLEMENT!
         # This method should check that all objects type's actually exist, and
         # notify the user if they have tried reference things they did not create
-        self._compiled = True
+        pass
 
 
 # Define some decorators for creating builtin things

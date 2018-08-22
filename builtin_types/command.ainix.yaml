@@ -1,0 +1,67 @@
+---
+defines:
+    ### Types ###
+
+    - define_new: type
+      name: CommandSequence
+      default_type_parser: SingleTypeImplParser
+      default_object_parser: CmdSeqParser
+    - define_new: type
+      name: CompoundOperator
+      default_type_parser: CommandOperatorParser
+      default_object_paser: CommandOperatorObjParser
+    - define_new: type
+      name: Program
+      default_type_parser: ProgramTypeParser
+      default_object_parser: ProgramObjectParser
+
+    ### Objects ###
+    - define_new: object
+      name: CommandSequenceObj
+      type: CommandSequence
+      children:
+      - name: ProgramArg
+        type: Program
+        required: True
+      direct_sibling:
+          name: compoundOp
+          type: CompoundOperator
+
+    # Operators
+    - &operator
+      define_new: object
+      name: "PipeObj"
+      type: CompoundOperator
+      children:
+            - name: NextCommand
+              type: CommandSequence
+              required: True
+    - << : *operator
+      name: "AndObj"
+    - << : *operator
+      name: "OrObj"
+
+    ### Parsers ###
+    - &type_parser_from_posix
+      define_new: type_parser
+      name: CommandOperatorParser
+      type: CompoundOperator
+      source: python_module
+      file: posix_parsers.py
+    - << : *type_parser_from_posix
+      name: ProgramTypeParser
+      type: Program
+    - &object_parser_from_posix
+      define_new: object_parser
+      name: CmdSeqParser
+      type: CommandSequence
+      source: python_module
+      file: posix_parsers.py
+    - << : *object_parser_from_posix
+      name: CommandOperatorObjParser
+      type: CompoundOperator
+    - << : *object_parser_from_posix
+      name: ProgramObjectParser
+      type: Program
+
+...

@@ -30,7 +30,7 @@ def test_single_obj():
     test_string = (
         "---\n"
         "defines:\n"
-        "    - define_new: object_name\n"
+        "    - define_new: object\n"
         "      name: foo\n"
         "      type: foo_t\n"
         "      children:\n"
@@ -58,3 +58,4 @@ def test_single_obj():
         assert arg1.required
     load_yaml(f, mock_type_context)
     mock_type_context.register_object = mock_register
+
