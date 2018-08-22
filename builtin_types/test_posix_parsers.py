@@ -73,12 +73,12 @@ def test_prog_type_parser(type_context):
 
 def test_bash_lexer():
     result = lex_bash("foo bar")
-    assert result == [("foo", (0,4)), ("bar", (4,7))]
+    assert result == [("foo", (0, 4)), ("bar", (4, 7))]
 
 
 def test_bash_lexer_quotes():
     result = lex_bash('foo "bar baz"')
-    assert result == [("foo", (0,4)), ('"bar baz"', (4,13))]
+    assert result == [("foo", (0, 4)), ('"bar baz"', (4, 13))]
 
 
 def test_prog_object_parser_nocrash(type_context):
