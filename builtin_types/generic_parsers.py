@@ -1,6 +1,8 @@
 import typecontext
 import parse_primitives
 import re
+MAX_MUNCH_LOOKUP_KEY = "ParseRepresentation"
+REGEX_GROUP_LOOKUP_KEY = "RegexRepresentation"
 
 
 def max_munch_type_parser(
@@ -11,7 +13,7 @@ def max_munch_type_parser(
     implementations = parser.type_implementations
     longest_match = (0, None)
     for implementation in implementations:
-        parse_rep: str = implementation.type_data['ParseRepresentation']
+        parse_rep: str = implementation.type_data[MAX_MUNCH_LOOKUP_KEY]
         if string.startswith(parse_rep):
             match = (len(parse_rep), implementation)
             if match > longest_match:
@@ -30,11 +32,11 @@ def regex_group_object_parser(
     result: parse_primitives.ObjectParserResult
 ) -> None:
     for arg in object.children:
-        regex: str = arg.arg_data['RegexRepresentation']
+        regex: str = arg.arg_data[REGEX_GROUP_LOOKUP_KEY]
         match = re.match(regex, string)
         arg_present = match is not None
         if arg_present:
-            start_idx, end_idx = re.span(1)
+            start_idx, end_idx = match.span(1)
             result.set_arg_present(arg.name, start_idx, end_idx)
         elif arg.required:
             raise parse_primitives.AInixParseError(
