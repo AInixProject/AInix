@@ -1,0 +1,88 @@
+---
+defines:
+    - define_new: type
+      name: Number
+    - define_new: object
+      name: decimal_number
+      type: Number
+      prefered_object_parser: regex_group_object_parser
+      children:
+          - name: Sign
+            type: Sign
+            required: True
+            arg_data: {RegexRepresentation: "([\-\+]).*"}
+          - name: BeforeDecimal
+            type: IntBase
+            required: True
+            arg_data: {RegexRepresentation: "[\-\+]([0-9]+).*"}
+          - name: AfterDecimal
+            type: IntBase
+            required: False
+            arg_data: {RegexRepresentation: ".*\.([0-9]+).*"}
+          - name: Exponent
+            type: IntBase
+            required: True
+            arg_data: {RegexRepresentation: ".*e([0-9]+)"}
+    # Sign
+    - define_new: type
+      name: Sign
+      default_type_parser: max_munch_type_parser
+    - define_new: object
+      name: PossitiveSign
+      type_data: {ParseRepresentation: "+"}
+    - define_new: object
+      name: NegativeSign
+      type_data: {ParseRepresentation: "-"}
+    # A string of base10 digits
+    - define_new: type
+      name: IntBase
+    - define_new: object
+      name: base_ten_list
+      type: IntBase
+      prefered_object_parser: regex_group_object_parser
+      children:
+          - name: CurrentDigit
+            type: BaseTen
+            required: True
+            arg_data: {RegexRepresentation: "([0-9])[0-9]*"}
+          - name: NextDigit
+            type: IntBase
+            required: False
+            arg_data: {RegexRepresentation: "[0-9]([0-9]+)"}
+    # Base10 Digits
+    - define_new: type
+      name: BaseTen
+      default_type_parser: max_munch_type_parser
+    - &base_ten_obj
+      define_new: object
+      name: zero
+      type: BaseTen
+      type_data: {ParseRepresentation: "0"}
+    - << : *base_ten_obj
+      name: one
+      type_data: {ParseRepresentation: "1"}
+    - << : *base_ten_obj
+      name: two
+      type_data: {ParseRepresentation: "2"}
+    - << : *base_ten_obj
+      name: three
+      type_data: {ParseRepresentation: "3"}
+    - << : *base_ten_obj
+      name: four
+      type_data: {ParseRepresentation: "4"}
+    - << : *base_ten_obj
+      name: five
+      type_data: {ParseRepresentation: "5"}
+    - << : *base_ten_obj
+      name: six
+      type_data: {ParseRepresentation: "6"}
+    - << : *base_ten_obj
+      name: seven
+      type_data: {ParseRepresentation: "7"}
+    - << : *base_ten_obj
+      name: eight
+      type_data: {ParseRepresentation: "8"}
+    - << : *base_ten_obj
+      name: nine
+      type_data: {ParseRepresentation: "9"}
+...

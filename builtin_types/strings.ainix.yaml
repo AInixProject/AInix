@@ -1,0 +1,122 @@
+---
+defines:
+    #### Basic Strings ####
+    - define_new: type
+      name: Word
+      default_type_parser: WordParser
+      deep_embed: True
+    - define_new: type
+      name: NaturalStringSequence
+      copyable: True
+    - define_new: object
+      name: NaturalWordSequenceObj
+      type: NaturalStringSequence
+      children:
+          - name: CurrentWord
+            type: NaturalWord
+            required: True
+          - name: NextWords
+            type: NaturalWordSequenceObj
+
+    #### Paths ####
+    - define_new: type
+      name: Path
+    - define_new: type
+      name: PathJoiner
+      doc: Connects parts of a path. In Unix this is a forward slash.
+    - define_new: type
+      name: WordInPath
+    - define_new: type
+      name: Wildcard
+
+    #### REGEX ####
+    # Based off BNF grammar and terminology provided at
+    # http://www.cs.sfu.ca/~cameron/Teaching/384/99-3/regexp-plg.html
+    # TODO (DNGros): Need to figure out how to do figure out extended regular expressions.
+    - define_new: type
+      name: RegularExpression
+    - define_new: type
+      name: SimpleRE
+    - define_new: object
+      name: REUnionObj
+      type: RegularExpression
+      children:
+          - name: CurrentRE
+            type: SimpleRE
+            required: True
+          - name: NextRE
+            type: SimpleRE
+            required: False
+    # <basic-RE> ::= <star> | <plus> | <elementary-RE>
+    - define_new: type
+      name: BasicRE
+    - define_new: object
+      name: REStar
+      type: BasicRE
+      children:
+          - name: RE
+            type: ElementaryRE
+            required: True
+    - define_new: object
+      name: REPlus
+      type: BasicRE
+      children:
+      - name: RE
+        type: ElementaryRE
+        required: True
+    - define_new: object
+      name: JustElementaryRE
+      type: BasicRE
+      children:
+      - name: RE
+        type: ElementaryRE
+        required: True
+    # <elementary-RE> ::= <group> | <any> | <eos> | <char> | <set>
+    - define_new: type
+      name: ElementaryRE
+    - define_new: object
+      name: re_group
+      type: ElementaryRE
+      children:
+          - name: RE
+            type: RegularExpression
+    - define_new: object
+      name: re_any
+      type: ElementaryRE
+      doc: "This is equivalent to a regex '.'"
+    - define_new: object
+      name: re_eos
+      type: ElementaryRE
+      doc: "This is equivalent to a regex '$'"
+    - define_new: object
+      name: re_word
+      type: ElementaryRE
+      children:
+          - name: Word
+            type: Word
+            required: True
+    - define_new: object
+      name: elementary_re_set
+      type: ElementaryRE
+      children:
+          - name: Set
+            type: RESet
+            required: True
+    # <set>	::= <positive-set> | <negative-set>
+    # <positive-set> ::= "[" <set-items> "]"
+    # <negative-set> ::= "[^" <set-items> "]"
+    - define_new: type
+      name: RESet
+    - define_new: object
+      name: re_positive_set
+      children:
+          - name: SetItems
+            type: SetItems
+            required: True
+    - define_new: object
+      name: re_negative_set
+      children:
+      - name: SetItems
+        type: SetItems
+        required: True
+...

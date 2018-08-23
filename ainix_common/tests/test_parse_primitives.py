@@ -20,5 +20,3 @@ def test_add_arg():
     assert data is not None
     assert data.slice == (0, 4)
     assert data.slice_string == test_string[0:4]
-
-

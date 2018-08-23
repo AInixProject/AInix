@@ -63,5 +63,4 @@ defines:
     - << : *object_parser_from_posix
       name: ProgramObjectParser
       type: Program
-
 ...

@@ -1,0 +1,34 @@
+---
+defines:
+    - &from_file_type_parser
+      define_new: type_parser
+      name: single_impl_parser
+      doc: >
+          A type parser for when there is only exactly one implementation
+          of the type.
+      source: python_module
+      file: generic_parsers.py
+    - << : *from_file_type_parser
+      define_new: object_parser
+      name: no_args_parser
+      doc: >
+          A default parser for when an object has no arguments.
+    - << : *from_file_type_parser
+      name: max_munch_typg_parser
+      doc: >
+          A type parser which chooses its type and the string by choosing the
+          implementation with the type_data property ParseRepresentation that
+          matches the longest length at the beginning of the input string.
+    - << : *from_file_type_parser
+      define_new: object_parser
+      name: regex_group_object_parser
+      doc: >
+          A object parser based off regex. Each arg should have the arg_data
+          property "RegexRepresentation" defined. The arg is considered present
+          if its RegexRepresentation matches. The first 1st group is passed
+          on to the next parser.
+          So for example, if an arg had the RegexRepresentation of
+          "ab([0-9]+)cd", then the string "ab123cd" would be considered present
+          and the substring "123" would be selected to pass on. For the string
+          "abcde" the arg would not be considered present.
+...
