@@ -1,24 +1,27 @@
 ---
 defines:
+    #- &from_file_type_parser
+    #  define_new: type_parser
+    #  name: single_impl_parser
+    #  doc: >
+    #      A type parser for when there is only exactly one implementation
+    #      of the type.
+    #  source: python_module
+    #  file: generic_parsers.py
+    #- << : *from_file_type_parser
+    #  define_new: object_parser
+    #  name: no_args_parser
+    #  doc: >
+    #      A default parser for when an object has no arguments.
     - &from_file_type_parser
       define_new: type_parser
-      name: single_impl_parser
-      doc: >
-          A type parser for when there is only exactly one implementation
-          of the type.
-      source: python_module
-      file: generic_parsers.py
-    - << : *from_file_type_parser
-      define_new: object_parser
-      name: no_args_parser
-      doc: >
-          A default parser for when an object has no arguments.
-    - << : *from_file_type_parser
-      name: max_munch_typg_parser
+      name: max_munch_type_parser
       doc: >
           A type parser which chooses its type and the string by choosing the
           implementation with the type_data property ParseRepresentation that
           matches the longest length at the beginning of the input string.
+      source: python_module
+      file: generic_parsers.py
     - << : *from_file_type_parser
       define_new: object_parser
       name: regex_group_object_parser

@@ -1,6 +1,5 @@
 import pytest
 from parseast import *
-import posix_parseing
 from unittest.mock import MagicMock
 import loader
 from typecontext import TypeContext, AInixArgument, AInixObject
@@ -10,6 +9,7 @@ from typecontext import TypeContext, AInixArgument, AInixObject
 def type_context():
     context = TypeContext()
     loader.load_path("../../builtin_types/command.ainix.yaml", context)
+    context.fill_default_parsers()
     return context
 
 
@@ -68,9 +68,5 @@ def test_end_to_end_parse1(type_context):
     v = foo_object.set_arg_present(aArg)
     assert v is None
     # compare
-    print("result")
-    print(result.dump_str())
-    print("expected")
-    print(expected.dump_str())
     assert result.dump_str() == expected.dump_str()
     assert result == expected

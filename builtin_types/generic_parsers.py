@@ -6,11 +6,11 @@ REGEX_GROUP_LOOKUP_KEY = "RegexRepresentation"
 
 
 def max_munch_type_parser(
-    parser: parse_primitives.TypeParser,
+    run: parse_primitives.TypeParserRun,
     string: str,
     result: parse_primitives.TypeParserResult
 ) -> None:
-    implementations = parser.type_implementations
+    implementations = run.all_type_implementations
     longest_match = (0, None)
     for implementation in implementations:
         parse_rep: str = implementation.type_data[MAX_MUNCH_LOOKUP_KEY]
@@ -19,8 +19,8 @@ def max_munch_type_parser(
             if match > longest_match:
                 longest_match = match
     if longest_match[1] is None:
-        raise parse_primitives.AInixParseError("Unable to find any matches "
-                                               "in a max munch parser")
+        raise parse_primitives.AInixParseError(f"{run.parser_name} unable to "
+                                               f"find any matches")
     result.set_valid_implementation(longest_match[1])
     result.set_next_slice(0, longest_match[0])
 

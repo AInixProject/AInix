@@ -37,7 +37,7 @@ def _load(
     Args:
         parsed_doc: dict form of file we are loading from
         type_context: type context we are loading into
-        load_root: jk
+        load_root: the directory that is loading from. Used for relative references
     """
     for define in parsed_doc['defines']:
         what_to_define = define['define_new']
@@ -147,10 +147,9 @@ def _parse_type_parser(
     """
     parse_func = _extract_parse_function(define, load_root)
     parse_primitives.TypeParser(
-        type_context,
-        parser_name=define['name'],
-        type_name=define['type'],
-        parse_function=parse_func
+        type_context, parser_name=define['name'],
+        parse_function=parse_func,
+        type_name=define.get('type')
     )
 
 

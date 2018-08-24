@@ -10,20 +10,20 @@ def test_max_munch():
         out = MagicMock()
         out.type_data = {MAX_MUNCH_LOOKUP_KEY: representation}
         return out
-    mock_parser = MagicMock()
+    mock_run = MagicMock()
     mock_types = [make_mock_with_parse_rep(rep)
                   for rep in ("fo", "bar", "f", "foo", "foot", 'baz')]
-    mock_parser.type_implementations = mock_types
+    mock_run.all_type_implementations = mock_types
     parse_str = "foobar"
     result = parse_primitives.TypeParserResult(MagicMock, parse_str)
-    max_munch_type_parser(mock_parser, parse_str, result)
+    max_munch_type_parser(mock_run, parse_str, result)
     assert result.get_implementation() == mock_types[3]
     assert result.get_next_string() == "foo"
 
     with pytest.raises(parse_primitives.AInixParseError):
         parse_str = "moo"
         result = parse_primitives.TypeParserResult(MagicMock, parse_str)
-        max_munch_type_parser(mock_parser, parse_str, result)
+        max_munch_type_parser(mock_run, parse_str, result)
 
 
 def test_regex_group_parser():

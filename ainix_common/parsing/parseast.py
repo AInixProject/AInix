@@ -153,7 +153,7 @@ class StringParser:
         self._root_type = root_type
         if root_parser is None:
             if root_type.default_type_parser is None:
-                raise ValueError(f"No default parser available for {root_type}")
+                raise ValueError(f"No default type parser available for {root_type}")
             self._root_parser = root_type.default_type_parser
         else:
             self._root_parser = root_parser(root_type)
@@ -172,8 +172,7 @@ class StringParser:
         next_parser = result.next_parser
         if next_parser is None:
             raise parse_primitives.AInixParseError(
-                "No provided object_name parser for parsed object_name",
-                next_object)
+                f"No provided object parser for parsed object {next_object}")
         object_parse: parse_primitives.ObjectParserResult = \
             result.next_parser.parse_string(next_object, result.get_next_string())
 

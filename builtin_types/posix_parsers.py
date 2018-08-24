@@ -62,13 +62,13 @@ def _get_location_of_operator(string: str):
 
 
 def ProgramTypeParser(
-    parser: parse_primitives.TypeParser,
+    run: parse_primitives.TypeParserRun,
     string: str,
     result: parse_primitives.TypeParserResult
 ):
     first_word = string.split(" ")[0]
-    matching_programs = parser.match_attribute(
-        parser.type_implementations, "invoke_name", first_word)
+    matching_programs = run.match_attribute(
+        run.all_type_implementations, "invoke_name", first_word)
     if matching_programs:
         result.set_valid_implementation(matching_programs[0])
         first_space_index = string.find(" ")
@@ -108,7 +108,7 @@ def _get_arg_with_long_name(
         return None
 
 
-def _get_next_slice_of_lex_result(lex_result, current_index, arg):
+def _get_next_slice_of_lex_result(lex_result, current_index):
     # If nothing remaining, use next word
     no_next_word = current_index == len(lex_result) - 1
     if no_next_word:
@@ -148,7 +148,7 @@ def ProgramObjectParser(
                             use_end_idx = end_idx
                         else:
                             next_slice = _get_next_slice_of_lex_result(
-                                lex_result, lex_index, shortname_match)
+                                lex_result, lex_index)
                             use_start_idx, use_end_idx = next_slice
                     result.set_arg_present(shortname_match.name,
                                            use_start_idx, use_end_idx)

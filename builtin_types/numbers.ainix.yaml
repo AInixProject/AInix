@@ -5,33 +5,35 @@ defines:
     - define_new: object
       name: decimal_number
       type: Number
-      prefered_object_parser: regex_group_object_parser
+      preferred_object_parser: regex_group_object_parser
       children:
           - name: Sign
             type: Sign
-            required: True
-            arg_data: {RegexRepresentation: "([\-\+]).*"}
+            required: False
+            arg_data: {RegexRepresentation: "([\\-\\+]).*"}
           - name: BeforeDecimal
             type: IntBase
             required: True
-            arg_data: {RegexRepresentation: "[\-\+]([0-9]+).*"}
+            arg_data: {RegexRepresentation: "[\\-\\+]([0-9]+).*"}
           - name: AfterDecimal
             type: IntBase
             required: False
-            arg_data: {RegexRepresentation: ".*\.([0-9]+).*"}
+            arg_data: {RegexRepresentation: ".*\\.([0-9]+).*"}
           - name: Exponent
             type: IntBase
-            required: True
+            required: False
             arg_data: {RegexRepresentation: ".*e([0-9]+)"}
     # Sign
     - define_new: type
       name: Sign
       default_type_parser: max_munch_type_parser
     - define_new: object
-      name: PossitiveSign
+      name: positive_sign
+      type: Sign
       type_data: {ParseRepresentation: "+"}
     - define_new: object
-      name: NegativeSign
+      name: negative_sign
+      type: Sign
       type_data: {ParseRepresentation: "-"}
     # A string of base10 digits
     - define_new: type

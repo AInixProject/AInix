@@ -56,7 +56,7 @@ class AInixType:
     def default_object_parser(self) -> Optional['parse_primitives.ObjectParser']:
         if self.default_object_parser_name is None:
             return None
-        retrieved_parser =  self._type_context.get_object_parser_by_name(
+        retrieved_parser = self._type_context.get_object_parser_by_name(
             self.default_object_parser_name)
         if retrieved_parser is None:
             raise RuntimeError(f"{self} unable to retrieve default_object_parser "
@@ -93,7 +93,7 @@ class AInixObject:
         if type_name is None:
             raise ValueError(f"AInixObject {name} must have a non-None type_name")
         self.type_name = type_name
-        self.children: List['AInixArgument'] = children
+        self.children: List['AInixArgument'] = children if children else []
         self.type_data = type_data
         self.preferred_object_parser_name = preferred_object_parser_name
         self._type_context.register_object(self)
@@ -108,8 +108,13 @@ class AInixObject:
         """Returns the instance associated with the preferred_object_parser_name"""
         if self.preferred_object_parser_name is None:
             return None
-        return self._type_context.get_object_parser_by_name(
+        lookup_parser = self._type_context.get_object_parser_by_name(
             self.preferred_object_parser_name)
+        if lookup_parser is None:
+            raise RuntimeError(f'{self} unable to get preferred_object_parser of name '
+                               f'"{self.preferred_object_parser_name}" in '
+                               f'current context.')
+        return lookup_parser
 
     def __repr__(self):
         return f"<AInixObject: {self.name}>"
@@ -197,6 +202,7 @@ class TypeContext:
         if new_type.name in self._name_to_type:
             raise ValueError(f"Type {new_type.name} already exists")
         self._link_builtin_type_parser(new_type)
+        # TODO (DNGros): need to link buildin object parsers
         self._name_to_type[new_type.name] = new_type
 
     def _link_builtin_type_parser(
@@ -212,11 +218,34 @@ class TypeContext:
                 is not a builtin, then it is left unmodified
         """
         if type_using_it.default_type_parser_name == SINGLE_TYPE_IMPL_BUILTIN:
-            link_name = f"__builtin.SingleTypeImplParser.{type_using_it.name}"
-            if not self.get_type_parser_by_name(link_name):
-                parse_primitives.TypeParser(self, link_name, type_using_it.name,
-                                            parse_primitives.SingleTypeImplParserFunc)
-            type_using_it.default_type_parser_name = link_name
+            self._link_single_type_impl_parser(type_using_it)
+
+    def _link_single_type_impl_parser(self, type_to_change: AInixType):
+        """Changes a type to use a SingleTypeImplParser
+
+        Args:
+            type_to_change: the type which we should change the default parser
+                on to be a SingleTypeImplParser
+        """
+        link_name = f"__builtin.SingleTypeImplParser.{type_to_change.name}"
+        if not self.get_type_parser_by_name(link_name):
+            parse_primitives.TypeParser(self, link_name, parse_primitives.SingleTypeImplParserFunc,
+                                        type_to_change.name)
+        type_to_change.default_type_parser_name = link_name
+
+    def _link_no_args_obj_parser(self, obj_to_change: AInixObject):
+        """Changes an object to use a SingleTypeImplParser
+
+        Args:
+            obj_to_change: the object which to set its prefered object parser
+                to a no args parser
+        """
+        link_name = f"__builtin.NoArgsObjectParser.{obj_to_change.name}"
+        if not self.get_type_parser_by_name(link_name):
+            parse_primitives.ObjectParser(self, link_name,
+                                          obj_to_change.type_name,
+                                          parse_primitives.NoArgsObjectParseFunc)
+        obj_to_change.preferred_object_parser_name = link_name
 
     def register_type_parser(
         self,
@@ -246,6 +275,22 @@ class TypeContext:
         if new_parser.parser_name in self._name_to_object_parser:
             raise ValueError("Object parser", new_parser.parser_name, "already exists")
         self._name_to_object_parser[new_parser.parser_name] = new_parser
+
+    def fill_default_parsers(self):
+        """Tries to fill defaults for any types that have None as a default parser
+        and there is a valid default available. This includes the SingleTypeImplParser
+        for types with only one implementation."""
+        for type_ in self._name_to_type.values():
+            if type_.default_type_parser_name is None:
+                if len(self.get_implementations(type_)) == 1:
+                    self._link_single_type_impl_parser(type_)
+        for object_ in self._name_to_object.values():
+            no_children = len(object_.children) == 0
+            no_default = object_.preferred_object_parser_name is None and \
+                object_.type.default_object_parser_name is None
+            if no_children and no_default:
+                self._link_no_args_obj_parser(object_)
+
 
     def verify(self):
         """After you have instantiated all the types and objects you need in this
