@@ -20,8 +20,8 @@ class TypeParser:
                 3) An instance of TypeParserResult where the callable should put
                    its result.
           type_name : string identifier of the type this parser parses. If None
-            is given, then this parser is able to work for any type. The type
-            is provided we are parsing is passed in with calls to parse_string
+            is given, then this parser is able to work used with any type. The
+            type is provided we are parsing is passed in with calls to parse_string
     """
     def __init__(
         self,
@@ -48,12 +48,16 @@ class TypeParser:
         if self._type is None and self.type_name is not None:
             self._type = self._type_context.get_type_by_name(self.type_name)
 
-    def parse_string(self, string: str, type_to_parse: str = None) -> 'TypeParserResult':
+    def parse_string(
+        self,
+        string: str,
+        type_to_parse: 'typecontext.AInixType' = None
+    ) -> 'TypeParserResult':
         """
         Args:
             string : a string that you would like would like to parse and get
                 the implementation of.
-            type_to_parse : String identifier for the type to parse. This is
+            type_to_parse : Instance of the type we are parsing. This is
                 only required if the TypeParser was constructed without a
                 specific type.
         """
@@ -64,9 +68,9 @@ class TypeParser:
                 raise AInixParseError(f"{self} was not constructed with"
                                       f" a specific type specified. You must "
                                       f"pass in what type you are parsing.")
-            result_type = self._type_context.get_type_by_name(type_to_parse)
+            result_type = type_to_parse
         elif type_to_parse is not None:
-            if self.type_name != type_to_parse:
+            if self.type_name != type_to_parse.name:
                 raise AInixParseError(f"{self} expects to parse type "
                                       f"{self.type_name} but parser_string() "
                                       f"given {type_to_parse}")
@@ -174,10 +178,10 @@ class ObjectParser:
           parse_function : a callable that is used when parsing the string.
             when self.parse_string() is called this function will be called
             with three arguments provided.
-                1) This parser (self)
-                2) The object instance we are parsing
-                3) The string we would like to parse
-                4) An instance of ObjectParserResult which the callable should
+                1) An instance of ObjectParseRun which provides helpful functions
+                   in the context of this call.
+                2) The string we would like to parse
+                3) An instance of ObjectParserResult which the callable should
                    interact with to store the result of the parse
             The callable itself is not expected to return any value.
     """
@@ -185,37 +189,38 @@ class ObjectParser:
         self,
         type_context: 'typecontext.TypeContext',
         parser_name: str,
-        type_name: str,
-        parse_function: Callable[['ObjectParser', 'typecontext.AInixObject',
-                                  str, 'ObjectParserResult'], None]
+        parse_function: Callable[['ObjectParserRun', str, 'ObjectParserResult'], None],
+        type_name: str = None
     ):
         self.name = parser_name
         self.parser_name = parser_name
         self._type_context = type_context
         self.type_name = type_name
         self._parse_function = parse_function
-        self._type = None
         self._type_context.register_object_parser(self)
 
-    def _resolve_type(self) -> None:
-        """Sets the internal reference to the actual python object_name
-        reference to the type from the type's string name,"""
-        if self._type is None:
-            self._type = self._type_context.get_type_by_name(self.type_name)
 
     def parse_string(
         self,
-        object_: 'typecontext.AInixObject',
-        string: str
+        string: str,
+        object_: 'typecontext.AInixObject'
     ) -> 'ObjectParserResult':
-        if object_.type_name != self.type_name:
+        if self.type_name is not None and object_.type_name != self.type_name:
             raise ValueError("ObjectParser {0.name} expects to parse objects"
-                             "of type {0.type_name}, but parse_string called"
+                             "of type {0.type_name}, but parse_string called "
                              "with object of type {0.type_name}".format(self))
-        self._resolve_type()
+        run = ObjectParserRun(object_)
         result = ObjectParserResult(object_, string)
-        self._parse_function(self, object_, string, result)
+        self._parse_function(run, string, result)
         return result
+
+
+class ObjectParserRun:
+    """Represents one call to the parse function of a ObjectParser. Contains
+    utility functions to use while parsing."""
+    def __init__(self, object_parsing: 'typecontext.AInixObject'):
+        self._object = object_parsing
+        self.all_arguments = self._object.children
 
 
 @attr.s(auto_attribs=True)
@@ -269,8 +274,7 @@ def SingleTypeImplParserFunc(
 
 
 def NoArgsObjectParseFunc(
-    parser: ObjectParser,
-    object: 'typecontext.AInixObject',
+    run: ObjectParserRun,
     string: str,
     result: ObjectParserResult
 ) -> None:

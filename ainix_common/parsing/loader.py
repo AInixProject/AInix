@@ -169,6 +169,6 @@ def _parse_object_parser(
     parse_primitives.ObjectParser(
         type_context,
         parser_name=define['name'],
-        type_name=define['type'],
-        parse_function=parse_func
+        parse_function=parse_func,
+        type_name=define.get('type')
     )

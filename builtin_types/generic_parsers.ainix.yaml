@@ -1,5 +1,7 @@
 ---
 defines:
+    # TODO (DNGros): refactor so that this works now that parses are able to
+    # use dynamic types.
     #- &from_file_type_parser
     #  define_new: type_parser
     #  name: single_impl_parser

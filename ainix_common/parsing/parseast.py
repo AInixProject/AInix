@@ -34,7 +34,7 @@ class ObjectChoiceNode(AstNode):
         if implementation.type != self.type_to_choose:
             raise ValueError("Add unexpected choice as valid. Expected type " +
                              self.type_to_choose.name + " got " +
-                             implementation.name)
+                             implementation.type_name)
         if implementation.name not in self._valid_choices:
             new_object_node = ObjectNode(implementation, self)
             self._valid_choices[implementation.name] = \
@@ -163,9 +163,11 @@ class StringParser:
         string: str,
         choice_node: ObjectChoiceNode,
         parser_to_use: parse_primitives.TypeParser,
+        current_type_to_parse: typecontext.AInixType,
         preference_weight: float
     ) -> List:
-        result: parse_primitives.TypeParserResult = parser_to_use.parse_string(string)
+        result: parse_primitives.TypeParserResult = \
+            parser_to_use.parse_string(string, current_type_to_parse)
         next_object = result.get_implementation()
         next_object_node = choice_node.add_valid_choice(
             next_object, preference_weight)
@@ -174,7 +176,7 @@ class StringParser:
             raise parse_primitives.AInixParseError(
                 f"No provided object parser for parsed object {next_object}")
         object_parse: parse_primitives.ObjectParserResult = \
-            result.next_parser.parse_string(next_object, result.get_next_string())
+            result.next_parser.parse_string(result.get_next_string(), next_object)
 
         new_data_for_parse_stack = []
         # Loop through children and add nodes for each that is present
@@ -183,8 +185,10 @@ class StringParser:
             if arg_present_data:
                 next_type_choice = next_object_node.set_arg_present(arg)
                 if next_type_choice is not None:
-                    new_data_for_parse_stack.append(
-                        (arg_present_data.slice_string, next_type_choice, arg.type_parser))
+                    new_parse_entry = (arg_present_data.slice_string,
+                                       next_type_choice,
+                                       arg.type_parser, arg.type)
+                    new_data_for_parse_stack.append(new_parse_entry)
 
         return new_data_for_parse_stack
 
@@ -197,11 +201,11 @@ class StringParser:
         if existing_tree.type_to_choose != self._root_type:
             raise ValueError("Tree parser is extending must root_type of the parser")
 
-        parse_stack = [(string, existing_tree, self._root_parser)]
+        parse_stack = [(string, existing_tree, self._root_parser, self._root_type)]
         while parse_stack:
-            cur_string, cur_node, cur_parser = parse_stack.pop()
+            cur_string, cur_node, cur_parser, cur_type = parse_stack.pop()
             new_nodes_to_parse = StringParser._parse_object_choice(
-                cur_string, cur_node, cur_parser, preference_weight)
+                cur_string, cur_node, cur_parser, cur_type, preference_weight)
             parse_stack.extend(new_nodes_to_parse)
 
     def create_parse_tree(self, string: str, preference_weight: float = 1):

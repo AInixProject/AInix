@@ -1,5 +1,4 @@
 import parse_primitives
-import typecontext
 from typing import List
 
 
@@ -30,8 +29,7 @@ def lex_bash(string: str) -> List[tuple]:
 
 ####
 def CmdSeqParser(
-    parser: parse_primitives.ObjectParser,
-    object: typecontext.AInixObject,
+    run: parse_primitives.ObjectParserRun,
     string: str,
     result: parse_primitives.ObjectParserResult
 ):
@@ -119,12 +117,11 @@ def _get_next_slice_of_lex_result(lex_result, current_index):
 
 
 def ProgramObjectParser(
-    parser: parse_primitives.ObjectParser,
-    object: typecontext.AInixObject,
+    run: parse_primitives.ObjectParserRun,
     string: str,
     result: parse_primitives.ObjectParserResult
 ):
-    remaining_args = list(object.children)
+    remaining_args = list(run.all_arguments)
     parameter_end_seen = False
     lex_result = lex_bash(string)
     for (lex_index, (word, (start_idx, end_idx))) in enumerate(lex_result):

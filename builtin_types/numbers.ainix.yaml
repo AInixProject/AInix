@@ -14,7 +14,7 @@ defines:
           - name: BeforeDecimal
             type: IntBase
             required: True
-            arg_data: {RegexRepresentation: "[\\-\\+]([0-9]+).*"}
+            arg_data: {RegexRepresentation: "[\\-\\+]?([0-9]+).*"}
           - name: AfterDecimal
             type: IntBase
             required: False
@@ -41,7 +41,7 @@ defines:
     - define_new: object
       name: base_ten_list
       type: IntBase
-      prefered_object_parser: regex_group_object_parser
+      preferred_object_parser: regex_group_object_parser
       children:
           - name: CurrentDigit
             type: BaseTen

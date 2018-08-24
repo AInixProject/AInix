@@ -31,12 +31,13 @@ def test_object_choice_node_eq():
 def test_parse_object_choice1():
     mock_choice_node = MagicMock()
     mock_type_parser = MagicMock()
+    mock_type = MagicMock()
     mock_parse_result = MagicMock()
     mock_type_parser.parse_string.return_value = mock_parse_result
     pref_weight = 1.5
     result = StringParser._parse_object_choice(
-        "foo", mock_choice_node, mock_type_parser, pref_weight)
-    mock_type_parser.parse_string.assert_called_once_with("foo")
+        "foo", mock_choice_node, mock_type_parser, mock_type, pref_weight)
+    mock_type_parser.parse_string.assert_called_once_with("foo", mock_type)
     # TODO: make this less of a kinda useless test...
 
 

@@ -31,7 +31,8 @@ def test_number_end_to_end(type_context):
         dec_number_node.implementation.children[1])
     num_list_obj = before_decimal_choice.add_valid_choice(
         obj_by_name("base_ten_list"), weight)
-    digit_choice = num_list_obj.set_arg_present("CurrentDigit", weight)
+    digit_choice = num_list_obj.set_arg_present(
+        num_list_obj.implementation.children[0])
     digit_choice.add_valid_choice(obj_by_name("four"), weight)
     # compare
     assert result.dump_str() == expected.dump_str()

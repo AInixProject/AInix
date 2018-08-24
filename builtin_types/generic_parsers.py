@@ -1,4 +1,3 @@
-import typecontext
 import parse_primitives
 import re
 MAX_MUNCH_LOOKUP_KEY = "ParseRepresentation"
@@ -26,12 +25,11 @@ def max_munch_type_parser(
 
 
 def regex_group_object_parser(
-    parser: parse_primitives.ObjectParser,
-    object: typecontext.AInixObject,
+    run:  parse_primitives.ObjectParserRun,
     string: str,
     result: parse_primitives.ObjectParserResult
 ) -> None:
-    for arg in object.children:
+    for arg in run.all_arguments:
         regex: str = arg.arg_data[REGEX_GROUP_LOOKUP_KEY]
         match = re.match(regex, string)
         arg_present = match is not None
@@ -40,5 +38,5 @@ def regex_group_object_parser(
             result.set_arg_present(arg.name, start_idx, end_idx)
         elif arg.required:
             raise parse_primitives.AInixParseError(
-                f"Arg {arg.name} with RegexRepresentation {regex} did not "
-                f"match on {string}, but the arg is required.")
+                f'Arg {arg.name} with RegexRepresentation "{regex}" did not '
+                f'match on {string}, but the arg is required.')

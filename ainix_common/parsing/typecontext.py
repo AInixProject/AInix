@@ -242,9 +242,8 @@ class TypeContext:
         """
         link_name = f"__builtin.NoArgsObjectParser.{obj_to_change.name}"
         if not self.get_type_parser_by_name(link_name):
-            parse_primitives.ObjectParser(self, link_name,
-                                          obj_to_change.type_name,
-                                          parse_primitives.NoArgsObjectParseFunc)
+            parse_primitives.ObjectParser(self, link_name, parse_primitives.NoArgsObjectParseFunc,
+                                          obj_to_change.type_name)
         obj_to_change.preferred_object_parser_name = link_name
 
     def register_type_parser(
