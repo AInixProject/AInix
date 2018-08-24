@@ -1,3 +1,5 @@
+"""Methods for populating a TypeContext or ExampleContext based off
+*.ainix.yaml files."""
 import yaml
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -6,28 +8,35 @@ except ImportError:
 from typing import Dict, List, Optional, Callable, IO
 import typecontext
 import parse_primitives
+import examplecontext
 import importlib.util
 import os
 
 
-def load_path(path : str, type_context: typecontext.TypeContext) -> None:
+def load_path(
+    path : str,
+    type_context: typecontext.TypeContext=None,
+    example_context: examplecontext.ExampleContext = None
+) -> None:
     """Loads a *.ainix.yaml file and registers and defined types
     or objects with the supplied type_context"""
     # TODO (DNGros): validate that is actually a *.ainix.yaml file
     # TODO (DNGros): allow for you to specify a  path and recurse down
     load_root = os.path.dirname(path)
     with open(path, 'r') as f:
-        load_yaml(f, type_context, load_root)
+        load_yaml(f, type_context, example_context, load_root)
 
 
-def load_yaml(filelike: IO, type_context: typecontext.TypeContext, load_root=None) -> None:
+def load_yaml(filelike: IO, type_context: typecontext.TypeContext=None,
+              example_context: examplecontext = None, load_root=None) -> None:
     doc = yaml.safe_load(filelike)
-    _load(doc, type_context, load_root)
+    _load(doc, type_context, example_context, load_root)
 
 
 def _load(
     parsed_doc: Dict,
     type_context: typecontext.TypeContext,
+    example_context: examplecontext.ExampleContext,
     load_root: str
 ) -> None:
     """Same as load_path() but accepts an already parsed dict.
@@ -36,19 +45,35 @@ def _load(
 
     Args:
         parsed_doc: dict form of file we are loading from
-        type_context: type context we are loading into
+        type_context: type context we are loading into. Can be None if not loading
+            any new types, objects, or parsers (only examples)
+        example_context: example context we are loading into. Can be None if
+            not actually loading any examples.
         load_root: the directory that is loading from. Used for relative references
     """
+    def expect_type_context():
+        if type_context is None:
+            raise RuntimeError("Type context must be provided to parse this value")
+    def expect_example_context():
+        if example_context is None:
+            raise RuntimeError("Example context must be provided to parse this value")
     for define in parsed_doc['defines']:
         what_to_define = define['define_new']
         if what_to_define == "type":
-            _parse_type(define, type_context)
+            expect_type_context()
+            _load_type(define, type_context)
         elif what_to_define == "object":
-            _parse_object(define, type_context)
+            expect_type_context()
+            _load_object(define, type_context)
         elif what_to_define == "type_parser":
-            _parse_type_parser(define, type_context, load_root)
+            expect_type_context()
+            _load_type_parser(define, type_context, load_root)
         elif what_to_define == "object_parser":
-            _parse_object_parser(define, type_context, load_root)
+            expect_type_context()
+            _load_object_parser(define, type_context, load_root)
+        elif what_to_define == "example_set":
+            expect_example_context()
+            _load_example_set(define, example_context)
         else:
             raise ValueError(f"Unrecognized define_new value {what_to_define}")
 
@@ -80,7 +105,7 @@ def _parse_arguments(
     return [_parse_argument(arg_doc, type_context) for arg_doc in doc]
 
 
-def _parse_type(define, type_context: typecontext.TypeContext) -> None:
+def _load_type(define, type_context: typecontext.TypeContext) -> None:
     """Parses the serialized form of a type and adds it to the supplied TypeContext"""
     # TODO (DNGros): validate that not extra keys in the define (would help catch people's typos)
     typecontext.AInixType(
@@ -92,7 +117,7 @@ def _parse_type(define, type_context: typecontext.TypeContext) -> None:
     )
 
 
-def _parse_object(define, type_context: typecontext.TypeContext):
+def _load_object(define, type_context: typecontext.TypeContext):
     """Parses the serialized form of a object_name and adds it to the supplied TypeContext"""
     # TODO (DNGros): validate that not extra keys in the define (would help catch people's typos)
     typecontext.AInixObject(
@@ -134,7 +159,7 @@ def _extract_parse_function(define: Dict, load_root: str) -> Callable:
                          f"{define['name']}")
 
 
-def _parse_type_parser(
+def _load_type_parser(
     define: Dict,
     type_context: typecontext.TypeContext,
     load_root: str
@@ -153,7 +178,7 @@ def _parse_type_parser(
     )
 
 
-def _parse_object_parser(
+def _load_object_parser(
     define: Dict,
     type_context: typecontext.TypeContext,
     load_root: str
@@ -172,3 +197,23 @@ def _parse_object_parser(
         parse_function=parse_func,
         type_name=define.get('type')
     )
+
+
+def _load_single_example(example_dict, example_context: examplecontext.ExampleContext,
+                         type_pair: examplecontext.TypePair):
+    x = example_dict['x']
+    if not isinstance(x, list):
+        x = [x]
+    y = example_dict['y']
+    if not isinstance(y, list):
+        y = [y]
+    example_context.add_many_to_many_default_weight(x, y, type_pair)
+
+
+def _load_example_set(define: Dict, example_context: examplecontext.ExampleContext):
+    y_type = define['y_type']
+    x_type = define.get('x_type', examplecontext.DEFAULT_X_TYPE)
+    examples = define['examples']
+    for example in examples:
+        _load_single_example(example, example_context,
+                             examplecontext.TypePair(x_type, y_type))

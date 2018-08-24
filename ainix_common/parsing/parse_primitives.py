@@ -41,7 +41,6 @@ class TypeParser:
         self._type_implementations = None
         self._type_context.register_type_parser(self)
 
-
     def _resolve_type(self) -> None:
         """Sets the internal reference to the actual python object_name
         reference to the type from the type's string name,"""
@@ -223,7 +222,7 @@ class ObjectParserRun:
         self.all_arguments = self._object.children
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, frozen=True)
 class ObjectParseArgData:
     slice: Tuple[int, int]
     slice_string: str

@@ -23,6 +23,8 @@ defines:
             type: IntBase
             required: False
             arg_data: {RegexRepresentation: ".*e([0-9]+)"}
+      arg_grammar: |
+          (Sign / "+")? IntBase ("." AfterDecimal)? ("e" Exponent)?
     # Sign
     - define_new: type
       name: Sign

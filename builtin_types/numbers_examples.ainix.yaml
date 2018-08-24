@@ -1,0 +1,12 @@
+defines:
+    define_new: example_set
+    y_type: Number
+    examples:
+        - x: five
+          y: 5
+        - x: ten
+          y: 10
+        - x:
+            - negative five
+            - minus five
+          y: -5
