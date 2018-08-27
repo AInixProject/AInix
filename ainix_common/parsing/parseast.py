@@ -1,7 +1,6 @@
 import parse_primitives
 import typecontext
 from typing import List, Dict, Optional, Type
-from collections import namedtuple
 from attr import attrs, attrib
 
 
@@ -181,6 +180,7 @@ class ObjectNode(AstNode):
                 repr += ' ' + self.next_type_choices[arg.name].indexable_repr()
                 repr += ' T]T'
         repr += " ENDARGS"
+        return repr
 
 
 class StringParser:

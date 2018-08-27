@@ -63,10 +63,11 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
     def field_or_terms(self, field_name, terms):
         whoosh_terms = [Term(field_name, term) for term in terms]
         query = Or(whoosh_terms, scale=0.95)
-        # TODO (DNGros): figure out the contexts for this thing
+        # TODO (DNGros): figure out the contexts for a search object
         #with self.index.searcher() as searcher:
         #    result = searcher.search(query)
         self.searcher = self.index.searcher()
         result = self.searcher.search(query)
+        # TODO (DNGros): Abstract away a return format for an IndexBackendABC
         return result
 
