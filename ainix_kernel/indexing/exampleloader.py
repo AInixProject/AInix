@@ -10,7 +10,7 @@ except ImportError:
     from yaml import Loader, Dumper
 from indexing import index
 import os
-from typing import Dict
+from typing import Dict, IO
 
 
 def load_path(
@@ -51,7 +51,7 @@ def _load(
         elif what_to_define == "object_parser":
             pass
         elif what_to_define == "example_set":
-            pass
+            _load_example_set(define, index)
         else:
             raise ValueError(f"Unrecognized define_new value {what_to_define}")
 
@@ -68,6 +68,8 @@ def _load_single_example(
     y = example_dict['y']
     if not isinstance(y, list):
         y = [y]
+    x = list(map(str, x))
+    y = list(map(str, y))
     load_index.add_many_to_many_default_weight(x, y, xtype, ytype)
 
 

@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock
 from indexing.exampleloader import *
-import indexing.index
 import io
 
 
@@ -20,7 +19,7 @@ def test_example():
     load_yaml(f, mock_index)
     mock_index.add_many_to_many_default_weight.assert_called_once_with(
         ["Hello"], ["Bonjour"],
-        indexing.index.ExamplesIndex.DEFAULT_X_TYPE, "fooType")
+        mock_index.DEFAULT_X_TYPE, "fooType")
 
 
 def test_example_2():
@@ -41,4 +40,4 @@ def test_example_2():
     load_yaml(f, mock_index)
     mock_index.add_many_to_many_default_weight.assert_called_once_with(
         ["Hello"], ["Bonjour", "Salut"],
-        indexing.index.ExamplesIndex.DEFAULT_X_TYPE, "fooType")
+        mock_index.DEFAULT_X_TYPE, "fooType")

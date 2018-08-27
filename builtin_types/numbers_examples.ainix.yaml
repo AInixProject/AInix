@@ -1,236 +1,236 @@
 defines:
-    define_new: example_set
-    y_type: Number
-    examples:
-        - x:
-          - zero
-          - null
-          - naught
-          - nought
-          - nil
-          - nada
-          - ought
-          - nothing
-          - none
-          - zilch
-          - zeroth
-          y: 0
-        - x:
-          - one
-          - I
-          - first
-          - single
-          y: 1
-        - x:
-          - two
-          - second
-          - couple
-          - duo
-          - dyad
-          - pair
-          - II
-          y: 2
-        - x:
-          - three
-          - third
-          - triplet
-          - III
-          y: 3
-        - x:
-          - four
-          - fouth
-          - quad
-          y: 4
-        - x:
-          - five
-          - fifth
-          - quinary
-          y: 5
-        - x:
-          - six
-          - sixth
-          - half dozen
-          - hexagonal
-          - senary
-          y: 6
-        - x:
-          - seven
-          - eventh
-          - septenary
-          y: 7
-        - x:
-          - eight
-          - eighth
-          - octo
-          - octadic
-          - octennial
-          y: 8
-        - x:
-          - nine
-          - nineth
-          - before ten
-          y: 9
-        - x:
-          - ten
-          - one zero
-          - tenth
-          - denary
-          - decennial
-          - deca
-          y:
-          - 10
-          - 1e1
-        - x:
-          - eleven
-          - eleventh
-          - two ones
-          - one one
-          y: 11
-        - x:
-          - twelve
-          - twelth
-          - one two
-          - one dozen
-          - dozen
-          y: 12
-        - x:
-          - thirteen
-          - thirteenth
-          - baker's dozen
-          - one three
-          - three more than ten
-          y: 13
-        - x:
-          - fourteen
-          - fourteenth
-          - two more than a dozen
-          - one four
-          - ten plus four
-          y: 14
-        - x:
-          - fifteen
-          - fifteenth
-          - one five
-          - three sets of five
-          y: 15
-        - x:
-          - sixteen
-          - sixteenth
-          - one six
-          y: 16
-        - x:
-          - seventeen
-          - seventeenth
-          - one seven
-          y: 17
-        - x:
-          - eighteen
-          - eighteenth
-          - one eight
-          y: 18
-        - x:
-          - nineteen
-          - nineteenth
-          - one nine
-          y: 19
-        - x:
-          - twenty
-          - twentieth
-          - two zero
-          y:
-          - 20
-          - 2e1
-        - x:
-          - twenty-one
-          - twenty one
-          - two one
-          y: 21
-        - x:
-          - twenty-two
-          - twenty two
-          - two two
-          - two twos
-          y: 22
-        - x:
-          - twenty-three
-          - twenty three
-          - two three
-          y: 23
-        - x:
-          - twenty-four
-          - twenty four
-          - two four
-          - two dozen
-          y: 24
-        - x:
-          - twenty-five
-          - twenty five
-          - two five
-          y: 25
-        - x:
-          - twenty-six
-          - twenty six
-          - two six
-          y: 26
-        - x:
-          - twenty-seven
-          - twenty seven
-          - two seven
-          y: 27
-        - x:
-          - twenty-eight
-          - twenty eight
-          - two eight
-          y: 28
-        - x:
-          - twenty-nine
-          - twenty nine
-          - two nine
-          y: 29
-        - x:
-          - thirty
-          - three zeo
-          y:
-          - 30
-          - 3e1
-        - x:
-          - one hundred
-          - hundred
-          - a hundred
-          - one zero zero
-          - centenary
-          - century
-          - centennial
-          y: 100
-        - x:
-          - two hundred
-          y: 200
-        - x:
-          - one thousand
-          - thousand
-          - a thousand
-          - 10^3
-          - kilo
-          - grand
-          - 1k
-          - mellennial
-          y: 1000
-        - x:
-          - negative five
-          - minus five
-          y: -5
-        - x:
-          - negative nine
-          - minus nine
-          y: -9
-        - x:
-          - negative fifty
-          - minus fifty
-          y: -50
-        - x:
-          - negative one hundred
-          - minus one hundred
-          - neg one hundred
-          y:
-          - -100
-          - -1e2
+    - define_new: example_set
+      y_type: Number
+      examples:
+          - x:
+            - zero
+            - null
+            - naught
+            - nought
+            - nil
+            - nada
+            - ought
+            - nothing
+            - none
+            - zilch
+            - zeroth
+            y: 0
+          - x:
+            - one
+            - I
+            - first
+            - single
+            y: 1
+          - x:
+            - two
+            - second
+            - couple
+            - duo
+            - dyad
+            - pair
+            - II
+            y: 2
+          - x:
+            - three
+            - third
+            - triplet
+            - III
+            y: 3
+          - x:
+            - four
+            - fouth
+            - quad
+            y: 4
+          - x:
+            - five
+            - fifth
+            - quinary
+            y: 5
+          - x:
+            - six
+            - sixth
+            - half dozen
+            - hexagonal
+            - senary
+            y: 6
+          - x:
+            - seven
+            - eventh
+            - septenary
+            y: 7
+          - x:
+            - eight
+            - eighth
+            - octo
+            - octadic
+            - octennial
+            y: 8
+          - x:
+            - nine
+            - nineth
+            - before ten
+            y: 9
+          - x:
+            - ten
+            - one zero
+            - tenth
+            - denary
+            - decennial
+            - deca
+            y:
+            - 10
+            - 1e1
+          - x:
+            - eleven
+            - eleventh
+            - two ones
+            - one one
+            y: 11
+          - x:
+            - twelve
+            - twelth
+            - one two
+            - one dozen
+            - dozen
+            y: 12
+          - x:
+            - thirteen
+            - thirteenth
+            - baker's dozen
+            - one three
+            - three more than ten
+            y: 13
+          - x:
+            - fourteen
+            - fourteenth
+            - two more than a dozen
+            - one four
+            - ten plus four
+            y: 14
+          - x:
+            - fifteen
+            - fifteenth
+            - one five
+            - three sets of five
+            y: 15
+          - x:
+            - sixteen
+            - sixteenth
+            - one six
+            y: 16
+          - x:
+            - seventeen
+            - seventeenth
+            - one seven
+            y: 17
+          - x:
+            - eighteen
+            - eighteenth
+            - one eight
+            y: 18
+          - x:
+            - nineteen
+            - nineteenth
+            - one nine
+            y: 19
+          - x:
+            - twenty
+            - twentieth
+            - two zero
+            y:
+            - 20
+            - 2e1
+          - x:
+            - twenty-one
+            - twenty one
+            - two one
+            y: 21
+          - x:
+            - twenty-two
+            - twenty two
+            - two two
+            - two twos
+            y: 22
+          - x:
+            - twenty-three
+            - twenty three
+            - two three
+            y: 23
+          - x:
+            - twenty-four
+            - twenty four
+            - two four
+            - two dozen
+            y: 24
+          - x:
+            - twenty-five
+            - twenty five
+            - two five
+            y: 25
+          - x:
+            - twenty-six
+            - twenty six
+            - two six
+            y: 26
+          - x:
+            - twenty-seven
+            - twenty seven
+            - two seven
+            y: 27
+          - x:
+            - twenty-eight
+            - twenty eight
+            - two eight
+            y: 28
+          - x:
+            - twenty-nine
+            - twenty nine
+            - two nine
+            y: 29
+          - x:
+            - thirty
+            - three zeo
+            y:
+            - 30
+            - 3e1
+          - x:
+            - one hundred
+            - hundred
+            - a hundred
+            - one zero zero
+            - centenary
+            - century
+            - centennial
+            y: 100
+          - x:
+            - two hundred
+            y: 200
+          - x:
+            - one thousand
+            - thousand
+            - a thousand
+            - 10^3
+            - kilo
+            - grand
+            - 1k
+            - mellennial
+            y: 1000
+          - x:
+            - negative five
+            - minus five
+            y: -5
+          - x:
+            - negative nine
+            - minus nine
+            y: -9
+          - x:
+            - negative fifty
+            - minus fifty
+            y: -50
+          - x:
+            - negative one hundred
+            - minus one hundred
+            - neg one hundred
+            y:
+            - -100
+            - -1e2

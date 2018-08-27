@@ -6,11 +6,11 @@ from attr import attrs, attrib
 
 
 def indexable_repr_classify_type(type_to_classify: typecontext.AInixType):
-    return f"CLASSIFY_TYPE={type_choosen.name}"
+    return f"CLASSIFY_TYPE={type_to_classify.name}"
 
 
 def indexable_repr_object(object: typecontext.AInixObject):
-    return f"OBJECT={type_choosen.name}"
+    return f"OBJECT={object.name}"
 
 
 def convert_ast_to_indexable_repr():

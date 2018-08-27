@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import attr
 from typing import Iterable, Dict, List
 from ainix_common.parsing import examplecontext
-import indexing.whooshbackend
 import enum
 import attr
 from typecontext import TypeContext, AInixType, AInixArgument
@@ -25,6 +24,7 @@ class ExamplesIndex:
     DEFAULT_X_TYPE = "WordSequence"
 
     def __init__(self, type_context: TypeContext):
+        import indexing.whooshbackend
         scheme = self._create_scheme()
         self.backend = indexing.whooshbackend.WhooshIndexBackend(scheme)
         self.type_context = type_context
@@ -60,7 +60,8 @@ class ExamplesIndex:
         for x in x_values:
             for y, weight in zip(y_values, weights):
                 new_example = Example(x, y, x_type, y_type,
-                                      self._get_yparsed_rep(y), weight)
+                                      self._get_yparsed_rep(y, y_type),
+                                      weight)
                 self.add_example(new_example)
 
     def _default_weight(self, i: int, n: int):
@@ -90,6 +91,15 @@ class ExamplesIndex:
         self.add_many_to_many_with_weighted(x_values, y_values,
                                             x_type, y_type, weights)
 
+    def get_nearest_examples(
+        self,
+        x_value: str,
+        x_type: str = DEFAULT_X_TYPE,
+        y_type: str = None
+    ):
+        tokenized_x_value = x_value.split(" ")
+        return self.backend.field_or_terms("xquery", tokenized_x_value)
+
 
 class IndexBackendFields(enum.Enum):
     TEXT = "TEXT_FIELD"
@@ -100,7 +110,7 @@ class IndexBackendFields(enum.Enum):
 
 class IndexBackendScheme:
     def __init__(self, **kwargs: IndexBackendFields):
-        self.fields = kwargs
+        self.fields: Dict[str, IndexBackendFields] = kwargs
 
 
 class IndexBackendABC(ABC):
