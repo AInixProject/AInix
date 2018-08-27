@@ -5,6 +5,18 @@ from collections import namedtuple
 from attr import attrs, attrib
 
 
+def indexable_repr_classify_type(type_to_classify: typecontext.AInixType):
+    return f"CLASSIFY_TYPE={type_choosen.name}"
+
+
+def indexable_repr_object(object: typecontext.AInixObject):
+    return f"OBJECT={type_choosen.name}"
+
+
+def convert_ast_to_indexable_repr():
+    pass
+
+
 class AstNode:
     def __init__(self, parent: Optional['AstNode']):
         self.parent = parent
@@ -14,16 +26,15 @@ class AstNode:
 
 
 class ObjectChoiceNode(AstNode):
-    @attrs
+    @attrs(auto_attribs=True)
     class _Choice:
-        object_node = attrib()
-        weight = attrib(default=0.0)
+        object_node: 'ObjectNode'
+        weight: float = 1
 
     def __init__(self, type_to_choose: typecontext.AInixType, parent: Optional[AstNode]):
         super(ObjectChoiceNode, self).__init__(parent)
         self.type_to_choose = type_to_choose
         self._normalized = False
-        self._valid_choice = namedtuple("ValidChoice", ["object_node", "weight"])
         self._valid_choices: Dict[str, ObjectChoiceNode._Choice] = {}
 
     def add_valid_choice(
@@ -37,10 +48,12 @@ class ObjectChoiceNode(AstNode):
                              implementation.type_name)
         if implementation.name not in self._valid_choices:
             new_object_node = ObjectNode(implementation, self)
-            self._valid_choices[implementation.name] = \
-                self._Choice(object_node=new_object_node)
-        choice = self._valid_choices[implementation.name]
-        choice.weight += additional_weight
+            choice = self._valid_choices[implementation.name] = \
+                self._Choice(object_node=new_object_node,
+                             weight=additional_weight)
+        else:
+            choice = self._valid_choices[implementation.name]
+            choice.weight += additional_weight
         return choice.object_node
 
     def __eq__(self, other):
@@ -68,6 +81,14 @@ class ObjectChoiceNode(AstNode):
             s += choice.object_node.dump_str(indent + 2)
         s += indent_str + "}\n"
         return s
+
+    def indexable_repr(self) -> str:
+        repr = indexable_repr_classify_type(self.type_to_choose)
+        # TODO (DNGros): don't just take the zeroth
+        choosen = list(self._valid_choices.values())[0]
+        repr += " " + indexable_repr_object(choosen.object_node.implementation)
+        repr += f" O[O {choosen.object_node.indexable_repr()} O]O"
+        return repr
 
 
 class ArgPresentChoiceNode(AstNode):
@@ -97,16 +118,20 @@ class ArgPresentChoiceNode(AstNode):
             ". " + str(self.is_present) + ">\n"
         return s
 
+    def indexable_repr(self) -> str:
+        out = "PRESENT" if self.is_present else "NOT_PRESENT"
+        return out
+
 
 class ObjectNode(AstNode):
     def __init__(self, implementation: typecontext.AInixObject, parent: Optional[AstNode]):
         super(ObjectNode, self).__init__(parent)
         self.implementation = implementation
-        self.arg_present_choices = {
+        self.arg_present_choices: Dict[str, ArgPresentChoiceNode] = {
             arg.name: ArgPresentChoiceNode(arg, self)
             for arg in implementation.children if not arg.required
         }
-        self.next_type_choices = {}
+        self.next_type_choices: Dict[str, ObjectChoiceNode] = {}
 
     def set_arg_present(self, arg: typecontext.AInixArgument) -> Optional[ObjectChoiceNode]:
         if arg.name in self.arg_present_choices:
@@ -142,6 +167,20 @@ class ObjectNode(AstNode):
         s += indent_str + "  }\n"
         s += indent_str + "}\n"
         return s
+
+    def indexable_repr(self) -> str:
+        repr = indexable_repr_object(self.implementation)
+        repr += " ARGS"
+        for arg in self.implementation.children:
+            repr += ' ARG=' + self.implementation.name + "::" + arg.name
+            if arg.name in self.arg_present_choices:
+                present_choice = self.arg_present_choices[arg.name]
+                repr += ' ' + present_choice.indexable_repr()
+            if arg.name in self.next_type_choices:
+                repr += ' ARG_VALUE T[T'
+                repr += ' ' + self.next_type_choices[arg.name].indexable_repr()
+                repr += ' T]T'
+        repr += " ENDARGS"
 
 
 class StringParser:

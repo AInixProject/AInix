@@ -1,5 +1,7 @@
-"""Methods for populating a TypeContext or ExampleContext based off
-*.ainix.yaml files."""
+"""Methods for populating a TypeContext off of *.ainix.yaml files which
+defines types, objects, and parsers. The file may also contain examples,
+but the loaders in this module just ignores those. If you want to load
+examples use ainix_kenel.indexing.exampleloader"""
 import yaml
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -15,8 +17,7 @@ import os
 
 def load_path(
     path : str,
-    type_context: typecontext.TypeContext=None,
-    example_context: examplecontext.ExampleContext = None
+    type_context: typecontext.TypeContext,
 ) -> None:
     """Loads a *.ainix.yaml file and registers and defined types
     or objects with the supplied type_context"""
@@ -24,19 +25,17 @@ def load_path(
     # TODO (DNGros): allow for you to specify a  path and recurse down
     load_root = os.path.dirname(path)
     with open(path, 'r') as f:
-        load_yaml(f, type_context, example_context, load_root)
+        load_yaml(f, type_context, load_root)
 
 
-def load_yaml(filelike: IO, type_context: typecontext.TypeContext=None,
-              example_context: examplecontext = None, load_root=None) -> None:
+def load_yaml(filelike: IO, type_context: typecontext.TypeContext, load_root=None) -> None:
     doc = yaml.safe_load(filelike)
-    _load(doc, type_context, example_context, load_root)
+    _load(doc, type_context, load_root)
 
 
 def _load(
     parsed_doc: Dict,
     type_context: typecontext.TypeContext,
-    example_context: examplecontext.ExampleContext,
     load_root: str
 ) -> None:
     """Same as load_path() but accepts an already parsed dict.
@@ -45,35 +44,21 @@ def _load(
 
     Args:
         parsed_doc: dict form of file we are loading from
-        type_context: type context we are loading into. Can be None if not loading
-            any new types, objects, or parsers (only examples)
-        example_context: example context we are loading into. Can be None if
-            not actually loading any examples.
+        type_context: type context we are loading into.
         load_root: the directory that is loading from. Used for relative references
     """
-    def expect_type_context():
-        if type_context is None:
-            raise RuntimeError("Type context must be provided to parse this value")
-    def expect_example_context():
-        if example_context is None:
-            raise RuntimeError("Example context must be provided to parse this value")
     for define in parsed_doc['defines']:
         what_to_define = define['define_new']
         if what_to_define == "type":
-            expect_type_context()
             _load_type(define, type_context)
         elif what_to_define == "object":
-            expect_type_context()
             _load_object(define, type_context)
         elif what_to_define == "type_parser":
-            expect_type_context()
             _load_type_parser(define, type_context, load_root)
         elif what_to_define == "object_parser":
-            expect_type_context()
             _load_object_parser(define, type_context, load_root)
         elif what_to_define == "example_set":
-            expect_example_context()
-            _load_example_set(define, example_context)
+            pass
         else:
             raise ValueError(f"Unrecognized define_new value {what_to_define}")
 
@@ -199,21 +184,3 @@ def _load_object_parser(
     )
 
 
-def _load_single_example(example_dict, example_context: examplecontext.ExampleContext,
-                         type_pair: examplecontext.TypePair):
-    x = example_dict['x']
-    if not isinstance(x, list):
-        x = [x]
-    y = example_dict['y']
-    if not isinstance(y, list):
-        y = [y]
-    example_context.add_many_to_many_default_weight(x, y, type_pair)
-
-
-def _load_example_set(define: Dict, example_context: examplecontext.ExampleContext):
-    y_type = define['y_type']
-    x_type = define.get('x_type', examplecontext.DEFAULT_X_TYPE)
-    examples = define['examples']
-    for example in examples:
-        _load_single_example(example, example_context,
-                             examplecontext.TypePair(x_type, y_type))
