@@ -1,104 +1,31 @@
 from abc import ABC, abstractmethod
-import attr
 from typing import Iterable, Dict, List
-from ainix_common.parsing import examplecontext
 import enum
+import whoosh.query
+import whoosh.searching
 import attr
-from typecontext import TypeContext, AInixType, AInixArgument
-from parseast import StringParser
 
 
-@attr.s(auto_attribs=True, frozen=True)
-class Example:
-    xquery: str
-    ytext: str
-    xtype: str
-    ytype: str
-    yparsed_rep: str
-    weight: float
+class Query(whoosh.query.Query):
+    """An query on IndexBackendj. For now to save time it will just exactly
+    copy a whoosh query. However, this should likely eventually be abstracted
+    away and tied to specific backend (or it might work to make other backends
+    just convert from whoosh to their query scheme. We'll figure it out later)"""
+    pass
 
 
-class ExamplesIndex:
-    """Provides a higher level interface around an IndexBackendABC specifically
-    related to the domain of AInix examples"""
-    DEFAULT_X_TYPE = "WordSequence"
+# TODO (DNGros): figure out how want to do result and if need special object
+# for it
+#class Results(whoosh.searching.Results):
+#    """Results from on IndexBackend. For now to save time it will just exactly
+#    copy a whoosh query. However, this should likely eventually be abstracted
+#    away and tied to specific backend"""
+#    pass
 
-    def __init__(self, type_context: TypeContext):
-        import indexing.whooshbackend
-        scheme = self._create_scheme()
-        self.backend = indexing.whooshbackend.WhooshIndexBackend(scheme)
-        self.type_context = type_context
-
-    @staticmethod
-    def _create_scheme() -> 'IndexBackendScheme':
-        return IndexBackendScheme(
-            xquery=IndexBackendFields.TEXT,
-            ytext=IndexBackendFields.TEXT,
-            xtype=IndexBackendFields.ID,
-            ytype=IndexBackendFields.ID,
-            yparsed_rep=IndexBackendFields.TEXT,
-            weight=IndexBackendFields.TEXT
-        )
-
-    def _get_yparsed_rep(self, y_string: str, y_type: str) -> str:
-        parser = StringParser(self.type_context.get_type_by_name(y_type))
-        # TODO (DNGros): cache the parsers for each type
-        ast = parser.create_parse_tree(y_string)
-        return ast.indexable_repr()
-
-    def add_example(self, example: Example) -> None:
-        self.backend.add_documents([attr.asdict(example)])
-
-    def add_many_to_many_with_weighted(
-            self,
-            x_values: List[str],
-            y_values: List[str],
-            x_type: str,
-            y_type: str,
-            weights: List[float],
-    ) -> None:
-        for x in x_values:
-            for y, weight in zip(y_values, weights):
-                new_example = Example(x, y, x_type, y_type,
-                                      self._get_yparsed_rep(y, y_type),
-                                      weight)
-                self.add_example(new_example)
-
-    def _default_weight(self, i: int, n: int):
-        """Gets a default weight for a value. Each value in the sequence
-        is half as preferable as the one before it
-
-        Args:
-            i : index in the sequence of values (zero indexed)
-            n : total number of values in sequence
-        """
-        if i+1 > n:
-            raise ValueError()
-        sequence_sum = 2**n-1
-        return (2**(n-i-1))/sequence_sum
-
-    def add_many_to_many_default_weight(
-        self,
-        x_values: List[str],
-        y_values: List[str],
-        x_type: str,
-        y_type: str
-    ) -> None:
-        """Adds several examples with the y_values default weighted."""
-        y_count = len(y_values)
-        weights = [self._default_weight(i, y_count)
-                   for i, y in enumerate(y_values)]
-        self.add_many_to_many_with_weighted(x_values, y_values,
-                                            x_type, y_type, weights)
-
-    def get_nearest_examples(
-        self,
-        x_value: str,
-        x_type: str = DEFAULT_X_TYPE,
-        y_type: str = None
-    ):
-        tokenized_x_value = x_value.split(" ")
-        return self.backend.field_or_terms("xquery", tokenized_x_value)
+@attr.s(auto_attribs=True)
+class SearchHit:
+    doc: Dict
+    score: float = None
 
 
 class IndexBackendFields(enum.Enum):
@@ -106,6 +33,8 @@ class IndexBackendFields(enum.Enum):
     ID = "ID_FILED"
     NUMBER = "NUMBER_FIELD"
     UNSTORED_TEXT = "UNSTORED_TEXT_FIELD"
+    # A unstored texts that tokenizes purly on spaces
+    SPACE_UNSTORED_TEXT = "UNSTORED_TEXT_FIELD_SPACE_TOKENIZE"
 
 
 class IndexBackendScheme:
@@ -123,4 +52,8 @@ class IndexBackendABC(ABC):
     heavily based off whoosh's terminology."""
     @abstractmethod
     def add_documents(self, documents: Iterable[Dict]):
+        pass
+
+    @abstractmethod
+    def query(self, query: Query) -> List[Dict]:
         pass

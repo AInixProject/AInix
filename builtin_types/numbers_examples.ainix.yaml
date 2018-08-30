@@ -194,6 +194,68 @@ defines:
             - 30
             - 3e1
           - x:
+            - thirty three
+            - thirty-three
+            y:
+            - 33
+          - x:
+            - forty
+            - fortieth
+            - fourty
+            y:
+            - 40
+          - x:
+            - forty-two
+            - forty two
+            - the meaning of life, the universe, and everything
+            y:
+            - 42
+          - x:
+            - forty-six
+            - forty six
+            y:
+            - 46
+          - x:
+            - fifty
+            - five zero
+            y:
+            - 50
+          - x:
+            - sixty
+            - six zero
+            y:
+            - 60
+          - x:
+            - sixty-seven
+            - sixty seven
+            - six seven
+            y:
+            - 67
+          - x:
+            - seventy
+            - seven zero
+            y:
+            - 70
+          - x:
+            - eighty
+            - eight zero
+            y:
+            - 80
+          - x:
+            - eighty six
+            y:
+            - 86
+          - x:
+            - ninety
+            - nine zero
+            y:
+            - 90
+          - x:
+            - ninety-eight
+            - nine eight
+            y:
+            - 98
+          - x:
             - one hundred
             - hundred
             - a hundred
@@ -204,7 +266,14 @@ defines:
             y: 100
           - x:
             - two hundred
-            y: 200
+            y:
+            - 200
+            - 2e2
+          - x:
+            - three hundred
+            y:
+            - 300
+            - 3e2
           - x:
             - one thousand
             - thousand

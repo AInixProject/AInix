@@ -290,7 +290,6 @@ class TypeContext:
             if no_children and no_default:
                 self._link_no_args_obj_parser(object_)
 
-
     def verify(self):
         """After you have instantiated all the types and objects you need in this
         context, you can call this method to verify all referenced types are
