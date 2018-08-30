@@ -98,17 +98,14 @@ class ExamplesIndex:
     def get_nearest_examples(
         self,
         x_value: str,
-        choose_type: AInixType = None
+        choose_type: AInixType = None,
+        max_results = 10
     ) -> List[Example]:
         tokenized_x_value = (tok.text for tok in  self.x_tokenizer(x_value))
         query = Or([Term("xquery", term) for term in tokenized_x_value])
         if choose_type:
             y_type_indexable_rep = parseast.indexable_repr_classify_type(choose_type)
-            print(y_type_indexable_rep)
             query &= Term("yindexable", y_type_indexable_rep)
-        print("Query is")
-        print(query)
-        query_result = self.backend.query(query)
+        query_result = self.backend.query(query, max_results)
         list_result = [Example(**hit.doc) for hit in query_result]
-        print(self.backend.query(Term("xquery", "what")))
         return list_result

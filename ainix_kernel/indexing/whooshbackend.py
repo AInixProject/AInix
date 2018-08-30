@@ -90,12 +90,16 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
                 _make_all_dict_values_strings(document)
                 writer.add_document(**document)
 
-    def query(self, query: indexing.index.Query) -> List[indexing.index.SearchHit]:
+    def query(
+        self,
+        query: indexing.index.Query,
+        max_results: int = 10
+    ) -> List[indexing.index.SearchHit]:
         # TODO (DNGros): figure out the contexts for a search object and when
         # to close it and stuff
         if self.searcher is None:
             self.searcher = self.index.searcher()
-        result = self.searcher.search(query)
+        result = self.searcher.search(query, limit=max_results)
         return _convert_whoosh_result_to_our_result(result)
 
 

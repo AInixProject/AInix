@@ -55,5 +55,5 @@ class IndexBackendABC(ABC):
         pass
 
     @abstractmethod
-    def query(self, query: Query) -> List[Dict]:
+    def query(self, query: Query, max_results: int = 10) -> List[Dict]:
         pass
