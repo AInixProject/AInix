@@ -60,6 +60,8 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
             return TEXT(stored=False)
         elif field == indexing.index.IndexBackendFields.SPACE_UNSTORED_TEXT:
             return TEXT(stored=False, analyzer=KeywordAnalyzer())
+        elif field == indexing.index.IndexBackendFields.SPACE_STORED_TEXT:
+            return TEXT(stored=True, analyzer=KeywordAnalyzer())
         else:
             raise ValueError(
                 f"WhooshIndexBackend does not support {field} fields.")

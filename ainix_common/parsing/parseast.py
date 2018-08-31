@@ -1,27 +1,33 @@
 import parse_primitives
 import typecontext
-from typing import List, Dict, Optional, Type
+from typing import List, Dict, Optional, Type, Union
 from attr import attrs, attrib
+from abc import ABC, abstractmethod
 
 
-def indexable_repr_classify_type(type_to_classify: typecontext.AInixType):
-    return f"CLASSIFY_TYPE={type_to_classify.name}"
+def indexable_repr_classify_type(type_name: str):
+    return f"CLASSIFY_TYPE={type_name}"
 
 
-def indexable_repr_object(object: typecontext.AInixObject):
-    return f"OBJECT={object.name}"
+def indexable_repr_object(object_name: str):
+    return f"OBJECT={object_name}"
 
 
 def convert_ast_to_indexable_repr():
     pass
 
 
-class AstNode:
+class AstNode(ABC):
     def __init__(self, parent: Optional['AstNode']):
         self.parent = parent
 
     def dump_str(self, indent=0):
         return "  " * indent + str(self) + "\n"
+
+    @abstractmethod
+    def get_children(self) -> List['AstNode']:
+        """Returns all descendants of this node"""
+        pass
 
 
 class ObjectChoiceNode(AstNode):
@@ -36,6 +42,7 @@ class ObjectChoiceNode(AstNode):
         self._normalized = False
         self._valid_choices: Dict[str, ObjectChoiceNode._Choice] = {}
 
+    # TODO (DNGros): seporate out a single AST and multiple valid AST holder
     def add_valid_choice(
         self,
         implementation: typecontext.AInixObject,
@@ -82,12 +89,17 @@ class ObjectChoiceNode(AstNode):
         return s
 
     def indexable_repr(self) -> str:
-        repr = indexable_repr_classify_type(self.type_to_choose)
-        # TODO (DNGros): don't just take the zeroth
+        repr = indexable_repr_classify_type(self.type_to_choose.name)
+        # TODO (DNGros): don't just take the zeroth. Refactor for this AST
+        assert len(self._valid_choices) == 1
         choosen = list(self._valid_choices.values())[0]
-        repr += " " + indexable_repr_object(choosen.object_node.implementation)
         repr += f" O[O {choosen.object_node.indexable_repr()} O]O"
         return repr
+
+    def get_children(self) -> List['AstNode']:
+        # TODO (DNGros): refactor so only one for this kind of AST
+        assert len(self._valid_choices) == 1
+        return [list(self._valid_choices.values())[0].object_node]
 
 
 class ArgPresentChoiceNode(AstNode):
@@ -95,10 +107,14 @@ class ArgPresentChoiceNode(AstNode):
         super(ArgPresentChoiceNode, self).__init__(parent)
         self.argument = argument
         self.is_present = False
+        self.obj_choice_node = None
 
-    def set_choice(self, is_present: bool):
+    def set_choice(self, is_present: bool) -> Optional[ObjectChoiceNode]:
         # TODO (DNGros): add support for weight for and against being present
         self.is_present = is_present
+        if is_present and self.argument.type:
+            self.obj_choice_node = ObjectChoiceNode(self.argument.type, self)
+        return self.obj_choice_node
 
     def __eq__(self, other):
         return self.argument == other.argument and \
@@ -118,34 +134,51 @@ class ArgPresentChoiceNode(AstNode):
         return s
 
     def indexable_repr(self) -> str:
-        out = "PRESENT" if self.is_present else "NOT_PRESENT"
-        return out
+        # Just pretend to be a type.
+        # TODO (DNGros): This is very not clean. Optional args should define actual types
+        repr = indexable_repr_classify_type(self.argument.present_choice_type_name)
+        if self.is_present:
+            repr += f" O[O {indexable_repr_object(self.argument.is_present_name)} ARGS"
+            if self.obj_choice_node:
+                repr += f" ARG={self.argument.is_present_name}::VAL"
+                repr += f" T[T {self.obj_choice_node.indexable_rep()} T]T"
+            repr += " ENDARGS"
+            repr += f" O]O"
+        else:
+            repr += f" O[O {indexable_repr_object(self.argument.not_present_name)} ARGS"
+            repr += " ENDARGS O]O"
+        return repr
+
+    def get_children(self) -> List['AstNode']:
+        return [self.obj_choice_node] if self.obj_choice_node else []
 
 
 class ObjectNode(AstNode):
     def __init__(self, implementation: typecontext.AInixObject, parent: Optional[AstNode]):
         super(ObjectNode, self).__init__(parent)
         self.implementation = implementation
-        self.arg_present_choices: Dict[str, ArgPresentChoiceNode] = {
-            arg.name: ArgPresentChoiceNode(arg, self)
-            for arg in implementation.children if not arg.required
-        }
-        self.next_type_choices: Dict[str, ObjectChoiceNode] = {}
+        self.arg_name_to_node: Dict[str, Union[ObjectChoiceNode, ArgPresentChoiceNode]] = {}
+        self._add_arg_present_choices()
+
+    def _add_arg_present_choices(self):
+        for arg in self.implementation.children:
+            if not arg.required:
+                self.arg_name_to_node[arg.name] = ArgPresentChoiceNode(arg, self)
 
     def set_arg_present(self, arg: typecontext.AInixArgument) -> Optional[ObjectChoiceNode]:
-        if arg.name in self.arg_present_choices:
-            self.arg_present_choices[arg.name].set_choice(True)
-        if arg.type is not None:
+        if not arg.required:
+            already_made_present_choice = self.arg_name_to_node[arg.name]
+            return already_made_present_choice.set_choice(True)
+        elif arg.type is not None:
             new_obj_choice_node = ObjectChoiceNode(arg.type, self)
-            self.next_type_choices[arg.name] = new_obj_choice_node
+            self.arg_name_to_node[arg.name] = new_obj_choice_node
             return new_obj_choice_node
         else:
             return None
 
     def __eq__(self, other):
         return self.implementation == other.implementation and \
-            self.arg_present_choices == other.arg_present_choices and \
-            self.next_type_choices == other.next_type_choices
+            self.arg_name_to_node == other.arg_name_to_node
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -156,31 +189,27 @@ class ObjectNode(AstNode):
     def dump_str(self, indent=0):
         indent_str = "  " * indent
         s = indent_str + "<ObjectNode obj " + self.implementation.name + "> {\n"
-        s += indent_str + "  arg_present_choices: {\n"
-        for name, choice in self.arg_present_choices.items():
-            s += choice.dump_str(indent + 2)
-        s += indent_str + "  }\n"
         s += indent_str + "  next_type_choices: {\n"
-        for name, choice in self.next_type_choices.items():
+        for name, choice in self.arg_name_to_node.items():
             s += choice.dump_str(indent + 2)
         s += indent_str + "  }\n"
         s += indent_str + "}\n"
         return s
 
     def indexable_repr(self) -> str:
-        repr = indexable_repr_object(self.implementation)
+        repr = indexable_repr_object(self.implementation.name)
         repr += " ARGS"
         for arg in self.implementation.children:
             repr += ' ARG=' + self.implementation.name + "::" + arg.name
-            if arg.name in self.arg_present_choices:
-                present_choice = self.arg_present_choices[arg.name]
-                repr += ' ' + present_choice.indexable_repr()
-            if arg.name in self.next_type_choices:
-                repr += ' ARG_VALUE T[T'
-                repr += ' ' + self.next_type_choices[arg.name].indexable_repr()
-                repr += ' T]T'
+            arg_node = self.arg_name_to_node[arg.name]
+            repr += ' T[T'
+            repr += ' ' + arg_node.indexable_repr()
+            repr += ' T]T'
         repr += " ENDARGS"
         return repr
+
+    def get_children(self) -> List[AstNode]:
+        return [node for arg_name, node in self.arg_name_to_node.items()]
 
 
 class StringParser:
@@ -232,10 +261,10 @@ class StringParser:
         return new_data_for_parse_stack
 
     def _extend_parse_tree(
-            self,
-            string: str,
-            existing_tree: ObjectChoiceNode,
-            preference_weight: float
+        self,
+        string: str,
+        existing_tree: ObjectChoiceNode,
+        preference_weight: float
     ):
         if existing_tree.type_to_choose != self._root_type:
             raise ValueError("Tree parser is extending must root_type of the parser")

@@ -35,6 +35,7 @@ class IndexBackendFields(enum.Enum):
     UNSTORED_TEXT = "UNSTORED_TEXT_FIELD"
     # A unstored texts that tokenizes purly on spaces
     SPACE_UNSTORED_TEXT = "UNSTORED_TEXT_FIELD_SPACE_TOKENIZE"
+    SPACE_STORED_TEXT = "SPACE_FIELD_SPACE_TOKENIZE"
 
 
 class IndexBackendScheme:

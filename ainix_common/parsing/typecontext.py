@@ -1,7 +1,15 @@
 from collections import defaultdict
 from typing import List, Optional, Dict
 import parse_primitives
+import string
+import random
 SINGLE_TYPE_IMPL_BUILTIN = "SingleTypeImplParser"
+
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    # ref https://stackoverflow.com/questions/2257441/
+    return ''.join(random.choice(chars) for _ in range(size))
+
 
 class AInixType:
     """Used to construct AInix types.
@@ -136,6 +144,60 @@ class AInixArgument:
         self.required = required
         self.type_parser_name = type_parser_name
         self.arg_data = arg_data if arg_data else {}
+        # TODO (DNGros): Figure out more elegant way of doing this.
+        self._create_optional_args_types()
+
+    def _create_optional_args_types(self):
+        if not self.required:
+            self.present_choice_type_name = self._make_optional_arg_type_name()
+            self.is_present_name = f"{self.present_choice_type_name}.PRESENT"
+            self.not_present_name = f"{self.present_choice_type_name}.NOTPRESENT"
+        else:
+            self.present_choice_type_name = None
+            self.is_present_name = None
+            self.not_present_name = None
+
+    #def _create_optional_arg_types(self):
+    #    if not self.required:
+    #        self.present_choice_type = AInixType(
+    #            self._type_context,
+    #            self._make_optional_arg_type_name(),
+    #        )
+    #        self.is_present_impl = AInixObject(
+    #            self._type_context,
+    #            f"self.present_choice_type.name.{PRESENT}",
+    #            children=[self]
+    #        )
+    #        self.not_present_impl = AInixObject(
+    #            self._type_context,
+    #            f"self.present_choice_type.name.{NOTPRESENT}"
+    #        )
+    #    else:
+    #        self.present_choice_type = None
+    #        self.is_present_impl = None
+    #        self.not_present_impl = None
+
+    def _make_optional_arg_type_name(self) -> str:
+        return f"__arg_choice.{id_generator(5)}.{self.name}"
+        #return f"__arg_choice.{self.parent_object_name}.{self.name}"
+
+    #@classmethod
+    #def construct_optional_arg(
+    #    cls,
+    #    parent_object_name: str,
+    #    type_context: 'TypeContext',
+    #    arg_name: str,
+    #    type_name: Optional[str],
+    #    type_parser_name: str,
+    #    arg_data: dict = None
+    #):
+    #    """This constructs an argument that is optional. Along the way it creates
+    #    a new type and objects that represents a binary decision on whether the
+    #    arg exists or not."""
+    #    optional_type_arg = AInixType(
+    #        type_context=type_context,
+    #        name=cls._make_optional_arg_type_name(parent_object_name, arg_name),
+    #    )
 
     @property
     def type(self) -> Optional[AInixType]:
@@ -235,7 +297,6 @@ class TypeContext:
 
     def _link_no_args_obj_parser(self, obj_to_change: AInixObject):
         """Changes an object to use a SingleTypeImplParser
-
         Args:
             obj_to_change: the object which to set its prefered object parser
                 to a no args parser

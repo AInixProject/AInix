@@ -41,7 +41,7 @@ class ExamplesIndex:
             ytext=IndexBackendFields.TEXT,
             xtype=IndexBackendFields.ID,
             ytype=IndexBackendFields.ID,
-            yindexable=IndexBackendFields.SPACE_UNSTORED_TEXT,
+            yindexable=IndexBackendFields.SPACE_STORED_TEXT,
             weight=IndexBackendFields.TEXT
         )
 
@@ -98,13 +98,13 @@ class ExamplesIndex:
     def get_nearest_examples(
         self,
         x_value: str,
-        choose_type: AInixType = None,
+        choose_type_name: str = None,
         max_results = 10
     ) -> List[Example]:
         tokenized_x_value = (tok.text for tok in  self.x_tokenizer(x_value))
-        query = Or([Term("xquery", term) for term in tokenized_x_value])
-        if choose_type:
-            y_type_indexable_rep = parseast.indexable_repr_classify_type(choose_type)
+        query = Or([Term("xquery", term,) for term in tokenized_x_value])
+        if choose_type_name:
+            y_type_indexable_rep = parseast.indexable_repr_classify_type(choose_type_name)
             query &= Term("yindexable", y_type_indexable_rep)
         query_result = self.backend.query(query, max_results)
         list_result = [Example(**hit.doc) for hit in query_result]
