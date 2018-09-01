@@ -24,13 +24,43 @@ class AstNode(ABC):
     def dump_str(self, indent=0):
         return "  " * indent + str(self) + "\n"
 
+    def get_depth(self):
+        cur = self
+        depth = 0
+        while cur.parent:
+            depth += 1
+            cur = cur.parent
+        return depth
+
+    def get_root(self) -> 'AstNode':
+        return self if self.parent is None else self.get_root()
+
     @abstractmethod
     def get_children(self) -> List['AstNode']:
         """Returns all descendants of this node"""
         pass
 
 
-class ObjectChoiceNode(AstNode):
+class ObjectChoiceLikeNode(AstNode):
+    @abstractmethod
+    def get_type_to_choose_name(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def type_context(self) -> typecontext.TypeContext:
+        pass
+
+    @abstractmethod
+    def get_chosen_impl_name(self) -> str:
+        pass
+
+    @abstractmethod
+    def gen_set_valid_choice_by_name(self, obj_name: str) -> AstNode:
+        pass
+
+
+class ObjectChoiceNode(ObjectChoiceLikeNode):
     @attrs(auto_attribs=True)
     class _Choice:
         object_node: 'ObjectNode'
@@ -38,9 +68,24 @@ class ObjectChoiceNode(AstNode):
 
     def __init__(self, type_to_choose: typecontext.AInixType, parent: Optional[AstNode]):
         super(ObjectChoiceNode, self).__init__(parent)
-        self.type_to_choose = type_to_choose
+        self._type_to_choose = type_to_choose
         self._normalized = False
         self._valid_choices: Dict[str, ObjectChoiceNode._Choice] = {}
+
+    def get_type_to_choose_name(self) -> str:
+        return  self._type_to_choose.name
+
+    def gen_set_valid_choice_by_name(self, obj_name: str) -> AstNode:
+        return self.add_valid_choice(self.type_context.get_object_by_name(obj_name), 1)
+
+    @property
+    def type_context(self) -> typecontext.TypeContext:
+        return self._type_to_choose.type_context
+
+    # TODO (DNGros): seporate out a single AST and multiple valid AST holder
+    def get_chosen_impl_name(self) -> str:
+        assert len(self._valid_choices) == 1
+        return list(self._valid_choices.values())[0].object_node.implementation.name
 
     # TODO (DNGros): seporate out a single AST and multiple valid AST holder
     def add_valid_choice(
@@ -48,9 +93,9 @@ class ObjectChoiceNode(AstNode):
         implementation: typecontext.AInixObject,
         additional_weight: float
     ) -> 'ObjectNode':
-        if implementation.type != self.type_to_choose:
+        if implementation.type != self._type_to_choose:
             raise ValueError("Add unexpected choice as valid. Expected type " +
-                             self.type_to_choose.name + " got " +
+                             self.get_type_to_choose_name() + " got " +
                              implementation.type_name)
         if implementation.name not in self._valid_choices:
             new_object_node = ObjectNode(implementation, self)
@@ -67,21 +112,21 @@ class ObjectChoiceNode(AstNode):
         # would be recursive loop.
         if not isinstance(other, ObjectChoiceNode):
             return False
-        return self.type_to_choose == other.type_to_choose and \
+        return self._type_to_choose == other._type_to_choose and \
             self._valid_choices == other._valid_choices
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __repr__(self):
-        s = "<ObjectChoiceNode for " + str(self.type_to_choose.name)
+        s = "<ObjectChoiceNode for " + str(self.get_type_to_choose_name())
         s += " valid_choices=" + str(self._valid_choices)
         s += ">"
         return s
 
     def dump_str(self, indent=0):
         indent_str = "  " * indent
-        s = indent_str + "<ObjectChoiceNode type " + self.type_to_choose.name + "> {\n"
+        s = indent_str + "<ObjectChoiceNode type " + self.get_type_to_choose_name() + "> {\n"
         for name, choice in self._valid_choices.items():
             s += indent_str + '  Weight ' + str(choice.weight) + "\n"
             s += choice.object_node.dump_str(indent + 2)
@@ -89,7 +134,7 @@ class ObjectChoiceNode(AstNode):
         return s
 
     def indexable_repr(self) -> str:
-        repr = indexable_repr_classify_type(self.type_to_choose.name)
+        repr = indexable_repr_classify_type(self.get_type_to_choose_name())
         # TODO (DNGros): don't just take the zeroth. Refactor for this AST
         assert len(self._valid_choices) == 1
         choosen = list(self._valid_choices.values())[0]
@@ -102,12 +147,32 @@ class ObjectChoiceNode(AstNode):
         return [list(self._valid_choices.values())[0].object_node]
 
 
-class ArgPresentChoiceNode(AstNode):
+class ArgPresentChoiceNode(ObjectChoiceLikeNode):
     def __init__(self, argument: typecontext.AInixArgument, parent: AstNode):
         super(ArgPresentChoiceNode, self).__init__(parent)
         self.argument = argument
         self.is_present = False
         self.obj_choice_node = None
+
+    def get_type_to_choose_name(self) -> str:
+        return self.argument.present_choice_type_name
+
+    @property
+    def type_context(self) -> typecontext.TypeContext:
+        return self.argument._type_context
+
+    def get_chosen_impl_name(self) -> str:
+        return self.argument.is_present_name if self.is_present else \
+            self.argument.not_present_name
+
+    def gen_set_valid_choice_by_name(self, obj_name: str) -> 'AstNode':
+        if obj_name == self.argument.is_present_name:
+            return self.set_choice(True)
+        elif obj_name == self.argument.not_present_name:
+            return self.set_choice(False)
+        else:
+            raise ValueError(f"tried to set ArgPresentChoiceNode with invalid"
+                             f" object name {obj_name}")
 
     def set_choice(self, is_present: bool) -> Optional[ObjectChoiceNode]:
         # TODO (DNGros): add support for weight for and against being present
@@ -139,18 +204,13 @@ class ArgPresentChoiceNode(AstNode):
 
     def indexable_repr(self) -> str:
         # Just pretend to be a type in index output
-        # TODO (DNGros): This is very not clean. Optional args should define actual types
-        repr = indexable_repr_classify_type(self.argument.present_choice_type_name)
-        if self.is_present:
-            repr += f" O[O {indexable_repr_object(self.argument.is_present_name)} ARGS"
-            if self.obj_choice_node:
-                repr += f" ARG={self.argument.is_present_name}::VAL"
-                repr += f" T[T {self.obj_choice_node.indexable_repr()} T]T"
-            repr += " ENDARGS"
-            repr += f" O]O"
-        else:
-            repr += f" O[O {indexable_repr_object(self.argument.not_present_name)} ARGS"
-            repr += " ENDARGS O]O"
+        # TODO (DNGros): This is very not clean. Optional args should probably define own types
+        repr = indexable_repr_classify_type(self.get_type_to_choose_name())
+        repr += f" O[O {indexable_repr_object(self.get_chosen_impl_name())} ARGS"
+        if self.is_present and self.obj_choice_node:
+            repr += f" ARG={self.argument.is_present_name}::VAL"
+            repr += f" T[T {self.obj_choice_node.indexable_repr()} T]T"
+        repr += " ENDARGS O]O"
         return repr
 
     def get_children(self) -> List['AstNode']:
@@ -272,7 +332,7 @@ class StringParser:
         existing_tree: ObjectChoiceNode,
         preference_weight: float
     ):
-        if existing_tree.type_to_choose != self._root_type:
+        if existing_tree.get_type_to_choose_name() != self._root_type.name:
             raise ValueError("Tree parser is extending must root_type of the parser")
 
         parse_stack = [(string, existing_tree, self._root_parser, self._root_type)]

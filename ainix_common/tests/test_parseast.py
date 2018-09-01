@@ -19,7 +19,7 @@ def test_object_choice_node_eq():
     node2 = ObjectChoiceNode(mock_type, None)
     assert node1 == node2
     mock_object = MagicMock()
-    mock_object.type = node1.type_to_choose
+    mock_object.type = node1._type_to_choose
     node1.add_valid_choice(mock_object, 1)
     assert node1 != node2
     node2.add_valid_choice(mock_object, 0.5)

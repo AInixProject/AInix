@@ -212,6 +212,10 @@ class AInixArgument:
         return self._type_context.get_type_by_name(self.type_name)
 
     @property
+    def type_context(self) -> 'TypeContext':
+        return self._type_context
+
+    @property
     def type_parser(self) -> Optional['parse_primitives.TypeParser']:
         if self.type_parser_name is None:
             type_default_parser = self.type.default_type_parser
