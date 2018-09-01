@@ -98,10 +98,10 @@ class ArgPresentPredictor:
             type_name=current_leaf.argument.present_choice_type_name
         )
         # TODO (DNGros): disgusting hardcoded strings
-        if predicted_impl_name.endswith("PRESENT"):
-            return current_leaf.set_choice(True)
-        elif predicted_impl_name.endswith("NOTPRESENT"):
+        if predicted_impl_name.endswith("NOTPRESENT"):
             return current_leaf.set_choice(False)
+        elif predicted_impl_name.endswith("PRESENT"):
+            return current_leaf.set_choice(True)
         else:
             raise RuntimeError("wtf")
 

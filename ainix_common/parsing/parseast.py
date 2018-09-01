@@ -160,13 +160,17 @@ class ObjectNode(AstNode):
     def __init__(self, implementation: typecontext.AInixObject, parent: Optional[AstNode]):
         super(ObjectNode, self).__init__(parent)
         self.implementation = implementation
-        self.arg_name_to_node: Dict[str, Union[ObjectChoiceNode, ArgPresentChoiceNode]] = {}
-        self._add_arg_present_choices()
+        self.arg_name_to_node: Dict[str, Union[ObjectChoiceNode, ArgPresentChoiceNode]] = \
+            self._get_default_arg_name_to_node_dict()
 
-    def _add_arg_present_choices(self):
+    def _get_default_arg_name_to_node_dict(self):
+        out = {}
         for arg in self.implementation.children:
             if not arg.required:
-                self.arg_name_to_node[arg.name] = ArgPresentChoiceNode(arg, self)
+                out[arg.name] = ArgPresentChoiceNode(arg, self)
+            else:
+                out[arg.name] = ObjectChoiceNode(arg.type, self)
+        return out
 
     def set_arg_present(self, arg: typecontext.AInixArgument) -> Optional[ObjectChoiceNode]:
         if not arg.required:
@@ -212,7 +216,7 @@ class ObjectNode(AstNode):
         return repr
 
     def get_children(self) -> List[AstNode]:
-        return [node for arg_name, node in self.arg_name_to_node.items()]
+        return [self.arg_name_to_node[arg.name] for arg in self.implementation.children]
 
 
 class StringParser:

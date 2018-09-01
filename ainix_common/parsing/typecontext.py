@@ -111,6 +111,10 @@ class AInixObject:
         return self._type_context.get_type_by_name(self.type_name)
 
     @property
+    def type_context(self) -> 'TypeContext':
+        return self._type_context
+
+    @property
     def preferred_object_parser(self) \
             -> Optional['parse_primitives.ObjectParser']:
         """Returns the instance associated with the preferred_object_parser_name"""
@@ -144,6 +148,8 @@ class AInixArgument:
         self.required = required
         self.type_parser_name = type_parser_name
         self.arg_data = arg_data if arg_data else {}
+        if required and type_name is None:
+            raise ValueError(f"Arg {name} is required but None type.")
         # TODO (DNGros): Figure out more elegant way of doing this.
         self._create_optional_args_types()
 

@@ -50,3 +50,22 @@ def test_predict_digit(numbers_type_context):
     model = SeaCRModel(index)
     prediction = model.predict("two", "BaseTen")
     assert expected == prediction
+
+
+def test_digit_list_1(numbers_type_context):
+    # Create an index
+    index = ExamplesIndex(numbers_type_context, ExamplesIndex.get_default_ram_backend())
+    type = "IntBase"
+    x_y = [("one", "1"), ("two", "2"), ("three", "3")]
+    for x, y in x_y:
+        index.add_many_to_many_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
+    # Create a expected value
+    parser = StringParser(numbers_type_context.get_type_by_name(type))
+    expected = parser.create_parse_tree("2")
+    # Predict
+    model = SeaCRModel(index)
+    prediction = model.predict("two", type)
+    print(prediction.dump_str())
+    print("expected")
+    print(expected.dump_str())
+    assert expected == prediction
