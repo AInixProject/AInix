@@ -118,7 +118,8 @@ class ArgPresentChoiceNode(AstNode):
 
     def __eq__(self, other):
         return self.argument == other.argument and \
-               self.is_present == other.is_present
+               self.is_present == other.is_present and \
+               self.obj_choice_node == other.obj_choice_node
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -137,7 +138,7 @@ class ArgPresentChoiceNode(AstNode):
         return s
 
     def indexable_repr(self) -> str:
-        # Just pretend to be a type.
+        # Just pretend to be a type in index output
         # TODO (DNGros): This is very not clean. Optional args should define actual types
         repr = indexable_repr_classify_type(self.argument.present_choice_type_name)
         if self.is_present:
@@ -177,9 +178,7 @@ class ObjectNode(AstNode):
             already_made_present_choice = self.arg_name_to_node[arg.name]
             return already_made_present_choice.set_choice(True)
         elif arg.type is not None:
-            new_obj_choice_node = ObjectChoiceNode(arg.type, self)
-            self.arg_name_to_node[arg.name] = new_obj_choice_node
-            return new_obj_choice_node
+            return self.arg_name_to_node[arg.name]
         else:
             return None
 
