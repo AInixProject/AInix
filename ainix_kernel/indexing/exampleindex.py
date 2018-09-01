@@ -45,6 +45,13 @@ class ExamplesIndex:
             weight=IndexBackendFields.TEXT
         )
 
+    @staticmethod
+    def get_default_ram_backend() -> 'IndexBackendABC':
+        """Gets a default backend that does not touch any files and just
+        keeps data in RAM"""
+        return indexing.whooshbackend.WhooshIndexBackend(
+            ExamplesIndex.get_scheme(), ram_only=True)
+
     def _get_yparsed_rep(self, y_string: str, y_type: str) -> str:
         parser = StringParser(self.type_context.get_type_by_name(y_type))
         # TODO (DNGros): cache the parsers for each type

@@ -130,7 +130,10 @@ class ArgPresentChoiceNode(AstNode):
     def dump_str(self, indent=0):
         indent_str = "  " * indent
         s = indent_str + "<ArgPresentChoiceNode for " + self.argument.name +\
-            ". " + str(self.is_present) + ">\n"
+            ". " + str(self.is_present) + "> {\n"
+        if self.obj_choice_node:
+            s += self.obj_choice_node.dump_str(indent + 1)
+        s += indent_str + "}\n"
         return s
 
     def indexable_repr(self) -> str:
@@ -141,7 +144,7 @@ class ArgPresentChoiceNode(AstNode):
             repr += f" O[O {indexable_repr_object(self.argument.is_present_name)} ARGS"
             if self.obj_choice_node:
                 repr += f" ARG={self.argument.is_present_name}::VAL"
-                repr += f" T[T {self.obj_choice_node.indexable_rep()} T]T"
+                repr += f" T[T {self.obj_choice_node.indexable_repr()} T]T"
             repr += " ENDARGS"
             repr += f" O]O"
         else:
