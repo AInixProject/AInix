@@ -4,21 +4,17 @@ For that use ainix_common.parsing.loader"""
 # TODO (DNGros): this kinda repeats code from the type loader. Figure out
 # how to make this DRYer...
 import yaml
-
-import indexing.exampleindex
-
+from indexing.examplestore import ExamplesStore
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
-from indexing import index
-import os
 from typing import Dict, IO
 
 
 def load_path(
     path : str,
-    index: indexing.exampleindex.ExamplesIndex,
+    index: ExamplesStore,
 ) -> None:
     """Loads a *.ainix.yaml file and registers and definesgT
     or objects with the supplied type_context"""
@@ -28,14 +24,14 @@ def load_path(
         load_yaml(f, index)
 
 
-def load_yaml(filelike: IO, index: indexing.exampleindex.ExamplesIndex) -> None:
+def load_yaml(filelike: IO, index: ExamplesStore) -> None:
     doc = yaml.safe_load(filelike)
     _load(doc, index)
 
 
 def _load(
     parsed_doc: Dict,
-    index: indexing.exampleindex.ExamplesIndex,
+    index: ExamplesStore,
 ) -> None:
     """
     Args:
@@ -63,7 +59,7 @@ def _load_single_example(
     example_dict: Dict,
     xtype: str,
     ytype: str,
-    load_index: indexing.exampleindex.ExamplesIndex
+    load_index: ExamplesStore
 ):
     x = example_dict['x']
     if not isinstance(x, list):
@@ -76,7 +72,7 @@ def _load_single_example(
     load_index.add_many_to_many_default_weight(x, y, xtype, ytype)
 
 
-def _load_example_set(define: Dict, load_index: indexing.exampleindex.ExamplesIndex):
+def _load_example_set(define: Dict, load_index: ExamplesStore):
     y_type = define['y_type']
     x_type = define.get('x_type', load_index.DEFAULT_X_TYPE)
     examples = define['examples']

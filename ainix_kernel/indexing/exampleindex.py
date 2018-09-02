@@ -9,6 +9,7 @@ from whoosh.query import Term, And, Or
 from whoosh.analysis.analyzers import Analyzer, StandardAnalyzer
 from whoosh.analysis.tokenizers import RegexTokenizer
 from whoosh.analysis.filters import LowercaseFilter
+from indexing.examplestore import ExamplesStore
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -21,7 +22,7 @@ class Example:
     yindexable: str = None
 
 
-class ExamplesIndex:
+class ExamplesIndex(ExamplesStore):
     """Provides a higher level interface around an IndexBackendABC specifically
     related to the domain of AInix examples"""
     DEFAULT_X_TYPE = "WordSequence"

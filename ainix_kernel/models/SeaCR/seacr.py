@@ -19,7 +19,7 @@ class SeaCRModel(StringTypeTranslateCF):
         self.type_predictor = type_predictor if type_predictor else \
             TypePredictor(index, comparer)
 
-    def predict(self, x_string: str, y_type_name: str):
+    def predict(self, x_string: str, y_type_name: str) -> ObjectChoiceNode:
         root_type = self.type_context.get_type_by_name(y_type_name)
         root_node = ObjectChoiceNode(root_type, None)
         self.predict_step(x_string, root_node, root_type)
@@ -141,8 +141,8 @@ class SimpleRulebasedComparer(Comparer):
         ranked_options = sorted(inverse_depth_diffs.items(), key=lambda t: t[1], reverse=True)
         return ComparerResult(1, tuple(ranked_options))
 
+    @staticmethod
     def get_impl_depth_difference(
-        self,
         nodes_to_compare: List[ObjectChoiceLikeNode],
         reference_node: ObjectChoiceLikeNode
     ) -> Dict[str, float]:
@@ -153,4 +153,3 @@ class SimpleRulebasedComparer(Comparer):
             node_impl_name = node.get_chosen_impl_name()
             out[node_impl_name] = min(out.get(node_impl_name, 9e9), depth_val)
         return out
-

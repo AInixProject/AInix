@@ -84,7 +84,20 @@ def test_digit_list_2(numbers_type_context):
     # Predict
     model = SeaCRModel(index)
     prediction = model.predict("twenty", type)
-    print(prediction.dump_str())
-    print("expected")
-    print(expected.dump_str())
+    assert expected == prediction
+
+
+def test_full_number(numbers_type_context):
+    # Create an index
+    index = ExamplesIndex(numbers_type_context, ExamplesIndex.get_default_ram_backend())
+    type = "Number"
+    x_y = [("one", "1"), ("two", "2"), ("three", "3"), ("ten", "10"), ("negative one", "-1")]
+    for x, y in x_y:
+        index.add_many_to_many_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
+    # Create a expected value
+    parser = StringParser(numbers_type_context.get_type_by_name(type))
+    expected = parser.create_parse_tree("-1")
+    # Predict
+    model = SeaCRModel(index)
+    prediction = model.predict("negative one", type)
     assert expected == prediction
