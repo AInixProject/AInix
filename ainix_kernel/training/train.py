@@ -28,7 +28,7 @@ class TypeTranslateCFTrainer:
     ):
         for example in self.example_store.get_all_examples(splits):
             try:
-                prediction = self.model.predict(example.xquery, example.ytype)
+                prediction = self.model.predict(example.xquery, example.ytype, True)
             except ModelCantPredictException:
                 prediction = None
             expected = self.string_parser.create_parse_tree(

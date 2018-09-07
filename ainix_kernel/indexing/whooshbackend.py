@@ -108,7 +108,7 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
 
     def query(
         self,
-        query: indexing.index.Query,
+        query: whoosh.query.Query,
         max_results: int = 10
     ) -> List[indexing.index.SearchHit]:
         # TODO (DNGros): figure out the contexts for a search object and when

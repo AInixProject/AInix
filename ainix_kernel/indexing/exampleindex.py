@@ -79,26 +79,32 @@ class ExamplesIndex(ExamplesStore):
         self,
         x_value: str,
         choose_type_name: str = None,
-        max_results = 10
+        filter_splits=None,
+        max_results=10
     ) -> List[Example]:
         """
         Args:
+            filter_splits:
             x_value: a string to look for the most similar example to
             choose_type_name: By optionally specifying this value you may require
                 that a specific type choice appears in the example. You could for example
                 only look for the nearest examples where the example features a choice
                 between a Program type.
+            filter_splits: A tuple of DataSplits. If provided, only examples in one
+                of the splits in the provided tuple will be returned
             max_results: The max number of examples to return
 
         Returns:
             A list of all examples that are potentially near the example, sorted
             in order where the 0th item is predicted to be nearest.
         """
-        tokenized_x_value = (tok.text for tok in  self.x_tokenizer(x_value))
+        tokenized_x_value = (tok.text for tok in self.x_tokenizer(x_value))
         query = Or([Term("xquery", term,) for term in tokenized_x_value])
         if choose_type_name:
             y_type_indexable_rep = parseast.indexable_repr_classify_type(choose_type_name)
             query &= Term("yindexable", y_type_indexable_rep)
+        if filter_splits:
+            query &= Or([Term("split", split.value) for split in filter_splits])
         query_result = self.backend.query(query, max_results)
         list_result = [self._dict_to_example(hit.doc) for hit in query_result]
         return list_result
@@ -109,5 +115,3 @@ class ExamplesIndex(ExamplesStore):
     ) -> Generator[Example, None, None]:
         """Yields all examples in the index"""
         yield from map(self._dict_to_example, self.backend.get_all_documents(filter_splits))
-
-

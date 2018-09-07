@@ -8,12 +8,13 @@ import attr
 from indexing.examplestore import DataSplits
 
 
-class Query(whoosh.query.Query):
-    """An query on IndexBackendj. For now to save time it will just exactly
-    copy a whoosh query. However, this should likely eventually be abstracted
-    away and tied to specific backend (or it might work to make other backends
-    just convert from whoosh to their query scheme. We'll figure it out later)"""
-    pass
+# NOTE: for now just using actual whoosh query objects
+#class Query(whoosh.query.Query):
+#    """An query on IndexBackendj. For now to save time it will just exactly
+#    copy a whoosh query. However, this should likely eventually be abstracted
+#    away and tied to specific backend (or it might work to make other backends
+#    just convert from whoosh to their query scheme. We'll figure it out later)"""
+#    pass
 
 
 # TODO (DNGros): figure out how want to do result and if need special object
@@ -67,5 +68,5 @@ class IndexBackendABC(ABC):
         pass
 
     @abstractmethod
-    def query(self, query: Query, max_results: int = 10) -> List[SearchHit]:
+    def query(self, query: whoosh.query.Query, max_results: int = 10) -> List[SearchHit]:
         pass

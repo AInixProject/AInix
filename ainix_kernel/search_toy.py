@@ -26,7 +26,7 @@ from models.SeaCR.seacr import SeaCRModel
 model = SeaCRModel(index)
 
 print("predict")
-prediction = model.predict("seven", type_context.get_type_by_name("Number"))
+prediction = model.predict("seven", type_context.get_type_by_name("Number"), Fak)
 print("predicted")
 print(prediction.dump_str())
 print("actual")
