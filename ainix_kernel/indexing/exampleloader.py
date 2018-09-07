@@ -15,14 +15,14 @@ from typing import Dict, IO, Tuple
 def load_path(
     path : str,
     index: ExamplesStore,
-    splits: SPLIT_TYPE
+    splits: SPLIT_TYPE = DEFAULT_SPLITS
 ) -> None:
     """Loads a *.ainix.yaml file and registers and definesgT
     or objects with the supplied type_context"""
     # TODO (DNGros): validate that is actually a *.ainix.yaml file
     # TODO (DNGros): allow for you to specify a path and recurse down
     with open(path, 'r') as f:
-        load_yaml(f, index)
+        load_yaml(f, index, splits)
 
 
 def load_yaml(
@@ -77,7 +77,7 @@ def _load_single_example(
         y = [y]
     x = list(map(str, x))
     y = list(map(str, y))
-    load_index.add_many_to_many_default_weight(x, y, xtype, ytype)
+    load_index.add_many_to_many_default_weight(x, y, xtype, ytype, splits)
 
 
 def _load_example_set(define: Dict, load_index: ExamplesStore, splits: SPLIT_TYPE):

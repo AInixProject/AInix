@@ -2,6 +2,8 @@ import pytest
 from models.SeaCR.seacr import *
 from typecontext import TypeContext
 from ainix_common.parsing import loader
+import indexing.exampleloader
+from ainix_common.parsing.parseast import MultitypeStringParser
 
 BUILTIN_TYPES_PATH = "../../../../builtin_types"
 
@@ -100,4 +102,26 @@ def test_full_number(numbers_type_context):
     # Predict
     model = SeaCRModel(index)
     prediction = model.predict("negative one", type)
+    assert expected == prediction
+    #
+    expected = parser.create_parse_tree("2")
+    model = SeaCRModel(index)
+    prediction = model.predict("two", type)
+    assert expected == prediction
+    #
+    with pytest.raises(ModelCantPredictException):
+        model.predict("sdsdfas sdfasdf asdf", type)
+
+
+def test_full_number_2(numbers_type_context):
+    # Create an index
+    index = ExamplesIndex(numbers_type_context, ExamplesIndex.get_default_ram_backend())
+    indexing.exampleloader.load_path(
+        f"{BUILTIN_TYPES_PATH}/numbers_examples.ainix.yaml", index)
+    # Create a expected value
+    parser = MultitypeStringParser(numbers_type_context)
+    expected = parser.create_parse_tree("9", "Number")
+    # Predict
+    model = SeaCRModel(index)
+    prediction = model.predict("nineth", "Number")
     assert expected == prediction

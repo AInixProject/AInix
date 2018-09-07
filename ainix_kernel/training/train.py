@@ -1,5 +1,7 @@
-from indexing.examplestore import ExamplesStore
-from models.model_types import StringTypeTranslateCF
+from typing import Tuple
+
+from indexing.examplestore import ExamplesStore, DataSplits
+from models.model_types import StringTypeTranslateCF, ModelCantPredictException
 from parseast import MultitypeStringParser
 from training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 
@@ -19,12 +21,24 @@ class TypeTranslateCFTrainer:
         for epoch in range(epochs):
             self._train_one_epoch(epoch)
 
-    def evaluate(self, logger: EvaluateLogger):
-        for example in self.example_store.get_all_examples():
-            # TODO (DNGros): cache / create an all types string parser class
-            prediction = self.model.predict(example.xquery, example.ytype)
+    def evaluate(
+        self,
+        logger: EvaluateLogger,
+        splits: Tuple[DataSplits] = None
+    ):
+        for example in self.example_store.get_all_examples(splits):
+            try:
+                prediction = self.model.predict(example.xquery, example.ytype)
+            except ModelCantPredictException:
+                prediction = None
             expected = self.string_parser.create_parse_tree(
                 example.ytext, example.ytype, example.weight)
+            print(example.xquery)
+            print(prediction.dump_str() if prediction else None)
+            print(expected.dump_str())
+            if prediction:
+                print(expected.dump_str() == prediction.dump_str())
+            print("-----")
             logger.add_evaluation(AstEvaluation(prediction, expected))
 
 
@@ -41,6 +55,7 @@ if __name__ == "__main__":
 
     index = indexing.exampleindex.ExamplesIndex(type_context)
     exampleloader.load_path("../../builtin_types/numbers_examples.ainix.yaml", index)
+    print("num docs", index.backend.index.doc_count())
 
     from models.SeaCR.seacr import SeaCRModel
     model = SeaCRModel(index)

@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from models.model_types import StringTypeTranslateCF
+from models.model_types import StringTypeTranslateCF, ModelCantPredictException
 from indexing.exampleindex import ExamplesIndex
 from indexing.examplestore import Example
 from ainix_common.parsing.parseast import AstNode, ObjectNode, \
     ObjectChoiceNode, ArgPresentChoiceNode, StringParser, ObjectChoiceLikeNode
 from ainix_common.parsing.typecontext import AInixType, AInixObject
-from typing import List, Tuple, Union, Dict
+from typing import List, Tuple, Union, Dict, Optional
 import attr
 
 
@@ -98,6 +98,8 @@ class TypePredictor:
         if current_leaf.get_depth() > 20:
             raise ValueError("whoah, that's too deep man")
         search_results = self._search(x_query, current_leaf)
+        if not search_results:
+            raise ModelCantPredictException(f"No examples in index for '{x_query}'")
         comparer_result = self.compare_example(x_query, current_leaf, search_results[0])
         choose_name = comparer_result.impl_scores[0][0]
         return current_leaf.set_valid_choice_by_name(choose_name)

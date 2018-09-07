@@ -34,7 +34,7 @@ class ExamplesIndex(ExamplesStore):
             ytext=IndexBackendFields.TEXT,
             xtype=IndexBackendFields.ID,
             ytype=IndexBackendFields.ID,
-            yindexable=IndexBackendFields.SPACE_STORED_TEXT,
+            yindexable=IndexBackendFields.SPACE_UNSTORED_TEXT,
             weight=IndexBackendFields.TEXT,
             split=IndexBackendFields.KEYWORD
         )

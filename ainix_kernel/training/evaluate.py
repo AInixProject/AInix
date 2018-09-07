@@ -17,6 +17,12 @@ class AstEvaluation(Evaluation):
         self._do_eval()
 
     def _do_eval(self):
+        if self.prediction != self.ground_truth and self.prediction is not None and \
+                self.prediction.dump_str() == self.ground_truth.dump_str():
+            print(self.prediction.dump_str())
+            print(self.ground_truth.dump_str())
+            print("break")
+
         self.data["ExactMatch"] = self.prediction == self.ground_truth
 
     def get_data(self) -> Dict:
@@ -37,7 +43,7 @@ class BinaryStat:
     def percent_true_str(self) -> str:
         if self.total_count == 0:
             return "N/A"
-        return f"{(self.total_count / self.total_count)*100:.2f}%"
+        return f"{(self.true_count / self.total_count)*100:.2f}%"
 
     def __add__(self, other):
         self.total_count += other.total_count

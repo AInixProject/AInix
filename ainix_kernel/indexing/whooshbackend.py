@@ -71,7 +71,7 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
         elif field == indexing.index.IndexBackendFields.SPACE_STORED_TEXT:
             return TEXT(stored=True, analyzer=KeywordAnalyzer())
         elif field == indexing.index.IndexBackendFields.KEYWORD:
-            return KEYWORD()
+            return KEYWORD(stored=True)
         else:
             raise ValueError(
                 f"WhooshIndexBackend does not support {field} fields.")
@@ -127,6 +127,6 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
             query = whoosh.query.Every()
         else:
             query = Or([Term("split", split.value) for split in filter_splits])
-        for result in self.searcher.search(query):
+        for result in self.searcher.search(query, limit=None):
             yield result.fields()
 

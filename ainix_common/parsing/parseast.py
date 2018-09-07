@@ -66,16 +66,17 @@ class ObjectChoiceLikeNode(AstNode):
 
 
 class ObjectChoiceNode(ObjectChoiceLikeNode):
-    @attrs(auto_attribs=True)
-    class _Choice:
-        object_node: 'ObjectNode'
-        weight: float = 1
+    #@attrs(auto_attribs=True)
+    #class _Choice:
+    #    object_node: 'ObjectNode'
+    #    #weight: float = 1
 
     def __init__(self, type_to_choose: typecontext.AInixType, parent: Optional[AstNode]):
         super(ObjectChoiceNode, self).__init__(parent)
         self._type_to_choose = type_to_choose
         self._normalized = False
-        self._valid_choices: Dict[str, ObjectChoiceNode._Choice] = {}
+        #self._valid_choices: Dict[str, ObjectChoiceNode._Choice] = {}
+        self.choice: ObjectNode = None
 
     def get_type_to_choose_name(self) -> str:
         return  self._type_to_choose.name
@@ -89,8 +90,9 @@ class ObjectChoiceNode(ObjectChoiceLikeNode):
 
     # TODO (DNGros): seporate out a single AST and multiple valid AST holder
     def get_chosen_impl_name(self) -> str:
-        assert len(self._valid_choices) == 1
-        return list(self._valid_choices.values())[0].object_node.implementation.name
+        #assert len(self._valid_choices) == 1
+        #return list(self._valid_choices.values())[0].object_node.implementation.name
+        return self.choice.implementation.name
 
     # TODO (DNGros): seporate out a single AST and multiple valid AST holder
     def add_valid_choice(
@@ -102,54 +104,73 @@ class ObjectChoiceNode(ObjectChoiceLikeNode):
             raise ValueError("Add unexpected choice as valid. Expected type " +
                              self.get_type_to_choose_name() + " got " +
                              implementation.type_name)
-        if implementation.name not in self._valid_choices:
-            new_object_node = ObjectNode(implementation, self)
-            choice = self._valid_choices[implementation.name] = \
-                self._Choice(object_node=new_object_node,
-                             weight=additional_weight)
-        else:
-            choice = self._valid_choices[implementation.name]
-            choice.weight += additional_weight
-        return choice.object_node
+        #if implementation.name not in self._valid_choices:
+        #    new_object_node = ObjectNode(implementation, self)
+        #    choice = self._valid_choices[implementation.name] = \
+        #        self._Choice(object_node=new_object_node)
+        #                     #weight=additional_weight)
+        #else:
+        #    choice = self._valid_choices[implementation.name]
+        #    #choice.weight += additional_weight
+        if self.choice is not None:
+            raise ValueError("fix me!!!")
+        self.choice = ObjectNode(implementation, self)
+
+        return self.choice
 
     def __eq__(self, other):
         # Note we don't actually check parent because that
         # would be recursive loop.
-        if not isinstance(other, ObjectChoiceNode):
+        #if not isinstance(other, ObjectChoiceNode):
+        #    print("NOT IS INSTANCE")
+        #    print(type(ObjectChoiceNode))
+        #    return False
+        if other is None:
             return False
+        #if self._valid_choices != other._valid_choices:
+        #    print("Diff CHOICES")
+        #    print(self._valid_choices)
+        #    print(other._valid_choices)
+        #    print(self._valid_choices['decimal_number'] == \
+        #          other._valid_choices['decimal_number'])
+        #    print(self._valid_choices['decimal_number'].object_node == \
+        #          other._valid_choices['decimal_number'].object_node)
         return self._type_to_choose == other._type_to_choose and \
-            self._valid_choices == other._valid_choices
+            self.choice == other.choice
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __repr__(self):
         s = "<ObjectChoiceNode for " + str(self.get_type_to_choose_name())
-        s += " valid_choices=" + str(self._valid_choices)
+        s += " valid_choices=" + str(self.choice)
         s += ">"
         return s
 
     def dump_str(self, indent=0):
         indent_str = "  " * indent
         s = indent_str + "<ObjectChoiceNode type " + self.get_type_to_choose_name() + "> {\n"
-        for name, choice in self._valid_choices.items():
-            s += indent_str + '  Weight ' + str(choice.weight) + "\n"
-            s += choice.object_node.dump_str(indent + 2)
+        #for name, choice in self._valid_choices.items():
+        #    #s += indent_str + '  Weight ' + str(choice.weight) + "\n"
+        #    s += choice.object_node.dump_str(indent + 2)
+        s += self.choice.dump_str(indent + 2)
         s += indent_str + "}\n"
         return s
 
     def indexable_repr(self) -> str:
         repr = indexable_repr_classify_type(self.get_type_to_choose_name())
         # TODO (DNGros): don't just take the zeroth. Refactor for this AST
-        assert len(self._valid_choices) == 1
-        choosen = list(self._valid_choices.values())[0]
-        repr += f" O[O {choosen.object_node.indexable_repr()} O]O"
+        #assert len(self._valid_choices) == 1
+        #choosen = list(self._valid_choices.values())[0]
+        repr += f" O[O {self.choice.indexable_repr()} O]O"
         return repr
 
     def get_children(self) -> Generator[AstNode, None, None]:
         # TODO (DNGros): refactor so only one for this kind of AST
-        assert len(self._valid_choices) == 1
-        yield list(self._valid_choices.values())[0].object_node
+        #assert len(self._valid_choices) == 1
+        #yield list(self._valid_choices.values())[0].object_node
+        assert self.choice is not None
+        yield self.choice
 
 
 class ArgPresentChoiceNode(ObjectChoiceLikeNode):
@@ -239,7 +260,7 @@ class ObjectNode(AstNode):
                 out[arg.name] = ObjectChoiceNode(arg.type, self)
         return out
 
-    def set_arg_present(self, arg: typecontext.AInixArgument) -> Optional[ObjectChoiceNode]:
+    def set_arg_present(self, arg: typecontext.AInixArgument) -> Optional[ObjectChoiceLikeNode]:
         if not arg.required:
             already_made_present_choice = self.arg_name_to_node[arg.name]
             return already_made_present_choice.set_choice(True)
@@ -282,7 +303,6 @@ class ObjectNode(AstNode):
 
     def get_children(self) -> Generator[AstNode, None, None]:
         return (self.arg_name_to_node[arg.name] for arg in self.implementation.children)
-
 
 
 class StringParser:
