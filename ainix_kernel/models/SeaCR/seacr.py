@@ -97,7 +97,12 @@ class TypePredictor:
         # TODO
         raise NotImplemented()
 
-    def _search(self, x_query, current_leaf, use_only_training_data: bool) -> List[Example]:
+    def _search(
+        self,
+        x_query,
+        current_leaf,
+        use_only_training_data: bool
+    ) -> List[Example]:
         type_name = current_leaf.get_type_to_choose_name()
         split_filter = (DataSplits.TRAIN,) if use_only_training_data else None
         return self.index.get_nearest_examples(

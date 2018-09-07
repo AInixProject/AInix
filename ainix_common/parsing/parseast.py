@@ -66,16 +66,9 @@ class ObjectChoiceLikeNode(AstNode):
 
 
 class ObjectChoiceNode(ObjectChoiceLikeNode):
-    #@attrs(auto_attribs=True)
-    #class _Choice:
-    #    object_node: 'ObjectNode'
-    #    #weight: float = 1
-
     def __init__(self, type_to_choose: typecontext.AInixType, parent: Optional[AstNode]):
         super(ObjectChoiceNode, self).__init__(parent)
         self._type_to_choose = type_to_choose
-        self._normalized = False
-        #self._valid_choices: Dict[str, ObjectChoiceNode._Choice] = {}
         self.choice: ObjectNode = None
 
     def get_type_to_choose_name(self) -> str:

@@ -81,7 +81,7 @@ class ExamplesIndex(ExamplesStore):
         choose_type_name: str = None,
         filter_splits=None,
         max_results=10
-    ) -> List[Example]:
+    ) -> Generator[Example, None, None]:
         """
         Args:
             filter_splits:
@@ -106,8 +106,7 @@ class ExamplesIndex(ExamplesStore):
         if filter_splits:
             query &= Or([Term("split", split.value) for split in filter_splits])
         query_result = self.backend.query(query, max_results)
-        list_result = [self._dict_to_example(hit.doc) for hit in query_result]
-        return list_result
+        yield from (self._dict_to_example(hit.doc) for hit in query_result)
 
     def get_all_examples(
         self,
