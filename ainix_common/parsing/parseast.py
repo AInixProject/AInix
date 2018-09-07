@@ -270,6 +270,8 @@ class ObjectNode(AstNode):
             return None
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.implementation == other.implementation and \
             self.arg_name_to_node == other.arg_name_to_node
 

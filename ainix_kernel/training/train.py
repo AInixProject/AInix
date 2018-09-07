@@ -33,12 +33,6 @@ class TypeTranslateCFTrainer:
                 prediction = None
             expected = self.string_parser.create_parse_tree(
                 example.ytext, example.ytype, example.weight)
-            print(example.xquery)
-            print(prediction.dump_str() if prediction else None)
-            print(expected.dump_str())
-            if prediction:
-                print(expected.dump_str() == prediction.dump_str())
-            print("-----")
             logger.add_evaluation(AstEvaluation(prediction, expected))
 
 
