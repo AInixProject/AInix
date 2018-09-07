@@ -5,7 +5,7 @@ from indexing.index import IndexBackendScheme, IndexBackendFields, IndexBackendA
 import parseast
 from parseast import StringParser
 from typecontext import TypeContext
-from whoosh.query import Term, Or
+from whoosh.query import Term, Or, Every
 from whoosh.analysis.tokenizers import RegexTokenizer
 from whoosh.analysis.filters import LowercaseFilter
 from indexing.examplestore import ExamplesStore, Example, \
@@ -111,7 +111,12 @@ class ExamplesIndex(ExamplesStore):
 
     def get_all_examples(
         self,
-        filter_splits: Tuple[DataSplits, ...]=None
+        filter_splits: Tuple[DataSplits, ...] = None
     ) -> Generator[Example, None, None]:
         """Yields all examples in the index"""
-        yield from map(self._dict_to_example, self.backend.get_all_documents(filter_splits))
+        if filter_splits is None or len(filter_splits) == 0:
+            query = Every()
+        else:
+            query = Or([Term("split", split.value) for split in filter_splits])
+        yield from (self._dict_to_example(hit.doc)
+                    for hit in self.backend.query(query, max_results=None, score=False))

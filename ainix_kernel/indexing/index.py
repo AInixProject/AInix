@@ -61,12 +61,10 @@ class IndexBackendABC(ABC):
         pass
 
     @abstractmethod
-    def get_all_documents(
+    def query(
         self,
-        filter_splits: Tuple[DataSplits, ...]
-    ) -> Generator[Dict, None, None]:
-        pass
-
-    @abstractmethod
-    def query(self, query: whoosh.query.Query, max_results: int = 10) -> List[SearchHit]:
+        query: whoosh.query.Query,
+        max_results: int = 10,
+        score: bool = True
+    ) -> List[SearchHit]:
         pass

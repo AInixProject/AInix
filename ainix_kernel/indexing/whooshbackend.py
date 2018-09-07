@@ -18,9 +18,9 @@ def _make_all_dict_values_strings(document: Dict):
 
 def _convert_whoosh_result_to_our_result(
         whoosh_result: Results
-) -> List[indexing.index.SearchHit]:
-    return [indexing.index.SearchHit(result.fields(), result.score)
-            for result in whoosh_result]
+) -> Generator[indexing.index.SearchHit, None, None]:
+    yield from (indexing.index.SearchHit(result.fields(), result.score)
+                for result in whoosh_result)
 
 
 def _create_ram_index(schema):
@@ -109,24 +109,12 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
     def query(
         self,
         query: whoosh.query.Query,
-        max_results: int = 10
-    ) -> List[indexing.index.SearchHit]:
+        max_results: Optional[int] = 10,
+        score: bool = True
+    ) -> Generator[indexing.index.SearchHit, None, None]:
         # TODO (DNGros): figure out the contexts for a search object and when
         # to close it and stuff
         self._set_searcher()
-        result = self.searcher.search(query, limit=max_results)
-        return _convert_whoosh_result_to_our_result(result)
-
-    def get_all_documents(
-        self,
-        filter_splits: Tuple[DataSplits]=None
-    ) -> Generator[Dict, None, None]:
-        """Yields a dict for each doc in the index"""
-        self._set_searcher()
-        if filter_splits is None or len(filter_splits) == 0:
-            query = whoosh.query.Every()
-        else:
-            query = Or([Term("split", split.value) for split in filter_splits])
-        for result in self.searcher.search(query, limit=None):
-            yield result.fields()
+        result = self.searcher.search(query, limit=max_results, scored=score)
+        yield from _convert_whoosh_result_to_our_result(result)
 
