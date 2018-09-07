@@ -1,10 +1,14 @@
 import indexing.index
-from typing import Iterable, Dict, List, Optional
+from typing import Iterable, Dict, List, Optional, Generator, Tuple
 from whoosh.index import create_in
 from whoosh.fields import *
 from whoosh.searching import Searcher, Results
 from whoosh.analysis import KeywordAnalyzer
+import whoosh.query
+from whoosh.query import Or, Term
+import os
 
+from indexing.examplestore import DataSplits
 
 def _make_all_dict_values_strings(document: Dict):
     for key, value in document.items():
@@ -33,10 +37,14 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
         scheme : the scheme to use for the index
         ram_only : keeps the index in ram. Useful for testing without polluting filesystem
     """
+    INDEX_DIR = "indexdir"
+
     def __init__(self, scheme: indexing.index.IndexBackendScheme, ram_only: bool = False):
         whoosh_scheme = self._convert_to_whoosh_scheme(scheme)
         if not ram_only:
-            self.index = create_in("indexdir", whoosh_scheme)
+            if not os.path.exists(self.INDEX_DIR):
+                os.makedirs(self.INDEX_DIR)
+            self.index = create_in(self.INDEX_DIR, whoosh_scheme)
         else:
             self.index = _create_ram_index(whoosh_scheme)
         self.searcher: Optional[Searcher] = None
@@ -62,6 +70,8 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
             return TEXT(stored=False, analyzer=KeywordAnalyzer())
         elif field == indexing.index.IndexBackendFields.SPACE_STORED_TEXT:
             return TEXT(stored=True, analyzer=KeywordAnalyzer())
+        elif field == indexing.index.IndexBackendFields.KEYWORD:
+            return KEYWORD()
         else:
             raise ValueError(
                 f"WhooshIndexBackend does not support {field} fields.")
@@ -79,6 +89,10 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
         if self.searcher is not None:
             self.searcher.close()
             self.searcher = None
+
+    def _set_searcher(self):
+        if self.searcher is None:
+            self.searcher = self.index.searcher()
 
     def add_documents(self, documents: Iterable[Dict]):
         # TODO (DNGros): look into setting proc field greater than 1
@@ -99,9 +113,20 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
     ) -> List[indexing.index.SearchHit]:
         # TODO (DNGros): figure out the contexts for a search object and when
         # to close it and stuff
-        if self.searcher is None:
-            self.searcher = self.index.searcher()
+        self._set_searcher()
         result = self.searcher.search(query, limit=max_results)
         return _convert_whoosh_result_to_our_result(result)
 
+    def get_all_documents(
+        self,
+        filter_splits: Tuple[DataSplits]=None
+    ) -> Generator[Dict, None, None]:
+        """Yields a dict for each doc in the index"""
+        self._set_searcher()
+        if filter_splits is None or len(filter_splits) == 0:
+            query = whoosh.query.Every()
+        else:
+            query = Or([Term("split", split.value) for split in filter_splits])
+        for result in self.searcher.search(query):
+            yield result.fields()
 

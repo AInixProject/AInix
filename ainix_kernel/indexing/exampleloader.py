@@ -4,17 +4,18 @@ For that use ainix_common.parsing.loader"""
 # TODO (DNGros): this kinda repeats code from the type loader. Figure out
 # how to make this DRYer...
 import yaml
-from indexing.examplestore import ExamplesStore
+from indexing.examplestore import ExamplesStore, DataSplits, DEFAULT_SPLITS, SPLIT_TYPE
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
-from typing import Dict, IO
+from typing import Dict, IO, Tuple
 
 
 def load_path(
     path : str,
     index: ExamplesStore,
+    splits: SPLIT_TYPE
 ) -> None:
     """Loads a *.ainix.yaml file and registers and definesgT
     or objects with the supplied type_context"""
@@ -24,20 +25,26 @@ def load_path(
         load_yaml(f, index)
 
 
-def load_yaml(filelike: IO, index: ExamplesStore) -> None:
+def load_yaml(
+    filelike: IO,
+    index: ExamplesStore,
+    splits: SPLIT_TYPE = DEFAULT_SPLITS
+) -> None:
     doc = yaml.safe_load(filelike)
-    _load(doc, index)
+    _load(doc, index, splits)
 
 
 def _load(
     parsed_doc: Dict,
     index: ExamplesStore,
+    splits: SPLIT_TYPE = DEFAULT_SPLITS
 ) -> None:
     """
     Args:
         parsed_doc: dict form of file we are loading from
         type_context: type context we are loading into.
-        load_root: the directory that is loading from. Used for relative references
+        splits: An iterable of tuples representing the (probability example split, split name).
+            for example ((0.7, "TRAIN"), (0.3, "VALIDATION)) would create a 70/30 split
     """
     for define in parsed_doc['defines']:
         what_to_define = define['define_new']
@@ -50,7 +57,7 @@ def _load(
         elif what_to_define == "object_parser":
             pass
         elif what_to_define == "example_set":
-            _load_example_set(define, index)
+            _load_example_set(define, index, splits)
         else:
             raise ValueError(f"Unrecognized define_new value {what_to_define}")
 
@@ -59,7 +66,8 @@ def _load_single_example(
     example_dict: Dict,
     xtype: str,
     ytype: str,
-    load_index: ExamplesStore
+    load_index: ExamplesStore,
+    splits: SPLIT_TYPE
 ):
     x = example_dict['x']
     if not isinstance(x, list):
@@ -72,9 +80,9 @@ def _load_single_example(
     load_index.add_many_to_many_default_weight(x, y, xtype, ytype)
 
 
-def _load_example_set(define: Dict, load_index: ExamplesStore):
+def _load_example_set(define: Dict, load_index: ExamplesStore, splits: SPLIT_TYPE):
     y_type = define['y_type']
     x_type = define.get('x_type', load_index.DEFAULT_X_TYPE)
     examples = define['examples']
     for example in examples:
-        _load_single_example(example, x_type, y_type, load_index)
+        _load_single_example(example, x_type, y_type, load_index, splits)

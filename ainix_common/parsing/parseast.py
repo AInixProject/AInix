@@ -1,8 +1,9 @@
 import parse_primitives
 import typecontext
-from typing import List, Dict, Optional, Type, Union
+from typing import List, Dict, Optional, Type, Union, Generator
 from attr import attrs, attrib
 from abc import ABC, abstractmethod
+from functools import lru_cache
 
 
 def indexable_repr_classify_type(type_name: str):
@@ -36,9 +37,13 @@ class AstNode(ABC):
         return self if self.parent is None else self.get_root()
 
     @abstractmethod
-    def get_children(self) -> List['AstNode']:
+    def get_children(self) -> Generator['AstNode', None, None]:
         """Returns all descendants of this node"""
         pass
+
+    def depth_first_iter(self) -> Generator['AstNode', None, None]:
+        """Iterates through tree starting at this node in a depth-first manner"""
+        yield from map(self.depth_first_iter, self.get_children())
 
 
 class ObjectChoiceLikeNode(AstNode):
@@ -56,7 +61,7 @@ class ObjectChoiceLikeNode(AstNode):
         pass
 
     @abstractmethod
-    def gen_set_valid_choice_by_name(self, obj_name: str) -> AstNode:
+    def set_valid_choice_by_name(self, obj_name: str) -> AstNode:
         pass
 
 
@@ -75,7 +80,7 @@ class ObjectChoiceNode(ObjectChoiceLikeNode):
     def get_type_to_choose_name(self) -> str:
         return  self._type_to_choose.name
 
-    def gen_set_valid_choice_by_name(self, obj_name: str) -> AstNode:
+    def set_valid_choice_by_name(self, obj_name: str) -> AstNode:
         return self.add_valid_choice(self.type_context.get_object_by_name(obj_name), 1)
 
     @property
@@ -141,10 +146,10 @@ class ObjectChoiceNode(ObjectChoiceLikeNode):
         repr += f" O[O {choosen.object_node.indexable_repr()} O]O"
         return repr
 
-    def get_children(self) -> List['AstNode']:
+    def get_children(self) -> Generator[AstNode, None, None]:
         # TODO (DNGros): refactor so only one for this kind of AST
         assert len(self._valid_choices) == 1
-        return [list(self._valid_choices.values())[0].object_node]
+        yield list(self._valid_choices.values())[0].object_node
 
 
 class ArgPresentChoiceNode(ObjectChoiceLikeNode):
@@ -165,7 +170,7 @@ class ArgPresentChoiceNode(ObjectChoiceLikeNode):
         return self.argument.is_present_name if self.is_present else \
             self.argument.not_present_name
 
-    def gen_set_valid_choice_by_name(self, obj_name: str) -> 'AstNode':
+    def set_valid_choice_by_name(self, obj_name: str) -> 'AstNode':
         if obj_name == self.argument.is_present_name:
             return self.set_choice(True)
         elif obj_name == self.argument.not_present_name:
@@ -213,8 +218,9 @@ class ArgPresentChoiceNode(ObjectChoiceLikeNode):
         repr += " ENDARGS O]O"
         return repr
 
-    def get_children(self) -> List['AstNode']:
-        return [self.obj_choice_node] if self.obj_choice_node else []
+    def get_children(self) -> Generator[AstNode, None, None]:
+        if self.obj_choice_node:
+            yield self.obj_choice_node
 
 
 class ObjectNode(AstNode):
@@ -274,8 +280,9 @@ class ObjectNode(AstNode):
         repr += " ENDARGS"
         return repr
 
-    def get_children(self) -> List[AstNode]:
-        return [self.arg_name_to_node[arg.name] for arg in self.implementation.children]
+    def get_children(self) -> Generator[AstNode, None, None]:
+        return (self.arg_name_to_node[arg.name] for arg in self.implementation.children)
+
 
 
 class StringParser:
@@ -342,6 +349,8 @@ class StringParser:
                 cur_string, cur_node, cur_parser, cur_type, preference_weight)
             parse_stack.extend(new_nodes_to_parse)
 
+    # TODO (DNGros): MAKE AST IMMUTABLE! then cache
+    #@lru_cache
     def create_parse_tree(self, string: str, preference_weight: float = 1):
         new_tree = ObjectChoiceNode(self._root_type, parent=None)
         self._extend_parse_tree(string, new_tree, preference_weight)
@@ -361,3 +370,24 @@ class StringParser:
         preference_weight: float = 1
     ):
         self._extend_parse_tree(string, existing_tree, preference_weight)
+
+
+class MultitypeStringParser:
+    """A string parser that can operate on any type. It does this by cacheing
+    individual StringParsers for each type"""
+    def __init__(self, type_context: typecontext.TypeContext):
+        self._type_context = type_context
+
+    @lru_cache()
+    def _get_string_parser_for_type(self, type_name: str):
+        type_instance = self._type_context.get_type_by_name(type_name)
+        return StringParser(type_instance)
+
+    def create_parse_tree(
+        self,
+        string: str,
+        type_name: str,
+        preference_weight: float = 1
+    ) -> ObjectChoiceNode:
+        parser = self._get_string_parser_for_type(type_name)
+        return parser.create_parse_tree(string, preference_weight)

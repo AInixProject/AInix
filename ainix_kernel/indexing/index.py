@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, Dict, List
+from typing import Iterable, Dict, List, Generator, Tuple
 import enum
 import whoosh.query
 import whoosh.searching
 import attr
+
+from indexing.examplestore import DataSplits
 
 
 class Query(whoosh.query.Query):
@@ -33,6 +35,7 @@ class IndexBackendFields(enum.Enum):
     ID = "ID_FILED"
     NUMBER = "NUMBER_FIELD"
     UNSTORED_TEXT = "UNSTORED_TEXT_FIELD"
+    KEYWORD = "KEYWORD_FIELD"
     # A unstored texts that tokenizes purly on spaces
     SPACE_UNSTORED_TEXT = "UNSTORED_TEXT_FIELD_SPACE_TOKENIZE"
     SPACE_STORED_TEXT = "SPACE_FIELD_SPACE_TOKENIZE"
@@ -47,7 +50,8 @@ class IndexBackendABC(ABC):
     """ABC for storing data and querying it. It offers more general
     purpose puts and query operations not specifically tied to AInix
     terminology. This is intended so we can experiment with different backends
-    such as Whoosh or maybe eventually Lucene / its derivatives.
+    such as Whoosh or maybe eventually Lucene / its derivatives or maybe more
+    vector based index scheme.
 
     Because I don't really know any better right now, it's interface is
     heavily based off whoosh's terminology."""
@@ -56,5 +60,12 @@ class IndexBackendABC(ABC):
         pass
 
     @abstractmethod
-    def query(self, query: Query, max_results: int = 10) -> List[Dict]:
+    def get_all_documents(
+        self,
+        filter_splits: Tuple[DataSplits, ...]
+    ) -> Generator[Dict, None, None]:
+        pass
+
+    @abstractmethod
+    def query(self, query: Query, max_results: int = 10) -> List[SearchHit]:
         pass

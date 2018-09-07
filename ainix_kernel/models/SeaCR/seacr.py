@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from models.model_types import StringTypeTranslateCF
-from indexing.exampleindex import ExamplesIndex, Example
+from indexing.exampleindex import ExamplesIndex
+from indexing.examplestore import Example
 from ainix_common.parsing.parseast import AstNode, ObjectNode, \
     ObjectChoiceNode, ArgPresentChoiceNode, StringParser, ObjectChoiceLikeNode
 from ainix_common.parsing.typecontext import AInixType, AInixObject
@@ -22,20 +23,28 @@ class SeaCRModel(StringTypeTranslateCF):
     def predict(self, x_string: str, y_type_name: str) -> ObjectChoiceNode:
         root_type = self.type_context.get_type_by_name(y_type_name)
         root_node = ObjectChoiceNode(root_type, None)
-        self.predict_step(x_string, root_node, root_type)
+        self._predict_step(x_string, root_node, root_type)
         return root_node
 
-    def predict_step(self, x_query: str, current_leaf: AstNode, root_y_type: AInixType):
+    def _predict_step(self, x_query: str, current_leaf: AstNode, root_y_type: AInixType):
         if isinstance(current_leaf, ObjectChoiceLikeNode):
             next_nodes = [self.type_predictor.predict(x_query, current_leaf)]
         elif isinstance(current_leaf, ObjectNode):
-            next_nodes = current_leaf.get_children()
+            next_nodes = list(current_leaf.get_children())
         else:
             raise ValueError(f"leaf node {current_leaf} not predictable")
         next_nodes = [node for node in next_nodes if node is not None]
 
         for next_node in next_nodes:
-            self.predict_step(x_query, next_node, root_y_type)
+            self._predict_step(x_query, next_node, root_y_type)
+
+    def _train_step(self, x_query: str, expected_node: AstNode):
+        if isinstance(expected_node, ObjectChoiceLikeNode):
+            self.type_predictor.train(x_query, expected_node)
+
+    def train(self, x_string: str, y_ast: ObjectChoiceNode) -> None:
+        for node in y_ast.depth_first_iter():
+            self._train_step(x_string, node)
 
 
 def _get_impl_names_from_indexed_rep(
@@ -68,6 +77,18 @@ class TypePredictor:
         example_ast = parser.create_parse_tree(example.ytext)
         return self.comparer.compare(x_query, current_leaf, example.xquery, example_ast)
 
+    def train_compare(
+        self,
+        x_query: str,
+        expected_leaf: ObjectChoiceLikeNode,
+        example: Example
+    ):
+        # TODO
+        raise NotImplemented()
+
+    def _search(self, x_query, current_leaf) -> List[Example]:
+        type_name = current_leaf.get_type_to_choose_name()
+        return self.index.get_nearest_examples(x_query, choose_type_name=type_name)
 
     def predict(
         self,
@@ -76,11 +97,15 @@ class TypePredictor:
     ) -> AstNode:
         if current_leaf.get_depth() > 20:
             raise ValueError("whoah, that's too deep man")
-        type_name = current_leaf.get_type_to_choose_name()
-        search_results = self.index.get_nearest_examples(x_query, choose_type_name=type_name)
+        search_results = self._search(x_query, current_leaf)
         comparer_result = self.compare_example(x_query, current_leaf, search_results[0])
         choose_name = comparer_result.impl_scores[0][0]
-        return current_leaf.gen_set_valid_choice_by_name(choose_name)
+        return current_leaf.set_valid_choice_by_name(choose_name)
+
+    def train(self, x_query, current_leaf):
+        search_results = self._search(x_query, current_leaf)
+        for result in search_results[:1]:
+            self.train_compare(x_query, current_leaf, search_results[0])
 
 
 @attr.s(auto_attribs=True, frozen=True)

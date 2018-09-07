@@ -1,39 +1,31 @@
-from typing import List
+from typing import List, Generator, Dict, Tuple
 import attr
 import indexing.whooshbackend
 from indexing.index import IndexBackendScheme, IndexBackendFields, IndexBackendABC
 import parseast
 from parseast import StringParser
-from typecontext import TypeContext, AInixType
-from whoosh.query import Term, And, Or
-from whoosh.analysis.analyzers import Analyzer, StandardAnalyzer
+from typecontext import TypeContext
+from whoosh.query import Term, Or
 from whoosh.analysis.tokenizers import RegexTokenizer
 from whoosh.analysis.filters import LowercaseFilter
-from indexing.examplestore import ExamplesStore
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class Example:
-    xquery: str
-    ytext: str
-    xtype: str
-    ytype: str
-    weight: float
-    yindexable: str = None
+from indexing.examplestore import ExamplesStore, Example, \
+    get_split_from_example, SPLIT_TYPE, DEFAULT_SPLITS, DataSplits
 
 
 class ExamplesIndex(ExamplesStore):
-    """Provides a higher level interface around an IndexBackendABC specifically
-    related to the domain of AInix examples"""
-    DEFAULT_X_TYPE = "WordSequence"
-    # TODO (DNGros): this shouldn't really be here. Should not depend on whoosh
+    """An ExampleStore that also provides interfaces such as querying for nearest
+    examples of a certain type.
+    It effectively provides a higher level interface around an IndexBackendABC specifically
+    related to the domain of AInix examples."""
+
+    # TODO (DNGros): this tokenizer shouldn't really be here. Should not depend on whoosh
     x_tokenizer = RegexTokenizer() | LowercaseFilter()
 
     def __init__(self, type_context: TypeContext, backend: IndexBackendABC = None):
+        super().__init__(type_context)
         scheme = self.get_scheme()
         self.backend = backend if backend else \
             indexing.whooshbackend.WhooshIndexBackend(scheme)
-        self.type_context = type_context
 
     @staticmethod
     def get_scheme() -> 'IndexBackendScheme':
@@ -43,7 +35,8 @@ class ExamplesIndex(ExamplesStore):
             xtype=IndexBackendFields.ID,
             ytype=IndexBackendFields.ID,
             yindexable=IndexBackendFields.SPACE_STORED_TEXT,
-            weight=IndexBackendFields.TEXT
+            weight=IndexBackendFields.TEXT,
+            split=IndexBackendFields.KEYWORD
         )
 
     @staticmethod
@@ -69,39 +62,18 @@ class ExamplesIndex(ExamplesStore):
         x_type: str,
         y_type: str,
         weights: List[float],
+        splits: SPLIT_TYPE = DEFAULT_SPLITS
     ) -> None:
         for x in x_values:
+            split = get_split_from_example(x, y_type, splits)
             for y, weight in zip(y_values, weights):
-                new_example = Example(x, y, x_type, y_type, weight,
+                new_example = Example(x, y, x_type, y_type, weight, split.value,
                                       self._get_yparsed_rep(y, y_type))
                 self.add_example(new_example)
 
-    def _default_weight(self, i: int, n: int):
-        """Gets a default weight for a value. Each value in the sequence
-        is half as preferable as the one before it
-
-        Args:
-            i : index in the sequence of values (zero indexed)
-            n : total number of values in sequence
-        """
-        if i+1 > n:
-            raise ValueError()
-        sequence_sum = 2**n-1
-        return (2**(n-i-1))/sequence_sum
-
-    def add_many_to_many_default_weight(
-        self,
-        x_values: List[str],
-        y_values: List[str],
-        x_type: str,
-        y_type: str
-    ) -> None:
-        """Adds several examples with the y_values default weighted."""
-        y_count = len(y_values)
-        weights = [self._default_weight(i, y_count)
-                   for i, y in enumerate(y_values)]
-        self.add_many_to_many_with_weighted(x_values, y_values,
-                                            x_type, y_type, weights)
+    def _dict_to_example(self, doc: Dict) -> Example:
+        """Takes the dictionary form of an object and returns an example object"""
+        return Example(**doc)
 
     def get_nearest_examples(
         self,
@@ -109,11 +81,33 @@ class ExamplesIndex(ExamplesStore):
         choose_type_name: str = None,
         max_results = 10
     ) -> List[Example]:
+        """
+        Args:
+            x_value: a string to look for the most similar example to
+            choose_type_name: By optionally specifying this value you may require
+                that a specific type choice appears in the example. You could for example
+                only look for the nearest examples where the example features a choice
+                between a Program type.
+            max_results: The max number of examples to return
+
+        Returns:
+            A list of all examples that are potentially near the example, sorted
+            in order where the 0th item is predicted to be nearest.
+        """
         tokenized_x_value = (tok.text for tok in  self.x_tokenizer(x_value))
         query = Or([Term("xquery", term,) for term in tokenized_x_value])
         if choose_type_name:
             y_type_indexable_rep = parseast.indexable_repr_classify_type(choose_type_name)
             query &= Term("yindexable", y_type_indexable_rep)
         query_result = self.backend.query(query, max_results)
-        list_result = [Example(**hit.doc) for hit in query_result]
+        list_result = [self._dict_to_example(hit.doc) for hit in query_result]
         return list_result
+
+    def get_all_examples(
+        self,
+        filter_splits: Tuple[DataSplits, ...]=None
+    ) -> Generator[Example, None, None]:
+        """Yields all examples in the index"""
+        yield from map(self._dict_to_example, self.backend.get_all_documents(filter_splits))
+
+
