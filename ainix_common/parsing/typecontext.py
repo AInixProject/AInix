@@ -79,12 +79,6 @@ class AInixType:
     def __str__(self):
         return f"<AInixType: {self.name}>"
 
-    def __eq__(self, other):
-        return other.name == self.name and other._type_context == self._type_context
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
 
 class AInixObject:
     def __init__(

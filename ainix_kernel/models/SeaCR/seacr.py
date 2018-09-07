@@ -97,6 +97,7 @@ class TypePredictor:
         # TODO
         raise NotImplemented()
 
+    # TODO (DNGros): make a generator
     def _search(
         self,
         x_query,
@@ -105,8 +106,8 @@ class TypePredictor:
     ) -> List[Example]:
         type_name = current_leaf.get_type_to_choose_name()
         split_filter = (DataSplits.TRAIN,) if use_only_training_data else None
-        return self.index.get_nearest_examples(
-            x_query, choose_type_name=type_name, filter_splits=split_filter)
+        return list(self.index.get_nearest_examples(
+            x_query, choose_type_name=type_name, filter_splits=split_filter))
 
     def predict(
         self,

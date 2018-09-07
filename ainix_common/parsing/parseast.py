@@ -45,6 +45,17 @@ class AstNode(ABC):
         """Iterates through tree starting at this node in a depth-first manner"""
         yield from map(self.depth_first_iter, self.get_children())
 
+    @abstractmethod
+    def __eq__(self, other):
+        pass
+
+    @abstractmethod
+    def __hash__(self):
+        pass
+
+    def __ne__(self, other):
+        return not self.__eq__(self, other)
+
 
 class ObjectChoiceLikeNode(AstNode):
     @abstractmethod
@@ -97,14 +108,6 @@ class ObjectChoiceNode(ObjectChoiceLikeNode):
             raise ValueError("Add unexpected choice as valid. Expected type " +
                              self.get_type_to_choose_name() + " got " +
                              implementation.type_name)
-        #if implementation.name not in self._valid_choices:
-        #    new_object_node = ObjectNode(implementation, self)
-        #    choice = self._valid_choices[implementation.name] = \
-        #        self._Choice(object_node=new_object_node)
-        #                     #weight=additional_weight)
-        #else:
-        #    choice = self._valid_choices[implementation.name]
-        #    #choice.weight += additional_weight
         if self.choice is not None:
             raise ValueError("fix me!!!")
         self.choice = ObjectNode(implementation, self)
@@ -131,9 +134,6 @@ class ObjectChoiceNode(ObjectChoiceLikeNode):
         return self._type_to_choose == other._type_to_choose and \
             self.choice == other.choice
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     def __repr__(self):
         s = "<ObjectChoiceNode for " + str(self.get_type_to_choose_name())
         s += " valid_choices=" + str(self.choice)
@@ -143,9 +143,6 @@ class ObjectChoiceNode(ObjectChoiceLikeNode):
     def dump_str(self, indent=0):
         indent_str = "  " * indent
         s = indent_str + "<ObjectChoiceNode type " + self.get_type_to_choose_name() + "> {\n"
-        #for name, choice in self._valid_choices.items():
-        #    #s += indent_str + '  Weight ' + str(choice.weight) + "\n"
-        #    s += choice.object_node.dump_str(indent + 2)
         s += self.choice.dump_str(indent + 2)
         s += indent_str + "}\n"
         return s
