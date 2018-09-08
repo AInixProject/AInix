@@ -198,7 +198,6 @@ class ObjectParser:
         self._parse_function = parse_function
         self._type_context.register_object_parser(self)
 
-
     def parse_string(
         self,
         string: str,
@@ -211,7 +210,21 @@ class ObjectParser:
         run = ObjectParserRun(object_)
         result = ObjectParserResult(object_, string)
         self._parse_function(run, string, result)
+        self._validate_parse_result(result, object_)
         return result
+
+    def _validate_parse_result(
+        self,
+        result: 'ObjectParserResult',
+        object_parsed: 'typecontext.AInixObject'
+    ) -> None:
+        """Looks at a ObjectParserResult and verifies that the parse_func returned
+        a valid result"""
+        for arg in object_parsed.children:
+            if arg.required and not result.get_arg_present(arg.name):
+                raise AInixParseError(f"In object parser {self.name} arg "
+                                      f"{arg.name} was not set but it is a "
+                                      f"required arg")
 
 
 class ObjectParserRun:
