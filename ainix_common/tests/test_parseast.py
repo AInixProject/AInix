@@ -149,3 +149,28 @@ def test_parse_set_6(numbers_type_context, numbers_ast_set):
     assert numbers_ast_set.is_node_known_valid(ast_1)
     assert not numbers_ast_set.is_node_known_valid(ast_2)
 
+
+def test_parse_set_7(numbers_type_context, numbers_ast_set):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast_1 = parser.create_parse_tree("5", root_type_name)
+    ast_2 = parser.create_parse_tree("50", root_type_name)
+    numbers_ast_set.add(ast_1, 1, False, 1)
+    numbers_ast_set.add(ast_2, 0.3, True, 1)
+    assert not numbers_ast_set.is_node_known_valid(ast_1)
+    assert numbers_ast_set.is_node_known_valid(ast_2)
+
+
+def test_parse_set_8(numbers_type_context, numbers_ast_set):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast_1 = parser.create_parse_tree("5", root_type_name)
+    ast_2 = parser.create_parse_tree("50", root_type_name)
+    ast_3 = parser.create_parse_tree("500", root_type_name)
+    numbers_ast_set.add(ast_1, 1, True, 1)
+    numbers_ast_set.add(ast_2, 0.3, False, 1)
+    numbers_ast_set.add(ast_3, 1, True, 1)
+    assert numbers_ast_set.is_node_known_valid(ast_1)
+    assert not numbers_ast_set.is_node_known_valid(ast_2)
+    assert numbers_ast_set.is_node_known_valid(ast_3)
+
