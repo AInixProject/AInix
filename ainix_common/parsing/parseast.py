@@ -204,8 +204,8 @@ class ArgPresentChoiceNode(ObjectChoiceLikeNode):
 
 @attr.s(auto_attribs=True, frozen=True)
 class ChildlessObjectNode:
-    _implementation: typecontext.AInixObject
-    _chosen_type_names: Tuple[str, ...]
+    implementation: typecontext.AInixObject
+    chosen_type_names: Tuple[str, ...]
 
 
 @attr.s(auto_attribs=True, frozen=True, cache_hash=True)
@@ -373,17 +373,21 @@ class ObjectNodeSet(AstSet):
     def add(self, node: ObjectNode, probability: float, is_known_valid: bool, weight: float):
         self._verify_impl_of_new_node(node)
         childless_args = node.as_childless_node()
+        print("childless args", childless_args)
         if childless_args not in self.data:
+            print("  creating new v in ObjectNodeSet", is_known_valid)
             self.data[childless_args] = ArgsSetData(node.implementation)
         self.data[childless_args].add_from_other_data(
             node, probability, is_known_valid, weight)
 
     def is_node_known_valid(self, node: ObjectNode) -> bool:
         print("check object ", self._implementation.name)
+        print("  args", node.as_childless_node())
         childless_args = node.as_childless_node()
         if childless_args not in self.data:
             return False
         node_data = self.data[childless_args]
+        print("  node_data", node_data)
         if not node_data._is_known_valid:
             return False
         for arg_name, child_node in node.arg_name_to_node.items():
@@ -434,9 +438,14 @@ class AstObjectChoiceSet(AstSet):
             raise ValueError("Cannot add to frozen AstObjectChoiceSet")
         existing_data = self._impl_name_to_data.get(node.get_chosen_impl_name(), None)
         if existing_data:
-            weight = max(weight, existing_data.max_weight)
-            probability_valid = max(probability_valid, existing_data.max_probability_valid)
-            known_as_valid = known_as_valid or existing_data.known_as_valid
+            new_weight = max(weight, existing_data.max_weight)
+            new_probability_valid = max(probability_valid, existing_data.max_probability_valid)
+            new_known_valid = known_as_valid or existing_data.known_as_valid
+        else:
+            new_weight = weight
+            new_probability_valid = probability_valid
+            new_known_valid = known_as_valid
+
         # figure out the data's next node
         if existing_data and existing_data.next_node is not None:
             next_node = existing_data.next_node
@@ -452,7 +461,7 @@ class AstObjectChoiceSet(AstSet):
                 assert False, "Unreachable code"
         else:
             next_node = None
-        new_data = ImplementationData(next_node, probability_valid, known_as_valid, weight)
+        new_data = ImplementationData(next_node, new_probability_valid, new_known_valid, new_weight)
         print("for type", self._type_to_choice.name, " add ", node.get_chosen_impl_name())
         self._impl_name_to_data[node.get_chosen_impl_name()] = new_data
         if next_node:
