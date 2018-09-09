@@ -4,13 +4,23 @@ from unittest.mock import MagicMock
 import loader
 from typecontext import TypeContext, AInixArgument, AInixObject
 
+BUILTIN_TYPES_PATH = "../../builtin_types"
 
 @pytest.fixture(scope="function")
 def type_context():
     context = TypeContext()
-    loader.load_path("../../builtin_types/command.ainix.yaml", context)
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/command.ainix.yaml", context)
     context.fill_default_parsers()
     return context
+
+
+@pytest.fixture(scope="function")
+def numbers_type_context():
+    type_context = TypeContext()
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", type_context)
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/numbers.ainix.yaml", type_context)
+    type_context.fill_default_parsers()
+    return type_context
 
 
 # broken when weight thing changed
@@ -40,16 +50,38 @@ def test_end_to_end_parse1(type_context):
         [AInixArgument(type_context, "b", None, arg_data={"short_name": "b"})],
         type_data={"invoke_name": "bar"})
     cmdSeqType = type_context.get_type_by_name("CommandSequence")
-    parser = StringParser(cmdSeqType)
-    result = parser.create_parse_tree("foo -a")
+    parser = StringParser(type_context)
+    result = parser.create_parse_tree("foo -a", cmdSeqType.name)
     assert result.type_to_choose == cmdSeqType
-    assert result.choice.implementation == type_context.get_object_by_name("CommandSequenceObj")
-    compoundOp: ArgPresentChoiceNode = result.choice.arg_name_to_node['CompoundOp']
+    assert result._choice.implementation == type_context.get_object_by_name("CommandSequenceObj")
+    compoundOp: ArgPresentChoiceNode = result._choice.arg_name_to_node['CompoundOp']
     assert not compoundOp.is_present
-    programArg: ObjectChoiceNode = result.choice.arg_name_to_node['ProgramArg']
+    programArg: ObjectChoiceNode = result._choice.arg_name_to_node['ProgramArg']
     assert programArg.type_to_choose == type_context.get_type_by_name("Program")
-    assert programArg.choice.implementation == foo
-    assert programArg.choice.arg_name_to_node == {
+    assert programArg._choice.implementation == foo
+    assert programArg._choice.arg_name_to_node == {
         aArg.name : ArgPresentChoiceNode(aArg, True, None),
         bArg.name: ArgPresentChoiceNode(bArg, False, None)
     }
+
+
+@pytest.fixture(scope="function")
+def numbers_ast_set(numbers_type_context) -> AstObjectChoiceSet:
+    root_type_name = "Number"
+    root_type = numbers_type_context.get_type_by_name(root_type_name)
+    choice_set = AstObjectChoiceSet(root_type)
+    return choice_set
+
+
+def test_parse_set_1(numbers_type_context, numbers_ast_set):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast = parser.create_parse_tree("5", root_type_name)
+    numbers_ast_set.add(ast, 1, True, 1)
+    assert numbers_ast_set.is_node_known_valid(ast)
+    assert not numbers_ast_set.is_node_known_valid(
+        parser.create_parse_tree("9", root_type_name))
+    assert not numbers_ast_set.is_node_known_valid(
+        parser.create_parse_tree("-5", root_type_name))
+
+

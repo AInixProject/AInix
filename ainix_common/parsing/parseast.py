@@ -1,10 +1,13 @@
+from collections import defaultdict
 import parse_primitives
 import typecontext
-from typing import List, Dict, Optional, Type, Union, Generator
+from typing import List, Dict, Optional, Type, Union, Generator, \
+    Tuple, MutableMapping, Mapping
 from attr import attrs, attrib
 from abc import ABC, abstractmethod, abstractproperty
 from functools import lru_cache
 import attr
+from pyrsistent import pmap, PRecord, field
 
 
 def indexable_repr_classify_type(type_name: str):
@@ -71,38 +74,49 @@ class ObjectChoiceLikeNode(AstNode):
     def get_chosen_impl_name(self) -> str:
         pass
 
+    @abstractproperty
+    def chosen_object_node(self) -> 'ObjectNode':
+        pass
+
+    @abstractmethod
+    def indexable_repr(self) -> str:
+        pass
 
 @attr.s(auto_attribs=True, frozen=True, cache_hash=True)
 class ObjectChoiceNode(ObjectChoiceLikeNode):
     type_to_choose: typecontext.AInixType
-    choice: 'ObjectNode'
+    _choice: 'ObjectNode'
 
     def __attrs_post_init__(self):
-        if self.choice.implementation.type_name != self.type_to_choose.name:
+        if self._choice.implementation.type_name != self.type_to_choose.name:
             raise ValueError("Add unexpected choice as valid. Expected type " +
                              self.get_type_to_choose_name() + " got " +
-                             self.choice.implementation.type_name)
+                             self._choice.implementation.type_name)
 
     def get_type_to_choose_name(self) -> str:
         return  self.type_to_choose.name
+
+    @property
+    def chosen_object_node(self):
+        return self._choice
 
     @property
     def type_context(self) -> typecontext.TypeContext:
         return self.type_to_choose.type_context
 
     def get_chosen_impl_name(self) -> str:
-        return self.choice.implementation.name
+        return self._choice.implementation.name
 
     def __str__(self):
         s = "<ObjectChoiceNode for " + str(self.get_type_to_choose_name())
-        s += " valid_choices=" + str(self.choice)
+        s += " valid_choices=" + str(self._choice)
         s += ">"
         return s
 
     def dump_str(self, indent=0):
         indent_str = "  " * indent
         s = indent_str + "<ObjectChoiceNode type " + self.get_type_to_choose_name() + "> {\n"
-        s += self.choice.dump_str(indent + 2)
+        s += self._choice.dump_str(indent + 2)
         s += indent_str + "}\n"
         return s
 
@@ -112,8 +126,8 @@ class ObjectChoiceNode(ObjectChoiceLikeNode):
         return repr
 
     def get_children(self) -> Generator[AstNode, None, None]:
-        assert self.choice is not None
-        yield self.choice
+        assert self._choice is not None
+        yield self._choice
 
 
 @attr.s(auto_attribs=True, frozen=True, cache_hash=True)
@@ -135,6 +149,12 @@ class ArgPresentChoiceNode(ObjectChoiceLikeNode):
 
     def get_type_to_choose_name(self) -> str:
         return self.argument.present_choice_type_name
+
+    @property
+    def chosen_object_node(self):
+        if not self.is_present:
+            return None
+        return self.obj_choice_node
 
     @property
     def type_context(self) -> typecontext.TypeContext:
@@ -182,10 +202,16 @@ class ArgPresentChoiceNode(ObjectChoiceLikeNode):
             yield self.obj_choice_node
 
 
+@attr.s(auto_attribs=True, frozen=True)
+class ChildlessObjectNode():
+    _implementation: typecontext.AInixObject
+    _chosen_type_names: Tuple[str, ...]
+
+
 @attr.s(auto_attribs=True, frozen=True, cache_hash=True)
 class ObjectNode(AstNode):
     implementation: typecontext.AInixObject
-    arg_name_to_node: Dict[str, ObjectChoiceLikeNode]
+    arg_name_to_node: Mapping[str, ObjectChoiceLikeNode]
 
     #def _get_default_arg_name_to_node_dict(self):
     #    out = {}
@@ -233,70 +259,213 @@ class ObjectNode(AstNode):
     def get_children(self) -> Generator[AstNode, None, None]:
         return (self.arg_name_to_node[arg.name] for arg in self.implementation.children)
 
+    def as_childless_node(self) -> ChildlessObjectNode:
+        choices = tuple([self.arg_name_to_node[arg.name].get_chosen_impl_name()
+                         for arg in self.implementation.children])
+        return ChildlessObjectNode(self.implementation, choices)
+
+
+class AstSet:
+    def __init__(self):
+        self._is_frozen = False
+
+    @abstractmethod
+    def freeze(self):
+        pass
+
+    @abstractmethod
+    def __eq__(self, other):
+        pass
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    @abstractmethod
+    def __hash__(self):
+        if self._is_frozen:
+            raise ValueError("Unable to hash non-frozen AstSet")
+
+    @abstractmethod
+    def is_node_known_valid(self, node: AstNode) -> bool:
+        pass
+
+
+@attr.s(auto_attribs=True)
+class ArgsSetData:
+    arg_to_choice_set: Mapping[str, 'AstObjectChoiceSet']
+    _max_probability: float
+    _is_known_valid: bool
+    _max_weight: float
+    _is_frozen: bool = attr.ib(init=False, default=False)
+
+    def freeze(self):
+        self._is_frozen = True
+        for node in self.arg_to_choice_set.values():
+            node.freeze()
+
+    def __hash__(self):
+        if not self._is_frozen:
+            raise ValueError("Object must be frozen to be hashed")
+        return hash((self.arg_to_choice_set, self._max_probability,
+                     self._is_known_valid, self._max_weight))
+
+    @staticmethod
+    def create_arg_map(implementation: typecontext.AInixObject) \
+        -> Mapping[str, 'AstObjectChoiceSet']:
+        return pmap({
+            arg.name: AstObjectChoiceSet(arg.type) if arg.type else None
+            for arg in implementation.children
+        })
+
+    def add_from_other_data(self, node: ObjectNode, new_probability,
+                            new_is_known_valid_, new_weight):
+        if self._is_frozen:
+            raise ValueError("Can't mutate frozen data")
+        for arg in node.implementation.children:
+            self.arg_to_choice_set[arg.name].add(
+                node.arg_name_to_node[arg.name], new_probability,
+                new_is_known_valid_, new_weight)
+        self._max_probability = max(self._max_probability, new_probability)
+        self._is_known_valid = self._is_known_valid or new_is_known_valid_
+        self._max_weight = max(self._max_weight, new_weight)
+
+
+class ObjectNodeSet(AstSet):
+    def __init__(self, implementation: typecontext.AInixObject):
+        super().__init__()
+        self._implementation = implementation
+        self.data: MutableMapping[ChildlessObjectNode, ArgsSetData] = {}
+
+    def freeze(self):
+        self._is_frozen = True
+        for d in self.data.values():
+            d.freeze()
+        self.data = pmap(self.data)
+
+    def _verify_impl_of_new_node(self, node):
+        if node.implementation != self._implementation:
+            raise ValueError(
+                f"Cannot add node with implementation {node.implementation} into"
+                f" set of {self._implementation} objects")
+
+    def add(self, node: ObjectNode, probability: float, is_known_valid: bool, weight: float):
+        self._verify_impl_of_new_node(node)
+        childless_args = node.as_childless_node()
+        if childless_args not in self.data:
+            self.data[childless_args] = ArgsSetData(
+                ArgsSetData.create_arg_map(node.implementation),
+                max_probability=probability,
+                is_known_valid=is_known_valid,
+                max_weight=weight
+            )
+        self.data[childless_args].add_from_other_data(
+            node, probability, is_known_valid, weight)
+
+    def is_node_known_valid(self, node: ObjectNode) -> bool:
+        print("check object ", self._implementation.name)
+        childless_args = node.as_childless_node()
+        if childless_args not in self.data:
+            return False
+        node_data = self.data[childless_args]
+        if not node_data._is_known_valid:
+            return False
+        for arg_name, child_node in node.arg_name_to_node.items():
+            if not node_data.arg_to_choice_set[arg_name].is_node_known_valid(child_node):
+                return False
+        return True
+
+    def __hash__(self):
+        if not self._is_frozen:
+            raise ValueError("Cannot hash non-frozen set")
+        return hash((self._implementation, self.data))
+
+    def __eq__(self, other):
+        return self._implementation == other._implementation and \
+               self.data == other.data
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class ImplementationData:
+    arg_data: ObjectNodeSet
+    max_probability_valid: float
+    known_as_valid: bool
+    max_weight: float
+
+
+class AstObjectChoiceSet(AstSet):
+    def __init__(self, type_to_choose: typecontext.AInixType):
+        super().__init__()
+        self._type_to_choice = type_to_choose
+        self._impl_name_to_data: MutableMapping[str, 'ImplementationData'] = {}
+        self._max_weight = 0
+        self._hash_cache = None
+
+    def freeze(self):
+        self._is_frozen = True
+        for n in self._impl_name_to_data.values():
+            n.arg_data.freeze()
+        self._impl_name_to_data = pmap(self._impl_name_to_data)
+
+    def add(
+        self,
+        node: ObjectChoiceLikeNode,
+        probability_valid: float,
+        known_as_valid: float,
+        weight: float
+    ):
+        if self._is_frozen:
+            raise ValueError("Cannot add to frozen AstObjectChoiceSet")
+        existing_data = self._impl_name_to_data.get(node.get_chosen_impl_name(), None)
+        if existing_data:
+            weight = max(weight, existing_data.max_weight)
+            probability_valid = max(probability_valid, existing_data.max_probability_valid)
+            known_as_valid = known_as_valid or existing_data.known_as_valid
+        # figure out the data's next node
+        if existing_data and existing_data.arg_data is not None:
+            next_node = existing_data.arg_data
+        elif node.chosen_object_node:
+            next_node = ObjectNodeSet(node.chosen_object_node.implementation)
+        else:
+            next_node = None
+        new_data = ImplementationData(next_node, probability_valid, known_as_valid, weight)
+        print("for type", self._type_to_choice.name, " add ", node.get_chosen_impl_name())
+        self._impl_name_to_data[node.get_chosen_impl_name()] = new_data
+        if next_node:
+            next_node.add(node.chosen_object_node, probability_valid, known_as_valid, weight)
+
+    def is_node_known_valid(self, node: ObjectChoiceLikeNode) -> bool:
+        print("type ", self._type_to_choice.name)
+        if node.get_chosen_impl_name() not in self._impl_name_to_data:
+            print("fail ", node.get_chosen_impl_name())
+            return False
+        data = self._impl_name_to_data[node.get_chosen_impl_name()]
+        if not data.known_as_valid:
+            return False
+        if data.arg_data is None:
+            return node.chosen_object_node is None
+        return data.arg_data.is_node_known_valid(node.chosen_object_node)
+
+    def __eq__(self, other):
+        return self._type_to_choice == other._type_to_choice and \
+               self._impl_name_to_data == other._impl_name_to_data and \
+               self._max_weight == other._max_weight
+
+    def __hash__(self):
+        if self._hash_cache:
+            return self._hash_cache
+        super().__hash__()
+        hash_val = hash((self._type_to_choice, self._impl_name_to_data))
+        self._hash_cache = hash_val
+        return hash_val
+
 
 class StringParser:
     def __init__(
         self,
-        root_type: typecontext.AInixType,
-        root_parser: Optional[Type[parse_primitives.TypeParser]] = None
+        type_context: typecontext.TypeContext
     ):
-        self._root_type = root_type
-        if root_parser is None:
-            if root_type.default_type_parser is None:
-                raise ValueError(f"No default type parser available for {root_type}")
-            self._root_parser = root_type.default_type_parser
-        else:
-            self._root_parser = root_parser(root_type)
+        self._type_context = type_context
 
-    @staticmethod
-    def _parse_object_choice(
-        string: str,
-        choice_node: ObjectChoiceNode,
-        parser_to_use: parse_primitives.TypeParser,
-        current_type_to_parse: typecontext.AInixType,
-        preference_weight: float
-    ) -> List:
-        result: parse_primitives.TypeParserResult = \
-            parser_to_use.parse_string(string, current_type_to_parse)
-        next_object = result.get_implementation()
-        next_object_node = choice_node.add_valid_choice(
-            next_object, preference_weight)
-        next_parser = result.next_parser
-        if next_parser is None:
-            raise parse_primitives.AInixParseError(
-                f"No provided object parser for parsed object {next_object}")
-        object_parse: parse_primitives.ObjectParserResult = \
-            result.next_parser.parse_string(result.get_next_string(), next_object)
-
-        new_data_for_parse_stack = []
-        # Loop through children and add nodes for each that is present
-        for arg in next_object.children:
-            arg_present_data = object_parse.get_arg_present(arg.name)
-            if arg_present_data:
-                next_type_choice = next_object_node.set_arg_present(arg)
-                if next_type_choice is not None:
-                    new_parse_entry = (arg_present_data.slice_string,
-                                       next_type_choice,
-                                       arg.type_parser, arg.type)
-                    new_data_for_parse_stack.append(new_parse_entry)
-
-        return new_data_for_parse_stack
-
-    #def _extend_parse_tree(
-    #    self,
-    #    string: str,
-    #    existing_tree: ObjectChoiceNode,
-    #    preference_weight: float
-    #):
-    #    if existing_tree.get_type_to_choose_name() != self._root_type.name:
-    #        raise ValueError("Tree parser is extending must root_type of the parser")
-
-    #    parse_stack = [(string, existing_tree, self._root_parser, self._root_type)]
-    #    while parse_stack:
-    #        cur_string, cur_node, cur_parser, cur_type = parse_stack.pop()
-    #        new_nodes_to_parse = StringParser._parse_object_choice(
-    #            cur_string, cur_node, cur_parser, cur_type, preference_weight)
-    #        parse_stack.extend(new_nodes_to_parse)
     def _make_node_for_arg(
         self,
         arg: typecontext.AInixArgument,
@@ -328,7 +497,7 @@ class StringParser:
         for arg in implementation.children:
             arg_present_data = object_parse.get_arg_present(arg.name)
             arg_name_to_node[arg.name] = self._make_node_for_arg(arg, arg_present_data)
-        return ObjectNode(implementation, arg_name_to_node)
+        return ObjectNode(implementation, pmap(arg_name_to_node))
 
     def _parse_object_choice_node(
         self,
@@ -343,49 +512,26 @@ class StringParser:
         )
         return ObjectChoiceNode(type, next_object_node)
 
-    def create_parse_tree(self, string: str) -> ObjectChoiceNode:
-        return self._parse_object_choice_node(
-            string, self._root_parser, self._root_type)
-
-    # TODO (DNGros): MAKE AST IMMUTABLE! then cache
-    #@lru_cache
-    #def create_parse_tree(self, string: str, preference_weight: float = 1):
-    #    new_tree = ObjectChoiceNode(self._root_type, parent=None)
-    #    self._extend_parse_tree(string, new_tree, preference_weight)
-    #    return new_tree
-
-    #def create_parse_tree_multi(
-    #    self,
-    #    string: List[str],
-    #    preference_weight: List[float]
-    #):
-    #    raise NotImplementedError("Need to do this")
-
-    #def extend_parse_tree(
-    #    self,
-    #    string: str,
-    #    existing_tree: ObjectChoiceNode,
-    #    preference_weight: float = 1
-    #):
-    #    self._extend_parse_tree(string, existing_tree, preference_weight)
-
-
-class MultitypeStringParser:
-    """A string parser that can operate on any type. It does this by cacheing
-    individual StringParsers for each type"""
-    def __init__(self, type_context: typecontext.TypeContext):
-        self._type_context = type_context
-
-    @lru_cache()
-    def _get_string_parser_for_type(self, type_name: str):
-        type_instance = self._type_context.get_type_by_name(type_name)
-        return StringParser(type_instance)
+    def _get_parser(
+        self,
+        type_name: str,
+        parser_name: Optional[str]
+    ) -> parse_primitives.TypeParser:
+        if parser_name:
+            return self._type_context.get_type_parser_by_name(parser_name)
+        else:
+            type_instance = self._type_context.get_type_by_name(type_name)
+            if type_instance.default_type_parser is None:
+                raise ValueError(f"No default type parser available for {type_instance}")
+            return type_instance.default_type_parser
 
     def create_parse_tree(
         self,
         string: str,
-        type_name: str,
-        preference_weight: float = 1
+        root_type_name: str,
+        root_parser_name: str = None
     ) -> ObjectChoiceNode:
-        parser = self._get_string_parser_for_type(type_name)
-        return parser.create_parse_tree(string, preference_weight)
+        root_parser = self._get_parser(root_type_name, root_parser_name)
+        root_type = self._type_context.get_type_by_name(root_type_name)
+        return self._parse_object_choice_node(
+            string, root_parser, root_type)

@@ -48,6 +48,7 @@ class Example:
     xtype: str
     ytype: str
     weight: float
+    y_set_id: str
     split: str = None
     yindexable: str = None
 
