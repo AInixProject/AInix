@@ -282,7 +282,7 @@ class AstSet:
 
     @abstractmethod
     def __hash__(self):
-        if self._is_frozen:
+        if not self._is_frozen:
             raise ValueError("Unable to hash non-frozen AstSet")
 
     @abstractmethod
@@ -290,18 +290,22 @@ class AstSet:
         pass
 
 
-@attr.s(auto_attribs=True)
 class ArgsSetData:
-    arg_to_choice_set: Mapping[str, 'AstObjectChoiceSet']
-    _max_probability: float
-    _is_known_valid: bool
-    _max_weight: float
-    _is_frozen: bool = attr.ib(init=False, default=False)
+    def __init__(self, implementation: typecontext.AInixObject):
+        self.arg_to_choice_set: Mapping[str, 'AstObjectChoiceSet'] = {
+            arg.name: AstObjectChoiceSet(arg.type) if arg.type else None
+            for arg in implementation.children
+        }
+        self._max_probability: float = 0
+        self._is_known_valid: bool = False
+        self._max_weight: float = 0
+        self._is_frozen: bool = False
 
     def freeze(self):
         self._is_frozen = True
         for node in self.arg_to_choice_set.values():
             node.freeze()
+        self.arg_to_choice_set = pmap(self.arg_to_choice_set)
 
     def __hash__(self):
         if not self._is_frozen:
@@ -309,12 +313,20 @@ class ArgsSetData:
         return hash((self.arg_to_choice_set, self._max_probability,
                      self._is_known_valid, self._max_weight))
 
+    def __eq__(self, other):
+        return self.arg_to_choice_set == other.arg_to_choice_set and \
+               self._max_probability == other._max_proobability and \
+               self._is_known_valid == other._is_known_valid and \
+               self._max_weight == other._max_weight and \
+               self._is_frozen == other._is_frozen
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     @staticmethod
-    def create_arg_map(implementation: typecontext.AInixObject) \
+    def _create_arg_map(implementation: typecontext.AInixObject) \
         -> Mapping[str, 'AstObjectChoiceSet']:
         return pmap({
-            arg.name: AstObjectChoiceSet(arg.type) if arg.type else None
-            for arg in implementation.children
         })
 
     def add_from_other_data(self, node: ObjectNode, new_probability,
@@ -352,12 +364,7 @@ class ObjectNodeSet(AstSet):
         self._verify_impl_of_new_node(node)
         childless_args = node.as_childless_node()
         if childless_args not in self.data:
-            self.data[childless_args] = ArgsSetData(
-                ArgsSetData.create_arg_map(node.implementation),
-                max_probability=probability,
-                is_known_valid=is_known_valid,
-                max_weight=weight
-            )
+            self.data[childless_args] = ArgsSetData(node.implementation)
         self.data[childless_args].add_from_other_data(
             node, probability, is_known_valid, weight)
 
@@ -375,8 +382,7 @@ class ObjectNodeSet(AstSet):
         return True
 
     def __hash__(self):
-        if not self._is_frozen:
-            raise ValueError("Cannot hash non-frozen set")
+        super().__hash__()
         return hash((self._implementation, self.data))
 
     def __eq__(self, other):
@@ -403,7 +409,8 @@ class AstObjectChoiceSet(AstSet):
     def freeze(self):
         self._is_frozen = True
         for n in self._impl_name_to_data.values():
-            n.arg_data.freeze()
+            if n.arg_data:
+                n.arg_data.freeze()
         self._impl_name_to_data = pmap(self._impl_name_to_data)
 
     def add(

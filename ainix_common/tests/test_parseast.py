@@ -85,3 +85,17 @@ def test_parse_set_1(numbers_type_context, numbers_ast_set):
         parser.create_parse_tree("-5", root_type_name))
 
 
+def test_parse_set_freeze(numbers_type_context, numbers_ast_set):
+    root_type_name = "Number"
+    parser = StringParser(numbers_type_context)
+    ast = parser.create_parse_tree("5", root_type_name)
+    numbers_ast_set.add(ast, 1, True, 1)
+    numbers_ast_set.freeze()
+    with pytest.raises(ValueError):
+        numbers_ast_set.add(ast, 1, True, 1)
+    real_set = {numbers_ast_set}
+    assert numbers_ast_set in real_set
+
+
+
+
