@@ -53,13 +53,13 @@ def test_end_to_end_parse1(type_context):
     parser = StringParser(type_context)
     result = parser.create_parse_tree("foo -a", cmdSeqType.name)
     assert result.type_to_choose == cmdSeqType
-    assert result._choice.implementation == type_context.get_object_by_name("CommandSequenceObj")
-    compoundOp: ArgPresentChoiceNode = result._choice.arg_name_to_node['CompoundOp']
+    assert result.choice.implementation == type_context.get_object_by_name("CommandSequenceObj")
+    compoundOp: ArgPresentChoiceNode = result.choice.arg_name_to_node['CompoundOp']
     assert not compoundOp.is_present
-    programArg: ObjectChoiceNode = result._choice.arg_name_to_node['ProgramArg']
+    programArg: ObjectChoiceNode = result.choice.arg_name_to_node['ProgramArg']
     assert programArg.type_to_choose == type_context.get_type_by_name("Program")
-    assert programArg._choice.implementation == foo
-    assert programArg._choice.arg_name_to_node == {
+    assert programArg.choice.implementation == foo
+    assert programArg.choice.arg_name_to_node == {
         aArg.name : ArgPresentChoiceNode(aArg, True, None),
         bArg.name: ArgPresentChoiceNode(bArg, False, None)
     }
@@ -97,5 +97,23 @@ def test_parse_set_freeze(numbers_type_context, numbers_ast_set):
     assert numbers_ast_set in real_set
 
 
+def test_parse_set_2(numbers_type_context, numbers_ast_set):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast_1 = parser.create_parse_tree("-5", root_type_name)
+    numbers_ast_set.add(ast_1, 1, True, 1)
+
+
+def test_parse_set_3(numbers_type_context, numbers_ast_set):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast_1 = parser.create_parse_tree("5", root_type_name)
+    ast_2 = parser.create_parse_tree("-5", root_type_name)
+    ast_3 = parser.create_parse_tree("50", root_type_name)
+    ast_4 = parser.create_parse_tree("6", root_type_name)
+    numbers_ast_set.add(ast_1, 1, True, 1)
+    numbers_ast_set.add(ast_2, 1, True, 1)
+    numbers_ast_set.add(ast_3, 1, True, 1)
+    numbers_ast_set.add(ast_4, 1, True, 1)
 
 

@@ -74,49 +74,49 @@ class ObjectChoiceLikeNode(AstNode):
     def get_chosen_impl_name(self) -> str:
         pass
 
-    @abstractproperty
-    def chosen_object_node(self) -> 'ObjectNode':
-        pass
-
     @abstractmethod
     def indexable_repr(self) -> str:
+        pass
+
+    @abstractproperty
+    def single_next_node(self) -> Optional[AstNode]:
         pass
 
 @attr.s(auto_attribs=True, frozen=True, cache_hash=True)
 class ObjectChoiceNode(ObjectChoiceLikeNode):
     type_to_choose: typecontext.AInixType
-    _choice: 'ObjectNode'
+    choice: 'ObjectNode'
 
     def __attrs_post_init__(self):
-        if self._choice.implementation.type_name != self.type_to_choose.name:
+        if self.choice.implementation.type_name != self.type_to_choose.name:
             raise ValueError("Add unexpected choice as valid. Expected type " +
                              self.get_type_to_choose_name() + " got " +
-                             self._choice.implementation.type_name)
+                             self.choice.implementation.type_name)
 
     def get_type_to_choose_name(self) -> str:
         return  self.type_to_choose.name
 
     @property
-    def chosen_object_node(self):
-        return self._choice
+    def single_next_node(self) -> 'ObjectNode':
+        return self.choice
 
     @property
     def type_context(self) -> typecontext.TypeContext:
         return self.type_to_choose.type_context
 
     def get_chosen_impl_name(self) -> str:
-        return self._choice.implementation.name
+        return self.choice.implementation.name
 
     def __str__(self):
         s = "<ObjectChoiceNode for " + str(self.get_type_to_choose_name())
-        s += " valid_choices=" + str(self._choice)
+        s += " valid_choices=" + str(self.choice)
         s += ">"
         return s
 
     def dump_str(self, indent=0):
         indent_str = "  " * indent
         s = indent_str + "<ObjectChoiceNode type " + self.get_type_to_choose_name() + "> {\n"
-        s += self._choice.dump_str(indent + 2)
+        s += self.choice.dump_str(indent + 2)
         s += indent_str + "}\n"
         return s
 
@@ -126,8 +126,8 @@ class ObjectChoiceNode(ObjectChoiceLikeNode):
         return repr
 
     def get_children(self) -> Generator[AstNode, None, None]:
-        assert self._choice is not None
-        yield self._choice
+        assert self.choice is not None
+        yield self.choice
 
 
 @attr.s(auto_attribs=True, frozen=True, cache_hash=True)
@@ -151,7 +151,7 @@ class ArgPresentChoiceNode(ObjectChoiceLikeNode):
         return self.argument.present_choice_type_name
 
     @property
-    def chosen_object_node(self):
+    def single_next_node(self) -> Optional['ObjectChoiceLikeNode']:
         if not self.is_present:
             return None
         return self.obj_choice_node
@@ -203,7 +203,7 @@ class ArgPresentChoiceNode(ObjectChoiceLikeNode):
 
 
 @attr.s(auto_attribs=True, frozen=True)
-class ChildlessObjectNode():
+class ChildlessObjectNode:
     _implementation: typecontext.AInixObject
     _chosen_type_names: Tuple[str, ...]
 
@@ -287,6 +287,16 @@ class AstSet:
 
     @abstractmethod
     def is_node_known_valid(self, node: AstNode) -> bool:
+        pass
+
+    @abstractmethod
+    def add(
+        self,
+        node: AstNode,
+        probability_valid: float,
+        known_as_valid: float,
+        weight: float
+    ) -> None:
         pass
 
 
@@ -392,7 +402,7 @@ class ObjectNodeSet(AstSet):
 
 @attr.s(auto_attribs=True, frozen=True)
 class ImplementationData:
-    arg_data: ObjectNodeSet
+    next_node: AstSet
     max_probability_valid: float
     known_as_valid: bool
     max_weight: float
@@ -409,8 +419,8 @@ class AstObjectChoiceSet(AstSet):
     def freeze(self):
         self._is_frozen = True
         for n in self._impl_name_to_data.values():
-            if n.arg_data:
-                n.arg_data.freeze()
+            if n.next_node:
+                n.next_node.freeze()
         self._impl_name_to_data = pmap(self._impl_name_to_data)
 
     def add(
@@ -428,17 +438,25 @@ class AstObjectChoiceSet(AstSet):
             probability_valid = max(probability_valid, existing_data.max_probability_valid)
             known_as_valid = known_as_valid or existing_data.known_as_valid
         # figure out the data's next node
-        if existing_data and existing_data.arg_data is not None:
-            next_node = existing_data.arg_data
-        elif node.chosen_object_node:
-            next_node = ObjectNodeSet(node.chosen_object_node.implementation)
+        if existing_data and existing_data.next_node is not None:
+            next_node = existing_data.next_node
+        elif node.single_next_node:
+            # some sloppy logic to figure out if an ArgPresentNode or not. It would
+            # be nice if this could be cleaned up so this case didn't happen.
+            # perhaps by creating fake actual types
+            if isinstance(node.single_next_node, ObjectNode):
+                next_node = ObjectNodeSet(node.single_next_node.implementation)
+            elif isinstance(node.single_next_node, ObjectChoiceNode):
+                next_node = AstObjectChoiceSet(node.single_next_node.type_to_choose)
+            else:
+                assert False, "Unreachable code"
         else:
             next_node = None
         new_data = ImplementationData(next_node, probability_valid, known_as_valid, weight)
         print("for type", self._type_to_choice.name, " add ", node.get_chosen_impl_name())
         self._impl_name_to_data[node.get_chosen_impl_name()] = new_data
         if next_node:
-            next_node.add(node.chosen_object_node, probability_valid, known_as_valid, weight)
+            next_node.add(node.single_next_node, probability_valid, known_as_valid, weight)
 
     def is_node_known_valid(self, node: ObjectChoiceLikeNode) -> bool:
         print("type ", self._type_to_choice.name)
@@ -448,9 +466,9 @@ class AstObjectChoiceSet(AstSet):
         data = self._impl_name_to_data[node.get_chosen_impl_name()]
         if not data.known_as_valid:
             return False
-        if data.arg_data is None:
-            return node.chosen_object_node is None
-        return data.arg_data.is_node_known_valid(node.chosen_object_node)
+        if data.next_node is None:
+            return node.single_next_node is None
+        return data.next_node.is_node_known_valid(node.single_next_node)
 
     def __eq__(self, other):
         return self._type_to_choice == other._type_to_choice and \
