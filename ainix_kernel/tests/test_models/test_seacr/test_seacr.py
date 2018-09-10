@@ -3,7 +3,7 @@ from models.SeaCR.seacr import *
 from typecontext import TypeContext
 from ainix_common.parsing import loader
 import indexing.exampleloader
-from ainix_common.parsing.parseast import MultitypeStringParser
+from ainix_common.parsing.parseast import StringParser
 
 BUILTIN_TYPES_PATH = "../../../../builtin_types"
 
@@ -31,8 +31,8 @@ def test_only_one_option(base_type_context):
     index = ExamplesIndex(base_type_context, ExamplesIndex.get_default_ram_backend())
     index.add_many_to_many_default_weight(["example"], ["y"], index.DEFAULT_X_TYPE, "FooType")
     # Create a expected value
-    parser = StringParser(foo_type)
-    expected = parser.create_parse_tree("string")
+    parser = StringParser(base_type_context)
+    expected = parser.create_parse_tree("string", foo_type.name)
     # Predict
     model = SeaCRModel(index)
     prediction = model.predict("example", "FooType", False)
@@ -46,8 +46,8 @@ def test_predict_digit(numbers_type_context):
     for x, y in x_y:
         index.add_many_to_many_default_weight([x], [y], index.DEFAULT_X_TYPE, "BaseTen")
     # Create a expected value
-    parser = StringParser(numbers_type_context.get_type_by_name("BaseTen"))
-    expected = parser.create_parse_tree("2")
+    parser = StringParser(numbers_type_context)
+    expected = parser.create_parse_tree("2", "BaseTen")
     # Predict
     model = SeaCRModel(index)
     prediction = model.predict("two", "BaseTen", False)
@@ -62,8 +62,8 @@ def test_digit_list_1(numbers_type_context):
     for x, y in x_y:
         index.add_many_to_many_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
     # Create a expected value
-    parser = StringParser(numbers_type_context.get_type_by_name(type))
-    expected = parser.create_parse_tree("2")
+    parser = StringParser(numbers_type_context)
+    expected = parser.create_parse_tree("2", type)
     # Predict
     model = SeaCRModel(index)
     prediction = model.predict("two", type, False)
@@ -81,8 +81,8 @@ def test_digit_list_2(numbers_type_context):
     for x, y in x_y:
         index.add_many_to_many_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
     # Create a expected value
-    parser = StringParser(numbers_type_context.get_type_by_name(type))
-    expected = parser.create_parse_tree("20")
+    parser = StringParser(numbers_type_context)
+    expected = parser.create_parse_tree("20", type)
     # Predict
     model = SeaCRModel(index)
     prediction = model.predict("twenty", type, False)
@@ -97,14 +97,14 @@ def test_full_number(numbers_type_context):
     for x, y in x_y:
         index.add_many_to_many_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
     # Create a expected value
-    parser = StringParser(numbers_type_context.get_type_by_name(type))
-    expected = parser.create_parse_tree("-1")
+    parser = StringParser(numbers_type_context)
+    expected = parser.create_parse_tree("-1", type)
     # Predict
     model = SeaCRModel(index)
     prediction = model.predict("negative one", type, False)
     assert expected == prediction
     #
-    expected = parser.create_parse_tree("2")
+    expected = parser.create_parse_tree("2", type)
     model = SeaCRModel(index)
     prediction = model.predict("two", type, False)
     assert expected == prediction
@@ -119,7 +119,7 @@ def test_full_number_2(numbers_type_context):
     indexing.exampleloader.load_path(
         f"{BUILTIN_TYPES_PATH}/numbers_examples.ainix.yaml", index)
     # Create a expected value
-    parser = MultitypeStringParser(numbers_type_context)
+    parser = StringParser(numbers_type_context)
     expected = parser.create_parse_tree("9", "Number")
     # Predict
     model = SeaCRModel(index)

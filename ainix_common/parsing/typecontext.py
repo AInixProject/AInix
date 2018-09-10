@@ -126,6 +126,10 @@ class AInixObject:
         return f"<AInixObject: {self.name}>"
 
 
+# This is the arg of the dummy object for an arg is created
+OPTIONAL_ARGUMENT_NEXT_ARG_NAME = "__ARG_PRESENT_NEXT"
+
+
 class AInixArgument:
     def __init__(
         self,
@@ -144,60 +148,37 @@ class AInixArgument:
         self.arg_data = arg_data if arg_data else {}
         if required and type_name is None:
             raise ValueError(f"Arg {name} is required but None type.")
-        # TODO (DNGros): Figure out more elegant way of doing this.
         self._create_optional_args_types()
 
     def _create_optional_args_types(self):
         if not self.required:
-            self.present_choice_type_name = self._make_optional_arg_type_name()
-            self.is_present_name = f"{self.present_choice_type_name}.PRESENT"
-            self.not_present_name = f"{self.present_choice_type_name}.NOTPRESENT"
+            self.present_choice_type = AInixType(
+                self.type_context, self._make_optional_arg_type_name(), None, None, None
+            )
+            is_present_name = f"{self.present_choice_type.name}.PRESENT"
+            if self.type is not None:
+                present_args = [AInixArgument(
+                    self.type_context, OPTIONAL_ARGUMENT_NEXT_ARG_NAME,
+                    self.present_choice_type.name, None, True
+                )]
+            else:
+                present_args = []
+            self.is_present_object = AInixObject(
+                self.type_context, is_present_name,
+                self.present_choice_type.name, present_args
+            )
+            not_present_name = f"{self.present_choice_type.name}.NOTPRESENT"
+            self.not_present_object = AInixObject(
+                self.type_context, not_present_name, self.present_choice_type.name
+            )
         else:
-            self.present_choice_type_name = None
-            self.is_present_name = None
-            self.not_present_name = None
+            self.present_choice_type = None
+            self.is_present_object = None
+            self.not_present_object = None
 
-    #def _create_optional_arg_types(self):
-    #    if not self.required:
-    #        self.present_choice_type = AInixType(
-    #            self._type_context,
-    #            self._make_optional_arg_type_name(),
-    #        )
-    #        self.is_present_impl = AInixObject(
-    #            self._type_context,
-    #            f"self.present_choice_type.name.{PRESENT}",
-    #            children=[self]
-    #        )
-    #        self.not_present_impl = AInixObject(
-    #            self._type_context,
-    #            f"self.present_choice_type.name.{NOTPRESENT}"
-    #        )
-    #    else:
-    #        self.present_choice_type = None
-    #        self.is_present_impl = None
-    #        self.not_present_impl = None
 
     def _make_optional_arg_type_name(self) -> str:
         return f"__arg_choice.{id_generator(5)}.{self.name}"
-        #return f"__arg_choice.{self.parent_object_name}.{self.name}"
-
-    #@classmethod
-    #def construct_optional_arg(
-    #    cls,
-    #    parent_object_name: str,
-    #    type_context: 'TypeContext',
-    #    arg_name: str,
-    #    type_name: Optional[str],
-    #    type_parser_name: str,
-    #    arg_data: dict = None
-    #):
-    #    """This constructs an argument that is optional. Along the way it creates
-    #    a new type and objects that represents a binary decision on whether the
-    #    arg exists or not."""
-    #    optional_type_arg = AInixType(
-    #        type_context=type_context,
-    #        name=cls._make_optional_arg_type_name(parent_object_name, arg_name),
-    #    )
 
     @property
     def type(self) -> Optional[AInixType]:

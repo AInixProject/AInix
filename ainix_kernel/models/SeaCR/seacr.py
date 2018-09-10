@@ -3,7 +3,8 @@ from models.model_types import StringTypeTranslateCF, ModelCantPredictException
 from indexing.exampleindex import ExamplesIndex
 from indexing.examplestore import Example, DataSplits
 from ainix_common.parsing.parseast import AstNode, ObjectNode, \
-    ObjectChoiceNode, ArgPresentChoiceNode, StringParser, ObjectChoiceLikeNode
+    ObjectChoiceNode, StringParser,  \
+    AstObjectChoiceSet, AstSet, ObjectNodeSet
 from ainix_common.parsing.typecontext import AInixType, AInixObject
 from typing import List, Tuple, Union, Dict, Optional
 import attr
@@ -25,22 +26,22 @@ class SeaCRModel(StringTypeTranslateCF):
         x_string: str,
         y_type_name: str,
         use_only_train_data: bool
-    ) -> ObjectChoiceNode:
+    ) -> AstObjectChoiceSet:
         root_type = self.type_context.get_type_by_name(y_type_name)
-        root_node = ObjectChoiceNode(root_type, None)
+        root_node = AstObjectChoiceSet(root_type, None)
         self._predict_step(x_string, root_node, root_type, use_only_train_data)
         return root_node
 
     def _predict_step(
         self,
         x_query: str,
-        current_leaf: AstNode,
+        current_leaf: AstSet,
         root_y_type: AInixType,
         use_only_train_data: bool
     ):
-        if isinstance(current_leaf, ObjectChoiceLikeNode):
+        if isinstance(current_leaf, AstObjectChoiceSet):
             next_nodes = [self.type_predictor.predict(x_query, current_leaf, use_only_train_data)]
-        elif isinstance(current_leaf, ObjectNode):
+        elif isinstance(current_leaf, ObjectNodeSet):
             next_nodes = list(current_leaf.get_children())
         else:
             raise ValueError(f"leaf node {current_leaf} not predictable")
@@ -50,17 +51,17 @@ class SeaCRModel(StringTypeTranslateCF):
             self._predict_step(x_query, next_node, root_y_type, use_only_train_data)
 
     def _train_step(self, x_query: str, expected_node: AstNode):
-        if isinstance(expected_node, ObjectChoiceLikeNode):
+        if isinstance(expected_node, ObjectChoiceNode):
             self.type_predictor.train(x_query, expected_node)
 
-    def train(self, x_string: str, y_ast: ObjectChoiceNode) -> None:
+    def train(self, x_string: str, y_ast: AstObjectChoiceSet) -> None:
         for node in y_ast.depth_first_iter():
             self._train_step(x_string, node)
 
 
 def _get_impl_names_from_indexed_rep(
-        index_rep: str,
-        type_to_choose: str
+    index_rep: str,
+    type_to_choose: str
 ) -> List[str]:
     # TODO (DNGros): This is disgusting and shouldnt exist
     out = []
@@ -80,7 +81,7 @@ class TypePredictor:
     def compare_example(
         self,
         x_query: str,
-        current_leaf: ObjectChoiceLikeNode,
+        current_leaf: ObjectChoiceNode,
         example: Example
     ) -> 'ComparerResult':
         # TODO (DNGros): cache the parser and memoize the parsing during training
@@ -91,7 +92,7 @@ class TypePredictor:
     def train_compare(
         self,
         x_query: str,
-        expected_leaf: ObjectChoiceLikeNode,
+        expected_leaf: ObjectChoiceNode,
         example: Example
     ):
         # TODO
@@ -101,7 +102,7 @@ class TypePredictor:
     def _search(
         self,
         x_query,
-        current_leaf,
+        current_leaf: ObjectChoiceNode,
         use_only_training_data: bool
     ) -> List[Example]:
         type_name = current_leaf.get_type_to_choose_name()
@@ -112,7 +113,7 @@ class TypePredictor:
     def predict(
         self,
         x_query: str,
-        current_leaf: ObjectChoiceLikeNode,
+        current_leaf: ObjectChoiceNode,
         use_only_train_data: bool
     ) -> AstNode:
         if current_leaf.get_depth() > 20:
@@ -152,20 +153,20 @@ class Comparer(ABC):
     def compare(
         self,
         gen_query: str,
-        gen_ast_current_leaf: ObjectChoiceLikeNode,
+        gen_ast_current_leaf: AstObjectChoiceSet,
         example_query: str,
-        example_ast_root: ObjectChoiceNode,
+        example_ast_root: AstObjectChoiceSet,
     ) -> ComparerResult:
         pass
 
 
-def _get_type_choice_nodes(root_node: AstNode, type_name: str) -> List[ObjectChoiceLikeNode]:
+def _get_type_choice_nodes(root_node: AstNode, type_name: str) -> List[AstObjectChoiceSet]:
     out = []
 
     def check_type(cur_node: AstNode):
         if cur_node is None:
             return
-        if isinstance(cur_node, ObjectChoiceLikeNode):
+        if isinstance(cur_node, ObjectChoiceNode):
             if cur_node.get_type_to_choose_name() == type_name:
                 out.append(cur_node)
         for child in cur_node.get_children():
@@ -178,12 +179,12 @@ class SimpleRulebasedComparer(Comparer):
     def compare(
         self,
         gen_query: str,
-        gen_ast_current_leaf: ObjectChoiceLikeNode,
+        gen_ast_current_leaf: AstObjectChoiceSet,
         example_query: str,
-        example_ast_root: ObjectChoiceNode,
+        example_ast_root: AstObjectChoiceSet,
     ) -> ComparerResult:
         potential_type_choice_nodes = _get_type_choice_nodes(
-            example_ast_root, gen_ast_current_leaf.get_type_to_choose_name())
+            example_ast_root, gen_ast_current_leaf.type_to_choose_name)
         depth_diffs = self.get_impl_depth_difference(
             potential_type_choice_nodes, gen_ast_current_leaf)
         inverse_depth_diffs = {name: -d for name, d in depth_diffs.items()}
@@ -192,13 +193,13 @@ class SimpleRulebasedComparer(Comparer):
 
     @staticmethod
     def get_impl_depth_difference(
-        nodes_to_compare: List[ObjectChoiceLikeNode],
-        reference_node: ObjectChoiceLikeNode
+        nodes_to_compare: List[AstObjectChoiceSet],
+        reference_node: AstObjectChoiceSet
     ) -> Dict[str, float]:
         ref_depth = reference_node.get_depth()
         depth_differences = [abs(node.get_depth() - ref_depth) for node in nodes_to_compare]
         out = {}
         for node, depth_val in zip(nodes_to_compare, depth_differences):
-            node_impl_name = node.get_chosen_impl_name()
+            node_impl_name = node.type_to_choose_name
             out[node_impl_name] = min(out.get(node_impl_name, 9e9), depth_val)
         return out
