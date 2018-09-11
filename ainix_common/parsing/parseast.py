@@ -87,7 +87,7 @@ class ObjectChoiceNode(AstNode):
         self._type_to_choose = type_to_choose
         self._verify_matching_types(frozen_choice)
         self._choice: 'ObjectNode' = frozen_choice
-        self._is_frozen = frozen_choice is None
+        self._is_frozen = frozen_choice is not None
         self._hash_cache = None
 
     def set_choice(self, new_choice: 'ObjectNode'):

@@ -24,6 +24,7 @@ class ExamplesIndex(ExamplesStore):
     def __init__(self, type_context: TypeContext, backend: IndexBackendABC = None):
         super().__init__(type_context)
         scheme = self.get_scheme()
+        self.parser = StringParser(type_context)
         self.backend = backend if backend else \
             indexing.whooshbackend.WhooshIndexBackend(scheme)
 
@@ -47,9 +48,7 @@ class ExamplesIndex(ExamplesStore):
             ExamplesIndex.get_scheme(), ram_only=True)
 
     def _get_yparsed_rep(self, y_string: str, y_type: str) -> str:
-        parser = StringParser(self.type_context.get_type_by_name(y_type))
-        # TODO (DNGros): cache the parsers for each type
-        ast = parser.create_parse_tree(y_string)
+        ast = self.parser.create_parse_tree(y_string, y_type)
         return ast.indexable_repr()
 
     def add_example(self, example: Example) -> None:

@@ -26,29 +26,36 @@ class SeaCRModel(StringTypeTranslateCF):
         x_string: str,
         y_type_name: str,
         use_only_train_data: bool
-    ) -> AstObjectChoiceSet:
+    ) -> AstNode:  # TODO (DNGros): change to set
         root_type = self.type_context.get_type_by_name(y_type_name)
-        root_node = AstObjectChoiceSet(root_type, None)
-        self._predict_step(x_string, root_node, root_type, use_only_train_data)
+        root_node = ObjectChoiceNode(root_type)
+        self._predict_step(x_string, root_node, root_type, use_only_train_data, 0)
+        root_node.freeze()
         return root_node
 
     def _predict_step(
         self,
         x_query: str,
-        current_leaf: AstSet,
+        current_leaf: AstNode,
         root_y_type: AInixType,
-        use_only_train_data: bool
+        use_only_train_data: bool,
+        current_depth: int
     ):
-        if isinstance(current_leaf, AstObjectChoiceSet):
-            next_nodes = [self.type_predictor.predict(x_query, current_leaf, use_only_train_data)]
-        elif isinstance(current_leaf, ObjectNodeSet):
+        if isinstance(current_leaf, ObjectChoiceNode):
+            predicted_impl = self.type_predictor.predict(
+                x_query, current_leaf, use_only_train_data, current_depth)
+            new_node = ObjectNode(predicted_impl)
+            current_leaf.set_choice(new_node)
+            next_nodes = [new_node]
+        elif isinstance(current_leaf, ObjectNode):
             next_nodes = list(current_leaf.get_children())
         else:
             raise ValueError(f"leaf node {current_leaf} not predictable")
         next_nodes = [node for node in next_nodes if node is not None]
 
         for next_node in next_nodes:
-            self._predict_step(x_query, next_node, root_y_type, use_only_train_data)
+            self._predict_step(x_query, next_node, root_y_type,
+                               use_only_train_data, current_depth + 1)
 
     def _train_step(self, x_query: str, expected_node: AstNode):
         if isinstance(expected_node, ObjectChoiceNode):
@@ -77,17 +84,19 @@ class TypePredictor:
         self.index = index
         self.type_context = index.type_context
         self.comparer = comparer
+        self.parser = StringParser(self.type_context)
 
     def compare_example(
         self,
         x_query: str,
         current_leaf: ObjectChoiceNode,
-        example: Example
+        example: Example,
+        current_depth: int
     ) -> 'ComparerResult':
         # TODO (DNGros): cache the parser and memoize the parsing during training
-        parser = StringParser(self.type_context.get_type_by_name(example.ytype))
-        example_ast = parser.create_parse_tree(example.ytext)
-        return self.comparer.compare(x_query, current_leaf, example.xquery, example_ast)
+        example_ast = self.parser.create_parse_tree(example.ytext, example.ytype)
+        return self.comparer.compare(x_query, current_leaf, current_depth,
+                                     example.xquery, example_ast)
 
     def train_compare(
         self,
@@ -114,16 +123,20 @@ class TypePredictor:
         self,
         x_query: str,
         current_leaf: ObjectChoiceNode,
-        use_only_train_data: bool
-    ) -> AstNode:
-        if current_leaf.get_depth() > 20:
+        use_only_train_data: bool,
+        current_depth: int
+    ) -> AInixObject:
+        if current_depth > 20:
             raise ValueError("whoah, that's too deep man")
         search_results = self._search(x_query, current_leaf, use_only_train_data)
         if not search_results:
             raise ModelCantPredictException(f"No examples in index for '{x_query}'")
-        comparer_result = self.compare_example(x_query, current_leaf, search_results[0])
+        comparer_result = self.compare_example(x_query, current_leaf,
+                                               search_results[0], current_depth)
+        print("result ", comparer_result)
         choose_name = comparer_result.impl_scores[0][0]
-        return current_leaf.set_valid_choice_by_name(choose_name)
+        print("Chosen name ", choose_name)
+        return self.type_context.get_object_by_name(choose_name)
 
     def train(self, x_query, current_leaf):
         search_results = self._search(x_query, current_leaf, True)
@@ -137,7 +150,7 @@ class TypePredictor:
 class ComparerResult:
     """The result from a Comparer comparison.
 
-    Attributes:
+    Args:
         prob_valid_in_example : probability that the a valid implementation for
             the current leaf is present in the example
         impl_scores : A tuple listing tuples. Each Tuple represents an
@@ -153,25 +166,29 @@ class Comparer(ABC):
     def compare(
         self,
         gen_query: str,
-        gen_ast_current_leaf: AstObjectChoiceSet,
+        gen_ast_current_leaf: ObjectChoiceNode,
+        current_gen_depth: int,
         example_query: str,
-        example_ast_root: AstObjectChoiceSet,
+        example_ast_root: AstNode,
     ) -> ComparerResult:
         pass
 
 
-def _get_type_choice_nodes(root_node: AstNode, type_name: str) -> List[AstObjectChoiceSet]:
+def _get_type_choice_nodes(
+    root_node: AstNode,
+    type_name: str
+) -> List[Tuple[ObjectChoiceNode, int]]:
     out = []
 
-    def check_type(cur_node: AstNode):
+    def check_type(cur_node: AstNode, depth: int):
         if cur_node is None:
             return
         if isinstance(cur_node, ObjectChoiceNode):
             if cur_node.get_type_to_choose_name() == type_name:
-                out.append(cur_node)
+                out.append((cur_node, depth))
         for child in cur_node.get_children():
-            check_type(child)
-    check_type(root_node)
+            check_type(child, depth + 1)
+    check_type(root_node, 0)
     return out
 
 
@@ -179,27 +196,26 @@ class SimpleRulebasedComparer(Comparer):
     def compare(
         self,
         gen_query: str,
-        gen_ast_current_leaf: AstObjectChoiceSet,
+        gen_ast_current_leaf: ObjectChoiceNode,
+        current_gen_depth: int,
         example_query: str,
-        example_ast_root: AstObjectChoiceSet,
+        example_ast_root: AstNode,
     ) -> ComparerResult:
         potential_type_choice_nodes = _get_type_choice_nodes(
-            example_ast_root, gen_ast_current_leaf.type_to_choose_name)
+            example_ast_root, gen_ast_current_leaf.get_type_to_choose_name())
         depth_diffs = self.get_impl_depth_difference(
-            potential_type_choice_nodes, gen_ast_current_leaf)
+            potential_type_choice_nodes, current_gen_depth)
         inverse_depth_diffs = {name: -d for name, d in depth_diffs.items()}
         ranked_options = sorted(inverse_depth_diffs.items(), key=lambda t: t[1], reverse=True)
         return ComparerResult(1, tuple(ranked_options))
 
     @staticmethod
     def get_impl_depth_difference(
-        nodes_to_compare: List[AstObjectChoiceSet],
-        reference_node: AstObjectChoiceSet
+        nodes_to_compare: List[Tuple[ObjectChoiceNode, int]],
+        ref_depth: int
     ) -> Dict[str, float]:
-        ref_depth = reference_node.get_depth()
-        depth_differences = [abs(node.get_depth() - ref_depth) for node in nodes_to_compare]
         out = {}
-        for node, depth_val in zip(nodes_to_compare, depth_differences):
-            node_impl_name = node.type_to_choose_name
+        for node, depth_val in nodes_to_compare:
+            node_impl_name = node.get_chosen_impl_name()
             out[node_impl_name] = min(out.get(node_impl_name, 9e9), depth_val)
         return out
