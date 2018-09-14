@@ -161,6 +161,8 @@ class ObjectChoiceNode(AstNode):
         return self._hash_cache
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self._type_to_choose == other._type_to_choose and \
                self._choice == other._choice
 
@@ -308,7 +310,7 @@ class ObjectNode(AstNode):
             if arg.name in self._arg_name_to_node:
                 s += self._arg_name_to_node[arg.name].dump_str(indent + 2)
             else:
-                s += indent_str + "    missing " + arg.name
+                s += indent_str + "    missing " + arg.name + "\n"
         s += indent_str + "  }\n"
         s += indent_str + "}\n"
         return s
@@ -665,6 +667,9 @@ class StringParser:
         root_parser_name: str = None
     ) -> ObjectChoiceNode:
         root_parser = self._get_parser(root_type_name, root_parser_name)
+        if not root_parser:
+            raise ValueError(f"Unable to get a parser type {root_type_name} and "
+                             f"root_parser {root_parser_name}")
         root_type = self._type_context.get_type_by_name(root_type_name)
         return self._parse_object_choice_node(
             string, root_parser, root_type)

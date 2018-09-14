@@ -86,6 +86,8 @@ def test_digit_list_2(numbers_type_context):
     # Predict
     model = SeaCRModel(index)
     prediction = model.predict("twenty", type, False)
+    print(expected.dump_str())
+    print(prediction.dump_str())
     assert expected == prediction
 
 

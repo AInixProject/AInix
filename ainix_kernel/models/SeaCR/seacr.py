@@ -46,16 +46,24 @@ class SeaCRModel(StringTypeTranslateCF):
                 x_query, current_leaf, use_only_train_data, current_depth)
             new_node = ObjectNode(predicted_impl)
             current_leaf.set_choice(new_node)
-            next_nodes = [new_node]
+            if new_node is not None:
+                self._predict_step(x_query, new_node, root_y_type,
+                                   use_only_train_data, current_depth + 1)
         elif isinstance(current_leaf, ObjectNode):
-            next_nodes = list(current_leaf.get_children())
+            # TODO (DNGros): this is messy. Should have better iteration based off next unfilled
+            # node rather than having to mutate state.
+            for arg in current_leaf.implementation.children:
+                if not arg.required:
+                    new_node = ObjectChoiceNode(arg.present_choice_type)
+                elif arg.type is not None:
+                    new_node = ObjectChoiceNode(arg.type)
+                else:
+                    continue
+                current_leaf.set_arg_value(arg.name, new_node)
+                self._predict_step(x_query, new_node, root_y_type,
+                                   use_only_train_data, current_depth + 1)
         else:
             raise ValueError(f"leaf node {current_leaf} not predictable")
-        next_nodes = [node for node in next_nodes if node is not None]
-
-        for next_node in next_nodes:
-            self._predict_step(x_query, next_node, root_y_type,
-                               use_only_train_data, current_depth + 1)
 
     def _train_step(self, x_query: str, expected_node: AstNode):
         if isinstance(expected_node, ObjectChoiceNode):
@@ -133,9 +141,7 @@ class TypePredictor:
             raise ModelCantPredictException(f"No examples in index for '{x_query}'")
         comparer_result = self.compare_example(x_query, current_leaf,
                                                search_results[0], current_depth)
-        print("result ", comparer_result)
         choose_name = comparer_result.impl_scores[0][0]
-        print("Chosen name ", choose_name)
         return self.type_context.get_object_by_name(choose_name)
 
     def train(self, x_query, current_leaf):
@@ -217,5 +223,6 @@ class SimpleRulebasedComparer(Comparer):
         out = {}
         for node, depth_val in nodes_to_compare:
             node_impl_name = node.get_chosen_impl_name()
-            out[node_impl_name] = min(out.get(node_impl_name, 9e9), depth_val)
+            depth_dif = abs(ref_depth - depth_val)
+            out[node_impl_name] = min(out.get(node_impl_name, 9e9), depth_dif)
         return out

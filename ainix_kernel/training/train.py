@@ -2,7 +2,7 @@ from typing import Tuple
 
 from indexing.examplestore import ExamplesStore, DataSplits
 from models.model_types import StringTypeTranslateCF, ModelCantPredictException
-from parseast import MultitypeStringParser
+from parseast import StringParser
 from training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 
 
@@ -11,7 +11,7 @@ class TypeTranslateCFTrainer:
         self.model = model
         self.example_store = example_store
         self.type_context = example_store.type_context
-        self.string_parser = MultitypeStringParser(self.type_context)
+        self.string_parser = StringParser(self.type_context)
 
     def _train_one_epoch(self, which_epoch_on: int):
         for example in self.example_store.get_all_examples():
@@ -32,7 +32,7 @@ class TypeTranslateCFTrainer:
             except ModelCantPredictException:
                 prediction = None
             expected = self.string_parser.create_parse_tree(
-                example.ytext, example.ytype, example.weight)
+                example.ytext, example.ytype)
             logger.add_evaluation(AstEvaluation(prediction, expected))
 
 

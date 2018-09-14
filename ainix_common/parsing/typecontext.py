@@ -157,9 +157,10 @@ class AInixArgument:
             )
             is_present_name = f"{self.present_choice_type.name}.PRESENT"
             if self.type is not None:
+                print("NAME", self.present_choice_type.name, self.type.name)
                 present_args = [AInixArgument(
                     self.type_context, OPTIONAL_ARGUMENT_NEXT_ARG_NAME,
-                    self.present_choice_type.name, None, True
+                    self.type_name, None, True
                 )]
             else:
                 present_args = []

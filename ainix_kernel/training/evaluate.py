@@ -74,4 +74,3 @@ def print_ast_eval_log(eval_logger: EvaluateLogger):
     stats = eval_logger.stats
     exact_match_percent = stats['ExactMatch'].percent_true_str
     print(f"Exact Match Percent {exact_match_percent}")
-
