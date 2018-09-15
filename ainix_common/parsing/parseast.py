@@ -350,10 +350,6 @@ class ObjectNode(AstNode):
     def __eq__(self, other):
         val = self._implementation == other._implementation and \
                self._arg_name_to_node == other._arg_name_to_node
-        if not val:
-            print("OBJECT NODE EQ", self._implementation.name)
-            print("  argnametonode", self._arg_name_to_node)
-            print("  argnametonode", other._arg_name_to_node)
         return val
 
 
@@ -442,7 +438,6 @@ class ArgsSetData:
         if self._is_frozen:
             raise ValueError("Can't mutate frozen data")
         for arg in node._implementation.children:
-            print("add_from_other_data", arg.name)
             self.arg_to_choice_set[arg.name].add(node._arg_name_to_node[arg.name],
                                                  new_is_known_valid_, new_weight, new_probability)
         self._max_probability = max(self._max_probability, new_probability)
@@ -471,21 +466,16 @@ class ObjectNodeSet(AstSet):
     def add(self, node: ObjectNode, known_as_valid: bool, weight: float, probability_valid: float):
         self._verify_impl_of_new_node(node)
         childless_args = node.as_childless_node()
-        print("childless args", childless_args)
         if childless_args not in self.data:
-            print("  creating new v in ObjectNodeSet", known_as_valid)
             self.data[childless_args] = ArgsSetData(node._implementation, self)
         self.data[childless_args].add_from_other_data(
             node, probability_valid, known_as_valid, weight)
 
     def is_node_known_valid(self, node: ObjectNode) -> bool:
-        print("check object ", self._implementation.name)
-        print("  args", node.as_childless_node())
         childless_args = node.as_childless_node()
         if childless_args not in self.data:
             return False
         node_data = self.data[childless_args]
-        print("  node_data", node_data)
         if not node_data._is_known_valid:
             return False
         for arg in node.implementation.children:
@@ -564,15 +554,12 @@ class AstObjectChoiceSet(AstSet):
         else:
             next_node = None
         new_data = ImplementationData(next_node, new_probability_valid, new_known_valid, new_weight)
-        print("for type", self._type_to_choice.name, " add ", node.get_chosen_impl_name())
         self._impl_name_to_data[node.get_chosen_impl_name()] = new_data
         if next_node:
             next_node.add(node.next_node, known_as_valid, weight, probability_valid)
 
     def is_node_known_valid(self, node: ObjectChoiceNode) -> bool:
-        print("type ", self._type_to_choice.name)
         if node.get_chosen_impl_name() not in self._impl_name_to_data:
-            print("fail ", node.get_chosen_impl_name())
             return False
         data = self._impl_name_to_data[node.get_chosen_impl_name()]
         if not data.known_as_valid:
@@ -613,14 +600,11 @@ class StringParser:
             arg_is_present = arg_data is not None
             if arg_is_present:
                 if arg.type_name is not None:
-                    print("INSIDE", arg.type_name)
                     inner_arg_node = self._parse_object_choice_node(
                         arg_data.slice_string, arg.type_parser, arg.type)
                     arg_map = pmap({typecontext.OPTIONAL_ARGUMENT_NEXT_ARG_NAME: inner_arg_node})
                 else:
-                    print("NOT INSIDE")
                     arg_map = pmap({})
-                print("arg_name", arg.name)
                 object_choice = ObjectNode(arg.is_present_object, arg_map)
             else:
                 object_choice = ObjectNode(arg.not_present_object, pmap({}))
