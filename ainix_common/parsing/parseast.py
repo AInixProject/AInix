@@ -256,6 +256,8 @@ class ObjectNode(AstNode):
         self._implementation = implementation
         if frozen_arg_name_to_node:
             self._arg_name_to_node = frozen_arg_name_to_node
+            if len(self._arg_name_to_node) != len(implementation.children):
+                raise ValueError("Unexepected number of children")
         else:
             self._arg_name_to_node = {}
         self._is_frozen = frozen_arg_name_to_node is not None
@@ -346,8 +348,13 @@ class ObjectNode(AstNode):
         return self._hash_cache
 
     def __eq__(self, other):
-        return self._implementation == other._implementation and \
+        val = self._implementation == other._implementation and \
                self._arg_name_to_node == other._arg_name_to_node
+        if not val:
+            print("OBJECT NODE EQ", self._implementation.name)
+            print("  argnametonode", self._arg_name_to_node)
+            print("  argnametonode", other._arg_name_to_node)
+        return val
 
 
 class AstSet:
@@ -605,12 +612,15 @@ class StringParser:
         if not arg.required:
             arg_is_present = arg_data is not None
             if arg_is_present:
-                if arg.type is not None:
+                if arg.type_name is not None:
+                    print("INSIDE", arg.type_name)
                     inner_arg_node = self._parse_object_choice_node(
                         arg_data.slice_string, arg.type_parser, arg.type)
-                    arg_map = pmap({typecontext.OPTIONAL_ARGUMENT_NEXT_ARG_NAME : inner_arg_node})
+                    arg_map = pmap({typecontext.OPTIONAL_ARGUMENT_NEXT_ARG_NAME: inner_arg_node})
                 else:
+                    print("NOT INSIDE")
                     arg_map = pmap({})
+                print("arg_name", arg.name)
                 object_choice = ObjectNode(arg.is_present_object, arg_map)
             else:
                 object_choice = ObjectNode(arg.not_present_object, pmap({}))

@@ -50,8 +50,8 @@ class SeaCRModel(StringTypeTranslateCF):
                 self._predict_step(x_query, new_node, root_y_type,
                                    use_only_train_data, current_depth + 1)
         elif isinstance(current_leaf, ObjectNode):
-            # TODO (DNGros): this is messy. Should have better iteration based off next unfilled
-            # node rather than having to mutate state.
+            # TODO (DNGros): this is messy. Should have better iteration based
+            # off next unfilled node rather than having to mutate state.
             for arg in current_leaf.implementation.children:
                 if not arg.required:
                     new_node = ObjectChoiceNode(arg.present_choice_type)

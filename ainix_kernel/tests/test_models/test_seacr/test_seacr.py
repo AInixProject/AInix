@@ -104,6 +104,11 @@ def test_full_number(numbers_type_context):
     # Predict
     model = SeaCRModel(index)
     prediction = model.predict("negative one", type, False)
+    print("Expected")
+    print(expected.dump_str())
+    print("predicted")
+    print(prediction.dump_str())
+    assert expected.dump_str() == prediction.dump_str()
     assert expected == prediction
     #
     expected = parser.create_parse_tree("2", type)

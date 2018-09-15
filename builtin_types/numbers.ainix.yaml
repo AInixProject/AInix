@@ -7,7 +7,7 @@ defines:
       type: Number
       preferred_object_parser: regex_group_object_parser
       children:
-          - name: Sign
+          - name: SignArg
             type: Sign
             required: False
             arg_data: {RegexRepresentation: "([\\-\\+]).*"}
