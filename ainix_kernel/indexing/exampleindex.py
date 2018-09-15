@@ -10,6 +10,7 @@ from whoosh.analysis.tokenizers import RegexTokenizer
 from whoosh.analysis.filters import LowercaseFilter
 from indexing.examplestore import ExamplesStore, Example, \
     get_split_from_example, SPLIT_TYPE, DEFAULT_SPLITS, DataSplits
+from ainix_common.util.strings import id_generator
 
 
 class ExamplesIndex(ExamplesStore):
@@ -36,6 +37,7 @@ class ExamplesIndex(ExamplesStore):
             xtype=IndexBackendFields.ID,
             ytype=IndexBackendFields.ID,
             yindexable=IndexBackendFields.SPACE_UNSTORED_TEXT,
+            y_set_id=IndexBackendFields.KEYWORD,
             weight=IndexBackendFields.TEXT,
             split=IndexBackendFields.KEYWORD
         )
@@ -65,9 +67,11 @@ class ExamplesIndex(ExamplesStore):
     ) -> None:
         for x in x_values:
             split = get_split_from_example(x, y_type, splits)
+            y_group = id_generator(size=10)
             for y, weight in zip(y_values, weights):
-                new_example = Example(x, y, x_type, y_type, weight, split.value,
-                                      self._get_yparsed_rep(y, y_type))
+                new_example = Example(x, y, x_type, y_type, weight, y_group,
+                                      split=split.value,
+                                      yindexable=self._get_yparsed_rep(y, y_type))
                 self.add_example(new_example)
 
     def _dict_to_example(self, doc: Dict) -> Example:

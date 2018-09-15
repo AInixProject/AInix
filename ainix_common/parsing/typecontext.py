@@ -3,12 +3,8 @@ from typing import List, Optional, Dict
 import parse_primitives
 import string
 import random
+from ainix_common.util.strings import id_generator
 SINGLE_TYPE_IMPL_BUILTIN = "SingleTypeImplParser"
-
-
-def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
-    # ref https://stackoverflow.com/questions/2257441/
-    return ''.join(random.choice(chars) for _ in range(size))
 
 
 class AInixType:
