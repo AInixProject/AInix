@@ -1,6 +1,8 @@
+import pytest
 from indexing.exampleindex import *
 import ainix_common.parsing.parseast
 from indexing.examplestore import Example
+from ainix_common.parsing import loader
 from typecontext import AInixType
 
 
@@ -77,3 +79,39 @@ def test_get_all_docs():
     assert len(list(index.get_all_examples())) == 5
     assert len(list(index.get_all_examples((DataSplits.VALIDATION,)))) == 2
     assert len(list(index.get_all_examples((DataSplits.VALIDATION, DataSplits.TRAIN)))) == 4
+
+
+BUILTIN_TYPES_PATH = "../../../builtin_types"
+
+
+@pytest.fixture(scope="function")
+def base_type_context():
+    type_context = TypeContext()
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", type_context)
+    return type_context
+
+
+@pytest.fixture(scope="function")
+def numbers_context(base_type_context):
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/numbers.ainix.yaml", base_type_context)
+    base_type_context.fill_default_parsers()
+    return base_type_context
+
+
+def test_y_set(numbers_context):
+    index = ExamplesIndex(numbers_context, backend=ExamplesIndex.get_default_ram_backend())
+    index.add_many_to_many_default_weight(["ten"], ["10", "1e1"],
+                                          index.DEFAULT_X_TYPE, "Number")
+    index.add_many_to_many_default_weight(["five"], ["5"],
+                                          index.DEFAULT_X_TYPE, "Number")
+    index.add_many_to_many_default_weight(["one hundred", "hundred"], ["100", "10e1", "1e2"],
+                                          index.DEFAULT_X_TYPE, "Number")
+    nearest = list(index.get_nearest_examples("ten"))
+    assert len(nearest) == 2  # 2 since it does a many to many map. This might change
+    example = nearest[0]
+    assert example.xquery == "ten"
+    y_set = list(index.get_examples_from_y_set(example.y_set_id))
+    assert len(y_set) == 2
+    y_val_set = {e.ytext for e in y_set}
+    assert "10" in y_val_set
+    assert "1e1" in y_val_set

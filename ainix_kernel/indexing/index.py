@@ -40,6 +40,8 @@ class IndexBackendFields(enum.Enum):
     # A unstored texts that tokenizes purly on spaces
     SPACE_UNSTORED_TEXT = "UNSTORED_TEXT_FIELD_SPACE_TOKENIZE"
     SPACE_STORED_TEXT = "SPACE_FIELD_SPACE_TOKENIZE"
+    # A ONE_INTERVAL_NUM is field in the interval [0, 1]
+    ONE_INTERVAL_NUM = "ONE_INTERVAL_NUM_FIELD"
 
 
 class IndexBackendScheme:

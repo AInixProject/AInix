@@ -7,8 +7,8 @@ from whoosh.analysis import KeywordAnalyzer
 import whoosh.query
 from whoosh.query import Or, Term
 import os
-
 from indexing.examplestore import DataSplits
+
 
 def _make_all_dict_values_strings(document: Dict):
     for key, value in document.items():
@@ -72,6 +72,8 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
             return TEXT(stored=True, analyzer=KeywordAnalyzer())
         elif field == indexing.index.IndexBackendFields.KEYWORD:
             return KEYWORD(stored=True)
+        elif field == indexing.index.IndexBackendFields.ONE_INTERVAL_NUM:
+            return NUMERIC(float, stored=True)
         else:
             raise ValueError(
                 f"WhooshIndexBackend does not support {field} fields.")

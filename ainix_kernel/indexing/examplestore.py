@@ -82,6 +82,10 @@ class ExamplesStore(ABC):
     def get_all_examples(self, filter_splits=None) -> Generator[Example, None, None]:
         pass
 
+    @abstractmethod
+    def get_examples_from_y_set(self, y_set_id) -> List[Example]:
+        pass
+
     def _default_weight(self, i: int, n: int):
         """Gets a default weight for a value. Each value in the sequence
         is half as preferable as the one before it

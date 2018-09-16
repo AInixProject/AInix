@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict
-from parseast import ObjectChoiceNode
+from parseast import ObjectChoiceNode, AstObjectChoiceSet
 
 
 class Evaluation(ABC):
@@ -10,20 +10,14 @@ class Evaluation(ABC):
 
 
 class AstEvaluation(Evaluation):
-    def __init__(self, prediction: ObjectChoiceNode, ground_truth: ObjectChoiceNode):
+    def __init__(self, prediction: ObjectChoiceNode, ground_truth: AstObjectChoiceSet):
         self.data = {}
         self.prediction = prediction
         self.ground_truth = ground_truth
         self._do_eval()
 
     def _do_eval(self):
-        if self.prediction != self.ground_truth and self.prediction is not None and \
-                self.prediction.dump_str() == self.ground_truth.dump_str():
-            print(self.prediction.dump_str())
-            print(self.ground_truth.dump_str())
-            print("break")
-
-        self.data["ExactMatch"] = self.prediction == self.ground_truth
+        self.data["ExactMatch"] = self.ground_truth.is_node_known_valid(self.prediction)
 
     def get_data(self) -> Dict:
         return self.data

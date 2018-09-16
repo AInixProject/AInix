@@ -240,11 +240,32 @@ class ObjectChoiceNode(AstNode):
 #            yield self.obj_choice_node
 
 
-@attr.s(auto_attribs=True, frozen=True)
 class ChildlessObjectNode:
-    implementation: typecontext.AInixObject
-    chosen_type_names: Tuple[str, ...]
+    def __init__(
+        self,
+        implementation: typecontext.AInixObject,
+        chosen_type_names: Tuple[str, ...]
+    ):
+        self._implementation = implementation
+        self._chosen_type_names = chosen_type_names
 
+    @property
+    def implementation(self):
+        return self.implementation
+
+    @property
+    def chosen_type_names(self):
+        return self._chosen_type_names
+
+    def __hash__(self):
+        return hash((self._implementation, self._chosen_type_names))
+
+    def __eq__(self, other):
+        return self._implementation == other._implementation and \
+                self._chosen_type_names == other._chosen_type_names
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 #@attr.s(auto_attribs=True, frozen=True, cache_hash=True)
 class ObjectNode(AstNode):
@@ -390,7 +411,8 @@ class AstSet:
         pass
 
     @abstractmethod
-    def add(self, node: AstNode, known_as_valid: float, weight: float, probability_valid: float) -> None:
+    def add(self, node: AstNode, known_as_valid: bool,
+            weight: float, probability_valid: float) -> None:
         pass
 
 
@@ -525,7 +547,7 @@ class AstObjectChoiceSet(AstSet):
     def add(
         self,
         node: ObjectChoiceNode,
-        known_as_valid: float,
+        known_as_valid: bool,
         weight: float,
         probability_valid: float
     ):
@@ -559,6 +581,8 @@ class AstObjectChoiceSet(AstSet):
             next_node.add(node.next_node, known_as_valid, weight, probability_valid)
 
     def is_node_known_valid(self, node: ObjectChoiceNode) -> bool:
+        if node is None:
+            return False
         if node.get_chosen_impl_name() not in self._impl_name_to_data:
             return False
         data = self._impl_name_to_data[node.get_chosen_impl_name()]

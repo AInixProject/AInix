@@ -11,6 +11,7 @@ from whoosh.analysis.filters import LowercaseFilter
 from indexing.examplestore import ExamplesStore, Example, \
     get_split_from_example, SPLIT_TYPE, DEFAULT_SPLITS, DataSplits
 from ainix_common.util.strings import id_generator
+import copy
 
 
 class ExamplesIndex(ExamplesStore):
@@ -37,14 +38,16 @@ class ExamplesIndex(ExamplesStore):
             xtype=IndexBackendFields.ID,
             ytype=IndexBackendFields.ID,
             yindexable=IndexBackendFields.SPACE_UNSTORED_TEXT,
-            y_set_id=IndexBackendFields.KEYWORD,
-            weight=IndexBackendFields.TEXT,
+            y_set_id=IndexBackendFields.ID,
+            weight=IndexBackendFields.ONE_INTERVAL_NUM,
             split=IndexBackendFields.KEYWORD
         )
 
     @staticmethod
     def get_default_ram_backend() -> 'IndexBackendABC':
-        """Gets a default backend that does not touch any files and just
+        """Gets a default backend that does not
+        if node is None:
+        return Falsetouch any files and just
         keeps data in RAM"""
         return indexing.whooshbackend.WhooshIndexBackend(
             ExamplesIndex.get_scheme(), ram_only=True)
@@ -65,9 +68,9 @@ class ExamplesIndex(ExamplesStore):
         weights: List[float],
         splits: SPLIT_TYPE = DEFAULT_SPLITS
     ) -> None:
+        y_group = id_generator(size=10)
         for x in x_values:
             split = get_split_from_example(x, y_type, splits)
-            y_group = id_generator(size=10)
             for y, weight in zip(y_values, weights):
                 new_example = Example(x, y, x_type, y_type, weight, y_group,
                                       split=split.value,
@@ -76,7 +79,11 @@ class ExamplesIndex(ExamplesStore):
 
     def _dict_to_example(self, doc: Dict) -> Example:
         """Takes the dictionary form of an object and returns an example object"""
-        return Example(**doc)
+        # make a copy of the dict so we can mutate alter its keys without
+        # mutating the input dict (this might be overkill....)
+        doc_copy = copy.deepcopy(doc)
+        doc_copy['weight'] = float(doc_copy['weight'])
+        return Example(**doc_copy)
 
     def get_nearest_examples(
         self,
@@ -122,3 +129,9 @@ class ExamplesIndex(ExamplesStore):
             query = Or([Term("split", split.value) for split in filter_splits])
         yield from (self._dict_to_example(hit.doc)
                     for hit in self.backend.query(query, max_results=None, score=False))
+
+    def get_examples_from_y_set(self, y_set_id: str) -> List[Example]:
+        query = Term("y_set_id", y_set_id)
+        return [self._dict_to_example(hit.doc)
+                for hit in self.backend.query(query, None, False)]
+

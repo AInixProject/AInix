@@ -165,6 +165,14 @@ def test_parse_set_8(numbers_type_context, numbers_ast_set):
     assert numbers_ast_set.is_node_known_valid(ast_3)
 
 
+def test_parse_set_9(numbers_type_context, numbers_ast_set):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast = parser.create_parse_tree("5", root_type_name)
+    numbers_ast_set.add(ast, True, 1, 1)
+    new_ast = parser.create_parse_tree("5", root_type_name)
+    assert numbers_ast_set.is_node_known_valid(new_ast)
+
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
 #    parser = StringParser(numbers_type_context)
 #    root_type_name = "Number"
