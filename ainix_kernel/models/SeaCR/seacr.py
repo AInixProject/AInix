@@ -101,7 +101,7 @@ class TypePredictor:
         example: Example,
         current_depth: int
     ) -> 'ComparerResult':
-        # TODO (DNGros): cache the parser and memoize the parsing during training
+        # TODO (DNGros): think about if can memoize during training
         example_ast = self.parser.create_parse_tree(example.ytext, example.ytype)
         return self.comparer.compare(x_query, current_leaf, current_depth,
                                      example.xquery, example_ast)
@@ -109,7 +109,7 @@ class TypePredictor:
     def train_compare(
         self,
         x_query: str,
-        expected_leaf: ObjectChoiceNode,
+        expected_out: ObjectChoiceNode,
         example: Example
     ):
         # TODO
@@ -144,7 +144,12 @@ class TypePredictor:
         choose_name = comparer_result.impl_scores[0][0]
         return self.type_context.get_object_by_name(choose_name)
 
-    def train(self, x_query, current_leaf):
+    def train(
+        self,
+        x_query: str,
+        current_leaf: ObjectChoiceNode,
+        expected_choices: AstObjectChoiceSet
+    ) -> None:
         search_results = self._search(x_query, current_leaf, True)
         if not search_results:
             return

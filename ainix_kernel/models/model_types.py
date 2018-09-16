@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from parseast import ObjectChoiceNode
+from parseast import ObjectChoiceNode, AstObjectChoiceSet
 
 
 class ModelException(RuntimeError):
@@ -15,7 +15,7 @@ class ModelValueError(ModelException):
 
 
 class ModelCantPredictException(ModelException):
-    """An exception for when the model recieved valid inputs, but is not able
+    """An exception for when the model received valid inputs, but is not able
     to make any prediction or judgment of confidence at all (likely due to
     the user submitting a query that is very different than any of the
     training data)"""
@@ -32,5 +32,5 @@ class StringTypeTranslateCF(ABC):
         pass
 
     @abstractmethod
-    def train(self, x_string: str, y_ast: ObjectChoiceNode):
+    def train(self, x_string: str, y_ast: AstObjectChoiceSet):
         pass

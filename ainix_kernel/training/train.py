@@ -14,8 +14,8 @@ class TypeTranslateCFTrainer:
         self.string_parser = StringParser(self.type_context)
 
     def _train_one_epoch(self, which_epoch_on: int):
-        for example in self.example_store.get_all_examples():
-            self.model
+        for example, y_ast_set in self.data_pair_iterate((DataSplits.TRAIN,)):
+            self.model.train(example.xquery, y_ast_set)
 
     def train(self, epochs: int):
         for epoch in range(epochs):

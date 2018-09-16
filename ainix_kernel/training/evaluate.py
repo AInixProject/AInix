@@ -34,10 +34,20 @@ class BinaryStat:
                 self.true_count += 1
 
     @property
+    def true_frac(self) -> float:
+        """Fraction true. Expressed in interval [0, 1]"""
+        if self.total_count == 0:
+            return None
+        return self.true_count / self.total_count
+
+    @property
     def percent_true_str(self) -> str:
         if self.total_count == 0:
             return "N/A"
         return f"{(self.true_count / self.total_count)*100:.2f}%"
+
+    def __str__(self):
+        return f"{name}: {self.percent_true_str}"
 
     def __add__(self, other):
         self.total_count += other.total_count
