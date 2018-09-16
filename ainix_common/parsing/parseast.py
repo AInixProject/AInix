@@ -267,7 +267,7 @@ class ChildlessObjectNode:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-#@attr.s(auto_attribs=True, frozen=True, cache_hash=True)
+
 class ObjectNode(AstNode):
     def __init__(
         self,
@@ -449,12 +449,6 @@ class ArgsSetData:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    @staticmethod
-    def _create_arg_map(implementation: typecontext.AInixObject) \
-        -> Mapping[str, 'AstObjectChoiceSet']:
-        return pmap({
-        })
-
     def add_from_other_data(self, node: ObjectNode, new_probability,
                             new_is_known_valid_, new_weight):
         if self._is_frozen:
@@ -474,10 +468,15 @@ class ObjectNodeSet(AstSet):
         self.data: MutableMapping[ChildlessObjectNode, ArgsSetData] = {}
 
     def freeze(self):
+        if self._is_frozen:
+            return
         self._is_frozen = True
         for d in self.data.values():
             d.freeze()
         self.data = pmap(self.data)
+
+    def get_arg_set_data(self, arg_selection: ChildlessObjectNode) -> ArgsSetData:
+        return self.data.get(arg_selection, None)
 
     def _verify_impl_of_new_node(self, node):
         if node.implementation != self._implementation:
@@ -519,7 +518,7 @@ class ObjectNodeSet(AstSet):
 
 @attr.s(auto_attribs=True, frozen=True)
 class ImplementationData:
-    next_node: AstSet
+    next_node: ObjectNodeSet
     max_probability_valid: float
     known_as_valid: bool
     max_weight: float
@@ -536,6 +535,11 @@ class AstObjectChoiceSet(AstSet):
     @property
     def type_to_choose_name(self):
         return self._type_to_choice.name
+
+    def get_next_node_for_choice(self, impl_name_chosen: str) -> Optional[ObjectNodeSet]:
+        if impl_name_chosen not in self._impl_name_to_data:
+            return None
+        return self._impl_name_to_data[impl_name_chosen].next_node
 
     def freeze(self):
         self._is_frozen = True
@@ -591,6 +595,11 @@ class AstObjectChoiceSet(AstSet):
         if data.next_node is None:
             return node.next_node is None
         return data.next_node.is_node_known_valid(node.next_node)
+
+    def is_known_choice(self, choose_name: str):
+        if choose_name not in self._impl_name_to_data:
+            return False
+        return self._impl_name_to_data[choose_name].known_as_valid
 
     def __eq__(self, other):
         return self._type_to_choice == other._type_to_choice and \

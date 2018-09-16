@@ -28,9 +28,15 @@ class StringTypeTranslateCF(ABC):
     # TODO (DNGros): add interface for batched training and prediction
 
     @abstractmethod
-    def predict(self, x_string: str, y_type_name: str, use_only_train_data: bool) -> ObjectChoiceNode:
+    def predict(
+        self,
+        x_string: str,
+        y_type_name: str,
+        use_only_train_data: bool
+    ) -> ObjectChoiceNode:
         pass
 
     @abstractmethod
-    def train(self, x_string: str, y_ast: AstObjectChoiceSet):
+    def train(self, x_string: str, y_ast: AstObjectChoiceSet,
+              teacher_force_path: ObjectChoiceNode):
         pass

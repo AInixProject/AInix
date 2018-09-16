@@ -79,7 +79,7 @@ class SimpleCmd():
 
 
     def train_step(self, engine, batch):
-        self.all_modules.train()
+        self.all_modules.train(,
         self.optimizer.zero_grad()
 
         (query, query_lengths), nlexamples = batch.nl
