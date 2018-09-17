@@ -90,7 +90,7 @@ class SeaCRModel(StringTypeTranslateCF):
             # TODO (DNGros): This is currently somewhat gross as it relies on the _train_step
             # call mutating state. Once it is changed to make changes on current_gen_root
             # this shouldn't be an issue.
-            next_gen_leaf = ObjectChoiceNode(arg.type)
+            next_gen_leaf = ObjectChoiceNode(arg.next_choice_type)
             current_gen_leaf.set_arg_value(arg.name, next_gen_leaf)
             self._train_step(x_query, next_choice_set, current_gen_root, next_gen_leaf,
                              teacher_force_path.get_choice_node_for_arg(arg.name), current_depth+1)

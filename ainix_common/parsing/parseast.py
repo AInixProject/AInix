@@ -1,6 +1,6 @@
 from collections import defaultdict
-import parse_primitives
-import typecontext
+from ainix_common.parsing import parse_primitives
+from ainix_common.parsing import typecontext
 from typing import List, Dict, Optional, Type, Union, Generator, \
     Tuple, MutableMapping, Mapping
 from attr import attrs, attrib
@@ -85,6 +85,9 @@ class ObjectChoiceNode(AstNode):
         frozen_choice: 'ObjectNode' = None
     ):
         self._type_to_choose = type_to_choose
+        if type_to_choose is None:
+            raise ValueError("Unable to create a ObjectChoiceNode with no type. If"
+                             "the type is none, this node just show not exist.")
         self._verify_matching_types(frozen_choice)
         self._choice: 'ObjectNode' = frozen_choice
         self._is_frozen = frozen_choice is not None
@@ -114,7 +117,7 @@ class ObjectChoiceNode(AstNode):
         if new_choice.implementation.type_name != self._type_to_choose.name:
             raise ValueError("Add unexpected choice as valid. Expected type " +
                              self.get_type_to_choose_name() + " got " +
-                             self._choice._implementation.type_name)
+                             new_choice.implementation.type_name)
 
     def get_type_to_choose_name(self) -> str:
         return  self._type_to_choose.name

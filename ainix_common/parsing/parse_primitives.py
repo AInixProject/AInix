@@ -1,4 +1,4 @@
-import typecontext
+from ainix_common.parsing import typecontext
 import attr
 from typing import List, Callable, Tuple, Dict, Optional
 

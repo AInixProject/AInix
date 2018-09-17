@@ -39,4 +39,4 @@ def regex_group_object_parser(
         elif arg.required:
             raise parse_primitives.AInixParseError(
                 f'Arg {arg.name} with RegexRepresentation "{regex}" did not '
-                f'match on {string}, but the arg is required.')
+                f'match on "{string}", but the arg is required.')

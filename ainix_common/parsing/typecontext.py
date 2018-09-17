@@ -1,6 +1,6 @@
 from collections import defaultdict
 from typing import List, Optional, Dict
-import parse_primitives
+from ainix_common.parsing import parse_primitives
 import string
 import random
 from ainix_common.util.strings import id_generator
@@ -174,13 +174,22 @@ class AInixArgument:
 
 
     def _make_optional_arg_type_name(self) -> str:
-        return f"__arg_choice.{id_generator(5)}.{self.name}"
+        return f"__arg_present_choice_type.{id_generator(5)}.{self.name}"
 
     @property
     def type(self) -> Optional[AInixType]:
         if self.type_name is None:
             return None
         return self._type_context.get_type_by_name(self.type_name)
+
+    @property
+    def next_choice_type(self) -> Optional[AInixType]:
+        """Gets the type of the argument, taking into acount if the arguement
+        is optional or not."""
+        if self.required:
+            return self.type
+        else:
+            return self.present_choice_type
 
     @property
     def type_context(self) -> 'TypeContext':

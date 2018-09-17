@@ -19,6 +19,7 @@ class TypeTranslateCFTrainer:
 
     def train(self, epochs: int):
         for epoch in range(epochs):
+            print(f"Epoch {epoch}")
             self._train_one_epoch(epoch)
 
     def evaluate(

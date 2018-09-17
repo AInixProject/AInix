@@ -38,7 +38,7 @@ def get_split_from_example(x_string: str, y_type: str, splits: SPLIT_TYPE) -> Da
         current_ceiling += probability * MAX_VAL
         if hash_int <= math.ceil(current_ceiling):
             return split_name
-    raise RuntimeError("Unreachable code reached")
+    raise RuntimeError(f"Unreachable code reached. Splits {splits}")
 
 
 @attr.s(auto_attribs=True, frozen=True)
