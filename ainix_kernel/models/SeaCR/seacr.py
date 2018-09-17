@@ -1,13 +1,14 @@
-from abc import ABC, abstractmethod
-from models.model_types import StringTypeTranslateCF, ModelCantPredictException
-from indexing.exampleindex import ExamplesIndex
-from indexing.examplestore import Example, DataSplits
+"""This module defines the SeaCR (Search Compare Recurse) model"""
+from ainix_kernel.models.SeaCR.comparer import ComparerResult, SimpleRulebasedComparer
+from ainix_kernel.models.SeaCR.treeutil import get_type_choice_nodes
+from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException
+from ainix_kernel.indexing.exampleindex import ExamplesIndex
+from ainix_kernel.indexing.examplestore import Example, DataSplits
 from ainix_common.parsing.parseast import AstNode, ObjectNode, \
     ObjectChoiceNode, StringParser,  \
-    AstObjectChoiceSet, AstSet, ObjectNodeSet
+    AstObjectChoiceSet, ObjectNodeSet
 from ainix_common.parsing.typecontext import AInixType, AInixObject
-from typing import List, Tuple, Union, Dict, Optional
-import attr
+from typing import List
 
 
 class SeaCRModel(StringTypeTranslateCF):
@@ -127,46 +128,6 @@ class SeaCRModel(StringTypeTranslateCF):
         )
 
 
-def _get_type_choice_nodes(
-    root_node: AstNode,
-    type_name: str
-) -> List[Tuple[ObjectChoiceNode, int]]:
-    """Gets all the ObjectChoiceNodes that match a certain type inside an AST
-    Args:
-        root_node: the ast we want to search in
-        type_name: the type name choice we are looking for
-    Returns:
-        List of tuples.
-        (A ObjectChoiceNode that is a child of root_node with desired type,
-         An int for its depth)
-    """
-    out = []
-
-    def check_type(cur_node: AstNode, depth: int):
-        if cur_node is None:
-            return
-        if isinstance(cur_node, ObjectChoiceNode):
-            if cur_node.get_type_to_choose_name() == type_name:
-                out.append((cur_node, depth))
-        for child in cur_node.get_children():
-            check_type(child, depth + 1)
-    check_type(root_node, 0)
-    return out
-
-
-def _get_impl_names_from_indexed_rep(
-    index_rep: str,
-    type_to_choose: str
-) -> List[str]:
-    # TODO (DNGros): This is disgusting and shouldnt exist
-    out = []
-    for s in index_rep.split(f"CLASSIFY_TYPE={type_to_choose}")[1:]:
-        o_rep = s.split()[1]
-        o_name = o_rep.split("=")[1]
-        out.append(o_name)
-    return out
-
-
 class TypePredictor:
     def __init__(self, index: ExamplesIndex, comparer: 'Comparer'):
         self.index = index
@@ -197,7 +158,7 @@ class TypePredictor:
         # TODO (DNGros): think about if can memoize during training
         example_ast = self.parser.create_parse_tree(
             example_to_compare.ytext, example_to_compare.ytype)
-        choices_in_this_example = _get_type_choice_nodes(
+        choices_in_this_example = get_type_choice_nodes(
             example_ast, current_leaf.type_to_choose)
         # Extract all potential choices in our ground truth set
         right_choices = [e for e, depth in choices_in_this_example
@@ -257,86 +218,4 @@ class TypePredictor:
             self._train_compare(x_query, current_leaf, result, expected_choices, current_depth)
 
 
-@attr.s(auto_attribs=True, frozen=True)
-class ComparerResult:
-    """The result from a Comparer comparison.
 
-    Args:
-        prob_valid_in_example : probability that the a valid implementation for
-            the current leaf is present in the example
-        impl_scores : A tuple listing tuples. Each Tuple represents an
-            (score of how preferable this implementation is given a valid
-            implementation exists in this example, implementation_name)
-    """
-    prob_valid_in_example: float
-    impl_scores: Tuple[Tuple[float, str], ...]
-
-
-class Comparer(ABC):
-    @abstractmethod
-    def compare(
-        self,
-        gen_query: str,
-        gen_ast_current_leaf: ObjectChoiceNode,
-        current_gen_depth: int,
-        example_query: str,
-        example_ast_root: AstNode,
-    ) -> ComparerResult:
-        pass
-
-    @abstractmethod
-    def train(
-        self,
-        gen_query: str,
-        gen_ast_current_leaf: ObjectChoiceNode,
-        current_gen_depth: int,
-        example_query: str,
-        example_ast_root: AstNode,
-        expected_result: ComparerResult
-    ):
-        pass
-
-
-
-class SimpleRulebasedComparer(Comparer):
-    def compare(
-        self,
-        gen_query: str,
-        gen_ast_current_leaf: ObjectChoiceNode,
-        current_gen_depth: int,
-        example_query: str,
-        example_ast_root: AstNode,
-    ) -> ComparerResult:
-        potential_type_choice_nodes = _get_type_choice_nodes(
-            example_ast_root, gen_ast_current_leaf.get_type_to_choose_name())
-        depth_diffs = self.get_impl_depth_difference(
-            potential_type_choice_nodes, current_gen_depth)
-        ranked_options = sorted(
-            [(-score, name) for name, score in depth_diffs.items()],
-            reverse=True
-        )
-        return ComparerResult(1, tuple(ranked_options))
-
-    @staticmethod
-    def get_impl_depth_difference(
-        nodes_to_compare: List[Tuple[ObjectChoiceNode, int]],
-        ref_depth: int
-    ) -> Dict[str, float]:
-        out = {}
-        for node, depth_val in nodes_to_compare:
-            node_impl_name = node.get_chosen_impl_name()
-            depth_dif = abs(ref_depth - depth_val)
-            out[node_impl_name] = min(out.get(node_impl_name, 9e9), depth_dif)
-        return out
-
-    def train(
-        self,
-        gen_query: str,
-        gen_ast_current_leaf: ObjectChoiceNode,
-        current_gen_depth: int,
-        example_query: str,
-        example_ast_root: AstNode,
-        expected_result: ComparerResult
-    ):
-        # RuleBasedComparer doesn't do any training
-        pass

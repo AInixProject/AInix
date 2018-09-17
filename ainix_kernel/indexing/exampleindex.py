@@ -1,14 +1,14 @@
 from typing import List, Generator, Dict, Tuple
 import attr
-import indexing.whooshbackend
-from indexing.index import IndexBackendScheme, IndexBackendFields, IndexBackendABC
-import parseast
-from parseast import StringParser
-from typecontext import TypeContext
+from ainix_kernel.indexing.whooshbackend import WhooshIndexBackend
+from ainix_kernel.indexing.index import IndexBackendScheme, IndexBackendFields, IndexBackendABC
+from ainix_common.parsing import parseast
+from ainix_common.parsing.parseast import StringParser
+from ainix_common.parsing.typecontext import TypeContext
 from whoosh.query import Term, Or, Every
 from whoosh.analysis.tokenizers import RegexTokenizer
 from whoosh.analysis.filters import LowercaseFilter
-from indexing.examplestore import ExamplesStore, Example, \
+from ainix_kernel.indexing.examplestore import ExamplesStore, Example, \
     get_split_from_example, SPLIT_TYPE, DEFAULT_SPLITS, DataSplits
 from ainix_common.util.strings import id_generator
 import copy
@@ -27,8 +27,7 @@ class ExamplesIndex(ExamplesStore):
         super().__init__(type_context)
         scheme = self.get_scheme()
         self.parser = StringParser(type_context)
-        self.backend = backend if backend else \
-            indexing.whooshbackend.WhooshIndexBackend(scheme)
+        self.backend = backend or WhooshIndexBackend(scheme)
 
     @staticmethod
     def get_scheme() -> 'IndexBackendScheme':

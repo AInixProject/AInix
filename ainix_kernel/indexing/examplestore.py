@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import attr
-from typecontext import TypeContext, AInixType
+from ainix_common.parsing.typecontext import TypeContext, AInixType
 from typing import List, Generator, Tuple
 from enum import Enum
 import hashlib

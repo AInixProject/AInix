@@ -1,4 +1,4 @@
-import indexing.index
+import ainix_kernel.indexing.index
 from typing import Iterable, Dict, List, Optional, Generator, Tuple
 from whoosh.index import create_in
 from whoosh.fields import *
@@ -18,8 +18,8 @@ def _make_all_dict_values_strings(document: Dict):
 
 def _convert_whoosh_result_to_our_result(
         whoosh_result: Results
-) -> Generator[indexing.index.SearchHit, None, None]:
-    yield from (indexing.index.SearchHit(result.fields(), result.score)
+) -> Generator[ainix_kernel.indexing.index.SearchHit, None, None]:
+    yield from (ainix_kernel.indexing.index.SearchHit(result.fields(), result.score)
                 for result in whoosh_result)
 
 
@@ -30,7 +30,7 @@ def _create_ram_index(schema):
     return FileIndex.create(storage, schema)
 
 
-class WhooshIndexBackend(indexing.index.IndexBackendABC):
+class WhooshIndexBackend(ainix_kernel.indexing.index.IndexBackendABC):
     """An implementation of an index backend powered by Whoosh
 
     Args:
@@ -39,7 +39,8 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
     """
     INDEX_DIR = "indexdir"
 
-    def __init__(self, scheme: indexing.index.IndexBackendScheme, ram_only: bool = False):
+    def __init__(self, scheme: ainix_kernel.indexing.index.IndexBackendScheme,
+                 ram_only: bool = False):
         whoosh_scheme = self._convert_to_whoosh_scheme(scheme)
         if not ram_only:
             if not os.path.exists(self.INDEX_DIR):
@@ -58,28 +59,29 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
         Returns:
             the Whoosh form of that field
         """
-        if field == indexing.index.IndexBackendFields.TEXT:
+        if field == ainix_kernel.indexing.index.IndexBackendFields.TEXT:
             return TEXT(stored=True)
-        elif field == indexing.index.IndexBackendFields.ID:
+        elif field == ainix_kernel.indexing.index.IndexBackendFields.ID:
             return ID(stored=True)
-        elif field == indexing.index.IndexBackendFields.NUMBER:
+        elif field == ainix_kernel.indexing.index.IndexBackendFields.NUMBER:
             return NUMERIC(stored=True)
-        elif field == indexing.index.IndexBackendFields.UNSTORED_TEXT:
+        elif field == ainix_kernel.indexing.index.IndexBackendFields.UNSTORED_TEXT:
             return TEXT(stored=False)
-        elif field == indexing.index.IndexBackendFields.SPACE_UNSTORED_TEXT:
+        elif field == ainix_kernel.indexing.index.IndexBackendFields.SPACE_UNSTORED_TEXT:
             return TEXT(stored=False, analyzer=KeywordAnalyzer())
-        elif field == indexing.index.IndexBackendFields.SPACE_STORED_TEXT:
+        elif field == ainix_kernel.indexing.index.IndexBackendFields.SPACE_STORED_TEXT:
             return TEXT(stored=True, analyzer=KeywordAnalyzer())
-        elif field == indexing.index.IndexBackendFields.KEYWORD:
+        elif field == ainix_kernel.indexing.index.IndexBackendFields.KEYWORD:
             return KEYWORD(stored=True)
-        elif field == indexing.index.IndexBackendFields.ONE_INTERVAL_NUM:
+        elif field == ainix_kernel.indexing.index.IndexBackendFields.ONE_INTERVAL_NUM:
             return NUMERIC(float, stored=True)
         else:
             raise ValueError(
                 f"WhooshIndexBackend does not support {field} fields.")
 
     @staticmethod
-    def _convert_to_whoosh_scheme(scheme: indexing.index.IndexBackendScheme) -> Schema:
+    def _convert_to_whoosh_scheme(
+            scheme: ainix_kernel.indexing.index.IndexBackendScheme) -> Schema:
         """Converts our representation of our a scheme to whoosh's"""
         whoosh_scheme = Schema()
         for name, field in scheme.fields.items():
@@ -113,7 +115,7 @@ class WhooshIndexBackend(indexing.index.IndexBackendABC):
         query: whoosh.query.Query,
         max_results: Optional[int] = 10,
         score: bool = True
-    ) -> Generator[indexing.index.SearchHit, None, None]:
+    ) -> Generator[ainix_kernel.indexing.index.SearchHit, None, None]:
         # TODO (DNGros): figure out the contexts for a search object and when
         # to close it and stuff
         self._set_searcher()

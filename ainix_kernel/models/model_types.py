@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from parseast import ObjectChoiceNode, AstObjectChoiceSet
+from ainix_common.parsing.parseast import ObjectChoiceNode, AstObjectChoiceSet
 
 
 class ModelException(RuntimeError):
