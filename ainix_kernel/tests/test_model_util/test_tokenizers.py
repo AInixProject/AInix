@@ -7,4 +7,5 @@ def test_non_ascii():
     expected = ['my', constants.SPACE, 'name', constants.SPACE, 'is',
                 constants.SPACE, "'", 'eve', "'"]
     tokenizer = NonAsciiTokenizer()
-    assert tokenizer.tokenize(data) == expected
+    result, _ = tokenizer.tokenize(data)
+    assert result == expected

@@ -1,16 +1,24 @@
 from abc import ABC, abstractmethod
 import typing, collections
-from typing import Iterable, Type
+from typing import Iterable, Type, List
 from collections import defaultdict
 from ainix_kernel import constants
 
 
 class Vocab:
     @abstractmethod
-    def token_to_index(self, token: str):
+    def token_to_index(self, token: str) -> int:
         pass
 
-    def token_seq_to_indices(self, sequence: Iterable[str]) -> list:
+    @abstractmethod
+    def __len__(self):
+        pass
+
+    @abstractmethod
+    def extend(self, v, sort=False):
+        pass
+
+    def token_seq_to_indices(self, sequence: Iterable[str]) -> List[int]:
         return list(map(self.token_to_index, sequence))
 
 
@@ -30,7 +38,7 @@ class CounterVocab(Vocab):
             token.
     """
     def __init__(self, counter: typing.Counter, max_size: int=None, min_freq: int = 1,
-                 specials=['<pad>']):
+                 specials=('<pad>',)):
         counter = counter.copy()
         min_freq = max(min_freq, 1)
         self.itos = list(specials)
@@ -53,8 +61,18 @@ class CounterVocab(Vocab):
         # stoi is simply a reverse dict for itos
         self.stoi.update({tok: i for i, tok in enumerate(self.itos)})
 
+    def __len__(self):
+        return len(self.itos)
+
     def token_to_index(self, token: str):
         return self.stoi[token]
+
+    def extend(self, v: 'CounterVocab', sort=False):
+        words = sorted(v.itos) if sort else v.itos
+        for w in words:
+            if w not in self.stoi:
+                self.itos.append(w)
+                self.stoi[w] = len(self.itos) - 1
 
 
 class VocabBuilder(ABC):
@@ -64,6 +82,10 @@ class VocabBuilder(ABC):
 
     @abstractmethod
     def produce_vocab(self) -> Vocab:
+        pass
+
+    @abstractmethod
+    def extend_vocab(self):
         pass
 
 
@@ -78,3 +100,6 @@ class CounterVocabBuilder(VocabBuilder):
 
     def produce_vocab(self) -> Vocab:
         return self.vocab_to_make(self._counter, **self.in_args)
+
+    def extend_vocab(self):
+        raise NotImplemented()

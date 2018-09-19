@@ -51,7 +51,9 @@ class WhooshIndexBackend(ainix_kernel.indexing.index.IndexBackendABC):
         self.searcher: Optional[Searcher] = None
 
     @staticmethod
-    def _convert_to_whoosh_field(field: indexing.index.IndexBackendFields) -> FieldType:
+    def _convert_to_whoosh_field(
+        field: ainix_kernel.indexing.index.IndexBackendFields
+    ) -> FieldType:
         """
         Args:
             field: the IndexBackendField we want to convert

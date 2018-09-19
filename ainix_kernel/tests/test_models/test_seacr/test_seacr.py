@@ -34,7 +34,7 @@ def test_only_one_option(base_type_context):
     parser = StringParser(base_type_context)
     expected = parser.create_parse_tree("string", foo_type.name)
     # Predict
-    model = SeaCRModel(index)
+    model = make_rulebased_seacr(index)
     prediction = model.predict("example", "FooType", False)
     assert expected == prediction
 
@@ -49,7 +49,7 @@ def test_predict_digit(numbers_type_context):
     parser = StringParser(numbers_type_context)
     expected = parser.create_parse_tree("2", "BaseTen")
     # Predict
-    model = SeaCRModel(index)
+    model = make_rulebased_seacr(index)
     prediction = model.predict("two", "BaseTen", False)
     assert expected == prediction
 
@@ -65,7 +65,7 @@ def test_digit_list_1(numbers_type_context):
     parser = StringParser(numbers_type_context)
     expected = parser.create_parse_tree("2", type)
     # Predict
-    model = SeaCRModel(index)
+    model = make_rulebased_seacr(index)
     prediction = model.predict("two", type, False)
     print(prediction.dump_str())
     print("expected")
@@ -84,7 +84,7 @@ def test_digit_list_2(numbers_type_context):
     parser = StringParser(numbers_type_context)
     expected = parser.create_parse_tree("20", type)
     # Predict
-    model = SeaCRModel(index)
+    model = make_rulebased_seacr(index)
     prediction = model.predict("twenty", type, False)
     print(expected.dump_str())
     print(prediction.dump_str())
@@ -102,7 +102,7 @@ def test_full_number(numbers_type_context):
     parser = StringParser(numbers_type_context)
     expected = parser.create_parse_tree("-1", type)
     # Predict
-    model = SeaCRModel(index)
+    model = make_rulebased_seacr(index)
     prediction = model.predict("negative one", type, False)
     print("Expected")
     print(expected.dump_str())
@@ -112,7 +112,6 @@ def test_full_number(numbers_type_context):
     assert expected == prediction
     #
     expected = parser.create_parse_tree("2", type)
-    model = SeaCRModel(index)
     prediction = model.predict("two", type, False)
     assert expected == prediction
     #
@@ -129,6 +128,6 @@ def test_full_number_2(numbers_type_context):
     parser = StringParser(numbers_type_context)
     expected = parser.create_parse_tree("9", "Number")
     # Predict
-    model = SeaCRModel(index)
+    model = make_rulebased_seacr(index)
     prediction = model.predict("nineth", "Number", False)
     assert expected == prediction

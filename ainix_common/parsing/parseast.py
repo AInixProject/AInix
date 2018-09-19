@@ -166,6 +166,8 @@ class ObjectChoiceNode(AstNode):
     def __eq__(self, other):
         if other is None:
             return False
+        if id(self) == id(other):
+            return True
         return self._type_to_choose == other._type_to_choose and \
                self._choice == other._choice
 
@@ -605,6 +607,8 @@ class AstObjectChoiceSet(AstSet):
         return self._impl_name_to_data[choose_name].known_as_valid
 
     def __eq__(self, other):
+        if id(self) == id(other):
+            return True
         return self._type_to_choice == other._type_to_choice and \
                self._impl_name_to_data == other._impl_name_to_data and \
                self._max_weight == other._max_weight

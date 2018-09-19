@@ -11,6 +11,7 @@ from whoosh.analysis.filters import LowercaseFilter
 from ainix_kernel.indexing.examplestore import ExamplesStore, Example, \
     get_split_from_example, SPLIT_TYPE, DEFAULT_SPLITS, DataSplits
 from ainix_common.util.strings import id_generator
+import ainix_kernel.indexing.index
 import copy
 
 
@@ -36,7 +37,7 @@ class ExamplesIndex(ExamplesStore):
             ytext=IndexBackendFields.TEXT,
             xtype=IndexBackendFields.ID,
             ytype=IndexBackendFields.ID,
-            yindexable=IndexBackendFields.SPACE_UNSTORED_TEXT,
+            yindexable=IndexBackendFields.SPACE_STORED_TEXT,
             y_set_id=IndexBackendFields.ID,
             weight=IndexBackendFields.ONE_INTERVAL_NUM,
             split=IndexBackendFields.KEYWORD
@@ -48,7 +49,7 @@ class ExamplesIndex(ExamplesStore):
         if node is None:
         return Falsetouch any files and just
         keeps data in RAM"""
-        return indexing.whooshbackend.WhooshIndexBackend(
+        return ainix_kernel.indexing.whooshbackend.WhooshIndexBackend(
             ExamplesIndex.get_scheme(), ram_only=True)
 
     def _get_yparsed_rep(self, y_string: str, y_type: str) -> str:

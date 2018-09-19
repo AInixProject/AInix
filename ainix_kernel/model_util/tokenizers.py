@@ -1,16 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, Generator, List
+from typing import Iterable, Generator, List, Tuple
 from ainix_kernel import constants
+from ainix_common.parsing.parseast import AstNode, ObjectNode, ObjectChoiceNode
+from ainix_common.parsing import parseast
 
 
 class Tokenizer(ABC):
     @abstractmethod
-    def tokenize(self, to_tokenize: str) -> List[str]:
+    def tokenize(self, to_tokenize) -> Tuple[List[str], List]:
+        """Maps a value to a list of tokens and list of metadata about those tokens"""
         pass
 
 
 class NonAsciiTokenizer(Tokenizer):
-    def tokenize(self, to_tokenize: str) -> List[str]:
+    def tokenize(self, to_tokenize: str) -> Tuple[List[str], None]:
         """Takes in a string and outputs a tokenization splitting at non-ascii boundries"""
         # TODO (DNGros): Maybe memoize this
         out = [[]]
@@ -27,4 +30,23 @@ class NonAsciiTokenizer(Tokenizer):
             else:
                 out[-1].append(c)
         out = ["".join(toklist) for toklist in out if len(toklist) >= 1]
-        return out
+        return out, None
+
+class SpaceTokenizer(Tokenizer):
+    def tokenize(self, to_tokenize: str) -> Tuple[List[str], None]:
+        return to_tokenize.split(), None
+
+class AstTokenizer(Tokenizer):
+    def tokenize(self, to_tokenize: AstNode) -> Tuple[List[str], List[AstNode]]:
+        out_tokens = []
+        out_nodes = []
+        for node in to_tokenize.depth_first_iter():
+            if isinstance(node, ObjectNode):
+                out_tokens.append(parseast.indexable_repr_object(node.implementation.name))
+            elif isinstance(node, ObjectChoiceNode):
+                out_tokens.append(parseast.indexable_repr_classify_type(
+                    node.get_type_to_choose_name()))
+            else:
+                raise ValueError(f"Unrecognized node {node}")
+            out_nodes.append(node)
+        return out_tokens, out_nodes

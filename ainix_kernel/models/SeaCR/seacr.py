@@ -1,5 +1,5 @@
 """This module defines the SeaCR (Search Compare Recurse) model"""
-from ainix_kernel.models.SeaCR.comparer import ComparerResult, SimpleRulebasedComparer
+from ainix_kernel.models.SeaCR.comparer import ComparerResult, SimpleRulebasedComparer, Comparer
 from ainix_kernel.models.SeaCR.treeutil import get_type_choice_nodes
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
@@ -9,18 +9,47 @@ from ainix_common.parsing.parseast import AstNode, ObjectNode, \
     AstObjectChoiceSet, ObjectNodeSet
 from ainix_common.parsing.typecontext import AInixType, AInixObject
 from typing import List
+from ainix_kernel.model_util.tokenizers import NonAsciiTokenizer, AstTokenizer
+from ainix_kernel.model_util.vocab import CounterVocabBuilder
+
+
+def make_rulebased_seacr(index: ExamplesIndex):
+    return SeaCRModel(index, TypePredictor(index, comparer=SimpleRulebasedComparer()))
+
+
+def make_default_seacr(index: ExamplesIndex):
+    from ainix_kernel.models.SeaCR import torchcomparer
+    x_tokenizer = NonAsciiTokenizer()
+    y_tokenizer = AstTokenizer()
+    x_vocab_builder = CounterVocabBuilder(min_freq=1)
+    y_vocab_builder = CounterVocabBuilder()
+    already_done_ys = set()
+    parser = StringParser(index.type_context)
+    for example in index.get_all_examples():
+        x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.xquery)[0])
+        x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.ytext)[0])
+        if example.ytext not in already_done_ys:
+            ast = parser.create_parse_tree(example.ytext, example.ytype)
+            y_tokens, _ = y_tokenizer.tokenize(ast)
+            y_vocab_builder.add_sequence(y_tokens)
+    comparer = torchcomparer.get_default_torch_comparer(
+        x_vocab=x_vocab_builder.produce_vocab(),
+        y_vocab=y_vocab_builder.produce_vocab(),
+        x_tokenizer=x_tokenizer,
+        y_tokenizer=y_tokenizer,
+        out_dims=16
+    )
+    return SeaCRModel(index, TypePredictor(index, comparer=comparer))
 
 
 class SeaCRModel(StringTypeTranslateCF):
     def __init__(
         self,
         index: ExamplesIndex,
-        type_predictor: 'TypePredictor' = None,
+        type_predictor: 'TypePredictor',
     ):
         self.type_context = index.type_context
-        comparer = SimpleRulebasedComparer()
-        self.type_predictor = type_predictor if type_predictor else \
-            TypePredictor(index, comparer)
+        self.type_predictor = type_predictor
 
     def predict(
         self,
@@ -30,13 +59,14 @@ class SeaCRModel(StringTypeTranslateCF):
     ) -> AstNode:  # TODO (DNGros): change to set
         root_type = self.type_context.get_type_by_name(y_type_name)
         root_node = ObjectChoiceNode(root_type)
-        self._predict_step(x_string, root_node, root_type, use_only_train_data, 0)
+        self._predict_step(x_string, root_node, root_node, root_type, use_only_train_data, 0)
         root_node.freeze()
         return root_node
 
     def _predict_step(
         self,
         x_query: str,
+        current_root: ObjectChoiceNode,
         current_leaf: AstNode,
         root_y_type: AInixType,
         use_only_train_data: bool,
@@ -44,11 +74,12 @@ class SeaCRModel(StringTypeTranslateCF):
     ):
         if isinstance(current_leaf, ObjectChoiceNode):
             predicted_impl = self.type_predictor.predict(
-                x_query, current_leaf, use_only_train_data, current_depth)
+                x_query, current_root, current_leaf, use_only_train_data,
+                current_depth)
             new_node = ObjectNode(predicted_impl)
             current_leaf.set_choice(new_node)
             if new_node is not None:
-                self._predict_step(x_query, new_node, root_y_type,
+                self._predict_step(x_query, current_root, new_node, root_y_type,
                                    use_only_train_data, current_depth + 1)
         elif isinstance(current_leaf, ObjectNode):
             # TODO (DNGros): this is messy. Should have better iteration based
@@ -68,7 +99,7 @@ class SeaCRModel(StringTypeTranslateCF):
                 else:
                     continue
                 current_leaf.set_arg_value(arg.name, new_node)
-                self._predict_step(x_query, new_node, root_y_type,
+                self._predict_step(x_query, current_root, new_node, root_y_type,
                                    use_only_train_data, current_depth + 1)
         else:
             raise ValueError(f"leaf node {current_leaf} not predictable")
@@ -138,17 +169,19 @@ class TypePredictor:
     def compare_example(
         self,
         x_query: str,
+        current_root: ObjectChoiceNode,
         current_leaf: ObjectChoiceNode,
         example: Example,
         current_depth: int
     ) -> 'ComparerResult':
         example_ast = self.parser.create_parse_tree(example.ytext, example.ytype)
-        return self.comparer.compare(x_query, current_leaf, current_depth,
+        return self.comparer.compare(x_query, current_root, current_leaf, current_depth,
                                      example.xquery, example_ast)
 
     def _train_compare(
         self,
         x_query: str,
+        current_root: ObjectChoiceNode,
         current_leaf: ObjectChoiceNode,
         example_to_compare: Example,
         ground_truth_set: AstObjectChoiceSet,
@@ -190,6 +223,7 @@ class TypePredictor:
     def predict(
         self,
         x_query: str,
+        current_root: ObjectChoiceNode,
         current_leaf: ObjectChoiceNode,
         use_only_train_data: bool,
         current_depth: int
@@ -199,7 +233,7 @@ class TypePredictor:
         search_results = self._search(x_query, current_leaf, use_only_train_data)
         if not search_results:
             raise ModelCantPredictException(f"No examples in index for '{x_query}'")
-        comparer_result = self.compare_example(x_query, current_leaf,
+        comparer_result = self.compare_example(x_query, current_root, current_leaf,
                                                search_results[0], current_depth)
         choose_name = comparer_result.impl_scores[0][1]
         return self.type_context.get_object_by_name(choose_name)
@@ -207,6 +241,7 @@ class TypePredictor:
     def train(
         self,
         x_query: str,
+        current_root: ObjectChoiceNode,
         current_leaf: ObjectChoiceNode,
         expected_choices: AstObjectChoiceSet,
         current_depth: int
@@ -215,7 +250,8 @@ class TypePredictor:
         if not search_results:
             return
         for result in search_results[:1]:
-            self._train_compare(x_query, current_leaf, result, expected_choices, current_depth)
+            self._train_compare(x_query, current_root, current_leaf, result,
+                                expected_choices, current_depth)
 
 
 

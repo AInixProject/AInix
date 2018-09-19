@@ -25,6 +25,7 @@ class Comparer(ABC):
     def compare(
         self,
         gen_query: str,
+        gen_ast_current_root: ObjectChoiceNode,
         gen_ast_current_leaf: ObjectChoiceNode,
         current_gen_depth: int,
         example_query: str,
@@ -36,6 +37,7 @@ class Comparer(ABC):
     def train(
         self,
         gen_query: str,
+        gen_ast_current_root: ObjectChoiceNode,
         gen_ast_current_leaf: ObjectChoiceNode,
         current_gen_depth: int,
         example_query: str,
@@ -49,6 +51,7 @@ class SimpleRulebasedComparer(Comparer):
     def compare(
         self,
         gen_query: str,
+        gen_ast_current_root: ObjectChoiceNode,
         gen_ast_current_leaf: ObjectChoiceNode,
         current_gen_depth: int,
         example_query: str,
@@ -79,6 +82,7 @@ class SimpleRulebasedComparer(Comparer):
     def train(
         self,
         gen_query: str,
+        gen_ast_current_root: ObjectChoiceNode,
         gen_ast_current_leaf: ObjectChoiceNode,
         current_gen_depth: int,
         example_query: str,
