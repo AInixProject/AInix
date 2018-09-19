@@ -1,5 +1,6 @@
 import pytest
 from models.SeaCR.seacr import *
+from models.SeaCR import seacr
 from typecontext import TypeContext
 from ainix_common.parsing import loader
 import indexing.exampleloader
@@ -131,3 +132,20 @@ def test_full_number_2(numbers_type_context):
     model = make_rulebased_seacr(index)
     prediction = model.predict("nineth", "Number", False)
     assert expected == prediction
+
+
+def test_type_pred_gt_result(numbers_type_context):
+    parser = StringParser(numbers_type_context)
+    ast = parser.create_parse_tree("9", "BaseTen")
+    type = numbers_type_context.get_type_by_name("BaseTen")
+    valid_set = AstObjectChoiceSet(type, None)
+    valid_set.add(ast, True, 1, 1)
+    choose = ObjectChoiceNode(type)
+    gt_res = seacr._create_gt_compare_result(ast, choose, valid_set)
+    assert gt_res.prob_valid_in_example == 1
+    assert gt_res.impl_scores == ((1, "nine"),)
+    ast = parser.create_parse_tree("6", "BaseTen")
+    gt_res = seacr._create_gt_compare_result(ast, choose, valid_set)
+    assert gt_res.prob_valid_in_example == 0
+    assert gt_res.impl_scores == None
+    # TODO (DNGros): add more tests of this

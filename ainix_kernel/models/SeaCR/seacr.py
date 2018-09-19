@@ -160,6 +160,30 @@ class SeaCRModel(StringTypeTranslateCF):
         )
 
 
+def _create_gt_compare_result(
+        example_ast: ObjectChoiceNode,
+    current_leaf: ObjectChoiceNode,
+    ground_truth_set: AstObjectChoiceSet
+) -> ComparerResult:
+    choices_in_this_example = get_type_choice_nodes(
+        example_ast, current_leaf.type_to_choose.name)
+    right_choices = [e for e, depth in choices_in_this_example
+                     if ground_truth_set.is_known_choice(e.get_chosen_impl_name())]
+    in_this_example_impl_name_set = {c.get_chosen_impl_name()
+                                     for c, depth in choices_in_this_example}
+    right_choices_impl_name_set = {c.get_chosen_impl_name() for c in right_choices}
+    this_example_right_prob = 1 if len(right_choices) > 0 else 0
+    # Set expected scores. 1 if its valid, otherwise 0
+    if right_choices:
+        expected_impl_scores = [(1 if impl_name in right_choices_impl_name_set else 0, impl_name)
+                                for impl_name in in_this_example_impl_name_set]
+        expected_impl_scores.sort()
+        expected_impl_scores = tuple(expected_impl_scores)
+    else:
+        expected_impl_scores = None
+    return ComparerResult(this_example_right_prob, expected_impl_scores)
+
+
 class TypePredictor:
     def __init__(self, index: ExamplesIndex, comparer: 'Comparer'):
         self.index = index
@@ -188,24 +212,12 @@ class TypePredictor:
         ground_truth_set: AstObjectChoiceSet,
         current_depth: int
     ):
-        # Figure out the expected comparer result
         # TODO (DNGros): think about if can memoize during training
         example_ast = self.parser.create_parse_tree(
             example_to_compare.ytext, example_to_compare.ytype)
-        choices_in_this_example = get_type_choice_nodes(
-            example_ast, current_leaf.type_to_choose)
+        expected_result = _create_gt_compare_result(example_ast, current_leaf,
+                                                    ground_truth_set)
         # Extract all potential choices in our ground truth set
-        right_choices = [e for e, depth in choices_in_this_example
-                         if ground_truth_set.is_known_choice(e.get_chosen_impl_name())]
-        in_this_example_impl_name_set = {c.get_chosen_impl_name()
-                                         for c, depth in choices_in_this_example}
-        right_choices_impl_name_set = {c.get_chosen_impl_name() for c in right_choices}
-        this_example_right_prob = 1 if len(right_choices) > 0 else 0
-        # Set expected scores. 1 if its valid, otherwise 0
-        expected_impl_scores = [(1 if impl_name in right_choices else 0, impl_name)
-                                for impl_name in in_this_example_impl_name_set]
-        expected_impl_scores.sort()
-        expected_result = ComparerResult(this_example_right_prob, tuple(expected_impl_scores))
         self.comparer.train(x_query, current_root,current_leaf, current_depth,
                             example_to_compare.xquery, example_ast, expected_result)
 

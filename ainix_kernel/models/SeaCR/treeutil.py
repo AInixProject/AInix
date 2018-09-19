@@ -15,6 +15,8 @@ def get_type_choice_nodes(
         (A ObjectChoiceNode that is a child of root_node with desired type,
          An int for its depth)
     """
+    if not isinstance(type_name, str):
+        raise ValueError("Expected string for type_name")
     out = []
 
     def check_type(cur_node: AstNode, depth: int):

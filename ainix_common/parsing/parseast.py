@@ -124,7 +124,7 @@ class ObjectChoiceNode(AstNode):
                              new_choice.implementation.type_name)
 
     def get_type_to_choose_name(self) -> str:
-        return  self._type_to_choose.name
+        return self._type_to_choose.name
 
     @property
     def next_node(self) -> 'ObjectNode':

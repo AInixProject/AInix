@@ -181,8 +181,15 @@ class TorchComparer(Comparer):
         example_ast_root: AstNode,
         expected_result: ComparerResult
     ):
-        # TODO (DNGros): cache the gen stuff somehow
-        pass
+        out_prob_score = self._compare_internal(
+            gen_query,
+            gen_ast_current_root,
+            gen_ast_current_leaf,
+            current_gen_depth,
+            example_query,
+            example_ast_root,
+        )
+        return out_prob_score
 
 
 def get_default_torch_comparer(x_vocab, y_vocab, x_tokenizer, y_tokenizer, out_dims=8):

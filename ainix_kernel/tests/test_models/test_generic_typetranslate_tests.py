@@ -114,7 +114,7 @@ def assert_acc(model, example_store, splits, required_accuracy, expect_fail):
     if not expect_fail:
         assert logger.stats['ExactMatch'].true_frac >= required_accuracy
     else:
-        assert logger.stats['ExactMatch'].true_frac >= required_accuracy
+        assert not logger.stats['ExactMatch'].true_frac >= required_accuracy
 
 
 def assert_train_acc(model, example_store, required_accuracy = 0.98, expect_fail=False):
@@ -235,6 +235,8 @@ def test_string_gen(model_name, basic_string_tc):
         y_strings=["bar bar"]
     )
     model = make_model(model_name, example_store)
+    # Don't expect it to work before training.
+    assert_val_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
     do_train(model, example_store)
     assert_train_acc(model, example_store)

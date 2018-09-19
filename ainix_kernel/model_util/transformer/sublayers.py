@@ -111,8 +111,6 @@ class MultiHeadAttention(nn.Module):
         weights = self.dropout(weights)
 
         # Combine with values to get context
-        print("weights", weights)
-        print("values", values)
         contexts = torch.matmul(weights, values)
 
         # Merge heads
