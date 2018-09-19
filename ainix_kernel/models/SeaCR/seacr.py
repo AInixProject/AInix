@@ -136,7 +136,8 @@ class SeaCRModel(StringTypeTranslateCF):
         teacher_force_path: ObjectChoiceNode,
         current_depth: int
     ):  # TODO This should likely eventually return the new current_gen ast
-        self.type_predictor.train(x_query, current_gen_leaf, expected, current_depth)
+        self.type_predictor.train(x_query, current_gen_root, current_gen_leaf,
+                                  expected, current_depth)
         # figure out where going next
         next_expected_node = expected.get_next_node_for_choice(
             teacher_force_path.get_chosen_impl_name())
@@ -205,7 +206,7 @@ class TypePredictor:
                                 for impl_name in in_this_example_impl_name_set]
         expected_impl_scores.sort()
         expected_result = ComparerResult(this_example_right_prob, tuple(expected_impl_scores))
-        self.comparer.train(x_query, current_leaf, current_depth,
+        self.comparer.train(x_query, current_root,current_leaf, current_depth,
                             example_to_compare.xquery, example_ast, expected_result)
 
     # TODO (DNGros): make a generator

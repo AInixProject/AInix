@@ -1,6 +1,7 @@
 import torch
 from torch import Tensor
 import numpy as np
+import math
 
 
 class EmbeddedAppender(torch.nn.Module):
@@ -13,14 +14,12 @@ class EmbeddedAppender(torch.nn.Module):
     """
     def __init__(self, dims_to_append: int):
         super().__init__()
-        self.source_vectorizer = source_vectorizer
         self.dims_to_append = dims_to_append
-        self.learned_vec = torch.nn.Parameter(dims_to_append)
-        torch.nn.init.xavier_normal(self.learned_vec)
+        self.learned_vec = torch.nn.Parameter(torch.randn(dims_to_append))
 
-    def forward(self, indices: Tensor) -> torch.Tensor:
-        base_values = self.source_vectorizer.process_indices(indices)
-        expanded_learned_vec = self.learned_vec.expand(base_values.shape[:2], -1)
+    def forward(self, base_values: Tensor) -> torch.Tensor:
+        #base_values = self.source_vectorizer.process_indices(indices)
+        expanded_learned_vec = self.learned_vec.expand(*base_values.shape[:2], -1)
         return torch.cat((base_values, expanded_learned_vec), 2)
 
 
@@ -51,7 +50,7 @@ def _gen_timing_signal(batches, length, channels, min_timescale=1.0,
     return t_signal.expand(batches, -1, -1)
 
 
-class TimingSignalConcat(VectorizerBase):
+class TimingSignalConcat(torch.nn.Module):
     """Concats on in a timeing signal based off the a series of sinusoids. This
     can be used an input into a Transformer module.
     Transformer paper ref: https://arxiv.org/abs/1706.03762

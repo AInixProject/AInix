@@ -3,6 +3,7 @@ import typing, collections
 from typing import Iterable, Type, List
 from collections import defaultdict
 from ainix_kernel import constants
+import torch
 
 
 class Vocab:
@@ -18,8 +19,8 @@ class Vocab:
     def extend(self, v, sort=False):
         pass
 
-    def token_seq_to_indices(self, sequence: Iterable[str]) -> List[int]:
-        return list(map(self.token_to_index, sequence))
+    def token_seq_to_indices(self, sequence: Iterable[str]) -> torch.LongTensor:
+        return torch.LongTensor([list(map(self.token_to_index, sequence))])
 
 
 class CounterVocab(Vocab):
@@ -57,7 +58,7 @@ class CounterVocab(Vocab):
                 break
             self.itos.append(word)
 
-        self.stoi = defaultdict(constants.UNK)
+        self.stoi = defaultdict(lambda x: constants.UNK)
         # stoi is simply a reverse dict for itos
         self.stoi.update({tok: i for i, tok in enumerate(self.itos)})
 

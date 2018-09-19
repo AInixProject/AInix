@@ -37,10 +37,12 @@ class TransformerPredictor(FieldComparerPredictor):
         )
         # Here we define a series of special keys/values which we look at
         # while getting our result.
-        self.out_prob_key = torch.nn.Parameter(hidden_size)
-        self.out_select_key = torch.nn.Parameter(hidden_size)
-        self.special_keys = torch.cat((self.out_prob_key, self.out_select_key))
-        self.specials_length = self.special_keys.shape()[1]
+        self.out_prob_key = torch.nn.Parameter(torch.randn(hidden_size))
+        self.out_select_key = torch.nn.Parameter(torch.randn(hidden_size))
+        self.special_keys = torch.stack((self.out_prob_key, self.out_select_key))
+        self.specials_length = self.special_keys.shape[0]
+        assert self.specials_length == 2
+        assert self.special_keys.shape[1] == self.hidden_size
 
         self.specials_model = MultiHeadAttention(
             input_depth=self.hidden_size,
@@ -55,11 +57,13 @@ class TransformerPredictor(FieldComparerPredictor):
     def forward(self, vectors_gen_query, vectors_gen_ast,
                 vectors_example_query, vectors_example_ast):
         # Concat all our input fields into one big tensor for input into transformers
+        num_of_batches = vectors_example_ast.shape[0]
+        expanded_specials = self.special_keys.expand(num_of_batches, -1, -1)
         combined_vector = torch.cat(
             (vectors_gen_query, vectors_example_query,
              vectors_example_query, vectors_example_ast,
-             self.special_keys),
-            dim=2
+             expanded_specials),
+            dim=1
         )
         # Pass everything through transformers
         encoded = self.encoder(combined_vector)
@@ -68,7 +72,7 @@ class TransformerPredictor(FieldComparerPredictor):
         encoded_specials = encoded[:, -self.specials_length:, :]
         # Pass the specials through one extra transformer
         specials_extra_enc = self.specials_model.forward(
-            encoded_specials, encoded_combined, encoded_specials)
+            encoded_specials, encoded_combined, encoded_combined)
         # Look at the specials in order to determine outputs
         out_prob_vec = specials_extra_enc[:, 0]
         out_prob_score = self.out_prob_linear(out_prob_vec)
@@ -113,7 +117,7 @@ class TorchComparer(Comparer):
         # First let's tokenize all our inputs
         tokenized_gen_query, _ = self.x_tokenizer.tokenize(gen_query)
         tokenized_gen_ast, gen_node_pointers = self.y_tokenizer.tokenize(gen_ast_current_root)
-        tokenized_example_query, _ = self.y_tokenizer.tokenize(example_query)
+        tokenized_example_query, _ = self.x_tokenizer.tokenize(example_query)
         tokenized_example_ast, example_node_pointers = self.y_tokenizer.tokenize(example_ast_root)
 
         # Convert our tokens into indices
@@ -125,7 +129,7 @@ class TorchComparer(Comparer):
         # Convert them to vectors
         vectors_gen_query = self.gen_query_vectorizer(indices_gen_query)
         vectors_gen_ast = self.gen_ast_vectorizer(indices_gen_ast)
-        vectors_example_query = self.example_ast_vectorizer(indices_example_query)
+        vectors_example_query = self.example_query_vectorizer(indices_example_query)
         vectors_example_ast = self.example_ast_vectorizer(indices_example_ast)
 
         # Get result

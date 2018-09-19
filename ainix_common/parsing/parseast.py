@@ -38,7 +38,11 @@ class AstNode(ABC):
 
     def depth_first_iter(self) -> Generator['AstNode', None, None]:
         """Iterates through tree starting at this node in a depth-first manner"""
-        yield from map(self.depth_first_iter, self.get_children())
+        stack = [self]
+        while stack:
+            cur = stack.pop()
+            yield cur
+            stack.extend(reversed(list(cur.get_children())))
 
     @abstractmethod
     def freeze(self):
@@ -152,8 +156,8 @@ class ObjectChoiceNode(AstNode):
         return repr
 
     def get_children(self) -> Generator[AstNode, None, None]:
-        assert self._choice is not None
-        yield self._choice
+        if self._choice is not None:
+            yield self._choice
 
     def __hash__(self):
         if self._hash_cache:
@@ -356,9 +360,9 @@ class ObjectNode(AstNode):
         return repr
 
     def get_children(self) -> Generator[AstNode, None, None]:
-        return (self._arg_name_to_node[arg.name]
-                for arg in self._implementation.children
-                if arg.name in self._arg_name_to_node)
+        yield from (self._arg_name_to_node[arg.name]
+                    for arg in self._implementation.children
+                    if arg.name in self._arg_name_to_node)
 
     def as_childless_node(self) -> ChildlessObjectNode:
         choices = tuple([self._arg_name_to_node[arg.name].get_chosen_impl_name()

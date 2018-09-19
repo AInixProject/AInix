@@ -6,7 +6,7 @@ from typing import List
 import pytest
 
 from ainix_kernel.indexing.examplestore import Example, DataSplits, SPLIT_TYPE, ExamplesStore
-from ainix_kernel.models.SeaCR.seacr import SeaCRModel
+from ainix_kernel.models.SeaCR import seacr
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
 from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixObject, AInixArgument
 from ainix_common.parsing import loader
@@ -15,18 +15,22 @@ from ainix_kernel.training.evaluate import EvaluateLogger
 from ainix_kernel.training.train import TypeTranslateCFTrainer
 
 # Here we define functions to generate each of the models we want to test
-AVAIL_MODELS = ["SeaCR"]
+FULL_MODELS = ["SeaCR"]
+ALL_MODELS = ["SeaCR-Rulebased"] + FULL_MODELS
 
 
 def make_example_store(model_name, type_context):
-    if model_name == "SeaCR":
+    if model_name in ("SeaCR-Rulebased", "SeaCR"):
         return ExamplesIndex(type_context, ExamplesIndex.get_default_ram_backend())
     else:
         raise ValueError("Unrecognized model type ", type)
 
+
 def make_model(model_name, example_store):
-    if model_name == "SeaCR":
-        return SeaCRModel(example_store)
+    if model_name == "SeaCR-Rulebased":
+        return seacr.make_rulebased_seacr(example_store)
+    elif model_name == "SeaCR":
+        return seacr.make_default_seacr(example_store)
     else:
         raise ValueError("Unrecognized model type ", type)
 
@@ -124,7 +128,7 @@ def assert_val_acc(model, example_store, required_accuracy = 0.98, expect_fail=F
                required_accuracy, expect_fail)
 
 
-@pytest.mark.parametrize("model_name", AVAIL_MODELS)  #, indirect=['model'])
+@pytest.mark.parametrize("model_name", ALL_MODELS)  #, indirect=['model'])
 def test_basic_classify(model_name, basic_classify_tc):
     basic_classify_tc.fill_default_parsers()
     example_store = make_example_store(model_name, basic_classify_tc)
@@ -147,7 +151,7 @@ def test_basic_classify(model_name, basic_classify_tc):
     assert_train_acc(model, example_store)
 
 
-@pytest.mark.parametrize("model_name", AVAIL_MODELS)
+@pytest.mark.parametrize("model_name", FULL_MODELS)
 def test_non_bow(model_name, basic_classify_tc):
     """Tests to see if model can classify on tasks that require non-bag-of-words
     assumption"""
@@ -180,7 +184,7 @@ def test_non_bow(model_name, basic_classify_tc):
     assert_val_acc(model, example_store)
 
 
-@pytest.mark.parametrize("model_name", AVAIL_MODELS)
+@pytest.mark.parametrize("model_name", FULL_MODELS)
 def test_string_gen(model_name, basic_string_tc):
     """Tests to see if model can learn to generate string of varying length"""
     basic_string_tc.fill_default_parsers()
