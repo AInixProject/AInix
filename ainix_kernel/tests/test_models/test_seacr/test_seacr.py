@@ -147,5 +147,5 @@ def test_type_pred_gt_result(numbers_type_context):
     ast = parser.create_parse_tree("6", "BaseTen")
     gt_res = seacr._create_gt_compare_result(ast, choose, valid_set)
     assert gt_res.prob_valid_in_example == 0
-    assert gt_res.impl_scores == None
+    assert gt_res.impl_scores is None
     # TODO (DNGros): add more tests of this
