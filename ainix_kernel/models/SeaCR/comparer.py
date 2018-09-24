@@ -46,6 +46,9 @@ class Comparer(ABC):
     ):
         pass
 
+    def get_parameters(self):
+        return None
+
 
 class SimpleRulebasedComparer(Comparer):
     def compare(

@@ -101,9 +101,9 @@ class ExampleAddHelper:
         )
 
 
-def do_train(model: StringTypeTranslateCF, example_store: ExamplesStore):
+def do_train(model: StringTypeTranslateCF, example_store: ExamplesStore, epochs=10):
     trainer = TypeTranslateCFTrainer(model, example_store)
-    trainer.train(10)
+    trainer.train(epochs)
 
 
 def assert_acc(model, example_store, splits, required_accuracy, expect_fail):
@@ -179,7 +179,7 @@ def test_non_bow(model_name, basic_classify_tc):
     # Don't expect it to work before training.
     assert_val_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
-    do_train(model, example_store)
+    do_train(model, example_store, epochs=50)
     assert_train_acc(model, example_store)
     assert_val_acc(model, example_store)
 

@@ -103,6 +103,13 @@ class TorchComparer(Comparer):
     example_ast_vectorizer: VectorizerBase
     fields_compare_predictor: FieldComparerPredictor
 
+    def __attrs_post_init__(self):
+        self.all_models = torch.nn.ModuleList(
+            [self.gen_query_vectorizer, self.example_query_vectorizer,
+             self.gen_ast_vectorizer, self.example_ast_vectorizer,
+             self.fields_compare_predictor]
+        )
+
     def _compare_internal(
         self,
         gen_query: str,
@@ -180,7 +187,7 @@ class TorchComparer(Comparer):
         example_query: str,
         example_ast_root: AstNode,
         expected_result: ComparerResult
-    ):
+    ) -> torch.Tensor:
         out_prob_score = self._compare_internal(
             gen_query,
             gen_ast_current_root,
@@ -190,6 +197,10 @@ class TorchComparer(Comparer):
             example_ast_root,
         )
         return out_prob_score
+
+    def get_parameters(self):
+        #print(list(self.all_models.parameters()))
+        return self.all_models.parameters()
 
 
 def get_default_torch_comparer(x_vocab, y_vocab, x_tokenizer, y_tokenizer, out_dims=8):
@@ -221,13 +232,6 @@ class SimpleQueryVectorizer(VectorizerBase):
 
     def forward(self, indices: torch.Tensor):
         return self.timing_signal(self.extender(self.embed(indices)))
-
-
-def get_default_gen_query_vectorizer(x_vocab: Vocab, out_dims):
-    field_vec = 2
-    out = TorchDeepEmbed(x_vocab, out_dims - field_vec)
-    out = EmbeddedAppender(out, field_vec)
-    return out
 
 
 # TODO (DNGros): Batched version of comparers
