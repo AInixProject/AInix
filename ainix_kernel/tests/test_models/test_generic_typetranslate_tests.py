@@ -1,4 +1,4 @@
-"""A bunch of tests of String to Tree models. Can be reused for multiple
+"""A bunch of tests of String2Tree models. Can be reused for multiple
 models if new models are added. Each test will train the model with some data
 and test specific aspects of the training"""
 from typing import List
@@ -15,12 +15,15 @@ from ainix_kernel.training.evaluate import EvaluateLogger
 from ainix_kernel.training.train import TypeTranslateCFTrainer
 
 # Here we define functions to generate each of the models we want to test
-FULL_MODELS = ["SeaCR"]
+# Full models are models which should pass every test
+FULL_MODELS = ["SeaCR-OracleCompare", "SeaCR"]
+# All Models are just all available models. Some might not be expect to pass
+# every test
 ALL_MODELS = ["SeaCR-Rulebased"] + FULL_MODELS
 
 
 def make_example_store(model_name, type_context):
-    if model_name in ("SeaCR-Rulebased", "SeaCR"):
+    if model_name in ("SeaCR-Rulebased", "SeaCR", "SeaCR-OracleCompare"):
         return ExamplesIndex(type_context, ExamplesIndex.get_default_ram_backend())
     else:
         raise ValueError("Unrecognized model type ", type)
@@ -31,6 +34,8 @@ def make_model(model_name, example_store):
         return seacr.make_rulebased_seacr(example_store)
     elif model_name == "SeaCR":
         return seacr.make_default_seacr(example_store)
+    elif model_name == "SeaCR-OracleCompare":
+        return seacr.make_default_seacr_with_oracle_comparer(example_store)
     else:
         raise ValueError("Unrecognized model type ", type)
 
@@ -153,8 +158,8 @@ def test_basic_classify(model_name, basic_classify_tc):
 
 @pytest.mark.parametrize("model_name", FULL_MODELS)
 def test_non_bow(model_name, basic_classify_tc):
-    """Tests to see if model can classify on tasks that require non-bag-of-words
-    assumption"""
+    """Tests to see if model can classify on tasks that require expressive power
+    beyond a bag-of-words assumption"""
     basic_classify_tc.fill_default_parsers()
     example_store = make_example_store(model_name, basic_classify_tc)
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,

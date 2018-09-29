@@ -5,6 +5,10 @@ from collections import defaultdict
 from ainix_kernel import constants
 import torch
 
+from ainix_common.parsing.parseast import StringParser
+from ainix_kernel.indexing.examplestore import ExamplesStore
+from model_util.tokenizers import Tokenizer
+
 
 class Vocab:
     @abstractmethod
@@ -104,3 +108,40 @@ class CounterVocabBuilder(VocabBuilder):
 
     def extend_vocab(self):
         raise NotImplemented()
+
+
+def make_vocab_from_example_store(
+    exampe_store: ExamplesStore,
+    x_tokenizer: Tokenizer,
+    y_tokenizer: Tokenizer,
+    x_vocab_builder: VocabBuilder = None,
+    y_vocab_builder: VocabBuilder = None
+) -> typing.Tuple[Vocab, Vocab]:
+    """Creates an x and y vocab based off all examples in an example store.
+
+    Args:
+        exampe_store: The example store to build from
+        x_tokenizer: The tokenizer to use for x queries
+        y_tokenizer: The tokenizer to use for y queries
+        x_vocab_builder: The builder for the kind of x vocab we want to produce.
+            If None, it just picks a reasonable default.
+        y_vocab_builder: The builder for the kind of y vocab we want to produce.
+            If None, it just picks a reasonable default.
+    Returns:
+        Tuple of the new (x vocab, y vocab).
+    """
+    if x_vocab_builder is None:
+        x_vocab_builder = CounterVocabBuilder(min_freq=1)
+    if y_vocab_builder is None:
+        y_vocab_builder = CounterVocabBuilder()
+
+    already_done_ys = set()
+    parser = StringParser(exampe_store.type_context)
+    for example in exampe_store.get_all_examples():
+        x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.xquery)[0])
+        x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.ytext)[0])
+        if example.ytext not in already_done_ys:
+            ast = parser.create_parse_tree(example.ytext, example.ytype)
+            y_tokens, _ = y_tokenizer.tokenize(ast)
+            y_vocab_builder.add_sequence(y_tokens)
+    return x_vocab_builder.produce_vocab(), y_vocab_builder.produce_vocab()

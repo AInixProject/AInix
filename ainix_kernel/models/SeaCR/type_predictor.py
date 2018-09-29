@@ -7,43 +7,10 @@ import torch
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
 from ainix_kernel.indexing.examplestore import Example, DataSplits
 from ainix_kernel.models.SeaCR.comparer import ComparerResult
-from ainix_kernel.models.SeaCR.treeutil import get_type_choice_nodes
 from ainix_kernel.models.model_types import ModelCantPredictException
 from ainix_common.parsing.parseast import ObjectChoiceNode, AstObjectChoiceSet, StringParser
 from ainix_common.parsing.typecontext import AInixObject
-
-
-def _create_gt_compare_result(
-    example_ast: ObjectChoiceNode,
-    current_leaf: ObjectChoiceNode,
-    ground_truth_set: AstObjectChoiceSet
-) -> ComparerResult:
-    """Creates a `CompareResult` based off some ground truth
-
-    Args:
-        example_ast : A parsed AST of the y_text inside the example we are creating
-            the ground truth for.
-        current_leaf : What we are currently generating for. Used to determine
-            what kind of choice we are making.
-        ground_truth_set : Our ground truth which we are making the result based
-            off of.
-    """
-    choices_in_this_example = get_type_choice_nodes(
-        example_ast, current_leaf.type_to_choose.name)
-    right_choices = [e for e, depth in choices_in_this_example
-                     if ground_truth_set.is_known_choice(e.get_chosen_impl_name())]
-    in_this_example_impl_name_set = {c.get_chosen_impl_name()
-                                     for c, depth in choices_in_this_example}
-    right_choices_impl_name_set = {c.get_chosen_impl_name() for c in right_choices}
-    this_example_right_prob = 1 if len(right_choices) > 0 else 0
-    if right_choices:
-        expected_impl_scores = [(1 if impl_name in right_choices_impl_name_set else 0, impl_name)
-                                for impl_name in in_this_example_impl_name_set]
-        expected_impl_scores.sort()
-        expected_impl_scores = tuple(expected_impl_scores)
-    else:
-        expected_impl_scores = None
-    return ComparerResult(this_example_right_prob, expected_impl_scores)
+from models.SeaCR.comparer import _create_gt_compare_result
 
 
 class TypePredictor(ABC):
@@ -159,8 +126,9 @@ class SearchingTypePredictor(TypePredictor):
         # TODO (DNGros): Test multiple of the results
         comparer_result = self.compare_example(x_query, current_root, current_leaf,
                                                search_results[0], current_depth)
-        if len(comparer_result.impl_scores) == 0:
-            print("sh")
+        if comparer_result.impl_scores is None:
+            raise ModelCantPredictException(
+                f"Comparer did not predict any search results as even potentially valid")
         print(comparer_result.impl_scores)
         choose_name = comparer_result.impl_scores[0][1]
         return self.type_context.get_object_by_name(choose_name)

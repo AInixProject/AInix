@@ -1,5 +1,5 @@
 """This module defines the SeaCR (Search Compare Recurse) model"""
-from ainix_kernel.models.SeaCR.comparer import SimpleRulebasedComparer
+from ainix_kernel.models.SeaCR.comparer import SimpleRulebasedComparer, OracleComparer
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
 from ainix_common.parsing.parseast import AstNode, ObjectNode, \
@@ -7,7 +7,7 @@ from ainix_common.parsing.parseast import AstNode, ObjectNode, \
     AstObjectChoiceSet, ObjectNodeSet
 from ainix_common.parsing.typecontext import AInixType
 from ainix_kernel.model_util.tokenizers import NonAsciiTokenizer, AstTokenizer
-from ainix_kernel.model_util.vocab import CounterVocabBuilder
+from ainix_kernel.model_util.vocab import CounterVocabBuilder, make_vocab_from_example_store
 
 from models.SeaCR.type_predictor import SearchingTypePredictor
 
@@ -17,30 +17,32 @@ def make_rulebased_seacr(index: ExamplesIndex):
     and does not require any training."""
     return SeaCRModel(index, SearchingTypePredictor(index, comparer=SimpleRulebasedComparer()))
 
+def _get_default_tokenizers():
+    """Returns tuple (default x tokenizer, default y tokenizer)"""
+    return NonAsciiTokenizer(), AstTokenizer()
+
 
 def make_default_seacr(index: ExamplesIndex):
     """A factory helper method which makes the current standard SeaCR model."""
     from ainix_kernel.models.SeaCR import torchcomparer
-    x_tokenizer = NonAsciiTokenizer()
-    y_tokenizer = AstTokenizer()
-    x_vocab_builder = CounterVocabBuilder(min_freq=1)
-    y_vocab_builder = CounterVocabBuilder()
-    already_done_ys = set()
-    parser = StringParser(index.type_context)
-    for example in index.get_all_examples():
-        x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.xquery)[0])
-        x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.ytext)[0])
-        if example.ytext not in already_done_ys:
-            ast = parser.create_parse_tree(example.ytext, example.ytype)
-            y_tokens, _ = y_tokenizer.tokenize(ast)
-            y_vocab_builder.add_sequence(y_tokens)
+    x_tokenizer, y_tokenizer = _get_default_tokenizers()
+    x_vocab, y_vocab = make_vocab_from_example_store(
+        index, x_tokenizer, y_tokenizer)
     comparer = torchcomparer.get_default_torch_comparer(
-        x_vocab=x_vocab_builder.produce_vocab(),
-        y_vocab=y_vocab_builder.produce_vocab(),
+        x_vocab=x_vocab,
+        y_vocab=y_vocab,
         x_tokenizer=x_tokenizer,
         y_tokenizer=y_tokenizer,
         out_dims=16
     )
+    return SeaCRModel(index, SearchingTypePredictor(index, comparer=comparer))
+
+
+def make_default_seacr_with_oracle_comparer(index: ExamplesIndex):
+    """Factory which constructs the current standard SeaCR model but using an
+    oracle as the comparer (Useful for testing the other parts of the model
+    without depending on the comparer learning stuff)."""
+    comparer = OracleComparer(index)
     return SeaCRModel(index, SearchingTypePredictor(index, comparer=comparer))
 
 

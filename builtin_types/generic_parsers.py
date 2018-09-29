@@ -18,8 +18,8 @@ def max_munch_type_parser(
             if match > longest_match:
                 longest_match = match
     if longest_match[1] is None:
-        raise parse_primitives.AInixParseError(f"{run.parser_name} unable to "
-                                               f"find any matches")
+        raise parse_primitives.AInixParseError(
+            f"{run.parser_name} unable to find any matches inside {string}")
     result.set_valid_implementation(longest_match[1])
     result.set_next_slice(0, longest_match[0])
 
