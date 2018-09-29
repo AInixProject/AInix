@@ -1,6 +1,6 @@
 import random
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 import torch
 
@@ -82,6 +82,7 @@ class SearchingTypePredictor(TypePredictor):
         self.present_pred_criterion = torch.nn.BCEWithLogitsLoss()
         self.train_sample_count = 10
         self.train_search_sample_dropout = 0.5
+        self.optimizer = None
 
     def _create_torch_trainers(self):
         params = self.comparer.get_parameters()
@@ -110,7 +111,7 @@ class SearchingTypePredictor(TypePredictor):
         example_to_compare: Example,
         ground_truth_set: AstObjectChoiceSet,
         current_depth: int
-    ) -> torch.Tensor:
+    ) -> Optional[torch.Tensor]:
         # TODO (DNGros): think about if can memoize during training
         example_ast = self.parser.create_parse_tree(
             example_to_compare.ytext, example_to_compare.ytype)
@@ -119,6 +120,8 @@ class SearchingTypePredictor(TypePredictor):
         predicted_result = self.comparer.train(
             x_query, current_root,current_leaf, current_depth,
             example_to_compare.xquery, example_ast, expected_result)
+        if predicted_result is None:
+            return None
         print("pred result", predicted_result)
         print("example result", expected_result.prob_valid_in_example)
         loss = self.present_pred_criterion(
@@ -186,9 +189,11 @@ class SearchingTypePredictor(TypePredictor):
         for result in search_results[:num_to_sample]:
             if random.random() < self.train_search_sample_dropout:
                 continue
-            loss += self._train_compare(
+            instance_loss = self._train_compare(
                 x_query, current_root, current_leaf, result,
                 expected_choices, current_depth)
+            if instance_loss is not None:
+                loss += instance_loss
 
         # post training optim step if needed
         if self.optimizer and loss.requires_grad:
