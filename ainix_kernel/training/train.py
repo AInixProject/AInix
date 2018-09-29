@@ -2,7 +2,7 @@ from typing import Tuple, Generator
 
 from indexing.examplestore import ExamplesStore, DataSplits, Example
 from models.model_types import StringTypeTranslateCF, ModelCantPredictException
-from parseast import StringParser, AstObjectChoiceSet, ObjectChoiceNode
+from ainix_common.parsing.parseast import StringParser, AstObjectChoiceSet, ObjectChoiceNode
 from training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 
 

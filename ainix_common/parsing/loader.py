@@ -8,9 +8,9 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 from typing import Dict, List, Optional, Callable, IO
-import typecontext
-import parse_primitives
-import examplecontext
+from ainix_common.parsing import typecontext
+from ainix_common.parsing import parse_primitives
+from ainix_common.parsing import examplecontext
 import importlib.util
 import os
 
@@ -28,7 +28,11 @@ def load_path(
         load_yaml(f, type_context, load_root)
 
 
-def load_yaml(filelike: IO, type_context: typecontext.TypeContext, load_root=None) -> None:
+def load_yaml(
+    filelike: IO,
+    type_context: typecontext.TypeContext,
+    load_root=None
+) -> None:
     doc = yaml.safe_load(filelike)
     _load(doc, type_context, load_root)
 

@@ -1,5 +1,5 @@
 import pytest
-from loader import *
+from ainix_common.parsing.loader import *
 import io
 from unittest.mock import MagicMock, patch
 

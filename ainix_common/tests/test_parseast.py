@@ -1,8 +1,8 @@
 import pytest
-from parseast import *
+from ainix_common.parsing.parseast import *
+from ainix_common.parsing import loader
+from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject
 from unittest.mock import MagicMock
-import loader
-from typecontext import TypeContext, AInixArgument, AInixObject
 
 BUILTIN_TYPES_PATH = "../../builtin_types"
 

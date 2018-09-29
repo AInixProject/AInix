@@ -1,10 +1,14 @@
 import pytest
-from models.SeaCR.seacr import *
-from models.SeaCR import seacr
-from typecontext import TypeContext
+
+import ainix_kernel.models.SeaCR.type_predictor
+import models
+from ainix_kernel.models.SeaCR.seacr import *
+from ainix_kernel.models.SeaCR import seacr
+from ainix_common.parsing.typecontext import TypeContext, AInixObject
 from ainix_common.parsing import loader
 import indexing.exampleloader
 from ainix_common.parsing.parseast import StringParser
+from ainix_kernel.models.model_types import ModelCantPredictException
 
 BUILTIN_TYPES_PATH = "../../../../builtin_types"
 
@@ -141,11 +145,11 @@ def test_type_pred_gt_result(numbers_type_context):
     valid_set = AstObjectChoiceSet(type, None)
     valid_set.add(ast, True, 1, 1)
     choose = ObjectChoiceNode(type)
-    gt_res = seacr._create_gt_compare_result(ast, choose, valid_set)
+    gt_res = models.SeaCR.type_predictor._create_gt_compare_result(ast, choose, valid_set)
     assert gt_res.prob_valid_in_example == 1
     assert gt_res.impl_scores == ((1, "nine"),)
     ast = parser.create_parse_tree("6", "BaseTen")
-    gt_res = seacr._create_gt_compare_result(ast, choose, valid_set)
+    gt_res = models.SeaCR.type_predictor._create_gt_compare_result(ast, choose, valid_set)
     assert gt_res.prob_valid_in_example == 0
     assert gt_res.impl_scores is None
     # TODO (DNGros): add more tests of this

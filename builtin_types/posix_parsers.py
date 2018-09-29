@@ -1,4 +1,4 @@
-import parse_primitives
+from ainix_common.parsing import parse_primitives
 from typing import List
 
 

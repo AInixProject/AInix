@@ -290,4 +290,6 @@ def NoArgsObjectParseFunc(
     string: str,
     result: ObjectParserResult
 ) -> None:
+    """A special builtin parser for objects with no args. Doesn't need to
+    really do anything..."""
     pass

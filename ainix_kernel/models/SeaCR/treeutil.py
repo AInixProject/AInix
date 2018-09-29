@@ -29,3 +29,14 @@ def get_type_choice_nodes(
             check_type(child, depth + 1)
     check_type(root_node, 0)
     return out
+
+#def _is_like_a_obj_choice_node(node: AstNode):
+#    """Do some wonky python import stuff I don't feel like debugging right
+#    now isinstance(node, ObjectChoiceNode) isn't working. Instead we are
+#    just going full on duck-typing mode and just checking to see if it has
+#    a way to access it's type name to choose."""
+#    #return hasattr(node, "get_type_to_choose_name")
+#    return isinstance(node, ObjectChoiceNode)
+
+
+

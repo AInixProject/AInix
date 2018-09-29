@@ -1,5 +1,4 @@
-from typecontext import *
-import parse_primitives
+from ainix_common.parsing.typecontext import *
 
 def test_builtin_singletypeimplparser():
     type_context = TypeContext()

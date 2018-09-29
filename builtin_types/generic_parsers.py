@@ -1,4 +1,4 @@
-import parse_primitives
+from ainix_common.parsing import parse_primitives
 import re
 MAX_MUNCH_LOOKUP_KEY = "ParseRepresentation"
 REGEX_GROUP_LOOKUP_KEY = "RegexRepresentation"

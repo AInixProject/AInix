@@ -1,7 +1,7 @@
 import pytest
-from parse_primitives import *
+from ainix_common.parsing.parse_primitives import *
+from ainix_common.parsing.typecontext import AInixObject, AInixArgument
 from unittest.mock import MagicMock
-from typecontext import AInixObject, AInixArgument
 
 def test_add_arg():
     mock_context = MagicMock()
