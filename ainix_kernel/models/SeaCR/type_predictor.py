@@ -1,9 +1,7 @@
 import random
 from abc import ABC, abstractmethod
-from typing import List, Optional
-
+from typing import List, Optional, Iterable
 import torch
-
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
 from ainix_kernel.indexing.examplestore import Example, DataSplits
 from ainix_kernel.models.SeaCR.comparer import ComparerResult
@@ -47,15 +45,16 @@ class SearchingTypePredictor(TypePredictor):
         self.parser = StringParser(self.type_context)
         self.prepared_trainers = False
         self.present_pred_criterion = torch.nn.BCEWithLogitsLoss()
-        self.train_sample_count = 10
-        self.train_search_sample_dropout = 0.5
+        self.train_sample_count = 20
+        self.train_search_sample_dropout = 0.6
+        self.max_examples_to_compare = 10
         self.optimizer = None
 
     def _create_torch_trainers(self):
         params = self.comparer.get_parameters()
         if params:
             import torch
-            self.optimizer = torch.optim.Adam(params, lr=1e-2)
+            self.optimizer = torch.optim.SGD(params, lr=1e-2)
         self.prepared_trainers = True
 
     def compare_example(
@@ -85,16 +84,18 @@ class SearchingTypePredictor(TypePredictor):
         expected_result = _create_gt_compare_result(example_ast, current_leaf,
                                                     ground_truth_set)
         predicted_result = self.comparer.train(
-            x_query, current_root,current_leaf, current_depth,
+            x_query, current_root, current_leaf, current_depth,
             example_to_compare.xquery, example_ast, expected_result)
         if predicted_result is None:
             return None
-        print("pred result", predicted_result)
-        print("example result", expected_result.prob_valid_in_example)
+        #print("pred result", predicted_result)
+        #print("example result", expected_result.prob_valid_in_example)
+        #expected_tensor = torch.Tensor([[1]])
+        expected_tensor = torch.Tensor([[expected_result.prob_valid_in_example]])
+        print("compare", x_query, " y ", example_to_compare.xquery)
+        print("expected tensor", expected_tensor)
         loss = self.present_pred_criterion(
-            predicted_result, torch.Tensor(
-                [[expected_result.prob_valid_in_example]]))
-        print("loss", loss)
+            predicted_result, expected_tensor)
         return loss
 
 
@@ -108,7 +109,36 @@ class SearchingTypePredictor(TypePredictor):
         type_name = current_leaf.get_type_to_choose_name()
         split_filter = (DataSplits.TRAIN,) if use_only_training_data else None
         return list(self.index.get_nearest_examples(
-            x_query, choose_type_name=type_name, filter_splits=split_filter))
+            x_query, choose_type_name=type_name, filter_splits=split_filter,
+            max_results=self.max_examples_to_compare))
+
+    def _pick_best_choice_from_many_examples(
+        self,
+        examples: Iterable[Example],
+        x_query,
+        current_root,
+        current_leaf,
+        current_depth: int
+    ) -> str:
+        """Looks at many examples (likely coming from search results), and compares
+        the ones that look interesting. It then returns the best type choice to make"""
+        # Right now just simply loop through a fixed number and return the one
+        # with highest present probability
+        # TODO (DNGros): Make this better. Take into account the impl scores and early quitting
+        highest_present_prob = 0
+        best_choice: str = None
+        for example in examples:
+            comparer_result = self.compare_example(x_query, current_root, current_leaf,
+                                                   example, current_depth)
+            if comparer_result.impl_scores is None:
+                continue
+            if comparer_result.prob_valid_in_example > highest_present_prob:
+                best_choice = comparer_result.impl_scores[0][1]
+                highest_present_prob = comparer_result.prob_valid_in_example
+        if best_choice is None:
+            raise ModelCantPredictException(
+                f"Comparer did not predict any search results as even potentially valid")
+        return best_choice
 
     def predict(
         self,
@@ -123,15 +153,9 @@ class SearchingTypePredictor(TypePredictor):
         search_results = self._search(x_query, current_leaf, use_only_train_data)
         if not search_results:
             raise ModelCantPredictException(f"No examples in index for '{x_query}'")
-        # TODO (DNGros): Test multiple of the results
-        comparer_result = self.compare_example(x_query, current_root, current_leaf,
-                                               search_results[0], current_depth)
-        if comparer_result.impl_scores is None:
-            raise ModelCantPredictException(
-                f"Comparer did not predict any search results as even potentially valid")
-        print(comparer_result.impl_scores)
-        choose_name = comparer_result.impl_scores[0][1]
-        return self.type_context.get_object_by_name(choose_name)
+        chosen_name = self._pick_best_choice_from_many_examples(
+            search_results, x_query, current_root, current_leaf, current_depth)
+        return self.type_context.get_object_by_name(chosen_name)
 
     def train(
         self,
@@ -165,6 +189,8 @@ class SearchingTypePredictor(TypePredictor):
 
         # post training optim step if needed
         if self.optimizer and loss.requires_grad:
+            print("x_query", x_query)
+            print("LOSS", loss)
             loss.backward()
             self.optimizer.step()
 

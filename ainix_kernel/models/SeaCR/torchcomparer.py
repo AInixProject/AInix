@@ -20,7 +20,6 @@ class FieldComparerPredictor(torch.nn.Module):
                 vectors_example_query, vectors_example_ast):
         pass
 
-
 class TransformerPredictor(FieldComparerPredictor):
     def __init__(self, hidden_size: int, num_layers, num_heads):
         super().__init__()
@@ -78,6 +77,27 @@ class TransformerPredictor(FieldComparerPredictor):
         out_prob_score = self.out_prob_linear(out_prob_vec)
         return out_prob_score
 
+class FirstWordPredictor(FieldComparerPredictor):
+    """A stupid field predictor used for quick test."""
+    def __init__(self, hidden_size: int):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.hidlinear = nn.Linear(hidden_size*2, hidden_size)
+        self.nonlin = nn.ReLU()
+        self.linear = nn.Linear(hidden_size, 1)
+
+    def forward(self, vectors_gen_query, vectors_gen_ast,
+                vectors_example_query, vectors_example_ast):
+        first_word_gen = vectors_gen_query[:, 0]
+        first_word_example = vectors_example_query[:, 0]
+        combined = torch.cat((first_word_gen, first_word_example), dim=1)
+        #combined = first_word_gen - first_word_example
+        #print("first_word_gen", first_word_gen)
+        #print("first_word_example", first_word_example)
+        #print("combined", combined)
+        #print("linear", self.linear.weight)
+        return self.linear(self.nonlin(self.hidlinear(combined)))
+
 
 @attr.s(auto_attribs=True)
 class TorchComparer(Comparer):
@@ -119,6 +139,10 @@ class TorchComparer(Comparer):
         example_query: str,
         example_ast_root: AstNode,
     ):
+        #print("---")
+        #print("gen_query", gen_query)
+        #print("example_query", example_query)
+
         # TODO (DNGros): cache the gen stuff somehow. This will likely come along
         # with implementing a batched comparer
         # First let's tokenize all our inputs
@@ -126,6 +150,9 @@ class TorchComparer(Comparer):
         tokenized_gen_ast, gen_node_pointers = self.y_tokenizer.tokenize(gen_ast_current_root)
         tokenized_example_query, _ = self.x_tokenizer.tokenize(example_query)
         tokenized_example_ast, example_node_pointers = self.y_tokenizer.tokenize(example_ast_root)
+
+        #print("tokenized_gen_query", tokenized_gen_query)
+        #print("tokenized_example_query", tokenized_example_query)
 
         # Convert our tokens into indices
         indices_gen_query = self.x_vocab.token_seq_to_indices(tokenized_gen_query)
@@ -204,27 +231,31 @@ class TorchComparer(Comparer):
 
 
 def get_default_torch_comparer(x_vocab, y_vocab, x_tokenizer, y_tokenizer, out_dims=8):
+    x_embed = TorchDeepEmbed(x_vocab, out_dims - SimpleQueryVectorizer.EXTRA_LEN)
+    y_embed = TorchDeepEmbed(x_vocab, out_dims - SimpleQueryVectorizer.EXTRA_LEN)
     return TorchComparer(
         x_vocab=x_vocab,
         y_vocab=y_vocab,
         x_tokenizer=x_tokenizer,
         y_tokenizer=y_tokenizer,
-        gen_query_vectorizer=SimpleQueryVectorizer(out_dims, x_vocab),
-        example_query_vectorizer=SimpleQueryVectorizer(out_dims, x_vocab),
-        gen_ast_vectorizer=SimpleQueryVectorizer(out_dims, y_vocab),
-        example_ast_vectorizer=SimpleQueryVectorizer(out_dims, y_vocab),
-        fields_compare_predictor=TransformerPredictor(out_dims, 1, 2)
+        gen_query_vectorizer=SimpleQueryVectorizer(out_dims, x_vocab, x_embed),
+        example_query_vectorizer=SimpleQueryVectorizer(out_dims, x_vocab, x_embed),
+        gen_ast_vectorizer=SimpleQueryVectorizer(out_dims, y_vocab, y_embed),
+        example_ast_vectorizer=SimpleQueryVectorizer(out_dims, y_vocab, y_embed),
+        #fields_compare_predictor=TransformerPredictor(out_dims, 1, 2)
+        fields_compare_predictor=FirstWordPredictor(out_dims)
     )
     pass
 
 
 class SimpleQueryVectorizer(VectorizerBase):
-    def __init__(self, out_dims, vocab):
+    EXTRA_LEN = 2
+
+    def __init__(self, out_dims, vocab, embed: TorchDeepEmbed):
         super().__init__()
         self.out_dims = out_dims
-        self.extra_len = 2
-        self.embed = TorchDeepEmbed(vocab, out_dims-self.extra_len)
-        self.extender = EmbeddedAppender(self.extra_len)
+        self.embed = embed
+        self.extender = EmbeddedAppender(self.EXTRA_LEN)
         self.timing_signal = TimingSignalAdd()
 
     def feature_len(self):

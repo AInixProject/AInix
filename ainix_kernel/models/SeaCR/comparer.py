@@ -79,7 +79,7 @@ class SimpleRulebasedComparer(Comparer):
         depth_diffs = self.get_impl_depth_difference(
             potential_type_choice_nodes, current_gen_depth)
         ranked_options = sorted(
-            [(-score, name) for name, score in depth_diffs.items()],
+            [(1/(depth_diff+1), name) for name, depth_diff in depth_diffs.items()],
             reverse=True
         )
         return ComparerResult(1, tuple(ranked_options))
@@ -120,7 +120,7 @@ class OracleComparer(Comparer):
     def _get_actual_example_from_index(self, gen_query: str,
                                        gen_ast_current_leaf: ObjectChoiceNode):
         lookup_results = self.index.get_nearest_examples(
-            gen_query, gen_ast_current_leaf.get_type_to_choose_name(), max_results=None)
+            gen_query, gen_ast_current_leaf.get_type_to_choose_name(), max_results=25)
         for result in lookup_results:
             if result.xquery == gen_query:
                 return result
@@ -142,7 +142,6 @@ class OracleComparer(Comparer):
         oracle_ast_set.add(oracle_ast, True, 1, 1)
         return _create_gt_compare_result(
             example_ast_root, gen_ast_current_leaf, oracle_ast_set)
-
 
     def train(
         self,

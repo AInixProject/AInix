@@ -22,6 +22,9 @@ def _get_default_tokenizers():
     return NonAsciiTokenizer(), AstTokenizer()
 
 
+DEFAULT_WORD_VECTOR_SIZE = 4
+
+
 def make_default_seacr(index: ExamplesIndex):
     """A factory helper method which makes the current standard SeaCR model."""
     from ainix_kernel.models.SeaCR import torchcomparer
@@ -33,7 +36,7 @@ def make_default_seacr(index: ExamplesIndex):
         y_vocab=y_vocab,
         x_tokenizer=x_tokenizer,
         y_tokenizer=y_tokenizer,
-        out_dims=16
+        out_dims=DEFAULT_WORD_VECTOR_SIZE
     )
     return SeaCRModel(index, SearchingTypePredictor(index, comparer=comparer))
 

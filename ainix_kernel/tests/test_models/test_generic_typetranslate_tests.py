@@ -181,10 +181,17 @@ def test_non_bow(model_name, basic_classify_tc):
         y_strings=["baz"],
     )
     model = make_model(model_name, example_store)
-    # Don't expect it to work before training.
-    assert_val_acc(model, example_store, expect_fail=True)
+    print("train_len", len(list(
+        example_store.get_all_examples(filter_splits=(DataSplits.TRAIN,)))))
+    print("val_len", len(list(
+        example_store.get_all_examples(filter_splits=(DataSplits.VALIDATION,)))))
+    print("val examples", [x.xquery for x in
+        example_store.get_all_examples(filter_splits=(DataSplits.VALIDATION,))])
+    if "Oracle" not in model_name:
+        # Don't expect it to work before training.
+        assert_val_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
-    do_train(model, example_store, epochs=50)
+    do_train(model, example_store, epochs=100)
     assert_train_acc(model, example_store)
     assert_val_acc(model, example_store)
 
@@ -240,8 +247,9 @@ def test_string_gen(model_name, basic_string_tc):
         y_strings=["bar bar"]
     )
     model = make_model(model_name, example_store)
-    # Don't expect it to work before training.
-    assert_val_acc(model, example_store, expect_fail=True)
+    if "Oracle" not in model_name:
+        # Don't expect it to work before training.
+        assert_val_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
     do_train(model, example_store)
     assert_train_acc(model, example_store)
