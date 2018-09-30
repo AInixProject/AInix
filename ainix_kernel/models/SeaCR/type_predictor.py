@@ -54,7 +54,7 @@ class SearchingTypePredictor(TypePredictor):
         params = self.comparer.get_parameters()
         if params:
             import torch
-            self.optimizer = torch.optim.SGD(params, lr=1e-2)
+            self.optimizer = torch.optim.Adam(params, lr=1e-3)
         self.prepared_trainers = True
 
     def compare_example(
@@ -92,8 +92,8 @@ class SearchingTypePredictor(TypePredictor):
         #print("example result", expected_result.prob_valid_in_example)
         #expected_tensor = torch.Tensor([[1]])
         expected_tensor = torch.Tensor([[expected_result.prob_valid_in_example]])
-        print("compare", x_query, " y ", example_to_compare.xquery)
-        print("expected tensor", expected_tensor)
+        #print("compare", x_query, " y ", example_to_compare.xquery)
+        #print("expected tensor", expected_tensor)
         loss = self.present_pred_criterion(
             predicted_result, expected_tensor)
         return loss
@@ -189,8 +189,8 @@ class SearchingTypePredictor(TypePredictor):
 
         # post training optim step if needed
         if self.optimizer and loss.requires_grad:
-            print("x_query", x_query)
-            print("LOSS", loss)
+            #print("x_query", x_query)
+            #print("LOSS", loss)
             loss.backward()
             self.optimizer.step()
 
@@ -202,6 +202,7 @@ class TerribleSearchTypePredictor(SearchingTypePredictor):
     def __init__(self, index: ExamplesIndex, comparer: 'Comparer'):
         super().__init__(index, comparer)
         self.train_sample_count = 9e9
+        self.train_search_sample_dropout = 0
 
     def _search(
         self,
@@ -209,4 +210,5 @@ class TerribleSearchTypePredictor(SearchingTypePredictor):
         current_leaf: ObjectChoiceNode,
         use_only_training_data: bool
     ):
-        return self.index.get_all_examples()
+        splits = (DataSplits.TRAIN,) if use_only_training_data else None
+        return list(self.index.get_all_examples(filter_splits=splits))

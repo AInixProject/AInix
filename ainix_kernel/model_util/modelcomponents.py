@@ -9,8 +9,7 @@ class EmbeddedAppender(torch.nn.Module):
     in the sequence.
 
     Args:
-        dim_to_append: The length of the vector we will learn to append on every
-            value we get out of the source_vectorizer.
+        dim_to_append: The length of the vector we will learn to append on.
     """
     def __init__(self, dims_to_append: int):
         super().__init__()
@@ -18,9 +17,25 @@ class EmbeddedAppender(torch.nn.Module):
         self.learned_vec = torch.nn.Parameter(torch.randn(dims_to_append))
 
     def forward(self, base_values: Tensor) -> torch.Tensor:
-        #base_values = self.source_vectorizer.process_indices(indices)
         expanded_learned_vec = self.learned_vec.expand(*base_values.shape[:2], -1)
         return torch.cat((base_values, expanded_learned_vec), 2)
+
+
+class EmbeddedAdder(torch.nn.Module):
+    """A model that simply adds on a single learned value to every value
+    in the sequence.
+
+    Args:
+        len_vec: The length of the vector we will learn to add to.
+    """
+    def __init__(self, vec_len: int):
+        super().__init__()
+        self.vec_len = vec_len
+        self.learned_vec = torch.nn.Parameter(torch.randn(vec_len))
+
+    def forward(self, base_values: Tensor) -> torch.Tensor:
+        expanded_learned_vec = self.learned_vec.expand(*base_values.shape[:2], -1)
+        return base_values + expanded_learned_vec
 
 
 def _gen_timing_signal(batches, length, channels, min_timescale=1.0,
@@ -95,6 +110,8 @@ class TimingSignalAdd(torch.nn.Module):
         self.max_timescale = max_timescale
 
     def forward(self, base_values: Tensor, positions=None) -> torch.Tensor:
+        # TODO (DNGros): consider just generate a long one and slicing from it.
         signal = _gen_timing_signal(*base_values.shape[:3], positions=positions)
+        #print("signal", signal)
         return base_values + signal
 

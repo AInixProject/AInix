@@ -11,7 +11,7 @@ from ainix_common.parsing.parseast import ObjectChoiceNode, AstNode
 import attr
 import torch
 from torch import nn
-from ainix_kernel.model_util.modelcomponents import EmbeddedAppender, TimingSignalAdd
+from ainix_kernel.model_util.modelcomponents import EmbeddedAppender, TimingSignalAdd, EmbeddedAdder
 
 
 class FieldComparerPredictor(torch.nn.Module):
@@ -30,7 +30,7 @@ class TransformerPredictor(FieldComparerPredictor):
                 total_key_depth=self.hidden_size,
                 total_value_depth=self.hidden_size,
                 filter_size=self.hidden_size,
-                num_heads=2
+                num_heads=num_heads
             )
             for _ in range(num_layers)]
         )
@@ -51,7 +51,9 @@ class TransformerPredictor(FieldComparerPredictor):
             num_heads=1
         )
 
-        self.out_prob_linear = nn.Linear(self.hidden_size, 1)
+        self.out_prob_linear_hidden = nn.Linear(self.hidden_size, int(self.hidden_size / 2))
+        self.out_prob_nonlin = nn.ReLU()
+        self.out_prob_linear = nn.Linear(int(self.hidden_size / 2), 1)
 
     def forward(self, vectors_gen_query, vectors_gen_ast,
                 vectors_example_query, vectors_example_ast):
@@ -74,7 +76,8 @@ class TransformerPredictor(FieldComparerPredictor):
             encoded_specials, encoded_combined, encoded_combined)
         # Look at the specials in order to determine outputs
         out_prob_vec = specials_extra_enc[:, 0]
-        out_prob_score = self.out_prob_linear(out_prob_vec)
+        out_prob_score = self.out_prob_linear(
+            self.out_prob_nonlin(self.out_prob_linear_hidden(out_prob_vec)))
         return out_prob_score
 
 class FirstWordPredictor(FieldComparerPredictor):
@@ -166,6 +169,9 @@ class TorchComparer(Comparer):
         vectors_example_query = self.example_query_vectorizer(indices_example_query)
         vectors_example_ast = self.example_ast_vectorizer(indices_example_ast)
 
+        #print("vectors_gen_query", vectors_gen_query)
+        #print("vectors_example_query", vectors_example_query)
+
         # Get result
         out_prob_score = self.fields_compare_predictor.forward(
             vectors_gen_query, vectors_gen_ast, vectors_example_query, vectors_example_ast
@@ -231,38 +237,37 @@ class TorchComparer(Comparer):
 
 
 def get_default_torch_comparer(x_vocab, y_vocab, x_tokenizer, y_tokenizer, out_dims=8):
-    x_embed = TorchDeepEmbed(x_vocab, out_dims - SimpleQueryVectorizer.EXTRA_LEN)
-    y_embed = TorchDeepEmbed(x_vocab, out_dims - SimpleQueryVectorizer.EXTRA_LEN)
+    x_embed = TorchDeepEmbed(x_vocab, out_dims)
+    y_embed = TorchDeepEmbed(x_vocab, out_dims)
     return TorchComparer(
         x_vocab=x_vocab,
         y_vocab=y_vocab,
         x_tokenizer=x_tokenizer,
         y_tokenizer=y_tokenizer,
-        gen_query_vectorizer=SimpleQueryVectorizer(out_dims, x_vocab, x_embed),
-        example_query_vectorizer=SimpleQueryVectorizer(out_dims, x_vocab, x_embed),
-        gen_ast_vectorizer=SimpleQueryVectorizer(out_dims, y_vocab, y_embed),
-        example_ast_vectorizer=SimpleQueryVectorizer(out_dims, y_vocab, y_embed),
-        #fields_compare_predictor=TransformerPredictor(out_dims, 1, 2)
-        fields_compare_predictor=FirstWordPredictor(out_dims)
+        gen_query_vectorizer=SimpleQueryVectorizer(out_dims, x_embed),
+        example_query_vectorizer=SimpleQueryVectorizer(out_dims, x_embed),
+        gen_ast_vectorizer=SimpleQueryVectorizer(out_dims, y_embed),
+        example_ast_vectorizer=SimpleQueryVectorizer(out_dims, y_embed),
+        fields_compare_predictor=TransformerPredictor(out_dims, 2, num_heads=4)
+        #fields_compare_predictor=FirstWordPredictor(out_dims)
     )
     pass
 
 
 class SimpleQueryVectorizer(VectorizerBase):
-    EXTRA_LEN = 2
-
-    def __init__(self, out_dims, vocab, embed: TorchDeepEmbed):
+    def __init__(self, out_dims, embed: TorchDeepEmbed):
         super().__init__()
         self.out_dims = out_dims
         self.embed = embed
-        self.extender = EmbeddedAppender(self.EXTRA_LEN)
+        # Add in some signal for what field this is
+        self.field_adder = EmbeddedAdder(out_dims)
         self.timing_signal = TimingSignalAdd()
 
     def feature_len(self):
         return self.out_dims
 
     def forward(self, indices: torch.Tensor):
-        return self.timing_signal(self.extender(self.embed(indices)))
+        return self.timing_signal(self.field_adder(self.embed(indices)))
 
 
 # TODO (DNGros): Batched version of comparers

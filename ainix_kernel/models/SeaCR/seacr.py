@@ -1,4 +1,6 @@
 """This module defines the SeaCR (Search Compare Recurse) model"""
+from typing import Type
+
 from ainix_kernel.models.SeaCR.comparer import SimpleRulebasedComparer, OracleComparer
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
@@ -9,7 +11,8 @@ from ainix_common.parsing.typecontext import AInixType
 from ainix_kernel.model_util.tokenizers import NonAsciiTokenizer, AstTokenizer
 from ainix_kernel.model_util.vocab import CounterVocabBuilder, make_vocab_from_example_store
 
-from models.SeaCR.type_predictor import SearchingTypePredictor
+from models.SeaCR.type_predictor import SearchingTypePredictor, TypePredictor, \
+    TerribleSearchTypePredictor
 
 
 def make_rulebased_seacr(index: ExamplesIndex):
@@ -22,11 +25,11 @@ def _get_default_tokenizers():
     return NonAsciiTokenizer(), AstTokenizer()
 
 
-DEFAULT_WORD_VECTOR_SIZE = 4
+DEFAULT_WORD_VECTOR_SIZE = 64
 
 
-def make_default_seacr(index: ExamplesIndex):
-    """A factory helper method which makes the current standard SeaCR model."""
+def _make_default_seacr_with_type_predictor(index: ExamplesIndex,
+                                            type_predictor_type: Type[TypePredictor]):
     from ainix_kernel.models.SeaCR import torchcomparer
     x_tokenizer, y_tokenizer = _get_default_tokenizers()
     x_vocab, y_vocab = make_vocab_from_example_store(
@@ -38,7 +41,19 @@ def make_default_seacr(index: ExamplesIndex):
         y_tokenizer=y_tokenizer,
         out_dims=DEFAULT_WORD_VECTOR_SIZE
     )
-    return SeaCRModel(index, SearchingTypePredictor(index, comparer=comparer))
+    type_predictor = type_predictor_type(index, comparer=comparer)
+    return SeaCRModel(index, type_predictor)
+
+
+def make_default_seacr(index: ExamplesIndex) -> 'SeaCRModel':
+    """A factory helper method which makes the current standard SeaCR model."""
+    return _make_default_seacr_with_type_predictor(index, SearchingTypePredictor)
+
+
+def make_default_seacr_no_search(index: ExamplesIndex) -> 'SeaCRModel':
+    """A factory which makes a SeaCR model, but without a searching capability.
+    Must instead compare every entry, and rely on the comparer."""
+    return _make_default_seacr_with_type_predictor(index, TerribleSearchTypePredictor)
 
 
 def make_default_seacr_with_oracle_comparer(index: ExamplesIndex):
@@ -53,7 +68,7 @@ class SeaCRModel(StringTypeTranslateCF):
     def __init__(
         self,
         index: ExamplesIndex,
-        type_predictor: 'SearchingTypePredictor',
+        type_predictor: 'TypePredictor',
     ):
         self.type_context = index.type_context
         self.type_predictor = type_predictor

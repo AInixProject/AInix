@@ -19,11 +19,11 @@ from ainix_kernel.training.train import TypeTranslateCFTrainer
 FULL_MODELS = ["SeaCR-OracleCompare", "SeaCR"]
 # All Models are just all available models. Some might not be expect to pass
 # every test
-ALL_MODELS = ["SeaCR-Rulebased"] + FULL_MODELS
+ALL_MODELS = ["SeaCR-Rulebased", "SeaCR-NoSearch"] + FULL_MODELS
 
 
 def make_example_store(model_name, type_context):
-    if model_name in ("SeaCR-Rulebased", "SeaCR", "SeaCR-OracleCompare"):
+    if model_name in ("SeaCR-Rulebased", "SeaCR", "SeaCR-OracleCompare", "SeaCR-NoSearch"):
         return ExamplesIndex(type_context, ExamplesIndex.get_default_ram_backend())
     else:
         raise ValueError("Unrecognized model type ", type)
@@ -34,6 +34,8 @@ def make_model(model_name, example_store):
         return seacr.make_rulebased_seacr(example_store)
     elif model_name == "SeaCR":
         return seacr.make_default_seacr(example_store)
+    elif model_name == "SeaCR-NoSearch":
+        return seacr.make_default_seacr_no_search(example_store)
     elif model_name == "SeaCR-OracleCompare":
         return seacr.make_default_seacr_with_oracle_comparer(example_store)
     else:
@@ -152,7 +154,7 @@ def test_basic_classify(model_name, basic_classify_tc):
         y_strings=["baz"],
     )
     model = make_model(model_name, example_store)
-    do_train(model, example_store)
+    do_train(model, example_store, epochs=100)
     assert_train_acc(model, example_store)
 
 
@@ -163,8 +165,7 @@ def test_non_bow(model_name, basic_classify_tc):
     basic_classify_tc.fill_default_parsers()
     example_store = make_example_store(model_name, basic_classify_tc)
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
-                             "FooBarBazType",
-                             ((0.7, DataSplits.TRAIN), (0.3, DataSplits.VALIDATION)))
+                             "FooBarBazType", ALL_TRAIN_SPLIT)
     # start with bob
     adder.add_examples(
         x_strings=["bob bit the dog", "bob the bit dog", "bob bit dog the", "bob dog bit the"],
@@ -177,7 +178,7 @@ def test_non_bow(model_name, basic_classify_tc):
     )
     # other
     adder.add_examples(
-        x_strings=["the dog bit bob", "bit dog bob the", "bit bit bit bit", "bit dog"],
+        x_strings=["the dog bit bob", "bit dog bob the", "bit the dog bit", "bit dog the bob"],
         y_strings=["baz"],
     )
     model = make_model(model_name, example_store)
@@ -189,11 +190,10 @@ def test_non_bow(model_name, basic_classify_tc):
         example_store.get_all_examples(filter_splits=(DataSplits.VALIDATION,))])
     if "Oracle" not in model_name:
         # Don't expect it to work before training.
-        assert_val_acc(model, example_store, expect_fail=True)
+        assert_train_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
     do_train(model, example_store, epochs=100)
-    assert_train_acc(model, example_store)
-    assert_val_acc(model, example_store)
+    assert_train_acc(model, example_store, required_accuracy=0.95)
 
 
 @pytest.mark.parametrize("model_name", FULL_MODELS)
