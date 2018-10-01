@@ -77,10 +77,13 @@ if __name__ == "__main__":
     exampleloader.load_path("../../builtin_types/numbers_examples.ainix.yaml", index)
     print("num docs", index.backend.index.doc_count())
 
-    from models.SeaCR.seacr import SeaCRModel
-    model = SeaCRModel(index)
+    from models.SeaCR.seacr import make_default_seacr
+    model = make_default_seacr(index)
     trainer = TypeTranslateCFTrainer(model, index)
+    trainer.train(3)
 
+    print("Lets eval")
     logger = EvaluateLogger()
     trainer.evaluate(logger)
     print_ast_eval_log(logger)
+    print("done.")

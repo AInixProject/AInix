@@ -16,10 +16,10 @@ from ainix_kernel.training.train import TypeTranslateCFTrainer
 
 # Here we define functions to generate each of the models we want to test
 # Full models are models which should pass every test
-FULL_MODELS = ["SeaCR-OracleCompare", "SeaCR"]
+FULL_MODELS = ["SeaCR"]
 # All Models are just all available models. Some might not be expect to pass
 # every test
-ALL_MODELS = ["SeaCR-Rulebased", "SeaCR-NoSearch"] + FULL_MODELS
+ALL_MODELS = ["SeaCR-Rulebased", "SeaCR-NoSearch", "SeaCR-OracleCompare"] + FULL_MODELS
 
 
 def make_example_store(model_name, type_context):
@@ -158,7 +158,7 @@ def test_basic_classify(model_name, basic_classify_tc):
     assert_train_acc(model, example_store)
 
 
-@pytest.mark.parametrize("model_name", FULL_MODELS)
+@pytest.mark.parametrize("model_name", ["SeaCR-OracleCompare"] + FULL_MODELS)
 def test_non_bow(model_name, basic_classify_tc):
     """Tests to see if model can classify on tasks that require expressive power
     beyond a bag-of-words assumption"""
@@ -192,7 +192,7 @@ def test_non_bow(model_name, basic_classify_tc):
         # Don't expect it to work before training.
         assert_train_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
-    do_train(model, example_store, epochs=100)
+    do_train(model, example_store, epochs=150)
     assert_train_acc(model, example_store, required_accuracy=0.95)
 
 

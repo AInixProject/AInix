@@ -18,7 +18,7 @@ for result in r:
 
 from ainix_common.parsing.parseast import StringParser
 
-real_parser = StringParser(type_context.get_type_by_name("Number"))
+real_parser = StringParser(type_context)
 actual = real_parser.create_parse_tree("7")
 
 from models.SeaCR.seacr import SeaCRModel
@@ -26,7 +26,7 @@ from models.SeaCR.seacr import SeaCRModel
 model = SeaCRModel(index)
 
 print("predict")
-prediction = model.predict("seven", type_context.get_type_by_name("Number"), Fak)
+prediction = model.predict("seven", "Number", )
 print("predicted")
 print(prediction.dump_str())
 print("actual")

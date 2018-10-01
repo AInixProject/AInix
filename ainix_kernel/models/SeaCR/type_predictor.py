@@ -130,8 +130,6 @@ class SearchingTypePredictor(TypePredictor):
         for example in examples:
             comparer_result = self.compare_example(x_query, current_root, current_leaf,
                                                    example, current_depth)
-            print("type to choose",current_leaf.type_to_choose,"y_text",
-                  example.ytext, comparer_result)
             if comparer_result.impl_scores is None:
                 continue
             if comparer_result.prob_valid_in_example > highest_present_prob:
@@ -187,6 +185,8 @@ class SearchingTypePredictor(TypePredictor):
                 x_query, current_root, current_leaf, result,
                 expected_choices, current_depth)
             if instance_loss is not None:
+                # TODO (DNGros): Average by number of examples did. Ideally should
+                # also normalize by number of internal comparers
                 loss += instance_loss
 
         # post training optim step if needed

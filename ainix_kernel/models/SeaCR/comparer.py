@@ -135,6 +135,8 @@ class OracleComparer(Comparer):
         example_query: str,
         example_ast_root: ObjectChoiceNode,
     ) -> ComparerResult:
+        if current_gen_depth > 1:
+            raise NotImplemented("Oracle does not currently support greater depths")
         oracle_gt_example = self._get_actual_example_from_index(gen_query, gen_ast_current_leaf)
         oracle_ast = self.parser.create_parse_tree(
             oracle_gt_example.ytext, oracle_gt_example.ytype)
@@ -174,8 +176,8 @@ def _create_gt_compare_result(
     """
     if ground_truth_set.type_to_choose_name != current_leaf.get_type_to_choose_name():
         raise ValueError(f"Unexpected leaf to create gt set. Current leaf has type "
-                         f"{current_leaf.get_type_to_choose_name()} but the ground_truth "
-                         f"set has type {ground_truth_set.type_to_choose_name}")
+                         f"'{current_leaf.get_type_to_choose_name()}' but the ground_truth "
+                         f"set has type '{ground_truth_set.type_to_choose_name}'")
     choices_in_this_example = get_type_choice_nodes(
         example_ast, current_leaf.type_to_choose.name)
     right_choices = [e for e, depth in choices_in_this_example
