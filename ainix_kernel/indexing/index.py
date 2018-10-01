@@ -5,7 +5,7 @@ import whoosh.query
 import whoosh.searching
 import attr
 
-from indexing.examplestore import DataSplits
+from ainix_kernel.indexing.examplestore import DataSplits
 
 
 # NOTE: for now just using actual whoosh query objects

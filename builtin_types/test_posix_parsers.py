@@ -1,9 +1,9 @@
 import pytest
 from posix_parsers import *
 from unittest.mock import MagicMock
-from typecontext import AInixArgument, TypeContext, AInixObject, AInixType
-from parse_primitives import AInixParseError
-import loader
+from ainix_common.parsing.typecontext import AInixArgument, TypeContext, AInixObject, AInixType
+from ainix_common.parsing.parse_primitives import AInixParseError
+from ainix_common.parsing import loader
 
 
 @pytest.fixture(scope="function")

@@ -11,7 +11,7 @@ from ainix_common.parsing.typecontext import AInixType
 from ainix_kernel.model_util.tokenizers import NonAsciiTokenizer, AstTokenizer
 from ainix_kernel.model_util.vocab import CounterVocabBuilder, make_vocab_from_example_store
 
-from models.SeaCR.type_predictor import SearchingTypePredictor, TypePredictor, \
+from ainix_kernel.models.SeaCR.type_predictor import SearchingTypePredictor, TypePredictor, \
     TerribleSearchTypePredictor
 
 

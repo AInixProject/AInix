@@ -7,7 +7,7 @@ import torch
 
 from ainix_common.parsing.parseast import StringParser
 from ainix_kernel.indexing.examplestore import ExamplesStore
-from model_util.tokenizers import Tokenizer
+from ainix_kernel.model_util.tokenizers import Tokenizer
 
 
 class Vocab:

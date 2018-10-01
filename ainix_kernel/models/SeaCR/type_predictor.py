@@ -8,7 +8,7 @@ from ainix_kernel.models.SeaCR.comparer import ComparerResult
 from ainix_kernel.models.model_types import ModelCantPredictException
 from ainix_common.parsing.parseast import ObjectChoiceNode, AstObjectChoiceSet, StringParser
 from ainix_common.parsing.typecontext import AInixObject
-from models.SeaCR.comparer import _create_gt_compare_result
+from ainix_kernel.models.SeaCR.comparer import _create_gt_compare_result
 
 
 class TypePredictor(ABC):

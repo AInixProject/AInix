@@ -4,7 +4,8 @@ For that use ainix_common.parsing.loader"""
 # TODO (DNGros): this kinda repeats code from the type loader. Figure out
 # how to make this DRYer...
 import yaml
-from indexing.examplestore import ExamplesStore, DataSplits, DEFAULT_SPLITS, SPLIT_TYPE
+from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, \
+    DEFAULT_SPLITS, SPLIT_TYPE
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:

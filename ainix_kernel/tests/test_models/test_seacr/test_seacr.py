@@ -1,13 +1,13 @@
 import pytest
 
 import ainix_kernel.models.SeaCR.type_predictor
-import models
-import models.SeaCR.comparer
+from ainix_kernel import models
+import ainix_kernel.models.SeaCR.comparer
 from ainix_kernel.models.SeaCR.seacr import *
 from ainix_kernel.models.SeaCR import seacr
 from ainix_common.parsing.typecontext import TypeContext, AInixObject
 from ainix_common.parsing import loader
-import indexing.exampleloader
+import ainix_kernel.indexing.exampleloader
 from ainix_common.parsing.parseast import StringParser
 from ainix_kernel.models.model_types import ModelCantPredictException
 
@@ -128,7 +128,7 @@ def test_full_number(numbers_type_context):
 def test_full_number_2(numbers_type_context):
     # Create an index
     index = ExamplesIndex(numbers_type_context, ExamplesIndex.get_default_ram_backend())
-    indexing.exampleloader.load_path(
+    ainix_kernel.indexing.exampleloader.load_path(
         f"{BUILTIN_TYPES_PATH}/numbers_examples.ainix.yaml", index)
     # Create a expected value
     parser = StringParser(numbers_type_context)

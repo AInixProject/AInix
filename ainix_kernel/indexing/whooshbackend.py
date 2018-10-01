@@ -7,7 +7,7 @@ from whoosh.analysis import KeywordAnalyzer
 import whoosh.query
 from whoosh.query import Or, Term
 import os
-from indexing.examplestore import DataSplits
+from ainix_kernel.indexing.examplestore import DataSplits
 
 
 def _make_all_dict_values_strings(document: Dict):

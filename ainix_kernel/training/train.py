@@ -1,9 +1,9 @@
 from typing import Tuple, Generator
 
-from indexing.examplestore import ExamplesStore, DataSplits, Example
+from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException
 from ainix_common.parsing.parseast import StringParser, AstObjectChoiceSet, ObjectChoiceNode
-from training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
+from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 
 
 class TypeTranslateCFTrainer:
@@ -65,19 +65,19 @@ class TypeTranslateCFTrainer:
 if __name__ == "__main__":
     from ainix_common.parsing import loader
     from ainix_common.parsing.typecontext import TypeContext
-    import indexing.exampleindex
-    from indexing import exampleloader
+    import ainix_kernel.indexing.exampleindex
+    from ainix_kernel.indexing import exampleloader
 
     type_context = TypeContext()
     loader.load_path("../../builtin_types/numbers.ainix.yaml", type_context)
     loader.load_path("../../builtin_types/generic_parsers.ainix.yaml", type_context)
     type_context.fill_default_parsers()
 
-    index = indexing.exampleindex.ExamplesIndex(type_context)
+    index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)
     exampleloader.load_path("../../builtin_types/numbers_examples.ainix.yaml", index)
     print("num docs", index.backend.index.doc_count())
 
-    from models.SeaCR.seacr import make_default_seacr
+    from ainix_kernel.models.SeaCR.seacr import make_default_seacr
     model = make_default_seacr(index)
     trainer = TypeTranslateCFTrainer(model, index)
     trainer.train(3)

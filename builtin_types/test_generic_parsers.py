@@ -1,8 +1,6 @@
 import pytest
 from generic_parsers import *
 from unittest.mock import MagicMock
-import typecontext
-import parse_primitives
 
 
 def test_max_munch():

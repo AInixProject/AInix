@@ -1,4 +1,4 @@
-from parsing.typecontext import TypeContext, AInixType
+from ainix_common.parsing.typecontext import TypeContext, AInixType
 import attr
 from typing import List, Dict, Set
 from collections import defaultdict

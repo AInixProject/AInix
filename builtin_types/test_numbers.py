@@ -1,7 +1,7 @@
 import pytest
-from typecontext import TypeContext
-from parseast import StringParser, ObjectChoiceNode
-import loader
+from ainix_common.parsing.typecontext import TypeContext
+from ainix_common.parsing.parseast import StringParser, ObjectChoiceNode
+from ainix_common.parsing import loader
 
 
 @pytest.fixture(scope="function")
