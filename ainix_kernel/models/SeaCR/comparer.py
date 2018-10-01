@@ -172,6 +172,10 @@ def _create_gt_compare_result(
         ground_truth_set : Our ground truth which we are making the result based
             off of.
     """
+    if ground_truth_set.type_to_choose_name != current_leaf.get_type_to_choose_name():
+        raise ValueError(f"Unexpected leaf to create gt set. Current leaf has type "
+                         f"{current_leaf.get_type_to_choose_name()} but the ground_truth "
+                         f"set has type {ground_truth_set.type_to_choose_name}")
     choices_in_this_example = get_type_choice_nodes(
         example_ast, current_leaf.type_to_choose.name)
     right_choices = [e for e, depth in choices_in_this_example

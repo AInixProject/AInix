@@ -428,7 +428,8 @@ class AstSet:
 class ArgsSetData:
     def __init__(self, implementation: typecontext.AInixObject, part_of: 'ObjectNodeSet'):
         self.arg_to_choice_set: Mapping[str, 'AstObjectChoiceSet'] = {
-            arg.name: AstObjectChoiceSet(arg.type, part_of) if arg.type else None
+            arg.name: AstObjectChoiceSet(arg.next_choice_type, part_of)
+                      if arg.next_choice_type else None
             for arg in implementation.children
         }
         self._max_probability: float = 0
@@ -566,6 +567,11 @@ class AstObjectChoiceSet(AstSet):
     ):
         if self._is_frozen:
             raise ValueError("Cannot add to frozen AstObjectChoiceSet")
+        if node.type_to_choose.name != self._type_to_choice.name:
+            raise ValueError(f"Attempting to add node of ObjectChoiceNode of type "
+                             f"{node.type_to_choose.name} into AstObjectChoice set "
+                             f"of type {self._type_to_choice.name}")
+
         existing_data = self._impl_name_to_data.get(node.get_chosen_impl_name(), None)
         if existing_data:
             new_weight = max(weight, existing_data.max_weight)

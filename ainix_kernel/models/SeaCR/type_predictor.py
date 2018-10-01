@@ -130,6 +130,8 @@ class SearchingTypePredictor(TypePredictor):
         for example in examples:
             comparer_result = self.compare_example(x_query, current_root, current_leaf,
                                                    example, current_depth)
+            print("type to choose",current_leaf.type_to_choose,"y_text",
+                  example.ytext, comparer_result)
             if comparer_result.impl_scores is None:
                 continue
             if comparer_result.prob_valid_in_example > highest_present_prob:

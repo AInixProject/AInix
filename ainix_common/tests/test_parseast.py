@@ -1,7 +1,7 @@
 import pytest
 from ainix_common.parsing.parseast import *
 from ainix_common.parsing import loader
-from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject
+from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject, AInixType
 from unittest.mock import MagicMock
 
 BUILTIN_TYPES_PATH = "../../builtin_types"
@@ -172,6 +172,31 @@ def test_parse_set_9(numbers_type_context, numbers_ast_set):
     numbers_ast_set.add(ast, True, 1, 1)
     new_ast = parser.create_parse_tree("5", root_type_name)
     assert numbers_ast_set.is_node_known_valid(new_ast)
+
+def test_parse_set_optional():
+    """Manually build up an ast, and make sure the ast set is representing
+    optional args correctly."""
+    tc = TypeContext()
+    foo_type = AInixType(tc, "FooType")
+    test_arg = AInixArgument(tc, "test_arg", "FooType")
+    foo_ob = AInixObject(tc, "foo_ob", "FooType", [test_arg])
+    ast_set = AstObjectChoiceSet(foo_type, None)
+    ast = ObjectChoiceNode(foo_type)
+    next_o = ObjectNode(foo_ob)
+    ast.set_choice(next_o)
+    arg_choice_node = ObjectChoiceNode(test_arg.present_choice_type)
+    arg_choice_node.set_choice(ObjectNode(test_arg.not_present_object))
+    next_o.set_arg_value("test_arg", arg_choice_node)
+
+    ast.freeze()
+    ast_set.add(ast, True, 1, 1)
+
+    data = ast_set._impl_name_to_data["foo_ob"].next_node.get_arg_set_data(
+        next_o.as_childless_node())
+    assert data is not None
+    assert data.arg_to_choice_set["test_arg"].type_to_choose_name == \
+           test_arg.present_choice_type.name
+
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
 #    parser = StringParser(numbers_type_context)
