@@ -67,23 +67,32 @@ if __name__ == "__main__":
     from ainix_common.parsing.typecontext import TypeContext
     import ainix_kernel.indexing.exampleindex
     from ainix_kernel.indexing import exampleloader
+    import datetime
 
+    print("start time", datetime.datetime.now())
     type_context = TypeContext()
     loader.load_path("../../builtin_types/numbers.ainix.yaml", type_context)
     loader.load_path("../../builtin_types/generic_parsers.ainix.yaml", type_context)
+    #loader.load_path("builtin_types/numbers.ainix.yaml", type_context)
+    #loader.load_path("builtin_types/generic_parsers.ainix.yaml", type_context)
     type_context.fill_default_parsers()
 
     index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)
     exampleloader.load_path("../../builtin_types/numbers_examples.ainix.yaml", index)
+    #exampleloader.load_path("builtin_types/numbers_examples.ainix.yaml", index)
     print("num docs", index.backend.index.doc_count())
 
-    from ainix_kernel.models.SeaCR.seacr import make_default_seacr
+    from ainix_kernel.models.SeaCR.seacr import make_default_seacr, make_rulebased_seacr
     model = make_default_seacr(index)
     trainer = TypeTranslateCFTrainer(model, index)
-    trainer.train(3)
+    train_time = datetime.datetime.now()
+    print("train time", train_time)
+    trainer.train(100)
 
     print("Lets eval")
     logger = EvaluateLogger()
     trainer.evaluate(logger)
     print_ast_eval_log(logger)
     print("done.")
+    print("done time", datetime.datetime.now())
+    print(datetime.datetime.now() - train_time)

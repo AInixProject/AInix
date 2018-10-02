@@ -185,9 +185,10 @@ class SearchingTypePredictor(TypePredictor):
                 x_query, current_root, current_leaf, result,
                 expected_choices, current_depth)
             if instance_loss is not None:
-                # TODO (DNGros): Average by number of examples did. Ideally should
                 # also normalize by number of internal comparers
                 loss += instance_loss
+        # Average loss based off number we actually sampled
+        loss /= num_to_sample
 
         # post training optim step if needed
         if self.optimizer and loss.requires_grad:
