@@ -4,15 +4,17 @@ from typing import Iterable, Type, List
 from collections import defaultdict
 from ainix_kernel import constants
 import torch
-
 from ainix_common.parsing.parseast import StringParser
 from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.model_util.tokenizers import Tokenizer
+from typing import Hashable
 
 
 class Vocab:
+    """Defines an interface for vocabs. Vocabs are essentially just two way mappings
+    between hashables and an integer in the set {0,1,2... num_elements_in_vocab - 1}"""
     @abstractmethod
-    def token_to_index(self, token: str) -> int:
+    def token_to_index(self, token: Hashable) -> int:
         pass
 
     @abstractmethod
@@ -23,7 +25,7 @@ class Vocab:
     def extend(self, v, sort=False):
         pass
 
-    def token_seq_to_indices(self, sequence: Iterable[str]) -> torch.LongTensor:
+    def token_seq_to_indices(self, sequence: Iterable[Hashable]) -> torch.LongTensor:
         return torch.LongTensor([list(map(self.token_to_index, sequence))])
 
 
@@ -69,7 +71,7 @@ class CounterVocab(Vocab):
     def __len__(self):
         return len(self.itos)
 
-    def token_to_index(self, token: str):
+    def token_to_index(self, token: Hashable):
         return self.stoi[token]
 
     def extend(self, v: 'CounterVocab', sort=False):
