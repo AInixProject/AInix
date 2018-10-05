@@ -172,7 +172,6 @@ class AInixArgument:
             self.is_present_object = None
             self.not_present_object = None
 
-
     def _make_optional_arg_type_name(self) -> str:
         return f"__arg_present_choice_type.{id_generator(5)}.{self.name}"
 
