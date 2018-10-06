@@ -10,6 +10,7 @@ from ainix_common.parsing.parseast import ObjectChoiceNode, AstObjectChoiceSet, 
 from ainix_common.parsing.typecontext import AInixType, AInixObject
 from ainix_kernel.model_util.vectorizers import VectorizerBase
 from ainix_kernel.model_util.vocab import Vocab
+from ainix_kernel.models.EncoderDecoder.objectselector import ObjectSelector
 from ainix_kernel.models.model_types import ModelException
 
 
@@ -95,13 +96,13 @@ class TreeRNNDecoder(TreeDecoder):
     def __init__(
         self,
         rnn_cell: TreeRNNCell,
-        type_selector: TypeSelector,
+        object_selector: ObjectSelector,
         ast_vectorizer: VectorizerBase,
         ast_vocab: Vocab
     ):
         super().__init__()
         self.rnn_cell = rnn_cell
-        self.type_selector = type_selector
+        self.object_selector = object_selector
         self.ast_vectorizer = ast_vectorizer
         self.ast_vocab = ast_vocab
         self.start_hidden = nn.Parameter(rnn_cell.)

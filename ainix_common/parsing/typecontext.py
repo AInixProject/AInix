@@ -75,6 +75,12 @@ class AInixType:
     def __str__(self):
         return f"<AInixType: {self.name}>"
 
+    def __lt__(self, other):
+        return self.name < other.name
+
+    def __gt__(self, other):
+        return self.name > other.name
+
 
 class AInixObject:
     def __init__(
@@ -120,6 +126,12 @@ class AInixObject:
 
     def __repr__(self):
         return f"<AInixObject: {self.name}>"
+
+    def __lt__(self, other):
+        return self.name < other.name
+
+    def __gt__(self, other):
+        return self.name > other.name
 
 
 # This is the arg of the dummy object for an arg is created
