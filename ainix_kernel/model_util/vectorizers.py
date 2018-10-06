@@ -7,6 +7,7 @@ from collections import Counter
 import attr
 from ainix_common.parsing.parseast import ObjectChoiceNode
 from ainix_kernel.indexing.examplestore import Example
+from ainix_kernel.model_util.tokenizers import Tokenizer
 from ainix_kernel.model_util.vocab import Vocab
 import torch
 from ainix_kernel.models.model_types import Pretrainable, Pretrainer
@@ -148,14 +149,15 @@ class PretrainedAvgVectorizer(VectorizerBase):
 
 def make_xquery_avg_pretrain_func(
     ast_vocab: Vocab,
+    ast_tokenizer: Tokenizer,
     x_vec_func: Callable[[str], torch.Tensor],
 ) -> AVERAGING_PROCESSING_FUNC_TYPE:
     """A a closure that produces a pretrain averaging function that applies some
     function onto the xquery string of the examples"""
     def out_func(example: Example, y_ast: ObjectChoiceNode) -> AverageProcFuncReturnVal:
         x_vectorized = x_vec_func(example.xquery)
-        y_ast_indicies = [ast_vocab.token_to_index(node)
-                          for node in y_ast.depth_first_iter()]
+        y_ast_indicies = ast_vocab.token_seq_to_indices(
+            ast_tokenizer.tokenize(y_ast), as_torch=False)
         items = list(Counter(y_ast_indicies).items())
         update_indicies = torch.LongTensor([x[0] for x in items])
         update_counts = torch.Tensor([x[1] for x in items])

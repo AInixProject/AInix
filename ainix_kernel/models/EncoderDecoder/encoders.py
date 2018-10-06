@@ -6,7 +6,6 @@ from typing import Iterable, Tuple, Type
 from ainix_kernel.model_util.tokenizers import Tokenizer
 from ainix_kernel.model_util.vectorizers import VectorizerBase
 from ainix_kernel.model_util.vocab import Vocab
-from ainix_kernel.model_util.rnn_encoder import EncoderRNN
 
 
 class QueryEncoder(nn.Module, ABC):
@@ -99,6 +98,7 @@ class RNNSeqEncoder(VectorSeqEncoder):
         self,
         input_dims: int,
         hidden_size: int,
+        summary_size: int,
         rnn_cell: Type = nn.GRU,
         num_layers: int = 1,
         input_dropout_p: float = 0,
@@ -112,6 +112,8 @@ class RNNSeqEncoder(VectorSeqEncoder):
         self.rnn = self.rnn_cell(input_dims, hidden_size, num_layers, num_layers,
                                  batch_first=True, dropout=dropout_p,
                                  bidirectional=bidirectional)
+        # Actual hidden size will be twice size since bidirectional
+        self.summary_linear = nn.Linear(hidden_size*2, summary_size)
 
     def forward(self, seqs: torch.Tensor, input_lengths=None) -> Tuple[torch.Tensor, torch.Tensor]:
         # NOTE (DNGros): this was just copied from the IBM implementation.
@@ -120,24 +122,25 @@ class RNNSeqEncoder(VectorSeqEncoder):
         seqs = self.input_dropout(seqs)
         if self.variable_lengths:
             seqs = nn.utils.rnn.pack_padded_sequence(seqs, input_lengths, batch_first=True)
-        output, hidden = self.rnn(seqs)
+        outputs, final_hiddens = self.rnn(seqs)
         if self.variable_lengths:
-            output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
+            outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)
             raise NotImplemented("Make sure this is working as expected")
-        # As the "summary value" we return the last value in the sequence
-        return output[:, -1, :], output
+        summaries = self.summary_linear(final_hiddens)
+        return summaries, outputs
 
 
 def make_default_query_encoder(
     x_tokenizer: Tokenizer,
     query_vocab: Vocab,
     query_vectorizer: VectorizerBase,
-    output_size = 64
+    output_size=64
 ) -> QueryEncoder:
     """Factory for making a default QueryEncoder"""
     internal_encoder = RNNSeqEncoder(
         query_vectorizer.feature_len(),
         output_size,
+        output_size
     )
     return StringQueryEncoder(x_tokenizer, query_vocab, query_vectorizer, internal_encoder)
 

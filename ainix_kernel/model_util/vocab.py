@@ -25,8 +25,18 @@ class Vocab:
     def extend(self, v, sort=False):
         pass
 
-    def token_seq_to_indices(self, sequence: Iterable[Hashable]) -> torch.LongTensor:
-        return torch.LongTensor([list(map(self.token_to_index, sequence))])
+    def token_seq_to_indices(
+        self,
+        sequence: Iterable[Hashable],
+        as_torch = False
+    ) -> torch.LongTensor:
+        inds = [list(map(self.token_to_index, sequence))]
+        if as_torch:
+            return torch.LongTensor(inds)
+        return inds
+
+    def items(self):
+        raise NotImplemented
 
 
 class CounterVocab(Vocab):
@@ -80,6 +90,9 @@ class CounterVocab(Vocab):
             if w not in self.stoi:
                 self.itos.append(w)
                 self.stoi[w] = len(self.itos) - 1
+
+    def items(self):
+        return enumerate(self.itos)
 
 
 class VocabBuilder(ABC):
