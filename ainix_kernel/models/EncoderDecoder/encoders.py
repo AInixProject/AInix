@@ -109,11 +109,12 @@ class RNNSeqEncoder(VectorSeqEncoder):
         super().__init__(input_dims)
         self.hidden_size = hidden_size
         self.input_dropout = nn.Dropout(p=input_dropout_p)
-        self.rnn = self.rnn_cell(input_dims, hidden_size, num_layers, num_layers,
-                                 batch_first=True, dropout=dropout_p,
-                                 bidirectional=bidirectional)
+        self.rnn = rnn_cell(input_dims, hidden_size, num_layers, num_layers,
+                            batch_first=True, dropout=dropout_p,
+                            bidirectional=bidirectional)
         # Actual hidden size will be twice size since bidirectional
         self.summary_linear = nn.Linear(hidden_size*2, summary_size)
+        self.variable_lengths = variable_lengths
 
     def forward(self, seqs: torch.Tensor, input_lengths=None) -> Tuple[torch.Tensor, torch.Tensor]:
         # NOTE (DNGros): this was just copied from the IBM implementation.

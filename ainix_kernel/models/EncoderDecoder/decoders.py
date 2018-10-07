@@ -120,8 +120,11 @@ class TreeRNNDecoder(TreeDecoder):
         if isinstance(current_leaf, ObjectChoiceNode):
             outs, hiddens = self.rnn_cell(last_hidden, self._get_ast_node_vectors(current_leaf),
                                           None, None)
-            predicted_impl, this_loss = select_func(outs)
-            new_node = ObjectNode(predicted_impl)
+            if len(outs) != 1:
+                raise NotImplemented("Batches not implemented")
+            predicted_impl, this_loss = select_func(outs, [current_leaf.type_to_choose])
+            assert len(predicted_impl) == len(outs)
+            new_node = ObjectNode(predicted_impl[0])
             current_leaf.set_choice(new_node)
             if new_node is not None:
                 hiddens, child_loss =  self._do_step(new_node, hiddens, cur_depth + 1,
@@ -169,8 +172,9 @@ class TreeRNNDecoder(TreeDecoder):
     ) -> ObjectChoiceNode:
         if self.training:
             raise ValueError("Expect to not being in training mode during inference.")
-        return self.forward(
-            query_summary, memory_encoding, root_type, self._standard_select_func)[0]
+        selection_func = self._make_predict_select_func()
+        prediction, loss = self.forward(query_summary, memory_encoding, root_type, selection_func)
+        return prediction
 
     def forward_train(
         self,
@@ -185,10 +189,41 @@ class TreeRNNDecoder(TreeDecoder):
         selection_func = self._make_teacher_forcing_select_func(y_ast, teacher_force_path)
         return self.forward(query_summary, memory_encoding, root_type, selection_func)
 
-    def _standard_select_func(self):
-        raise NotImplemented
+    def _make_predict_select_func(
+        self
+    ) -> Callable:
+        """A closure which makes a select function for during inference.
+        It takes highest scoring selection as judged by the object_selector"""
+        ast_vocab = self.ast_vocab
+        object_selector = self.object_selector
+        def _predict_select_func(
+            vectors_to_select_on: torch.Tensor,
+            types_to_select: List[AInixType]
+        ):
+            impls_indices, scores = object_selector(vectors_to_select_on, types_to_select)
+            best_scores = torch.argmax(scores)
+            best_obj_indxs = impls_indices[best_scores]
+            return ast_vocab.torch_indices_to_tokens(best_obj_indxs), 0
 
-    def _make_teacher_forcing_select_func(self, y_ast, teacher_force_path) -> Callable:
+        return _predict_select_func
+
+    def _make_teacher_forcing_select_func(
+        self,
+        y_ast: AstObjectChoiceSet,
+        teacher_force_path: ObjectChoiceNode
+    ) -> Callable:
         """A closure which makes a select function which always takes the
         correct path as specified during training."""
-        raise NotImplemented
+        current_gt_set = y_ast
+        current_path = teacher_force_path
+        object_selector = self.object_selector
+        def train_select_func(
+            vectors_to_select_on: torch.Tensor,
+            types_to_select: List[AInixType]
+        ):
+            assert len(types_to_select) == 1
+            assert types_to_select[0] == current_path.type_to_choose
+            impls_indices, scores = object_selector(vectors_to_select_on, types_to_select)
+
+
+        return train_select_func
