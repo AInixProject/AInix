@@ -537,14 +537,18 @@ class ImplementationData:
 class AstObjectChoiceSet(AstSet):
     def __init__(self, type_to_choose: typecontext.AInixType, parent: Optional[AstSet]):
         super().__init__(parent)
-        self._type_to_choice = type_to_choose
+        self._type_to_choose = type_to_choose
         self._impl_name_to_data: MutableMapping[str, 'ImplementationData'] = {}
         self._max_weight = 0
         self._hash_cache = None
 
     @property
+    def type_to_choose(self):
+        return self._type_to_choose
+
+    @property
     def type_to_choose_name(self):
-        return self._type_to_choice.name
+        return self._type_to_choose.name
 
     def get_next_node_for_choice(self, impl_name_chosen: str) -> Optional[ObjectNodeSet]:
         if impl_name_chosen not in self._impl_name_to_data:
@@ -567,7 +571,7 @@ class AstObjectChoiceSet(AstSet):
     ):
         if self._is_frozen:
             raise ValueError("Cannot add to frozen AstObjectChoiceSet")
-        if node.type_to_choose.name != self._type_to_choice.name:
+        if node.type_to_choose.name != self._type_to_choose.name:
             raise ValueError(f"Attempting to add node of ObjectChoiceNode of type "
                              f"{node.type_to_choose.name} into AstObjectChoice set "
                              f"of type {self._type_to_choice.name}")
@@ -619,7 +623,7 @@ class AstObjectChoiceSet(AstSet):
     def __eq__(self, other):
         if id(self) == id(other):
             return True
-        return self._type_to_choice == other._type_to_choice and \
+        return self._type_to_choose == other._type_to_choice and \
                self._impl_name_to_data == other._impl_name_to_data and \
                self._max_weight == other._max_weight
 
@@ -627,7 +631,7 @@ class AstObjectChoiceSet(AstSet):
         if self._hash_cache:
             return self._hash_cache
         super().__hash__()
-        hash_val = hash((self._type_to_choice, self._impl_name_to_data))
+        hash_val = hash((self._type_to_choose, self._impl_name_to_data))
         self._hash_cache = hash_val
         return hash_val
 

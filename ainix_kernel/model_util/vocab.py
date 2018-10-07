@@ -43,8 +43,8 @@ class Vocab(Generic[T]):
     @abstractmethod
     def token_seq_to_indices(
         self,
-        sequence: Iterable[Hashable],
-        as_torch = False
+        sequence: typing.Sequence[Hashable],
+        as_torch=True
     ):
         pass
 
@@ -117,8 +117,8 @@ class CounterVocab(Vocab):
 
     def token_seq_to_indices(
         self,
-        sequence: Iterable[Hashable],
-        as_torch=False
+        sequence: typing.Sequence[Hashable],
+        as_torch=True
     ):
         indices = self.vectorized_stoi(sequence)
         if as_torch:

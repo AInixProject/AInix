@@ -30,10 +30,10 @@ class ObjectSelector(nn.Module, ABC):
     pass
 
 class VectorizedObjectSelector(nn.Module, ABC):
-    def __init__(self, type_tensor_map: TypeImplTensorMap, vectorizer: VectorizerBase):
+    def __init__(self, type_tensor_map: TypeImplTensorMap, ast_vectorizer: VectorizerBase):
         super().__init__()
         self.type_tensor_map = type_tensor_map
-        self.vectorizer = vectorizer
+        self.ast_vectorizer = ast_vectorizer
 
     def forward(self, vectors: torch.Tensor, types_to_choose: List[AInixType]):
         """
@@ -49,10 +49,14 @@ class VectorizedObjectSelector(nn.Module, ABC):
         out_scores = []
         # TODO (DNGros): figure out how to batch. Maybe use the pack_pad magic. Or group on type
         for impl_set, q_vector in zip(impls, vectors):
-            impl_vectors = self.vectorizer(impl_set)
+            impl_vectors = self.ast_vectorizer(impl_set)
             # Here we use dot product as similarity. Not sure if this is a
             # good idea or not. Cosine dist might make more sense.
             similarity = torch.sum(q_vector*impl_vectors, dim=1)
             out_scores.append(similarity)
         return impls, out_scores
 
+
+def get_default_object_selector(ast_vocab: Vocab, ast_vectorizer: VectorizerBase):
+    type_tensor_map = TypeImplTensorMap(ast_vocab)
+    return VectorizedObjectSelector(type_tensor_map, ast_vectorizer)

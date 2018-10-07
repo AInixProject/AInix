@@ -6,6 +6,7 @@ from typing import List
 import pytest
 
 from ainix_kernel.indexing.examplestore import Example, DataSplits, SPLIT_TYPE, ExamplesStore
+from ainix_kernel.models.EncoderDecoder import encdecmodel
 from ainix_kernel.models.SeaCR import seacr
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
 from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixObject, AInixArgument
@@ -16,14 +17,19 @@ from ainix_kernel.training.train import TypeTranslateCFTrainer
 
 # Here we define functions to generate each of the models we want to test
 # Full models are models which should pass every test
-FULL_MODELS = ["SeaCR"]
+#FULL_MODELS = ["SeaCR"]
+FULL_MODELS = ["EncDec"]
 # All Models are just all available models. Some might not be expect to pass
 # every test
-ALL_MODELS = ["SeaCR-Rulebased", "SeaCR-NoSearch", "SeaCR-OracleCompare"] + FULL_MODELS
+#ALL_MODELS = ["SeaCR-Rulebased", "SeaCR-NoSearch", "SeaCR-OracleCompare"] + FULL_MODELS
+ALL_MODELS = FULL_MODELS
 
 
 def make_example_store(model_name, type_context):
     if model_name in ("SeaCR-Rulebased", "SeaCR", "SeaCR-OracleCompare", "SeaCR-NoSearch"):
+        return ExamplesIndex(type_context, ExamplesIndex.get_default_ram_backend())
+    if model_name in ("EncDec",):
+        # TODO (DNGros): avoid the whoosh stuff
         return ExamplesIndex(type_context, ExamplesIndex.get_default_ram_backend())
     else:
         raise ValueError("Unrecognized model type ", type)
@@ -38,6 +44,8 @@ def make_model(model_name, example_store):
         return seacr.make_default_seacr_no_search(example_store)
     elif model_name == "SeaCR-OracleCompare":
         return seacr.make_default_seacr_with_oracle_comparer(example_store)
+    elif model_name == "EncDec":
+        return encdecmodel.get_default_encdec_model(example_store)
     else:
         raise ValueError("Unrecognized model type ", type)
 

@@ -1,6 +1,7 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractclassmethod
 from ainix_common.parsing.parseast import ObjectChoiceNode, AstObjectChoiceSet
-from ainix_kernel.indexing.examplestore import Example
+from ainix_common.parsing.typecontext import TypeContext
+from ainix_kernel.indexing.examplestore import Example, ExamplesStore
 from typing import Iterable, List
 
 
@@ -92,3 +93,8 @@ class StringTypeTranslateCF(Pretrainable):
     def train(self, x_string: str, y_ast: AstObjectChoiceSet,
               teacher_force_path: ObjectChoiceNode):
         pass
+
+    @abstractclassmethod
+    def make_examples_store(cls, type_context: TypeContext, is_training: bool) -> ExamplesStore:
+        """Returns the an instance of the desired kind of example store"""
+        raise NotImplemented

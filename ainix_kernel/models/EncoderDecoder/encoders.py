@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import torch
 from torch import nn
-from typing import Iterable, Tuple, Type
+from typing import Iterable, Tuple, Type, List, Sequence
 from ainix_kernel.model_util.tokenizers import Tokenizer
 from ainix_kernel.model_util.vectorizers import VectorizerBase
 from ainix_kernel.model_util.vocab import Vocab
@@ -10,7 +10,7 @@ from ainix_kernel.model_util.vocab import Vocab
 
 class QueryEncoder(nn.Module, ABC):
     @abstractmethod
-    def forward(self, queries: Iterable[str]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, queries: Sequence[str]) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Args:
             queries: An iterable representing a batch of query strings to encode
@@ -38,13 +38,15 @@ class StringQueryEncoder(QueryEncoder):
         self.tokenizer = tokenizer
         self.query_vocab = query_vocab
         self.query_vectorizer = query_vectorizer
+        self.internal_encoder = internal_encoder
         
-    def _vectorize_query(self, queries: Iterable[str]):
-        tokenized = map(self.tokenizer.tokenize, queries)
-        indices = torch.LongTensor(map(self.query_vocab.token_seq_to_indices, tokenized))
+    def _vectorize_query(self, queries: List[str]):
+        assert len(queries) == 1, "No batches yet"
+        tokenized = [self.tokenizer.tokenize(q)[0] for q in queries]
+        indices = self.query_vocab.token_seq_to_indices(tokenized[0])
         return self.query_vectorizer.forward(indices), tokenized
 
-    def forward(self, queries: Iterable[str]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, queries: List[str]) -> Tuple[torch.Tensor, torch.Tensor]:
         vectorized, tokenized = self._vectorize_query(queries)
         return self.internal_encoder(vectorized)
 

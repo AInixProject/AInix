@@ -158,10 +158,10 @@ class TorchComparer(Comparer):
         #print("tokenized_example_query", tokenized_example_query)
 
         # Convert our tokens into indices
-        indices_gen_query = self.x_vocab.token_seq_to_indices(tokenized_gen_query)
-        indices_gen_ast = self.y_vocab.token_seq_to_indices(tokenized_gen_ast)
-        indices_example_query = self.x_vocab.token_seq_to_indices(tokenized_example_query)
-        indices_example_ast = self.y_vocab.token_seq_to_indices(tokenized_example_ast)
+        indices_gen_query = self.x_vocab.token_seq_to_indices([tokenized_gen_query])
+        indices_gen_ast = self.y_vocab.token_seq_to_indices([tokenized_gen_ast])
+        indices_example_query = self.x_vocab.token_seq_to_indices([tokenized_example_query])
+        indices_example_ast = self.y_vocab.token_seq_to_indices([tokenized_example_ast])
 
         # Convert them to vectors
         vectors_gen_query = self.gen_query_vectorizer(indices_gen_query)

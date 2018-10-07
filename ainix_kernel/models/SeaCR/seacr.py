@@ -1,17 +1,18 @@
 """This module defines the SeaCR (Search Compare Recurse) model"""
 from typing import Type
 
+from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.models.SeaCR.comparer import SimpleRulebasedComparer, OracleComparer
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
 from ainix_common.parsing.parseast import AstNode, ObjectNode, \
     ObjectChoiceNode, StringParser,  \
     AstObjectChoiceSet, ObjectNodeSet
-from ainix_common.parsing.typecontext import AInixType
-from ainix_kernel.model_util.tokenizers import NonAsciiTokenizer, AstTokenizer
+from ainix_common.parsing.typecontext import AInixType, TypeContext
+from ainix_kernel.model_util.tokenizers import NonAsciiTokenizer, AstStringTokenizer
 from ainix_kernel.model_util.vocab import CounterVocabBuilder, make_vocab_from_example_store
 
-from models.SeaCR.type_predictor import SearchingTypePredictor, TypePredictor, \
+from ainix_kernel.models.SeaCR.type_predictor import SearchingTypePredictor, TypePredictor, \
     TerribleSearchTypePredictor
 
 
@@ -22,7 +23,7 @@ def make_rulebased_seacr(index: ExamplesIndex):
 
 def _get_default_tokenizers():
     """Returns tuple (default x tokenizer, default y tokenizer)"""
-    return NonAsciiTokenizer(), AstTokenizer()
+    return NonAsciiTokenizer(), AstStringTokenizer()
 
 
 DEFAULT_WORD_VECTOR_SIZE = 64
@@ -138,8 +139,8 @@ class SeaCRModel(StringTypeTranslateCF):
         arg_set_data = expected.get_arg_set_data(teacher_force_path.as_childless_node())
         assert arg_set_data is not None, "Teacher force path not in expected ast set!"
         for arg in teacher_force_path.implementation.children:
-            if arg.type is None:
-                continue
+            #if arg.type is None:
+            #    continue
             next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
             # TODO (DNGros): This is currently somewhat gross as it relies on the _train_step
             # call mutating state. Once it is changed to make changes on current_gen_root
@@ -181,4 +182,8 @@ class SeaCRModel(StringTypeTranslateCF):
             x_string, y_ast, current_gen_node, current_gen_node, teacher_force_path, 0
         )
 
+    @classmethod
+    def make_examples_store(cls, type_context: TypeContext, is_training) -> ExamplesIndex:
+        return ExamplesIndex(type_context,
+                             ExamplesIndex.get_default_ram_backend() if is_training else None)
 
