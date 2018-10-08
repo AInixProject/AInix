@@ -105,12 +105,13 @@ class RNNSeqEncoder(VectorSeqEncoder):
         input_dims: int,
         hidden_size: int,
         summary_size: int,
+        memory_tokens_size: int,
         rnn_cell: Type = nn.GRU,
         num_layers: int = 1,
         input_dropout_p: float = 0,
         dropout_p: float = 0,
         bidirectional: bool = True,
-        variable_lengths = False
+        variable_lengths=False
     ):
         super().__init__(input_dims)
         self.hidden_size = hidden_size
@@ -120,6 +121,7 @@ class RNNSeqEncoder(VectorSeqEncoder):
                             bidirectional=bidirectional)
         # Actual hidden size will be twice size since bidirectional
         self.summary_linear = nn.Linear(hidden_size*2, summary_size)
+        self.memory_tokens_linear = nn.Linear(hidden_size*2, memory_tokens_size)
         self.variable_lengths = variable_lengths
 
     def forward(self, seqs: torch.Tensor, input_lengths=None) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -134,7 +136,8 @@ class RNNSeqEncoder(VectorSeqEncoder):
             outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)
             raise NotImplemented("Make sure this is working as expected")
         summaries = self.summary_linear(outputs[:, -1])
-        return summaries, outputs
+        memory_tokens = self.memory_tokens_linear(outputs)
+        return summaries, memory_tokens
 
 
 
@@ -147,6 +150,7 @@ def make_default_query_encoder(
     x_vectorizer = vectorizers.TorchDeepEmbed(query_vocab, output_size)
     internal_encoder = RNNSeqEncoder(
         x_vectorizer.feature_len(),
+        output_size,
         output_size,
         output_size
     )
