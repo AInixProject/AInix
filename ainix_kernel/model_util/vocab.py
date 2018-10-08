@@ -68,10 +68,11 @@ class CounterVocab(Vocab):
             token.
     """
     def __init__(self, counter: typing.Counter, max_size: int=None, min_freq: int = 1,
-                 specials=('<pad>',)):
+                 specials=(constants.UNK,)):
         counter = counter.copy()
         min_freq = max(min_freq, 1)
         self.itos: List[T] = list(specials)
+        self.unk_index = self.itos.index(constants.UNK)
 
         # frequencies of special tokens are not counted when building vocabulary
         # in frequency order
@@ -88,16 +89,16 @@ class CounterVocab(Vocab):
                               for word, freq in words_and_frequencies[:len_to_use]
                               if freq >= min_freq])
         # stoi is simply a reverse dict for itos
-        self.stoi = defaultdict(lambda x: constants.UNK)
+        self.stoi = defaultdict(lambda x: self.unk_index)
         self.stoi.update({tok: i for i, tok in enumerate(self.itos)})
 
-        self.vectorized_stoi = np.vectorize(self.stoi.__getitem__)
+        self.vectorized_stoi = np.vectorize(self.token_to_index)
 
     def __len__(self):
         return len(self.itos)
 
     def token_to_index(self, token: T) -> int:
-        return self.stoi[token]
+        return self.stoi.get(token, self.unk_index)
 
     def extend(self, v: 'CounterVocab', sort=False):
         words = sorted(v.itos) if sort else v.itos
@@ -117,10 +118,13 @@ class CounterVocab(Vocab):
 
     def token_seq_to_indices(
         self,
-        sequence: typing.Sequence[Hashable],
+        sequence: typing.Sequence[T],
         as_torch=True
     ):
-        indices = self.vectorized_stoi(sequence)
+        try:
+            indices = self.vectorized_stoi(sequence)
+        except Exception as e:
+            print("sad ", sequence, e)
         if as_torch:
             return torch.from_numpy(indices)
         return indices

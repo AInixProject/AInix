@@ -6,6 +6,12 @@ def torch_epsilon_eq(a, b, epsilon=1e-12):
     """Test if two float tensors are equal within some epsilon"""
     return torch.all(torch.lt(torch.abs(torch.add(a, -b)), epsilon))
 
+
+def eps_eq_at(epsilon):
+    """Convenience function which creates a partial of torch_epsilon_eq at a
+    certain epsilon"""
+    return lambda a, b: torch_epsilon_eq(a, b, epsilon)
+
 def torch_train_tester(
     model: nn.Module,
     data: Sequence[Tuple[Any, Any]],
@@ -13,8 +19,10 @@ def torch_train_tester(
     y_extractor_train=lambda y: y,
     y_extractor_eval=lambda y: y,
     criterion=lambda x, y: y,
-    num_epochs=100,
-    lr=1e-3
+    max_epochs=1000,
+    early_stop_loss_delta=-1e-9,
+    earyl_stop_patience=10,
+    lr=1e-3,
 ):
     """A generic util for training a nn.Model to get some expected output.
 
@@ -35,19 +43,33 @@ def torch_train_tester(
         criterion: A criterion to apply on the extracted y output of the model.
             It defaults to a function which only returns the extracted y, which
             can be used if the model already returns a backprop-able loss.
-        num_epochs: num epochs to train for
+        max_epochs: num epochs to train for
         lr: the learning rate to use in adam optimizer
     """
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     # Train
     model.train()
-    for epoch in range(num_epochs):
+    bad_epochs = 0
+    best_loss = 9e9
+    for epoch in range(max_epochs):
+        epoch_loss = 0
         for x, y in data:
             optimizer.zero_grad()
             y_hat = y_extractor_train(model(*x))
             loss = criterion(y_hat, y)
             loss.backward()
             optimizer.step()
+            epoch_loss += loss
+        # Check to see if not making any progress
+        if epoch_loss - best_loss > early_stop_loss_delta:
+            bad_epochs += 1
+            if bad_epochs >= earyl_stop_patience:
+                break
+        else:
+            bad_epochs = 0
+        best_loss = min(best_loss, epoch_loss)
+
+
     # eval
     model.eval()
     for x, y in data:

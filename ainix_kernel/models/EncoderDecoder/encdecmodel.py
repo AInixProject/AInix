@@ -63,8 +63,7 @@ def get_default_encdec_model(examples: ExamplesStore):
     x_tokenizer, y_tokenizer = _get_default_tokenizers()
     x_vocab, y_vocab = vocab.make_vocab_from_example_store(examples, x_tokenizer, y_tokenizer)
     hidden_size = 16
-    x_vectorizer = vectorizers.TorchDeepEmbed(x_vocab, hidden_size)
     y_vectorizer = vectorizers.TorchDeepEmbed(y_vocab, hidden_size)
-    encoder = encoders.make_default_query_encoder(x_tokenizer, x_vocab, x_vectorizer, hidden_size)
+    encoder = encoders.make_default_query_encoder(x_tokenizer, x_vocab, hidden_size)
     decoder = decoders.get_default_decoder(y_vocab, y_vectorizer, hidden_size)
     return EncDecModel(examples.type_context, encoder, decoder)

@@ -5,19 +5,55 @@ from ainix_common.parsing.typecontext import AInixObject, AInixType
 from ainix_kernel import constants
 from ainix_common.parsing.parseast import AstNode, ObjectNode, ObjectChoiceNode
 from ainix_common.parsing import parseast
+import numpy as np
 
 
 class Tokenizer(ABC):
+    def __init__(self):
+        self._vectorized_tokenize = np.vectorize(self.tokenize)
+        self._vectorized_tokenize_first = np.vectorize(lambda x: self.tokenize(x)[0])
+
     @abstractmethod
     def tokenize(self, to_tokenize) -> Tuple[List[Hashable], List]:
-        """Maps a value to a list of tokens and list of metadata about those tokens"""
+        """
+
+        Args:
+            to_tokenize: The object to tokenize. Could be a str, or depending
+                on the tokenizer, some other type.
+
+        Returns:
+            A tuple. The first element is a list of of the individual tokens.
+            The second is metadata about those tokens which could vary depending
+            on the parser. It is intended for something like pointers of back to
+            the location of the tokens or something like that.
+        """
         pass
 
+    def tokenize_batch(self, batch, take_only_tokens: bool = False) -> List:
+        """Tokenize multiple values at once
+
+        Args:
+            batch: Sequence of objects to tokenize
+            take_only_tokens: self.tokenize is expected to return a tuple of
+                (tokens, metadata). If this is set to true, then we only take
+                the tokens, ignoring the metadata.
+
+        Returns:
+            List with self.tokenize applied on every element. The result
+            will be tuples if the take_only_tokens is false, and sequence
+            if it is true.
+        """
+        if take_only_tokens:
+            return [self.tokenize(s)[0] for s in batch]
+        else:
+            return [self.tokenize(s) for s in batch]
 
 class NonAsciiTokenizer(Tokenizer):
     def tokenize(self, to_tokenize: str) -> Tuple[List[str], None]:
         """Takes in a string and outputs a tokenization splitting at non-ascii boundries"""
         # TODO (DNGros): Maybe memoize this
+        if not isinstance(to_tokenize, str):
+            raise ValueError(f"NonAsciiTokenizer expects string inputs. Got {to_tokenize}")
         out = [[]]
         for c in to_tokenize:
             if not (c <= 'z' and c >= 'A'):

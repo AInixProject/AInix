@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 import torch
 from torch import nn
 from typing import Iterable, Tuple, Type, List, Sequence
+
+from ainix_kernel.model_util import vectorizers
 from ainix_kernel.model_util.tokenizers import Tokenizer
 from ainix_kernel.model_util.vectorizers import VectorizerBase
 from ainix_kernel.model_util.vocab import Vocab
@@ -10,7 +12,7 @@ from ainix_kernel.model_util.vocab import Vocab
 
 class QueryEncoder(nn.Module, ABC):
     @abstractmethod
-    def forward(self, queries: Sequence[str]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, queries: Sequence[Sequence[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Args:
             queries: An iterable representing a batch of query strings to encode
@@ -40,13 +42,15 @@ class StringQueryEncoder(QueryEncoder):
         self.query_vectorizer = query_vectorizer
         self.internal_encoder = internal_encoder
         
-    def _vectorize_query(self, queries: List[str]):
+    def _vectorize_query(self, queries: Sequence[Sequence[str]]):
+        """Converts a batch of string queries into dense vectors"""
         assert len(queries) == 1, "No batches yet"
-        tokenized = [self.tokenizer.tokenize(q)[0] for q in queries]
-        indices = self.query_vocab.token_seq_to_indices(tokenized[0])
+        tokenized = self.tokenizer.tokenize_batch(queries, take_only_tokens=True)
+        batches_scary = tokenized[:1]  # when have batches will just need to add in pads
+        indices = self.query_vocab.token_seq_to_indices(batches_scary)
         return self.query_vectorizer.forward(indices), tokenized
 
-    def forward(self, queries: List[str]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, queries: Sequence[Sequence[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
         vectorized, tokenized = self._vectorize_query(queries)
         return self.internal_encoder(vectorized)
 
@@ -119,32 +123,33 @@ class RNNSeqEncoder(VectorSeqEncoder):
         self.variable_lengths = variable_lengths
 
     def forward(self, seqs: torch.Tensor, input_lengths=None) -> Tuple[torch.Tensor, torch.Tensor]:
-        # NOTE (DNGros): this was just copied from the IBM implementation.
-        # I am not sure exactly how this works. Look more into before using
-        # variable lengths.
         seqs = self.input_dropout(seqs)
         if self.variable_lengths:
+            # NOTE (DNGros): this was just copied from the IBM implementation.
+            # I am not sure exactly how this works. Look more into before using
+            # variable lengths.
             seqs = nn.utils.rnn.pack_padded_sequence(seqs, input_lengths, batch_first=True)
         outputs, final_hiddens = self.rnn(seqs)
         if self.variable_lengths:
             outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)
             raise NotImplemented("Make sure this is working as expected")
-        summaries = self.summary_linear(final_hiddens)
+        summaries = self.summary_linear(outputs[:, -1])
         return summaries, outputs
+
 
 
 def make_default_query_encoder(
     x_tokenizer: Tokenizer,
     query_vocab: Vocab,
-    query_vectorizer: VectorizerBase,
     output_size=64
 ) -> QueryEncoder:
     """Factory for making a default QueryEncoder"""
+    x_vectorizer = vectorizers.TorchDeepEmbed(query_vocab, output_size)
     internal_encoder = RNNSeqEncoder(
-        query_vectorizer.feature_len(),
+        x_vectorizer.feature_len(),
         output_size,
         output_size
     )
-    return StringQueryEncoder(x_tokenizer, query_vocab, query_vectorizer, internal_encoder)
+    return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
 
 
