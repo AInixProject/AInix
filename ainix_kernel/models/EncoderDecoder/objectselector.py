@@ -21,8 +21,8 @@ class TypeImplTensorMap:
         self._type_to_impl_tensor = {type_: torch.LongTensor(v)
                                      for type_, v in self._type_to_impl_tensor.items()}
 
-    def get_impl_tensor(self, types: List[AInixType]):
-        return [self._type_to_impl_tensor[t] for t in types]
+    def get_tensor_of_implementations(self, types: List[AInixType]):
+        return torch.stack([self._type_to_impl_tensor[t] for t in types])
 
 
 class ObjectSelector(nn.Module, ABC):
@@ -45,7 +45,7 @@ class VectorizedObjectSelector(nn.Module, ABC):
         Returns:
 
         """
-        impls = self.type_tensor_map.get_impl_tensor(types_to_choose)
+        impls = self.type_tensor_map.get_tensor_of_implementations(types_to_choose)
         out_scores = []
         # TODO (DNGros): figure out how to batch. Maybe use the pack_pad magic. Or group on type
         for impl_set, q_vector in zip(impls, vectors):

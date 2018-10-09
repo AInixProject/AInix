@@ -30,5 +30,5 @@ def test_default_encoder():
     # Make sure unks get treated the same
     assert torch_epsilon_eq(summary,
                             torch.Tensor([[0, 0, 0, -4]]), epsilon=1e-2)
-    # make sure memory looks decent
+    # make sure memory shape looks decent
     assert mem.shape == (1, 3, 4)

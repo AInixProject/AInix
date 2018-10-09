@@ -81,8 +81,11 @@ class TreeRNNCell(nn.Module):
         parent_node_hidden: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         # TODO (DNGros): Use parent data
-        last_hidden = last_hidden or self.start_hidden
-        next_hidden, out = self.rnn(type_to_predict_features, last_hidden)
+        if last_hidden is None:
+            last_hidden = self.start_hidden
+            raise ValueError("Should this happen?")
+        next_hidden, out = self.rnn(type_to_predict_features,
+                                    (last_hidden, type_to_predict_features))
         return out, next_hidden
 
 
@@ -113,10 +116,17 @@ class TreeRNNDecoder(TreeDecoder):
         self.ast_vocab = ast_vocab
         self.bce_pos_weight = bce_pos_weight
 
+    def _node_to_token_type(self, node: AstNode):
+        if isinstance(node, ObjectNode):
+            return node.implementation
+        elif isinstance(node, ObjectChoiceNode):
+            return node.type_to_choose
+        raise ValueError("Unrecognized node")
+
     def _get_ast_node_vectors(self, node: AstNode) -> torch.Tensor:
         # TODO (DNGros): Cache during current train component
-        self.ast_vocab.token_to_index(node)
-        return self.ast_vectorizer(torch.LongTensor([[node]]))[:, 0]
+        indxs = self.ast_vocab.token_to_index(self._node_to_token_type(node))
+        return self.ast_vectorizer(torch.LongTensor([[indxs]]))[:, 0]
 
     def _inference_objectchoice_step(
         self,
@@ -168,9 +178,14 @@ class TreeRNNDecoder(TreeDecoder):
         types_to_select: List[AInixType]
     ) -> np.ndarray:
         impls_indices, scores = self.object_selector(vectors_to_select_on, types_to_select)
+        # Because not batch yet, just take first of each
+        assert len(scores) == 1, "No batch yet"
+        scores = scores[0]
+        impls_indices = impls_indices[0, :]
+        ####
         best_scores = torch.argmax(scores)
         best_obj_indxs = impls_indices[best_scores]
-        return self.ast_vocab.torch_indices_to_tokens(best_obj_indxs)
+        return self.ast_vocab.torch_indices_to_tokens(torch.stack([best_obj_indxs]))
 
     def forward(
         self,
@@ -194,7 +209,7 @@ class TreeRNNDecoder(TreeDecoder):
         else:
             # TODO (DNGros): make steps this not mutate state and iterative
             root_node = ObjectChoiceNode(root_type)
-            last_hidden = self._inference_objectchoice_step(root_node, None, 0)
+            last_hidden = self._inference_objectchoice_step(root_node, query_summary, 0)
             return root_node, None
 
     def forward_predict(
@@ -231,12 +246,11 @@ class TreeRNNDecoder(TreeDecoder):
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         outs, hiddens = self.rnn_cell(last_hidden, self._get_ast_node_vectors(teacher_force_path),
                                       None, None)
-        predicted_impl, loss = self._training_get_loss_from_select_vector(
+        loss = self._training_get_loss_from_select_vector(
             vectors_to_select_on=outs,
             types_to_select=[teacher_force_path.type_to_choose],
             current_gt_set=expected
         )
-        assert len(predicted_impl) == len(outs)
 
         next_expected_set = expected.get_next_node_for_choice(
             impl_name_chosen=teacher_force_path.get_chosen_impl_name()
@@ -270,14 +284,16 @@ class TreeRNNDecoder(TreeDecoder):
         types_to_select: List[AInixType],
         current_gt_set: AstObjectChoiceSet,
     ) -> torch.Tensor:
-        assert len(types_to_select) == 1
+        assert len(types_to_select) == 1, "No batch yet"
         assert types_to_select[0] == current_gt_set.type_to_choose
         impls_indices, scores = self.object_selector(vectors_to_select_on, types_to_select)
-        are_indices_valid(impls_indices, self.ast_vocab, current_gt_set)
-        loss = F.binary_cross_entropy_with_logits(
-            scores, are_indices_valid,
-            pos_weight=self.bce_pos_weight
-        )
+        impls_indices_correct = are_indices_valid(impls_indices, self.ast_vocab, current_gt_set)
+        loss = 0
+        for correct_indicies, predicted_score in zip(impls_indices_correct, scores):
+            loss += F.binary_cross_entropy_with_logits(
+                predicted_score, correct_indicies,
+                pos_weight=self.bce_pos_weight
+            )
         return loss
 
 

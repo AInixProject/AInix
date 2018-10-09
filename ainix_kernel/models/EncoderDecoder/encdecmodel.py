@@ -23,6 +23,9 @@ class EncDecModel(StringTypeTranslateCF):
         self.type_context = type_context
         self.query_encoder = query_encoder
         self.decoder = tree_decoder
+        self.modules = torch.nn.ModuleList([self.query_encoder, self.decoder])
+        self.is_in_training_session = False
+        self.optimizer: torch.optim.Optimizer = None
 
     def predict(
         self,
@@ -41,16 +44,29 @@ class EncDecModel(StringTypeTranslateCF):
         y_ast: AstObjectChoiceSet,
         teacher_force_path: ObjectChoiceNode
     ) -> torch.Tensor:
-        # TODO v
-        raise NotImplemented("TODO make this make steps")
+        if not self.is_in_training_session:
+            raise ValueError("Call start_training_session before calling this.")
+        self.optimizer.zero_grad()
         query_summary, encoded_tokens = self.query_encoder([x_string])
         loss = self.decoder.forward_train(
             query_summary, encoded_tokens, y_ast, teacher_force_path)
+        loss.backward()
+        self.optimizer.step(None)
         return loss
 
     @classmethod
     def make_examples_store(cls, type_context: TypeContext, is_training: bool) -> ExamplesStore:
         raise NotImplemented
+
+    def start_train_session(self):
+        self.modules.train()
+        self.optimizer = torch.optim.Adam(self.modules.parameters())
+        self.is_in_training_session = True
+
+    def end_train_session(self):
+        self.optimizer = None
+        self.modules.eval()
+        self.is_in_training_session = True
 
 
 # Factory methods for different versions

@@ -16,11 +16,14 @@ class TypeTranslateCFTrainer:
     def _train_one_epoch(self, which_epoch_on: int):
         for example, y_ast_set, this_example_ast in self.data_pair_iterate((DataSplits.TRAIN,)):
             self.model.train(example.xquery, y_ast_set, this_example_ast)
+        self.model.end_train_epoch()
 
     def train(self, epochs: int):
+        self.model.start_train_session()
         for epoch in range(epochs):
             print(f"Epoch {epoch}")
             self._train_one_epoch(epoch)
+        self.model.end_train_session()
 
     def evaluate(
         self,

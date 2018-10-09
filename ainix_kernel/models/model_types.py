@@ -98,3 +98,15 @@ class StringTypeTranslateCF(Pretrainable):
     def make_examples_store(cls, type_context: TypeContext, is_training: bool) -> ExamplesStore:
         """Returns the an instance of the desired kind of example store"""
         raise NotImplemented
+
+    # Some methods for communicating state during training. This is sort of
+    # a bad interface. Should maybe abstract out into a seperate trainer class.
+
+    def start_train_session(self):
+        pass
+
+    def end_train_session(self):
+        pass
+
+    def end_train_epoch(self):
+        pass

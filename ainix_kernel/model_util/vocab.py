@@ -121,10 +121,7 @@ class CounterVocab(Vocab):
         sequence: typing.Sequence[T],
         as_torch=True
     ):
-        try:
-            indices = self.vectorized_stoi(sequence)
-        except Exception as e:
-            print("sad ", sequence, e)
+        indices = self.vectorized_stoi(sequence)
         if as_torch:
             return torch.from_numpy(indices)
         return indices
