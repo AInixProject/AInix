@@ -11,7 +11,7 @@ from ainix_kernel.model_util.vectorizers import VectorizerBase
 from ainix_kernel.model_util.vocab import Vocab, are_indices_valid
 from ainix_kernel.models.EncoderDecoder import objectselector
 from ainix_kernel.models.EncoderDecoder.objectselector import ObjectSelector
-from ainix_kernel.models.model_types import ModelException
+from ainix_kernel.models.model_types import ModelException, ModelSafePredictError
 import numpy as np
 import torch.nn.functional as F
 
@@ -70,23 +70,38 @@ class TreeRNNCell(nn.Module):
     def __init__(self, ast_node_embed_size: int, hidden_size):
         super().__init__()
         self.input_size = ast_node_embed_size
-        self.rnn = nn.LSTMCell(ast_node_embed_size, hidden_size)
-        self.start_hidden = nn.Parameter(torch.rand(hidden_size))
+        #self.rnn = nn.LSTMCell(ast_node_embed_size, hidden_size)
+        self.rnn = nn.GRUCell(ast_node_embed_size, hidden_size)
+        self.root_node_features = nn.Parameter(torch.rand(hidden_size))
 
     def forward(
         self,
-        last_hidden: Optional[torch.Tensor],
+        last_hidden: torch.Tensor,
         type_to_predict_features: torch.Tensor,
         parent_node_features: torch.Tensor,
         parent_node_hidden: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+
+        Args:
+            last_hidden:
+            type_to_predict_features:
+            parent_node_features:
+            parent_node_hidden:
+
+        Returns:
+            Tuple of tensor. First the the thing to predict on. Second is
+            internal state to pass forward.
+        """
         # TODO (DNGros): Use parent data
-        if last_hidden is None:
-            last_hidden = self.start_hidden
-            raise ValueError("Should this happen?")
-        next_hidden, out = self.rnn(type_to_predict_features,
-                                    (last_hidden, type_to_predict_features))
-        return out, next_hidden
+        if parent_node_features is None:
+            num_of_batches = len(type_to_predict_features)
+            parent_node_features = self.root_node_features.expand(num_of_batches, -1)
+        #out, next_hidden = self.rnn(type_to_predict_features,
+        #                            (parent_node_features, last_hidden))
+        out = self.rnn(type_to_predict_features, last_hidden)
+        #return out, next_hidden
+        return out, out
 
 
 #@attr.s
@@ -131,13 +146,18 @@ class TreeRNNDecoder(TreeDecoder):
     def _inference_objectchoice_step(
         self,
         current_leaf: ObjectChoiceNode,
-        last_hidden: Optional[torch.Tensor],
+        last_hidden: torch.Tensor,
+        parent_node_features: Optional[torch.Tensor],
         cur_depth
     ) -> torch.Tensor:
         if cur_depth > self.MAX_DEPTH:
             raise ModelException()
-        outs, hiddens = self.rnn_cell(last_hidden, self._get_ast_node_vectors(current_leaf),
-                                      None, None)
+        outs, hiddens = self.rnn_cell(
+            last_hidden=last_hidden,
+            type_to_predict_features=self._get_ast_node_vectors(current_leaf),
+            parent_node_features=parent_node_features,
+            parent_node_hidden=None,
+        )
         if len(outs) != 1:
             raise NotImplemented("Batches not implemented")
 
@@ -152,6 +172,35 @@ class TreeRNNDecoder(TreeDecoder):
         hiddens = self._inference_object_step(new_node, hiddens, cur_depth + 1)
         return hiddens
 
+    def _train_objectchoice_step(
+        self,
+        last_hidden: torch.Tensor,
+        parent_node_features: Optional[torch.Tensor],
+        expected: AstObjectChoiceSet,
+        teacher_force_path: ObjectChoiceNode
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        outs, hiddens = self.rnn_cell(
+            last_hidden=last_hidden,
+            type_to_predict_features=self._get_ast_node_vectors(teacher_force_path),
+            parent_node_features=parent_node_features,
+            parent_node_hidden=None,
+        )
+
+        loss = self._training_get_loss_from_select_vector(
+            vectors_to_select_on=outs,
+            types_to_select=[teacher_force_path.type_to_choose],
+            current_gt_set=expected
+        )
+
+        next_expected_set = expected.get_next_node_for_choice(
+            impl_name_chosen=teacher_force_path.get_chosen_impl_name()
+        )
+        assert next_expected_set is not None, "Teacher force path not in expected ast set!"
+        next_object_node = teacher_force_path.next_node
+        hiddens, child_loss = self._train_objectnode_step(
+            hiddens, next_expected_set, next_object_node)
+        return hiddens, loss + child_loss
+
     def _inference_object_step(
         self,
         current_leaf: ObjectNode,
@@ -160,8 +209,9 @@ class TreeRNNDecoder(TreeDecoder):
     ) -> torch.Tensor:
         """makes one step for ObjectNodes. Returns last hidden state"""
         if cur_depth > self.MAX_DEPTH:
-            raise ModelException()
+            raise ModelSafePredictError("Max length exceeded")
         latest_hidden = last_hidden
+        my_features = self._get_ast_node_vectors(current_leaf)
         for arg in current_leaf.implementation.children:
             if arg.next_choice_type is not None:
                 new_node = ObjectChoiceNode(arg.next_choice_type)
@@ -169,8 +219,28 @@ class TreeRNNDecoder(TreeDecoder):
                 continue
             current_leaf.set_arg_value(arg.name, new_node)
             latest_hidden = self._inference_objectchoice_step(
-                new_node, latest_hidden, cur_depth + 1)
+                new_node, latest_hidden, my_features, cur_depth + 1)
         return latest_hidden
+
+    def _train_objectnode_step(
+        self,
+        last_hidden: torch.Tensor,
+        expected: ObjectNodeSet,
+        teacher_force_path: ObjectNode
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        arg_set_data = expected.get_arg_set_data(teacher_force_path.as_childless_node())
+        assert arg_set_data is not None, "Teacher force path not in expected ast set!"
+        latest_hidden = last_hidden
+        child_loss = 0
+        my_features = self._get_ast_node_vectors(teacher_force_path)
+        for arg in teacher_force_path.implementation.children:
+            next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
+            next_force_path = teacher_force_path.get_choice_node_for_arg(arg.name)
+            latest_hidden, arg_loss = self._train_objectchoice_step(
+                latest_hidden, my_features, next_choice_set, next_force_path)
+            child_loss += arg_loss
+        return latest_hidden, child_loss
+
 
     def _predict_most_likely_implementation(
         self,
@@ -204,12 +274,13 @@ class TreeRNNDecoder(TreeDecoder):
             if y_ast is None or teacher_force_path is None:
                 raise ValueError("If training expect path to be previded")
             last_hidden, loss = self._train_objectchoice_step(
-                query_summary, y_ast, teacher_force_path)
+                query_summary, None, y_ast, teacher_force_path)
             return None, loss
         else:
             # TODO (DNGros): make steps this not mutate state and iterative
             root_node = ObjectChoiceNode(root_type)
-            last_hidden = self._inference_objectchoice_step(root_node, query_summary, 0)
+            last_hidden = self._inference_objectchoice_step(
+                root_node, query_summary, None, 0)
             return root_node, None
 
     def forward_predict(
@@ -237,46 +308,6 @@ class TreeRNNDecoder(TreeDecoder):
         prediction, loss = self.forward(
             query_summary, memory_encoding, root_type, True, y_ast, teacher_force_path)
         return loss
-
-    def _train_objectchoice_step(
-        self,
-        last_hidden: Optional[torch.Tensor],
-        expected: AstObjectChoiceSet,
-        teacher_force_path: ObjectChoiceNode
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        outs, hiddens = self.rnn_cell(last_hidden, self._get_ast_node_vectors(teacher_force_path),
-                                      None, None)
-        loss = self._training_get_loss_from_select_vector(
-            vectors_to_select_on=outs,
-            types_to_select=[teacher_force_path.type_to_choose],
-            current_gt_set=expected
-        )
-
-        next_expected_set = expected.get_next_node_for_choice(
-            impl_name_chosen=teacher_force_path.get_chosen_impl_name()
-        )
-        assert next_expected_set is not None, "Teacher force path not in expected ast set!"
-        next_object_node = teacher_force_path.next_node
-        hiddens, child_loss = self._train_objectnode_step(hiddens, next_expected_set, next_object_node)
-        return hiddens, loss + child_loss
-
-    def _train_objectnode_step(
-        self,
-        last_hidden: torch.Tensor,
-        expected: ObjectNodeSet,
-        teacher_force_path: ObjectNode
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        arg_set_data = expected.get_arg_set_data(teacher_force_path.as_childless_node())
-        assert arg_set_data is not None, "Teacher force path not in expected ast set!"
-        latest_hidden = last_hidden
-        child_loss = 0
-        for arg in teacher_force_path.implementation.children:
-            next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
-            next_force_path = teacher_force_path.get_choice_node_for_arg(arg.name)
-            latest_hidden, arg_loss = self._train_objectchoice_step(
-                latest_hidden, next_choice_set, next_force_path)
-            child_loss += arg_loss
-        return latest_hidden, child_loss
 
     def _training_get_loss_from_select_vector(
         self,

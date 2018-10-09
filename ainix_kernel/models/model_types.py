@@ -17,6 +17,13 @@ class ModelValueError(ModelException):
     pass
 
 
+class ModelSafePredictError(ModelException):
+    """An exception for when something goes wrong in the model but it is
+    known failure mode. An example is reaching the max generation length
+    while generating."""
+    pass
+
+
 class ModelCantPredictException(ModelException):
     """An exception for when the model received valid inputs, but is not able
     to make any prediction or judgment of confidence at all (likely due to

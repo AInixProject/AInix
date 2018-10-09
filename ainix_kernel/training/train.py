@@ -1,7 +1,8 @@
 from typing import Tuple, Generator
 
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
-from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException
+from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException, \
+    ModelSafePredictError
 from ainix_common.parsing.parseast import StringParser, AstObjectChoiceSet, ObjectChoiceNode
 from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 
@@ -37,6 +38,8 @@ class TypeTranslateCFTrainer:
             try:
                 prediction = self.model.predict(example.xquery, example.ytype, True)
             except ModelCantPredictException:
+                prediction = None
+            except ModelSafePredictError:
                 prediction = None
 
             #if prediction == this_ex_p:
@@ -87,11 +90,13 @@ if __name__ == "__main__":
     print("num docs", index.backend.index.doc_count())
 
     from ainix_kernel.models.SeaCR.seacr import make_default_seacr, make_rulebased_seacr
-    model = make_default_seacr(index)
+    from ainix_kernel.models.EncoderDecoder.encdecmodel import get_default_encdec_model
+    model = get_default_encdec_model(index, standard_size=64)
+    #model = make_rulebased_seacr(index)
     trainer = TypeTranslateCFTrainer(model, index)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    trainer.train(100)
+    trainer.train(50)
 
     print("Lets eval")
     logger = EvaluateLogger()

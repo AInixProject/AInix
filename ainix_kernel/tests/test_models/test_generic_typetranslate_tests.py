@@ -166,7 +166,36 @@ def test_basic_classify(model_name, basic_classify_tc):
     assert_train_acc(model, example_store)
 
 
-@pytest.mark.parametrize("model_name", ["SeaCR-OracleCompare"] + FULL_MODELS)
+@pytest.mark.parametrize("model_name", FULL_MODELS)
+def test_classify_seq(model_name, basic_string_tc):
+    """Tests to see if model can learn to generate string of varying length"""
+    basic_string_tc.fill_default_parsers()
+    example_store = make_example_store(model_name, basic_string_tc)
+    adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
+                             "FooStringType", ALL_TRAIN_SPLIT)
+    adder.add_examples(
+        x_strings=["woof", "bow wo", "bark"],
+        y_strings=["foo foo"]
+    )
+    adder.add_examples(
+        x_strings=["meow", "prrr"],
+        y_strings=["foo bar"],
+    )
+    adder.add_examples(
+        x_strings=["moo", "im a cow"],
+        y_strings=["bar foo"],
+    )
+    adder.add_examples(
+        x_strings=["bloop"],
+        y_strings=["foo"],
+    )
+    model = make_model(model_name, example_store)
+    do_train(model, example_store, epochs=150)
+    assert_train_acc(model, example_store)
+
+
+#@pytest.mark.parametrize("model_name", ["SeaCR-OracleCompare", "SeaCR"] + FULL_MODELS)
+@pytest.mark.parametrize("model_name", FULL_MODELS)
 def test_non_bow(model_name, basic_classify_tc):
     """Tests to see if model can classify on tasks that require expressive power
     beyond a bag-of-words assumption"""
@@ -200,7 +229,7 @@ def test_non_bow(model_name, basic_classify_tc):
         # Don't expect it to work before training.
         assert_train_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
-    do_train(model, example_store, epochs=150)
+    do_train(model, example_store, epochs=100)
     assert_train_acc(model, example_store, required_accuracy=0.95)
 
 
@@ -211,7 +240,8 @@ def test_string_gen(model_name, basic_string_tc):
     example_store = make_example_store(model_name, basic_string_tc)
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
                              "FooStringType",
-                             ((0.8, DataSplits.TRAIN), (0.2, DataSplits.VALIDATION)))
+                             ALL_TRAIN_SPLIT)
+                             #((0.8, DataSplits.TRAIN), (0.2, DataSplits.VALIDATION)))
     # if contains word "double", produce two of same type
     adder.add_examples(
         x_strings=["give me double", "double please", "I need a double",
@@ -259,6 +289,6 @@ def test_string_gen(model_name, basic_string_tc):
         # Don't expect it to work before training.
         assert_val_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
-    do_train(model, example_store)
+    do_train(model, example_store, epochs=150)
     assert_train_acc(model, example_store)
     assert_val_acc(model, example_store)
