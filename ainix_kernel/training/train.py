@@ -30,6 +30,7 @@ class TypeTranslateCFTrainer:
         logger: EvaluateLogger,
         splits: Tuple[DataSplits] = None
     ):
+        self.model.end_train_session()
         for example, y_ast_set, this_example_ast in self.data_pair_iterate(splits):
             #this_ex_p = self.string_parser.create_parse_tree(example.ytext, example.ytype)
             #assert y_ast_set.is_node_known_valid(this_ex_p)
