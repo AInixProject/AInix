@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock
-from indexing.exampleloader import *
+from ainix_kernel.indexing.exampleloader import *
 import io
 
 

@@ -1,4 +1,4 @@
-from indexing.examplestore import *
+from ainix_kernel.indexing.examplestore import *
 import string, random, itertools
 from collections import Counter
 

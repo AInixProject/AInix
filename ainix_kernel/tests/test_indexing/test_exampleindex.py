@@ -1,9 +1,9 @@
 import pytest
-from indexing.exampleindex import *
+from ainix_kernel.indexing.exampleindex import *
 import ainix_common.parsing.ast_components
-from indexing.examplestore import Example
+from ainix_kernel.indexing.examplestore import Example
 from ainix_common.parsing import loader
-from typecontext import AInixType
+from ainix_common.parsing.typecontext import AInixType
 
 
 def test_nearest_example():
