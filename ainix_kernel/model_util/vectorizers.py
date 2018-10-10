@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections import Counter
 
 import attr
-from ainix_common.parsing.parseast import ObjectChoiceNode
+from ainix_common.parsing.ast_components import ObjectChoiceNode
 from ainix_kernel.indexing.examplestore import Example
 from ainix_kernel.model_util.tokenizers import Tokenizer
 from ainix_kernel.model_util.vocab import Vocab

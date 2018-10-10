@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from ainix_common.parsing.parseast import AstNode, ObjectChoiceNode
+from ainix_common.parsing.ast_components import AstNode, ObjectChoiceNode
 
 def get_type_choice_nodes(
     root_node: AstNode,

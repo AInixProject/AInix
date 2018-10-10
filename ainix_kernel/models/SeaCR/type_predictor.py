@@ -6,7 +6,8 @@ from ainix_kernel.indexing.exampleindex import ExamplesIndex
 from ainix_kernel.indexing.examplestore import Example, DataSplits
 from ainix_kernel.models.SeaCR.comparer import ComparerResult
 from ainix_kernel.models.model_types import ModelCantPredictException
-from ainix_common.parsing.parseast import ObjectChoiceNode, AstObjectChoiceSet, StringParser
+from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet
+from ainix_common.parsing.stringparser import StringParser
 from ainix_common.parsing.typecontext import AInixObject
 from ainix_kernel.models.SeaCR.comparer import _create_gt_compare_result
 

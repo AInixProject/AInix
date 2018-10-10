@@ -2,7 +2,7 @@ from typing import Tuple
 
 import torch
 
-from ainix_common.parsing.parseast import AstObjectChoiceSet, ObjectChoiceNode
+from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.model_util import tokenizers, vocab, vectorizers

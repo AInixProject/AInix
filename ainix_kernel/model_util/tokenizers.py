@@ -3,8 +3,8 @@ from typing import Iterable, Generator, List, Tuple, Hashable, Union
 
 from ainix_common.parsing.typecontext import AInixObject, AInixType
 from ainix_kernel import constants
-from ainix_common.parsing.parseast import AstNode, ObjectNode, ObjectChoiceNode
-from ainix_common.parsing import parseast
+from ainix_common.parsing.ast_components import AstNode, ObjectNode, ObjectChoiceNode
+from ainix_common.parsing import ast_components
 import numpy as np
 
 
@@ -80,9 +80,9 @@ class AstStringTokenizer(Tokenizer):
         out_nodes = []
         for node in to_tokenize.depth_first_iter():
             if isinstance(node, ObjectNode):
-                out_tokens.append(parseast.indexable_repr_object(node.implementation.name))
+                out_tokens.append(ast_components.indexable_repr_object(node.implementation.name))
             elif isinstance(node, ObjectChoiceNode):
-                out_tokens.append(parseast.indexable_repr_classify_type(
+                out_tokens.append(ast_components.indexable_repr_classify_type(
                     node.get_type_to_choose_name()))
             else:
                 raise ValueError(f"Unrecognized node {node}")

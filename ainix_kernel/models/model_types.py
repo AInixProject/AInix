@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod, abstractclassmethod
-from ainix_common.parsing.parseast import ObjectChoiceNode, AstObjectChoiceSet
+from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import Example, ExamplesStore
 from typing import Iterable, List

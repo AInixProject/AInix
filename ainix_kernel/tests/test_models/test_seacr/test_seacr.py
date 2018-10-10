@@ -8,7 +8,7 @@ from ainix_kernel.models.SeaCR import seacr
 from ainix_common.parsing.typecontext import TypeContext, AInixObject
 from ainix_common.parsing import loader
 import ainix_kernel.indexing.exampleloader
-from ainix_common.parsing.parseast import StringParser
+from ainix_common.parsing.stringparser import StringParser
 from ainix_kernel.models.model_types import ModelCantPredictException
 
 BUILTIN_TYPES_PATH = "../../../../builtin_types"

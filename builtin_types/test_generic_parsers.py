@@ -1,5 +1,5 @@
 import pytest
-from generic_parsers import *
+from builtin_types.generic_parsers import *
 from unittest.mock import MagicMock
 
 
@@ -41,7 +41,7 @@ def test_regex_group_parser():
     mock_object.children = mock_args
     test_string = "123foo"
     run = parse_primitives.ObjectParserRun(mock_object)
-    result = parse_primitives.ObjectParserResult(mock_object, test_string)
+    result = parse_primitives.ObjectParserResult(mock_object, test_string, None)
     regex_group_object_parser(run, test_string, result)
     a = result.get_arg_present("a")
     assert a.slice == (0, 1)

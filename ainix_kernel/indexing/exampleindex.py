@@ -2,8 +2,8 @@ from typing import List, Generator, Dict, Tuple
 import attr
 from ainix_kernel.indexing.whooshbackend import WhooshIndexBackend
 from ainix_kernel.indexing.index import IndexBackendScheme, IndexBackendFields, IndexBackendABC
-from ainix_common.parsing import parseast
-from ainix_common.parsing.parseast import StringParser
+from ainix_common.parsing import ast_components
+from ainix_common.parsing.stringparser import StringParser
 from ainix_common.parsing.typecontext import TypeContext
 from whoosh.query import Term, Or, Every
 from whoosh.analysis.tokenizers import RegexTokenizer
@@ -111,7 +111,7 @@ class ExamplesIndex(ExamplesStore):
         tokenized_x_value = (tok.text for tok in self.x_tokenizer(x_value))
         query = Or([Term("xquery", term,) for term in tokenized_x_value])
         if choose_type_name:
-            y_type_indexable_rep = parseast.indexable_repr_classify_type(choose_type_name)
+            y_type_indexable_rep = ast_components.indexable_repr_classify_type(choose_type_name)
             query &= Term("yindexable", y_type_indexable_rep)
         if filter_splits:
             query &= Or([Term("split", split.value) for split in filter_splits])

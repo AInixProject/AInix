@@ -16,7 +16,7 @@ r = index.get_nearest_examples("seven", "Number")
 for result in r:
     print(result)
 
-from ainix_common.parsing.parseast import StringParser
+from ainix_common.parsing.stringparser import StringParser
 
 real_parser = StringParser(type_context)
 actual = real_parser.create_parse_tree("7")

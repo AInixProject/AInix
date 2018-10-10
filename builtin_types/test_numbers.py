@@ -1,6 +1,7 @@
 import pytest
 from ainix_common.parsing.typecontext import TypeContext
-from ainix_common.parsing.parseast import StringParser, ObjectChoiceNode
+from ainix_common.parsing.ast_components import ObjectChoiceNode
+from ainix_common.parsing.stringparser import StringParser
 from ainix_common.parsing import loader
 
 

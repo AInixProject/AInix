@@ -7,7 +7,7 @@ from ainix_kernel.model_util.vectorizers import VectorizerBase, TorchDeepEmbed
 from ainix_kernel.model_util.vocab import Vocab
 from ainix_kernel.models.SeaCR import treeutil
 from ainix_kernel.models.SeaCR.comparer import ComparerResult
-from ainix_common.parsing.parseast import ObjectChoiceNode, AstNode
+from ainix_common.parsing.ast_components import ObjectChoiceNode, AstNode
 import attr
 import torch
 from torch import nn

@@ -1,6 +1,8 @@
 from ainix_common.parsing import typecontext
 import attr
-from typing import List, Callable, Tuple, Dict, Optional
+from typing import List, Callable, Tuple, Dict, Optional, Any
+#import ainix_common.parsing.ast_components
+#from ainix_common.parsing.stringparser import StringParser
 
 
 class TypeParser:
@@ -142,6 +144,9 @@ class TypeParserResult:
         si, ei = self._next_slice
         return self.string[si:ei].strip()
 
+    def get_next_slice(self) -> Tuple[int, int]:
+        return self._next_slice
+
     def set_valid_implementation(self, implementation):
         self._implementation = implementation
 
@@ -208,7 +213,7 @@ class ObjectParser:
                              "of type {0.type_name}, but parse_string called "
                              "with object of type {0.type_name}".format(self))
         run = ObjectParserRun(object_)
-        result = ObjectParserResult(object_, string)
+        result = ObjectParserResult(object_, string, None)
         self._parse_function(run, string, result)
         self._validate_parse_result(result, object_)
         return result
@@ -239,14 +244,17 @@ class ObjectParserRun:
 class ObjectParseArgData:
     slice: Tuple[int, int]
     slice_string: str
+    already_parsed_val: Any # ObjectChoiceNode. Stupid circular refs
 
 
 class ObjectParserResult:
-    def __init__(self, object_to_parse: 'typecontext.AInixObject', string: str):
+    def __init__(self, object_to_parse: 'typecontext.AInixObject', string: str,
+                 parser_ref):
         self._object = object_to_parse
         self._result_dict: Dict[str, ObjectParseArgData] = \
             {arg.name: None for arg in object_to_parse.children}
         self._sibling_result = None
+        self._parser_ref = parser_ref
         self.string = string
 
     def _get_slice_string(self, start_idx: int, end_idx: int) -> str:
@@ -256,19 +264,35 @@ class ObjectParserResult:
         return self._result_dict.get(name, None)
 
     def set_arg_present(self, arg_name: str, start_idx: int, end_idx: int):
-        # TODO (DNGros): check that the argname exists
         si, ei = int(start_idx), int(end_idx)
         if arg_name not in self._result_dict:
             raise AInixParseError(f"Invalid argument name {arg_name} for parse "
                                   f"result of {self._object.name}. Valid options"
                                   f"are [{', '.join(self._result_dict.keys())}]")
         self._result_dict[arg_name] = ObjectParseArgData(
-            (si, ei), self._get_slice_string(si, ei))
+            (si, ei), self._get_slice_string(si, ei), None)
 
+    def left_fill_arg(self, arg_name: str, string: str) -> str:
+        if arg_name not in self._result_dict:
+            raise AInixParseError(f"Invalid argument name {arg_name} for left "
+                                  f"fill in {self._object.name}. Valid options"
+                                  f"are [{', '.join(self._result_dict.keys())}]")
+        arg_to_fill = self._object.get_arg_by_name(arg_name)
+        node, string_metadata = self._parser_ref.parse_object_choice_node(
+            string, arg_to_fill.type_parser, arg_to_fill.next_choice_type)
+        self._result_dict[arg_name] = ObjectParseArgData(
+            slice=(0, string_metadata.remaining_right_starti),
+            slice_string=string[:string_metadata.remaining_right_starti],
+            already_parsed_val=node
+        )
+        remaining_string = string[string_metadata.remaining_right_starti:]
+        return remaining_string
 
 class AInixParseError(RuntimeError):
     pass
 
+class UnparsableTypeError(AInixParseError):
+    pass
 
 def SingleTypeImplParserFunc(
     run: TypeParserRun,

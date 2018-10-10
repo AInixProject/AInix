@@ -10,8 +10,8 @@ from abc import ABC, abstractmethod
 from typing import Tuple, List, Dict
 from ainix_kernel.models.SeaCR.treeutil import get_type_choice_nodes
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
-from ainix_common.parsing.parseast import ObjectChoiceNode, AstNode, StringParser, \
-    AstObjectChoiceSet
+from ainix_common.parsing.ast_components import ObjectChoiceNode, AstNode, AstObjectChoiceSet
+from ainix_common.parsing.stringparser import StringParser
 import attr
 from ainix_kernel.models.SeaCR.treeutil import get_type_choice_nodes
 

@@ -3,7 +3,8 @@ from typing import Tuple, Generator
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException, \
     ModelSafePredictError
-from ainix_common.parsing.parseast import StringParser, AstObjectChoiceSet, ObjectChoiceNode
+from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
+from ainix_common.parsing.stringparser import StringParser
 from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 
 

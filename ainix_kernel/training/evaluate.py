@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict
-from ainix_common.parsing.parseast import ObjectChoiceNode, AstObjectChoiceSet
+from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet
 
 
 class Evaluation(ABC):

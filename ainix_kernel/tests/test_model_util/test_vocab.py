@@ -1,7 +1,7 @@
 from collections import Counter
 from typing import Tuple
 
-from ainix_common.parsing.parseast import ObjectChoiceNode
+from ainix_common.parsing.ast_components import ObjectChoiceNode
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.model_util.vocab import *
 import pytest

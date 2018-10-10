@@ -6,7 +6,8 @@ from collections import defaultdict
 from ainix_common.parsing.typecontext import AInixType, AInixObject
 from ainix_kernel import constants
 import torch
-from ainix_common.parsing.parseast import StringParser, AstObjectChoiceSet
+from ainix_common.parsing.ast_components import AstObjectChoiceSet
+from ainix_common.parsing.stringparser import StringParser
 from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.model_util.tokenizers import Tokenizer
 from typing import Hashable, TypeVar, Generic

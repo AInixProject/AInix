@@ -4,7 +4,7 @@ from typing import Tuple, Callable, List, Optional
 import torch
 from torch import nn
 import attr
-from ainix_common.parsing.parseast import ObjectChoiceNode, AstObjectChoiceSet, ObjectNode, AstNode, \
+from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet, ObjectNode, AstNode, \
     ObjectNodeSet
 from ainix_common.parsing.typecontext import AInixType, AInixObject
 from ainix_kernel.model_util.vectorizers import VectorizerBase
@@ -70,8 +70,8 @@ class TreeRNNCell(nn.Module):
     def __init__(self, ast_node_embed_size: int, hidden_size):
         super().__init__()
         self.input_size = ast_node_embed_size
-        #self.rnn = nn.LSTMCell(ast_node_embed_size, hidden_size)
-        self.rnn = nn.GRUCell(ast_node_embed_size, hidden_size)
+        self.rnn = nn.LSTMCell(ast_node_embed_size, hidden_size)
+        #self.rnn = nn.GRUCell(ast_node_embed_size, hidden_size)
         self.root_node_features = nn.Parameter(torch.rand(hidden_size))
 
     def forward(
@@ -97,11 +97,11 @@ class TreeRNNCell(nn.Module):
         if parent_node_features is None:
             num_of_batches = len(type_to_predict_features)
             parent_node_features = self.root_node_features.expand(num_of_batches, -1)
-        #out, next_hidden = self.rnn(type_to_predict_features,
-        #                            (parent_node_features, last_hidden))
-        out = self.rnn(type_to_predict_features, last_hidden)
-        #return out, next_hidden
-        return out, out
+        out, next_hidden = self.rnn(type_to_predict_features,
+                                    (parent_node_features, last_hidden))
+        #out = self.rnn(type_to_predict_features, last_hidden)
+        return out, next_hidden
+        #return out, out
 
 
 #@attr.s

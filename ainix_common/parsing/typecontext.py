@@ -1,8 +1,6 @@
 from collections import defaultdict
 from typing import List, Optional, Dict
-from ainix_common.parsing import parse_primitives
-import string
-import random
+import ainix_common.parsing.parse_primitives
 from ainix_common.util.strings import id_generator
 SINGLE_TYPE_IMPL_BUILTIN = "SingleTypeImplParser"
 
@@ -45,7 +43,7 @@ class AInixType:
         type_context.register_type(self)
 
     @property
-    def default_type_parser(self) -> Optional['parse_primitives.TypeParser']:
+    def default_type_parser(self) -> Optional['ainix_common.parsing.parse_primitives.TypeParser']:
         if self.default_type_parser_name is None:
             return None
         retrieved_parser = self._type_context.get_type_parser_by_name(
@@ -57,7 +55,8 @@ class AInixType:
         return retrieved_parser
 
     @property
-    def default_object_parser(self) -> Optional['parse_primitives.ObjectParser']:
+    def default_object_parser(self) \
+            -> Optional['ainix_common.parsing.parse_primitives.ObjectParser']:
         if self.default_object_parser_name is None:
             return None
         retrieved_parser = self._type_context.get_object_parser_by_name(
@@ -98,6 +97,7 @@ class AInixObject:
             raise ValueError(f"AInixObject {name} must have a non-None type_name")
         self.type_name = type_name
         self.children: List['AInixArgument'] = children if children else []
+        self.arg_name_to_index = {arg.name: i for i, arg in enumerate(self.children)}
         self.type_data = type_data
         self.preferred_object_parser_name = preferred_object_parser_name
         self._type_context.register_object(self)
@@ -110,9 +110,14 @@ class AInixObject:
     def type_context(self) -> 'TypeContext':
         return self._type_context
 
+    def get_arg_by_name(self, arg_name: str):
+        if arg_name not in self.arg_name_to_index:
+            return None
+        return self.children[self.arg_name_to_index[arg_name]]
+
     @property
     def preferred_object_parser(self) \
-            -> Optional['parse_primitives.ObjectParser']:
+            -> Optional['ainix_common.parsing.parse_primitives.ObjectParser']:
         """Returns the instance associated with the preferred_object_parser_name"""
         if self.preferred_object_parser_name is None:
             return None
@@ -207,7 +212,7 @@ class AInixArgument:
         return self._type_context
 
     @property
-    def type_parser(self) -> Optional['parse_primitives.TypeParser']:
+    def type_parser(self) -> Optional['ainix_common.parsing.parse_primitives.TypeParser']:
         if self.type_parser_name is None:
             type_default_parser = self.type.default_type_parser
             if type_default_parser is None:
@@ -228,8 +233,9 @@ class TypeContext:
     def __init__(self):
         self._name_to_type: Dict[str, AInixType] = {}
         self._name_to_object: Dict[str, AInixObject] = {}
-        self._name_to_type_parser : Dict[str, parse_primitives.TypeParser] = {}
-        self._name_to_object_parser: Dict[str, parse_primitives.ObjectParser] = {}
+        self._name_to_type_parser: Dict[str, ainix_common.parsing.parse_primitives.TypeParser] = {}
+        self._name_to_object_parser: \
+            Dict[str, ainix_common.parsing.parse_primitives.ObjectParser] = {}
         self._type_name_to_implementations: Dict[str, List[AInixObject]] = \
             defaultdict(list)
 
@@ -248,10 +254,12 @@ class TypeContext:
     def get_object_by_name(self, name: str) -> AInixObject:
         return self._name_to_object.get(name, None)
 
-    def get_type_parser_by_name(self, name: str) -> 'parse_primitives.TypeParser':
+    def get_type_parser_by_name(self, name: str) -> \
+            'ainix_common.parsing.parse_primitives.TypeParser':
         return self._name_to_type_parser.get(name, None)
 
-    def get_object_parser_by_name(self, name: str) -> 'parse_primitives.ObjectParser':
+    def get_object_parser_by_name(self, name: str) -> \
+            'ainix_common.parsing.parse_primitives.ObjectParser':
         return self._name_to_object_parser.get(name, None)
 
     def get_implementations(self, type):
@@ -292,8 +300,12 @@ class TypeContext:
         """
         link_name = f"__builtin.SingleTypeImplParser.{type_to_change.name}"
         if not self.get_type_parser_by_name(link_name):
-            parse_primitives.TypeParser(self, link_name, parse_primitives.SingleTypeImplParserFunc,
-                                        type_to_change.name)
+            ainix_common.parsing.parse_primitives.TypeParser(
+                self,
+                link_name,
+                ainix_common.parsing.parse_primitives.SingleTypeImplParserFunc,
+                type_to_change.name
+            )
         type_to_change.default_type_parser_name = link_name
 
     def _link_no_args_obj_parser(self, obj_to_change: AInixObject):
@@ -304,13 +316,17 @@ class TypeContext:
         """
         link_name = f"__builtin.NoArgsObjectParser.{obj_to_change.name}"
         if not self.get_type_parser_by_name(link_name):
-            parse_primitives.ObjectParser(self, link_name, parse_primitives.NoArgsObjectParseFunc,
-                                          obj_to_change.type_name)
+            ainix_common.parsing.parse_primitives.ObjectParser(
+                self,
+                link_name,
+                ainix_common.parsing.parse_primitives.NoArgsObjectParseFunc,
+                obj_to_change.type_name
+            )
         obj_to_change.preferred_object_parser_name = link_name
 
     def register_type_parser(
         self,
-        new_parser: "parse_primitives.TypeParser"
+        new_parser: 'ainix_common.parsing.parse_primitives.TypeParser'
     ) -> None:
         """Registers a parser to be tracked. This should be called automatically when
         instantiating new TypeParsers."""
@@ -329,7 +345,7 @@ class TypeContext:
 
     def register_object_parser(
         self,
-        new_parser: "parse_primitives.ObjectParser"
+        new_parser: 'ainix_common.parsing.parse_primitives.ObjectParser'
     ) -> None:
         """Registers a type to be tracked. This should be called automatically when
         instantiating new types."""

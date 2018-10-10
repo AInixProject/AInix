@@ -1,6 +1,6 @@
 import pytest
 from indexing.exampleindex import *
-import ainix_common.parsing.parseast
+import ainix_common.parsing.ast_components
 from indexing.examplestore import Example
 from ainix_common.parsing import loader
 from typecontext import AInixType
@@ -12,9 +12,9 @@ def test_nearest_example():
     other_type_name = "PythonThoughts"
     top_type = AInixType(type_context, type_name)
     other_type = AInixType(type_context, other_type_name)
-    parsed_rep = ainix_common.parsing.parseast.indexable_repr_classify_type(top_type.name)
+    parsed_rep = ainix_common.parsing.ast_components.indexable_repr_classify_type(top_type.name)
     print(parsed_rep)
-    other_parsed_rep = ainix_common.parsing.parseast.indexable_repr_classify_type(other_type.name)
+    other_parsed_rep = ainix_common.parsing.ast_components.indexable_repr_classify_type(other_type.name)
     print(other_parsed_rep)
 
     index = ExamplesIndex(type_context, backend=ExamplesIndex.get_default_ram_backend())
@@ -56,8 +56,8 @@ def test_get_all_docs():
     other_type_name = "PythonThoughts"
     top_type = AInixType(type_context, type_name)
     other_type = AInixType(type_context, other_type_name)
-    parsed_rep = ainix_common.parsing.parseast.indexable_repr_classify_type(top_type.name)
-    other_parsed_rep = ainix_common.parsing.parseast.indexable_repr_classify_type(other_type.name)
+    parsed_rep = ainix_common.parsing.ast_components.indexable_repr_classify_type(top_type.name)
+    other_parsed_rep = ainix_common.parsing.ast_components.indexable_repr_classify_type(other_type.name)
 
     index = ExamplesIndex(type_context, backend=ExamplesIndex.get_default_ram_backend())
     index.add_example(Example("what is the meaning of life", "42",
