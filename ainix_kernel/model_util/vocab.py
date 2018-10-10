@@ -73,7 +73,11 @@ class CounterVocab(Vocab):
         counter = counter.copy()
         min_freq = max(min_freq, 1)
         self.itos: List[T] = list(specials)
-        self.unk_index = self.itos.index(constants.UNK)
+        try:
+            self.unk_index = self.itos.index(constants.UNK)
+        except ValueError:
+            self.unk_index = None
+
 
         # frequencies of special tokens are not counted when building vocabulary
         # in frequency order
