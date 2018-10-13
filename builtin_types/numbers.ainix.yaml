@@ -24,7 +24,7 @@ defines:
             required: False
             arg_data: {RegexRepresentation: ".*e([0-9]+)"}
       arg_grammar: |
-          (Sign / "+")? IntBase ("." AfterDecimal)? ("e" Exponent)?
+            (Sign / "+")? IntBase ("." AfterDecimal)? ("e" Exponent)?
     # Sign
     - define_new: type
       name: Sign
@@ -48,13 +48,14 @@ defines:
           - name: CurrentDigit
             type: BaseTen
             required: True
-            arg_data: {RegexRepresentation: "([0-9])[0-9]*"}
           - name: NextDigit
             type: IntBase
             required: False
-            arg_data: {RegexRepresentation: "[0-9]([0-9]+)"}
-      arg_grammar: |
-            CurrentDigit NextDigit?
+    - define_new: object_parser
+      name: base_ten_list
+      type: arg_grammar
+      grammar: |
+          CurrentDigit NextDigit?
     # Base10 Digits
     - define_new: type
       name: BaseTen

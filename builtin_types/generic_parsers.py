@@ -9,6 +9,7 @@ def max_munch_type_parser(
     string: str,
     result: parse_primitives.TypeParserResult
 ) -> None:
+    """A type parser which consumes where each implementation has an associated string"""
     implementations = run.all_type_implementations
     longest_match = (0, None)
     for implementation in implementations:
@@ -40,3 +41,12 @@ def regex_group_object_parser(
             raise parse_primitives.AInixParseError(
                 f'Arg {arg.name} with RegexRepresentation "{regex}" did not '
                 f'match on "{string}", but the arg is required.')
+
+
+def grammar_object_parser(
+    run: parse_primitives.ObjectParserRun,
+    string: str,
+    result: parse_primitives.ObjectParserResult
+) -> None:
+    pass
+

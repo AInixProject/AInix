@@ -235,9 +235,10 @@ class ObjectParser:
 class ObjectParserRun:
     """Represents one call to the parse function of a ObjectParser. Contains
     utility functions to use while parsing."""
-    def __init__(self, object_parsing: 'typecontext.AInixObject'):
+    def __init__(self, object_parsing: 'typecontext.AInixObject', parser_data: Dict = None):
         self._object = object_parsing
         self.all_arguments = self._object.children
+        self.parser_data = parser_data
 
 
 @attr.s(auto_attribs=True, frozen=True)
