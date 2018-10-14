@@ -3,7 +3,8 @@ import pytest
 from unittest.mock import MagicMock
 
 from ainix_common.parsing.grammar_lang import *
-from ainix_common.parsing.parse_primitives import ArgParseDelegation, ArgParseDelegationReturn
+from ainix_common.parsing.parse_primitives import ArgParseDelegation, \
+    ArgParseDelegationReturn, StringProblemParseError
 
 
 def test_parse():
@@ -51,3 +52,12 @@ def test_parse_str_litteral():
     assert delegation.string_to_parse == "20"
     assert delegation.arg_name == "Bar"
     p_res.send(ArgParseDelegationReturn(True, ""))
+
+
+def test_parse_str_litteral_fail():
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser", 'Foo "-" Bar')
+    p_res = instance.parse_string("hello=20", MagicMock())
+    assert isinstance(p_res, GeneratorType)
+    delegation: ArgParseDelegation = next(p_res)
+    with pytest.raises(StringProblemParseError):
+        delegation = p_res.send(ArgParseDelegationReturn(True, "=20"))
