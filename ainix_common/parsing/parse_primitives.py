@@ -1,6 +1,7 @@
 from ainix_common.parsing import typecontext
 import attr
 from typing import List, Callable, Tuple, Dict, Optional, Any
+from types import GeneratorType
 #import ainix_common.parsing.ast_components
 #from ainix_common.parsing.stringparser import StringParser
 
@@ -178,7 +179,6 @@ class ObjectParser:
     Args:
           type_context : context this parser exists in.
           parser_name : string identifier for this parser
-          type_name : the string identifier representing the
           parse_function : a callable that is used when parsing the string.
             when self.parse_string() is called this function will be called
             with three arguments provided.
@@ -188,18 +188,20 @@ class ObjectParser:
                 3) An instance of ObjectParserResult which the callable should
                    interact with to store the result of the parse
             The callable itself is not expected to return any value.
+          exclusive_type_name : An optional string. If supplied, this object
+            parser will only work on objects of that type.
     """
     def __init__(
         self,
         type_context: 'typecontext.TypeContext',
         parser_name: str,
         parse_function: Callable[['ObjectParserRun', str, 'ObjectParserResult'], None],
-        type_name: str = None
+        exclusive_type_name: str = None
     ):
         self.name = parser_name
         self.parser_name = parser_name
         self._type_context = type_context
-        self.type_name = type_name
+        self.type_name = exclusive_type_name
         self._parse_function = parse_function
         self._type_context.register_object_parser(self)
 
@@ -213,8 +215,13 @@ class ObjectParser:
                              "of type {0.type_name}, but parse_string called "
                              "with object of type {0.type_name}".format(self))
         run = ObjectParserRun(object_)
-        result = ObjectParserResult(object_, string, None)
-        self._parse_function(run, string, result)
+        result = ObjectParserResult(object_, string)
+        parse_func_run = self._parse_function(run, string, result)
+        # Parsers are able to yield delegating parsing things to other parsers.
+        # If that is the case, it will be generator.
+        if isinstance(parse_func_run, GeneratorType):
+            yield from parse_func_run
+
         self._validate_parse_result(result, object_)
         return result
 
@@ -231,14 +238,28 @@ class ObjectParser:
                                       f"{arg.name} was not set but it is a "
                                       f"required arg")
 
+@attr.s(auto_attribs=True, frozen=True)
+class ArgParseDelegation:
+    arg_name: str
+    object_on: 'typecontext.AInixObject'
+    string_to_parse: str
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class ArgParseDelegationReturn:
+    parse_success: bool
+    remaining_string: str
+
 
 class ObjectParserRun:
     """Represents one call to the parse function of a ObjectParser. Contains
     utility functions to use while parsing."""
-    def __init__(self, object_parsing: 'typecontext.AInixObject', parser_data: Dict = None):
+    def __init__(self, object_parsing: 'typecontext.AInixObject'):
         self._object = object_parsing
         self.all_arguments = self._object.children
-        self.parser_data = parser_data
+
+    def left_fill_arg(self, arg_name: str, string_to_parse: str) -> ArgParseDelegation:
+        return ArgParseDelegation(arg_name, self._object, string_to_parse)
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -249,13 +270,11 @@ class ObjectParseArgData:
 
 
 class ObjectParserResult:
-    def __init__(self, object_to_parse: 'typecontext.AInixObject', string: str,
-                 parser_ref):
+    def __init__(self, object_to_parse: 'typecontext.AInixObject', string: str):
         self._object = object_to_parse
         self._result_dict: Dict[str, ObjectParseArgData] = \
             {arg.name: None for arg in object_to_parse.children}
         self._sibling_result = None
-        self._parser_ref = parser_ref
         self.string = string
 
     def _get_slice_string(self, start_idx: int, end_idx: int) -> str:
@@ -273,27 +292,37 @@ class ObjectParserResult:
         self._result_dict[arg_name] = ObjectParseArgData(
             (si, ei), self._get_slice_string(si, ei), None)
 
-    def left_fill_arg(self, arg_name: str, string: str) -> str:
-        if arg_name not in self._result_dict:
-            raise AInixParseError(f"Invalid argument name {arg_name} for left "
-                                  f"fill in {self._object.name}. Valid options"
-                                  f"are [{', '.join(self._result_dict.keys())}]")
-        arg_to_fill = self._object.get_arg_by_name(arg_name)
-        node, string_metadata = self._parser_ref.parse_object_choice_node(
-            string, arg_to_fill.type_parser, arg_to_fill.next_choice_type)
-        self._result_dict[arg_name] = ObjectParseArgData(
-            slice=(0, string_metadata.remaining_right_starti),
-            slice_string=string[:string_metadata.remaining_right_starti],
-            already_parsed_val=node
-        )
-        remaining_string = string[string_metadata.remaining_right_starti:]
-        return remaining_string
+    #def force_arg_value(self, arg_name, slice: Tuple[int, int], slice_str: str, forced_value):
+    #    self._result_dict[arg_name] = ObjectParseArgData(
+    #        slice=slice,
+    #        slice_string=slice_str,
+    #        already_parsed_val=forced_value
+    #    )
+
+    #def left_fill_arg(self, arg_name: str, string: str) -> str:
+    #    if arg_name not in self._result_dict:
+    #        raise AInixParseError(f"Invalid argument name {arg_name} for left "
+    #                              f"fill in {self._object.name}. Valid options"
+    #                              f"are [{', '.join(self._result_dict.keys())}]")
+    #    arg_to_fill = self._object.get_arg_by_name(arg_name)
+    #    node, string_metadata = self._parser_ref.parse_object_choice_node(
+    #        string, arg_to_fill.type_parser, arg_to_fill.next_choice_type)
+    #    self._result_dict[arg_name] = ObjectParseArgData(
+    #        slice=(0, string_metadata.remaining_right_starti),
+    #        slice_string=string[:string_metadata.remaining_right_starti],
+    #        already_parsed_val=node
+    #    )
+    #    remaining_string = string[string_metadata.remaining_right_starti:]
+    #    return remaining_string
+
 
 class AInixParseError(RuntimeError):
     pass
 
+
 class UnparsableTypeError(AInixParseError):
     pass
+
 
 def SingleTypeImplParserFunc(
     run: TypeParserRun,

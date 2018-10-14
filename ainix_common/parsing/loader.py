@@ -184,7 +184,7 @@ def _load_object_parser(
         type_context,
         parser_name=define['name'],
         parse_function=parse_func,
-        type_name=define.get('type')
+        exclusive_type_name=define.get('type')
     )
 
 
