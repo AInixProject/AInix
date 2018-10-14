@@ -95,7 +95,8 @@ def _visit_str_match(node, string):
     look_for = node.value[1:-1]
     does_start_with = string.startswith(look_for)
     remaining_str = string[len(look_for):]
-    return ArgParseDelegationReturn(does_start_with, remaining_str)
+    return ArgParseDelegationReturn(does_start_with, remaining_str,
+                                    "Expect literal '{look_for}' in {string}")
 
 
 def gen_grammar_visitor(node: ParseTreeNode, string: str, run_data: ObjectParserRun):
