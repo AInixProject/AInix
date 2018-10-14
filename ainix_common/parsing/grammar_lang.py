@@ -94,6 +94,8 @@ def gen_grammar_visitor(node: ParseTreeNode, string: str, run_data: ObjectParser
     print("visiting", node, node.rule_name)
     if node.rule_name == "arg_identifier":
         parse_return = yield run_data.left_fill_arg(node.value, string)
+        if not parse_return.parse_success:
+            parse_return.fail_reason += f"\nStack Message: Fail on arg {node.value}"
         return parse_return
     if node.rule_name == "str_match":
         # This looks for a string literal the start
@@ -121,7 +123,9 @@ def _create_object_parser_func_from_grammar(
         nonlocal grammar_ast
         parse_return = yield from gen_grammar_visitor(grammar_ast, string, run_data)
         if not parse_return.parse_success:
-            raise UnparseableObjectError(f"Error parseing string {string} with grammar {grammar}")
+            raise UnparseableObjectError(f"Error parseing string {string} with grammar {grammar}."
+                                         f"Clunky 'stack trace' (can be made better): "
+                                         f"{parse_return.fail_reason}")
         yield
 
     return out_func

@@ -245,10 +245,11 @@ class ArgParseDelegation:
     string_to_parse: str
 
 
-@attr.s(auto_attribs=True, frozen=True)
+@attr.s(auto_attribs=True)
 class ArgParseDelegationReturn:
     parse_success: bool
     remaining_string: Optional[str]
+    fail_reason: str = ""
 
 
 class ObjectParserRun:
