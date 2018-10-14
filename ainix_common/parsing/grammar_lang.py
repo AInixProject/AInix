@@ -90,6 +90,14 @@ def parse_grammar(string: str):
     return grammar_parser.parse(string)
 
 
+def _visit_str_match(node, string):
+    """A grammar visitor for the literal string matches"""
+    look_for = node.value[1:-1]
+    does_start_with = string.startswith(look_for)
+    remaining_str = string[len(look_for):]
+    return ArgParseDelegationReturn(does_start_with, remaining_str)
+
+
 def gen_grammar_visitor(node: ParseTreeNode, string: str, run_data: ObjectParserRun):
     print("visiting", node, node.rule_name)
     if node.rule_name == "arg_identifier":
@@ -98,11 +106,7 @@ def gen_grammar_visitor(node: ParseTreeNode, string: str, run_data: ObjectParser
             parse_return.fail_reason += f"\nStack Message: Fail on arg {node.value}"
         return parse_return
     if node.rule_name == "str_match":
-        # This looks for a string literal the start
-        look_for = node.value[1:-1]
-        does_start_with = string.startswith(look_for)
-        remaining_str = string[len(look_for):]
-        return ArgParseDelegationReturn(does_start_with, remaining_str)
+        return _visit_str_match(node, string)
     else:
         remaining_string = string
         if isinstance(node, arpeggio.NonTerminal):
