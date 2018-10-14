@@ -248,7 +248,7 @@ class ArgParseDelegation:
 @attr.s(auto_attribs=True, frozen=True)
 class ArgParseDelegationReturn:
     parse_success: bool
-    remaining_string: str
+    remaining_string: Optional[str]
 
 
 class ObjectParserRun:

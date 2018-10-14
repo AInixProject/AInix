@@ -38,3 +38,16 @@ def test_parse_with_err():
     assert delegation.arg_name == "Foo"
     with pytest.raises(UnparseableObjectError):
         delegation = p_res.send(ArgParseDelegationReturn(False, ""))
+
+
+def test_parse_str_litteral():
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser", 'Foo "-" Bar')
+    p_res = instance.parse_string("hello-20", MagicMock())
+    assert isinstance(p_res, GeneratorType)
+    delegation: ArgParseDelegation = next(p_res)
+    assert delegation.string_to_parse == "hello-20"
+    assert delegation.arg_name == "Foo"
+    delegation = p_res.send(ArgParseDelegationReturn(True, "-20"))
+    assert delegation.string_to_parse == "20"
+    assert delegation.arg_name == "Bar"
+    p_res.send(ArgParseDelegationReturn(True, ""))

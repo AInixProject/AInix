@@ -95,6 +95,12 @@ def gen_grammar_visitor(node: ParseTreeNode, string: str, run_data: ObjectParser
     if node.rule_name == "arg_identifier":
         parse_return = yield run_data.left_fill_arg(node.value, string)
         return parse_return
+    if node.rule_name == "str_match":
+        # This looks for a string literal the start
+        look_for = node.value[1:-1]
+        does_start_with = string.startswith(look_for)
+        remaining_str = string[len(look_for):]
+        return ArgParseDelegationReturn(does_start_with, remaining_str)
     else:
         remaining_string = string
         if isinstance(node, arpeggio.NonTerminal):
