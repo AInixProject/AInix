@@ -319,10 +319,14 @@ class ObjectParserResult:
 class AInixParseError(RuntimeError):
     pass
 
-
-class UnparsableTypeError(AInixParseError):
+class StringProblemParseError(AInixParseError):
     pass
 
+class UnparsableTypeError(StringProblemParseError):
+    pass
+
+class UnparseableObjectError(StringProblemParseError):
+    pass
 
 def SingleTypeImplParserFunc(
     run: TypeParserRun,

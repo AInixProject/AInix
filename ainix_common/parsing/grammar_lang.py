@@ -10,7 +10,7 @@ import arpeggio.cleanpeg
 
 # Lexical invariants
 from ainix_common.parsing.parse_primitives import ObjectParser, ObjectParserRun, \
-    ObjectParserResult, ArgParseDelegationReturn
+    ObjectParserResult, ArgParseDelegationReturn, UnparseableObjectError
 from ainix_common.parsing.typecontext import TypeContext
 
 ASSIGNMENT = "="
@@ -94,7 +94,6 @@ def gen_grammar_visitor(node: ParseTreeNode, string: str, run_data: ObjectParser
     print("visiting", node, node.rule_name)
     if node.rule_name == "arg_identifier":
         parse_return = yield run_data.left_fill_arg(node.value, string)
-        assert parse_return.parse_success
         return parse_return
     else:
         remaining_string = string
@@ -114,9 +113,10 @@ def _create_object_parser_func_from_grammar(
 
     def out_func(run_data: ObjectParserRun, string: str, result: ObjectParserResult):
         nonlocal grammar_ast
-        yield from gen_grammar_visitor(grammar_ast, string, run_data)
+        parse_return = yield from gen_grammar_visitor(grammar_ast, string, run_data)
+        if not parse_return.parse_success:
+            raise UnparseableObjectError(f"Error parseing string {string} with grammar {grammar}")
         yield
-
 
     return out_func
 
