@@ -1,7 +1,8 @@
 from ainix_common.parsing import typecontext
 import attr
 from typing import List, Callable, Tuple, Dict, Optional, Any
-from types import GeneratorType
+import typing
+import types
 #import ainix_common.parsing.ast_components
 #from ainix_common.parsing.stringparser import StringParser
 
@@ -209,7 +210,7 @@ class ObjectParser:
         self,
         string: str,
         object_: 'typecontext.AInixObject'
-    ) -> 'ObjectParserResult':
+    ) -> typing.Generator['ArgParseDelegation', 'ArgParseDelegationReturn', 'ObjectParserResult']:
         if self.type_name is not None and object_.type_name != self.type_name:
             raise ValueError("ObjectParser {0.name} expects to parse objects"
                              "of type {0.type_name}, but parse_string called "
@@ -219,7 +220,7 @@ class ObjectParser:
         parse_func_run = self._parse_function(run, string, result)
         # Parsers are able to yield delegating parsing things to other parsers.
         # If that is the case, it will be generator.
-        if isinstance(parse_func_run, GeneratorType):
+        if isinstance(parse_func_run, types.GeneratorType):
             yield from parse_func_run
 
         self._validate_parse_result(result, object_)

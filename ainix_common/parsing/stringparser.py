@@ -96,6 +96,23 @@ class StringParser:
                 arg_data.slice_string, arg.type_parser, arg.type
             )
 
+    def _run_object_parser_with_delegations(
+        self,
+        string: str,
+        implementation: typecontext.AInixType,
+        parser: ainix_common.parsing.parse_primitives.ObjectParser
+    ) -> ainix_common.parsing.parse_primitives.ObjectParserResult:
+        """Will run a specified object parser. If the parser asks to delegate
+        the parsing of any its parsing, it will handle that and pass back the
+        results."""
+        parser_gen = parser.parse_string(string, implementation)
+        try:
+            while True:
+                next(parser_gen)
+        except StopIteration as stop_iter:
+            return stop_iter.value
+
+
     def parse_object_node(
         self,
         implementation: typecontext.AInixObject,
@@ -103,7 +120,7 @@ class StringParser:
         parser: ainix_common.parsing.parse_primitives.ObjectParser,
     ) -> Tuple[ObjectNode, StringParseResultMetadata]:
         """Parses a string into a ObjectNode"""
-        object_parse = parser.parse_string(string, implementation)
+        object_parse = self._run_object_parser_with_delegations(string, implementation, parser)
         arg_name_to_node: Dict[str, ObjectChoiceNode] = {}
         my_metadata = StringParseResultMetadata.make_for_unparsed_string(string)
         for arg in implementation.children:

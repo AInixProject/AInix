@@ -119,10 +119,9 @@ def _load_object(define, type_context: typecontext.TypeContext):
     )
 
 
-def _extract_parse_func_from_py_module(define: Dict, load_root: str) -> Callable:
+def _extract_parse_func_from_py_module(name: str, module_name: str, load_root: str) -> Callable:
     """Extracts a parse function when the source of the function a python module"""
-    file_name = os.path.join(load_root, define['file'])
-    name = define['name']
+    file_name = os.path.join(load_root, module_name)
     parser_module_spec = importlib.util.spec_from_file_location(
         "imparser." + name, file_name)
     parser_module = importlib.util.module_from_spec(parser_module_spec)
@@ -136,16 +135,21 @@ def _extract_parse_func_from_py_module(define: Dict, load_root: str) -> Callable
     return parse_func
 
 
-def _extract_parse_function(define: Dict, load_root: str) -> Callable:
-    """Parses a define and gets out a parse_function for a parser. Currently
-    this function works for both TypeParsers and ObjectParsers but this might
-    change in the future if more sources are added."""
-    source = define.get("source", "python_module")
-    if source == "python_module":
-        return _extract_parse_func_from_py_module(define, load_root)
-    else:
-        raise ValueError(f"Unrecognized source {source} for TypeParser "
-                         f"{define['name']}")
+def _create_type_parser_from_python_module(
+    type_context: typecontext.TypeContext,
+    load_root: str,
+    type_name: Optional[str],
+    parser_name: str,
+    module_name_to_load_from: str
+):
+    """Creates a type parser based off python code"""
+    parse_func = _extract_parse_func_from_py_module(
+        parser_name, module_name_to_load_from, load_root)
+    parse_primitives.TypeParser(
+        type_context, parser_name=parser_name,
+        parse_function=parse_func,
+        type_name=type_name
+    )
 
 
 def _load_type_parser(
@@ -159,13 +163,36 @@ def _load_type_parser(
         type_context: the context to define the parser in.
         load_root: path to use the root for loading
     """
-    parse_func = _extract_parse_function(define, load_root)
-    parse_primitives.TypeParser(
-        type_context, parser_name=define['name'],
-        parse_function=parse_func,
-        type_name=define.get('type')
-    )
+    source = define.get("source", "python_module")
+    if source == "python_module":
+        return _create_type_parser_from_python_module(
+            type_context=type_context,
+            load_root=load_root,
+            type_name=define.get('type'),
+            parser_name=define['name'],
+            module_name_to_load_from=define['file']
+        )
+    else:
+        raise ValueError(f"Unrecognized source {source} for TypeParser "
+                         f"{define['name']}")
 
+
+def _create_object_parser_from_python_module(
+        type_context: typecontext.TypeContext,
+        load_root: str,
+        parser_name: str,
+        module_name_to_load_from: str,
+        exclusive_type_name: Optional[str]
+):
+    """Creates a type parser based off python code"""
+    parse_func = _extract_parse_func_from_py_module(
+        parser_name, module_name_to_load_from, load_root)
+    parse_primitives.ObjectParser(
+        type_context,
+        parser_name=parser_name,
+        parse_function=parse_func,
+        exclusive_type_name=exclusive_type_name
+    )
 
 def _load_object_parser(
     define: Dict,
@@ -179,12 +206,17 @@ def _load_object_parser(
         load_root: The root load context. Used as the relative start point for
             any file imports
     """
-    parse_func = _extract_parse_function(define, load_root)
-    parse_primitives.ObjectParser(
-        type_context,
-        parser_name=define['name'],
-        parse_function=parse_func,
-        exclusive_type_name=define.get('type')
-    )
+    source = define.get("source", "python_module")
+    if source == "python_module":
+        return _create_object_parser_from_python_module(
+            type_context=type_context,
+            load_root=load_root,
+            parser_name=define['name'],
+            module_name_to_load_from=define['file'],
+            exclusive_type_name=define.get('type')
+        )
+    else:
+        raise ValueError(f"Unrecognized source {source} for TypeParser "
+                         f"{define['name']}")
 
 

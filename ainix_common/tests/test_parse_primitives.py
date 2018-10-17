@@ -8,7 +8,7 @@ def test_add_arg():
     obj = AInixObject(mock_context, "FooObj", "footype",
                       [AInixArgument(mock_context, "FooArg", None)])
     test_string = "test string"
-    result = ObjectParserResult(obj, test_string, None)
+    result = ObjectParserResult(obj, test_string)
 
     # Invalid arg
     with pytest.raises(Exception):
