@@ -11,18 +11,18 @@ def max_munch_type_parser(
 ) -> None:
     """A type parser which consumes where each implementation has an associated string"""
     implementations = run.all_type_implementations
-    longest_match = (0, None)
+    longest_match = None
     for implementation in implementations:
         parse_rep: str = implementation.type_data[MAX_MUNCH_LOOKUP_KEY]
         if string.startswith(parse_rep):
             match = (len(parse_rep), implementation)
-            if match > longest_match:
+            if longest_match is None or match > longest_match:
                 longest_match = match
-    if longest_match[1] is None:
+    if longest_match is None:
         raise parse_primitives.UnparsableTypeError(
             f"{run.parser_name} unable to find any matches inside {string}")
     result.set_valid_implementation(longest_match[1])
-    result.set_next_slice(0, longest_match[0])
+    result.set_next_slice(longest_match[0], len(string))
 
 
 def regex_group_object_parser(

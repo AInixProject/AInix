@@ -43,21 +43,19 @@ defines:
     - define_new: object
       name: base_ten_list
       type: IntBase
-      preferred_object_parser: regex_group_object_parser
+      preferred_object_parser: base_ten_list_parser
       children:
           - name: CurrentDigit
             type: BaseTen
             required: True
-            arg_data: {RegexRepresentation: "([0-9])[0-9]*"}
           - name: NextDigit
             type: IntBase
-            required: False
-            arg_data: {RegexRepresentation: "[0-9]([0-9]+)"}
-    #- define_new: object_parser
-    #  name: base_ten_list
-    #  source: arg_grammar
-    #  grammar: |
-    #      CurrentDigit NextDigit?
+            required: True
+    - define_new: object_parser
+      name: base_ten_list_parser
+      source: arg_grammar
+      grammar: |
+          CurrentDigit NextDigit
     # Base10 Digits
     - define_new: type
       name: BaseTen
@@ -94,4 +92,7 @@ defines:
     - << : *base_ten_obj
       name: nine
       type_data: {ParseRepresentation: "9"}
+    - << : *base_ten_obj
+      name: terminal
+      type_data: {ParseRepresentation: ""}
 ...

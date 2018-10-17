@@ -16,12 +16,28 @@ def test_max_munch():
     result = parse_primitives.TypeParserResult(MagicMock, parse_str)
     max_munch_type_parser(mock_run, parse_str, result)
     assert result.get_implementation() == mock_types[3]
-    assert result.get_next_string() == "foo"
+    assert result.get_next_string() == "bar"
 
     with pytest.raises(parse_primitives.AInixParseError):
         parse_str = "moo"
         result = parse_primitives.TypeParserResult(MagicMock, parse_str)
         max_munch_type_parser(mock_run, parse_str, result)
+
+
+def test_max_munch_empty_string():
+    def make_mock_with_parse_rep(representation: str):
+        out = MagicMock()
+        out.type_data = {MAX_MUNCH_LOOKUP_KEY: representation}
+        return out
+    mock_run = MagicMock()
+    mock_types = [make_mock_with_parse_rep(rep)
+                  for rep in ("fo", "bar", "")]
+    mock_run.all_type_implementations = mock_types
+    parse_str = "moo"
+    result = parse_primitives.TypeParserResult(MagicMock, parse_str)
+    max_munch_type_parser(mock_run, parse_str, result)
+    assert result.get_implementation() == mock_types[2]
+    assert result.get_next_string() == "moo"
 
 
 def test_regex_group_parser():
@@ -41,7 +57,7 @@ def test_regex_group_parser():
     mock_object.children = mock_args
     test_string = "123foo"
     run = parse_primitives.ObjectParserRun(mock_object)
-    result = parse_primitives.ObjectParserResult(mock_object, test_string, None)
+    result = parse_primitives.ObjectParserResult(mock_object, test_string)
     regex_group_object_parser(run, test_string, result)
     a = result.get_arg_present("a")
     assert a.slice == (0, 1)
