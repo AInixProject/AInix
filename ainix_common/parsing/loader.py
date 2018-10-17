@@ -12,6 +12,7 @@ from ainix_common.parsing import typecontext
 from ainix_common.parsing import parse_primitives
 from ainix_common.parsing import examplecontext
 import importlib.util
+from ainix_common.parsing import grammar_lang
 import os
 
 
@@ -208,11 +209,18 @@ def _load_object_parser(
     """
     source = define.get("source", "python_module")
     if source == "python_module":
-        return _create_object_parser_from_python_module(
+        _create_object_parser_from_python_module(
             type_context=type_context,
             load_root=load_root,
             parser_name=define['name'],
             module_name_to_load_from=define['file'],
+            exclusive_type_name=define.get('type')
+        )
+    elif source == "arg_grammar":
+        grammar_lang.create_object_parser_from_grammar(
+            type_context=type_context,
+            parser_name=define['name'],
+            grammar=define['grammar'],
             exclusive_type_name=define.get('type')
         )
     else:
