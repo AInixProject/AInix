@@ -10,7 +10,7 @@ import arpeggio.cleanpeg
 
 # Lexical invariants
 from ainix_common.parsing.parse_primitives import ObjectParser, ObjectParserRun, \
-    ObjectParserResult, ArgParseDelegationReturn, UnparseableObjectError
+    ObjectParserResult, ParseDelegationReturnMetadata, UnparseableObjectError
 from ainix_common.parsing.typecontext import TypeContext
 
 ASSIGNMENT = "="
@@ -94,9 +94,10 @@ def _visit_str_match(node, string):
     """A grammar visitor for the literal string matches"""
     look_for = node.value[1:-1]
     does_start_with = string.startswith(look_for)
-    remaining_str = string[len(look_for):]
-    return ArgParseDelegationReturn(does_start_with, remaining_str,
-                                    "Expect literal '{look_for}' in {string}")
+    if does_start_with:
+        return ParseDelegationReturnMetadata(does_start_with, string, len(look_for))
+    else:
+        return ParseDelegationReturnMetadata(False, string, None)
 
 
 def gen_grammar_visitor(node: ParseTreeNode, string: str, run_data: ObjectParserRun):
@@ -104,7 +105,7 @@ def gen_grammar_visitor(node: ParseTreeNode, string: str, run_data: ObjectParser
     if node.rule_name == "arg_identifier":
         parse_return = yield run_data.left_fill_arg(node.value, string)
         if not parse_return.parse_success:
-            parse_return.fail_reason += f"\nStack Message: Fail on arg {node.value}"
+            parse_return = parse_return.add_fail(f"Stack Message: Fail on arg {node.value}")
         return parse_return
     if node.rule_name == "str_match":
         return _visit_str_match(node, string)
@@ -116,7 +117,7 @@ def gen_grammar_visitor(node: ParseTreeNode, string: str, run_data: ObjectParser
                 if not parse_return.parse_success:
                     return parse_return
                 remaining_string = parse_return.remaining_string
-        return ArgParseDelegationReturn(True, remaining_string)
+        return ParseDelegationReturnMetadata.create_from_substring(string, remaining_string)
 
 
 def _create_object_parser_func_from_grammar(

@@ -210,7 +210,7 @@ class ObjectParser:
         self,
         string: str,
         object_: 'typecontext.AInixObject'
-    ) -> typing.Generator['ArgParseDelegation', 'ArgParseDelegationReturn', 'ObjectParserResult']:
+    ) -> typing.Generator['ArgParseDelegation', 'ParseDelegationReturnMetadata', 'ObjectParserResult']:
         if self.type_name is not None and object_.type_name != self.type_name:
             raise ValueError("ObjectParser {0.name} expects to parse objects"
                              "of type {0.type_name}, but parse_string called "
@@ -241,16 +241,84 @@ class ObjectParser:
 
 @attr.s(auto_attribs=True, frozen=True)
 class ArgParseDelegation:
+    """A struct to hold data about requesting that the parsing of an argument
+    be handled by some other parser while getting the results reported back."""
     arg_name: str
     object_on: 'typecontext.AInixObject'
     string_to_parse: str
 
+    def next_from_substring(self, new_string) -> 'ParseDelegationReturnMetadata':
+        """Makes a return from a substring. Probably only useful in test"""
+        return ParseDelegationReturnMetadata.create_from_substring(
+            self.string_to_parse, new_string)
 
-@attr.s(auto_attribs=True)
-class ArgParseDelegationReturn:
+
+@attr.s(auto_attribs=True, frozen=True)
+class ParseDelegationReturnMetadata:
+    """Used to pass around metadata about the a delegation of parsing to
+    another parser.
+
+    Args:
+        remaining_right_starti: When calling a parser it may or recurse down
+            parsing all possible substructures of the parse. While doing this we
+            keep track the farthest right part of the string which was
+            not used during parsing. This variable stores the index into the
+            string which is the start of that far rightmost part of unused
+            string characters. This can be used for implementing a LL style
+            parse.
+    """
     parse_success: bool
-    remaining_string: Optional[str]
+    original_string: str
+    remaining_right_starti: Optional[int]
     fail_reason: str = ""
+
+    @classmethod
+    def create_from_substring(cls, original_string: str, new_string: str):
+        """Constructs a successful return value while calculating for you the
+        correct remaining_right_starti based off a new remaining string. Useful
+        in test to quickly be able to make expected values"""
+        if new_string is None:
+            return ParseDelegationReturnMetadata(False, original_string, None)
+        if new_string != "":
+            remaining_right_starti = original_string.find(new_string)
+        else:
+            remaining_right_starti = len(original_string)
+        if remaining_right_starti == -1:
+            raise ValueError("New string must be substring of original string")
+        if original_string[remaining_right_starti:] != new_string:
+            raise ValueError("new string must appear at the end of the origional string")
+        return cls(True, original_string, remaining_right_starti)
+
+    @property
+    def remaining_string(self) -> Optional[str]:
+        if self.parse_success:
+            return self.original_string[self.remaining_right_starti:]
+        else:
+            return None
+
+    @staticmethod
+    def make_for_unparsed_string(string: str) -> 'ParseDelegationReturnMetadata':
+        """A return value with nothing consumed yet"""
+        return ParseDelegationReturnMetadata(True, string, 0)
+
+    def combine_with_child_return(
+        self,
+        child_return_data: 'ParseDelegationReturnMetadata',
+        child_start_offset: int
+    ) -> 'ParseDelegationReturnMetadata':
+        """When being used during parsing of an ObjectParser, this can be used
+        to combine an exisiting return with the return of one of the children."""
+        is_success = self.parse_success and child_return_data.parse_success
+        fail_message = self.fail_reason + child_return_data.fail_reason
+        new_remaining_starti = max(self.remaining_right_starti,
+                                   child_return_data.remaining_right_starti + child_start_offset)
+        return ParseDelegationReturnMetadata(
+            is_success, self.original_string, new_remaining_starti, fail_message)
+
+    def add_fail(self, new_fail_reason) -> 'ParseDelegationReturnMetadata':
+        """Returns with a new instance with an additiona fail message added"""
+        new_fail_string = self.fail_reason + "\n" + new_fail_reason
+        return ParseDelegationReturnMetadata(False, self.original_string, None, new_fail_string)
 
 
 class ObjectParserRun:
@@ -268,7 +336,7 @@ class ObjectParserRun:
 class ObjectParseArgData:
     slice: Tuple[int, int]
     slice_string: str
-    already_parsed_val: Any # ObjectChoiceNode. Stupid circular refs
+    set_from_delegation: ParseDelegationReturnMetadata = None
 
 
 class ObjectParserResult:
@@ -292,7 +360,7 @@ class ObjectParserResult:
                                   f"result of {self._object.name}. Valid options"
                                   f"are [{', '.join(self._result_dict.keys())}]")
         self._result_dict[arg_name] = ObjectParseArgData(
-            (si, ei), self._get_slice_string(si, ei), None)
+            (si, ei), self._get_slice_string(si, ei))
 
     #def force_arg_value(self, arg_name, slice: Tuple[int, int], slice_str: str, forced_value):
     #    self._result_dict[arg_name] = ObjectParseArgData(
@@ -322,6 +390,10 @@ class AInixParseError(RuntimeError):
     pass
 
 class StringProblemParseError(AInixParseError):
+    """Exception for when a something about the input string makes it unparsable
+    to the parser. This a somewhat expected exception in that it is not that something
+    unexpected happened. The caller will likely just need to try a different parser
+    for that string."""
     pass
 
 class UnparsableTypeError(StringProblemParseError):

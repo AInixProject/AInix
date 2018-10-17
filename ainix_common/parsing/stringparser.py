@@ -4,54 +4,8 @@ from pyrsistent import pmap
 import ainix_common.parsing
 from ainix_common.parsing import typecontext
 from ainix_common.parsing.ast_components import ObjectChoiceNode, ObjectNode
-from ainix_common.parsing.parse_primitives import TypeParser
-
-
-@attr.s(auto_attribs=True, frozen=True)
-class StringParseResultMetadata:
-    """
-    Keeps track of metadata about a result. Right now this just stores data
-    for use in a LL style parse. However, in the future it might store a
-    tree linking each part of the parse tree with a substring that it was
-    derived from. That will be implemented as needed.
-    Args:
-        string: The string which was origionally parsed
-        remaining_right_starti: When calling a either parse_object_node or
-            parse_object_choice_node the parser will recurse down parsing
-            all possible substructures of the parse. While doing this we
-            keep track the farthest right part of the string which was
-            not used during parsing. This variable stores the index into the
-            string which is the start of that far rightmost part of unused
-            string characters. This can be used for implementing a LL style
-            parse.
-        remaining_right_endi: Type parsers are able to return an arbitrary
-            next string slice. This might not cut off some to the right.
-            If that is the case this returns the end index (exclusive), of the
-            rightmost remaining (non-consumed) string.
-            NOTE: We are not really sure what this would be actually used for.
-            If a type parser was operating a LL style it shouldn't really
-            do this. However, it could. This might be useful somehow, or might
-            just need to be removed and not supported.
-    """
-    string: str
-    remaining_right_starti: int
-    #remaining_right_endi: int
-
-    @staticmethod
-    def make_for_unparsed_string(string: str) -> 'StringParseResultMetadata':
-        """A metadata with nothing consumed yet"""
-        return StringParseResultMetadata(string, 0)
-
-    def combine_with_child_metadata(
-        self,
-        child_meta_data: 'StringParseResultMetadata',
-        child_start_offset: int
-    ) -> 'StringParseResultMetadata':
-        new_remaining_starti = max(self.remaining_right_starti,
-                                   child_meta_data.remaining_right_starti + child_start_offset)
-        #new_remaining_endi = min(self.remaining_right_endi,
-        #                           child_meta_data.remaining_right_endi + child_start_offset)
-        return StringParseResultMetadata(self.string, new_remaining_starti)
+from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation, \
+    ParseDelegationReturnMetadata, StringProblemParseError
 
 
 class StringParser:
@@ -64,8 +18,9 @@ class StringParser:
     def _make_node_for_arg(
         self,
         arg: typecontext.AInixArgument,
-        arg_data: ainix_common.parsing.parse_primitives.ObjectParseArgData
-    ) -> Tuple[ObjectChoiceNode, Optional[StringParseResultMetadata]]:
+        arg_data: ainix_common.parsing.parse_primitives.ObjectParseArgData,
+        delegation_to_node_map: Dict[ParseDelegationReturnMetadata, ObjectChoiceNode]
+    ) -> Tuple[ObjectChoiceNode, Optional[ParseDelegationReturnMetadata]]:
         """
         Args:
             arg: The arg we just parsed
@@ -76,9 +31,14 @@ class StringParser:
             child_metadata: stringparse metadata gotten while parsing the new
                 node. If the arg is not present, then it will be None.
         """
+        arg_is_present = arg_data is not None
+        arg_has_already_been_delegated = arg_is_present and arg_data.set_from_delegation is not None
+        if arg_has_already_been_delegated:
+            done_delegation = arg_data.set_from_delegation
+            return delegation_to_node_map[done_delegation], done_delegation
+
         if not arg.required:
             arg_string_metadata = None
-            arg_is_present = arg_data is not None
             if arg_is_present:
                 arg_has_substructure_to_parse = arg.type_name is not None
                 if arg_has_substructure_to_parse:
@@ -96,54 +56,112 @@ class StringParser:
                 arg_data.slice_string, arg.type_parser, arg.type
             )
 
+    def _delegate_object_arg_parse(
+        self,
+        implementation: typecontext.AInixObject,
+        delegation: ArgParseDelegation
+    ) -> Tuple[ParseDelegationReturnMetadata, Optional[ObjectChoiceNode]]:
+        """Called to parse an argument which a parser asked to delegate and get
+        the resulting remaining string from.
+
+        Returns:
+            ParseDelegationReturnMetadata: The return value to send back through into
+                the calling parser.
+            ObjectChoiceNode: The parsed value for arg. If it was failure, then
+                will be None.
+        """
+        arg = implementation.get_arg_by_name(delegation.arg_name)
+
+        # Do parsing if needed.
+        if arg.type is not None:
+            try:
+                arg_type_choice, parse_metadata = self.parse_object_choice_node(
+                    delegation.string_to_parse, arg.type_parser, arg.type)
+                out_delegation_return = parse_metadata
+            except StringProblemParseError as e:
+                # TODO (DNGros): Use the metadata rather than exceptions to manage this
+                return ParseDelegationReturnMetadata(False, delegation.string_to_parse, None), None
+        else:
+            # If has None type, then we don't have to any parsing. Assume it was
+            # a success and that the arg is present.
+            arg_type_choice = None
+            out_delegation_return = ParseDelegationReturnMetadata.make_for_unparsed_string(
+                delegation.string_to_parse)
+
+        # Figure out the actal node we need to output
+        if not arg.required:
+            # If it is an optional node, wrap it in a "is present" present node.
+            if arg.type is None:
+                out_node = ObjectNode(arg.is_present_object, pmap({}))
+            else:
+                parsed_v_as_arg = pmap({
+                    typecontext.OPTIONAL_ARGUMENT_NEXT_ARG_NAME: arg_type_choice
+                })
+                out_node = ObjectNode(arg.is_present_object, parsed_v_as_arg)
+        else:
+            out_node = arg_type_choice
+        return out_delegation_return, out_node
+
     def _run_object_parser_with_delegations(
         self,
         string: str,
-        implementation: typecontext.AInixType,
+        implementation: typecontext.AInixObject,
         parser: ainix_common.parsing.parse_primitives.ObjectParser
-    ) -> ainix_common.parsing.parse_primitives.ObjectParserResult:
+    ) -> Tuple[
+        ainix_common.parsing.parse_primitives.ObjectParserResult,
+        Dict[ParseDelegationReturnMetadata, ObjectChoiceNode]
+    ]:
         """Will run a specified object parser. If the parser asks to delegate
         the parsing of any its parsing, it will handle that and pass back the
         results."""
         parser_gen = parser.parse_string(string, implementation)
-        try:
-            while True:
-                next(parser_gen)
-        except StopIteration as stop_iter:
-            return stop_iter.value
-
+        delegation_to_node: Dict[ParseDelegationReturnMetadata, ObjectChoiceNode] = {}
+        last_delegation_result = None
+        while True:
+            try:
+                delegation = parser_gen.send(last_delegation_result)
+            except StopIteration as stop_iter:
+                return_result = stop_iter.value
+                return return_result, delegation_to_node
+            delegation_return, out_node = self._delegate_object_arg_parse(
+                implementation, delegation)
+            delegation_to_node[delegation_return] = out_node
+            last_delegation_result = delegation_return
 
     def parse_object_node(
         self,
         implementation: typecontext.AInixObject,
         string: str,
         parser: ainix_common.parsing.parse_primitives.ObjectParser,
-    ) -> Tuple[ObjectNode, StringParseResultMetadata]:
+    ) -> Tuple[ObjectNode, ParseDelegationReturnMetadata]:
         """Parses a string into a ObjectNode"""
-        object_parse = self._run_object_parser_with_delegations(string, implementation, parser)
+        object_parse, delegation_to_node_map = self._run_object_parser_with_delegations(
+            string, implementation, parser)
         arg_name_to_node: Dict[str, ObjectChoiceNode] = {}
-        my_metadata = StringParseResultMetadata.make_for_unparsed_string(string)
+        my_return_metadata = ParseDelegationReturnMetadata.make_for_unparsed_string(string)
         for arg in implementation.children:
             arg_present_data = object_parse.get_arg_present(arg.name)
             arg_name_to_node[arg.name], arg_metadata = \
-                self._make_node_for_arg(arg, arg_present_data)
+                self._make_node_for_arg(arg, arg_present_data, delegation_to_node_map)
             if arg_metadata:
                 start_of_arg_substring, _ = arg_present_data.slice
-                my_metadata.combine_with_child_metadata(my_metadata, start_of_arg_substring)
-        return ObjectNode(implementation, pmap(arg_name_to_node)), my_metadata
+                my_return_metadata.combine_with_child_return(
+                    arg_metadata, start_of_arg_substring)
+        return ObjectNode(implementation, pmap(arg_name_to_node)), my_return_metadata
 
-    def _object_choice_result_to_string_metadata(self, result: ainix_common.parsing.parse_primitives.TypeParserResult):
+    def _object_choice_result_to_string_metadata(
+            self, result: ainix_common.parsing.parse_primitives.TypeParserResult):
         """Converts the result we get from a type parser into a string metadata
         result."""
         si, endi = result.get_next_slice()
-        return StringParseResultMetadata(result.string, endi)
+        return ParseDelegationReturnMetadata(True, result.string, endi)
 
     def parse_object_choice_node(
         self,
         string: str,
         parser: TypeParser,
         type: typecontext.AInixType
-    ) -> Tuple[ObjectChoiceNode, StringParseResultMetadata]:
+    ) -> Tuple[ObjectChoiceNode, ParseDelegationReturnMetadata]:
         """Parses a string into a ObjectChoiceNode. This is more internal use.
         For the more user friendly method see create_parse_tree()"""
         result = parser.parse_string(string, type)

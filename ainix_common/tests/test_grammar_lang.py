@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 from ainix_common.parsing.grammar_lang import *
 from ainix_common.parsing.parse_primitives import ArgParseDelegation, \
-    ArgParseDelegationReturn, StringProblemParseError
+    ParseDelegationReturnMetadata, StringProblemParseError
 
 
 def test_parse():
@@ -14,7 +14,7 @@ def test_parse():
     first_del: ArgParseDelegation = next(p_res)
     assert first_del.string_to_parse == "hello"
     assert first_del.arg_name == "Foo"
-    p_res.send(ArgParseDelegationReturn(True, ""))
+    p_res.send(first_del.next_from_substring(""))
 
 
 def test_parse_2():
@@ -24,10 +24,10 @@ def test_parse_2():
     delegation: ArgParseDelegation = next(p_res)
     assert delegation.string_to_parse == "hello20"
     assert delegation.arg_name == "Foo"
-    delegation = p_res.send(ArgParseDelegationReturn(True, "20"))
+    delegation = p_res.send(delegation.next_from_substring("20"))
     assert delegation.string_to_parse == "20"
     assert delegation.arg_name == "Bar"
-    p_res.send(ArgParseDelegationReturn(True, ""))
+    p_res.send(delegation.next_from_substring(""))
 
 
 def test_parse_with_err():
@@ -38,7 +38,7 @@ def test_parse_with_err():
     assert delegation.string_to_parse == "hello20"
     assert delegation.arg_name == "Foo"
     with pytest.raises(UnparseableObjectError):
-        delegation = p_res.send(ArgParseDelegationReturn(False, ""))
+        delegation = p_res.send(ParseDelegationReturnMetadata(False, "hello20", None))
 
 
 def test_parse_str_litteral():
@@ -48,10 +48,10 @@ def test_parse_str_litteral():
     delegation: ArgParseDelegation = next(p_res)
     assert delegation.string_to_parse == "hello-20"
     assert delegation.arg_name == "Foo"
-    delegation = p_res.send(ArgParseDelegationReturn(True, "-20"))
+    delegation = p_res.send(delegation.next_from_substring("-20"))
     assert delegation.string_to_parse == "20"
     assert delegation.arg_name == "Bar"
-    p_res.send(ArgParseDelegationReturn(True, ""))
+    p_res.send(delegation.next_from_substring(""))
 
 
 def test_parse_str_litteral_fail():
@@ -60,4 +60,4 @@ def test_parse_str_litteral_fail():
     assert isinstance(p_res, GeneratorType)
     delegation: ArgParseDelegation = next(p_res)
     with pytest.raises(StringProblemParseError):
-        delegation = p_res.send(ArgParseDelegationReturn(True, "=20"))
+        delegation = p_res.send(delegation.next_from_substring("=20"))
