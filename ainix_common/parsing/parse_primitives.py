@@ -1,6 +1,6 @@
 from ainix_common.parsing import typecontext
 import attr
-from typing import List, Callable, Tuple, Dict, Optional, Any
+from typing import List, Callable, Tuple, Dict, Optional, Any, Union
 import typing
 import types
 #import ainix_common.parsing.ast_components
@@ -210,7 +210,9 @@ class ObjectParser:
         self,
         string: str,
         object_: 'typecontext.AInixObject'
-    ) -> typing.Generator['ArgParseDelegation', 'ParseDelegationReturnMetadata', 'ObjectParserResult']:
+    ) -> typing.Generator[
+        'ArgParseDelegation', 'ParseDelegationReturnMetadata', 'ObjectParserResult'
+    ]:
         if self.type_name is not None and object_.type_name != self.type_name:
             raise ValueError("ObjectParser {0.name} expects to parse objects"
                              "of type {0.type_name}, but parse_string called "
@@ -243,15 +245,14 @@ class ObjectParser:
 class ArgParseDelegation:
     """A struct to hold data about requesting that the parsing of an argument
     be handled by some other parser while getting the results reported back."""
-    arg_name: str
+    arg: 'typecontext.AInixArgument'
     object_on: 'typecontext.AInixObject'
     string_to_parse: str
 
     def next_from_substring(self, new_string) -> 'ParseDelegationReturnMetadata':
         """Makes a return from a substring. Probably only useful in test"""
         return ParseDelegationReturnMetadata.create_from_substring(
-            self.string_to_parse, new_string)
-
+            self.arg, self.string_to_parse, new_string)
 
 @attr.s(auto_attribs=True, frozen=True)
 class ParseDelegationReturnMetadata:
@@ -259,6 +260,9 @@ class ParseDelegationReturnMetadata:
     another parser.
 
     Args:
+        parse_success: whether or not the parsing succeeded
+        origional_string: The origional string we were parsing
+        what_parsed: The instance of the thing we parsed
         remaining_right_starti: When calling a parser it may or recurse down
             parsing all possible substructures of the parse. While doing this we
             keep track the farthest right part of the string which was
@@ -266,19 +270,27 @@ class ParseDelegationReturnMetadata:
             string which is the start of that far rightmost part of unused
             string characters. This can be used for implementing a LL style
             parse.
+        fail_reason: If the parse was not successful, this can be used to provide
+            a reason for the failure
     """
     parse_success: bool
     original_string: str
+    what_parsed: Any
     remaining_right_starti: Optional[int]
     fail_reason: str = ""
 
     @classmethod
-    def create_from_substring(cls, original_string: str, new_string: str):
+    def create_from_substring(
+        cls,
+        what_parsed,
+        original_string: str,
+        new_string: str
+    ):
         """Constructs a successful return value while calculating for you the
         correct remaining_right_starti based off a new remaining string. Useful
         in test to quickly be able to make expected values"""
         if new_string is None:
-            return ParseDelegationReturnMetadata(False, original_string, None)
+            return ParseDelegationReturnMetadata(False, original_string, what_parsed, None)
         if new_string != "":
             remaining_right_starti = original_string.find(new_string)
         else:
@@ -287,7 +299,7 @@ class ParseDelegationReturnMetadata:
             raise ValueError("New string must be substring of original string")
         if original_string[remaining_right_starti:] != new_string:
             raise ValueError("new string must appear at the end of the origional string")
-        return cls(True, original_string, remaining_right_starti)
+        return cls(True, original_string, what_parsed, remaining_right_starti)
 
     @property
     def remaining_string(self) -> Optional[str]:
@@ -297,9 +309,17 @@ class ParseDelegationReturnMetadata:
             return None
 
     @staticmethod
-    def make_for_unparsed_string(string: str) -> 'ParseDelegationReturnMetadata':
-        """A return value with nothing consumed yet"""
-        return ParseDelegationReturnMetadata(True, string, 0)
+    def make_for_unparsed_string(
+        string: str,
+        what_parsed
+    ) -> 'ParseDelegationReturnMetadata':
+        """A return value with nothing consumed yet
+
+        Args:
+            string: The unparsed string
+            what_parsed: What we are parsing. Should be an Arg, Object, or Type
+        """
+        return ParseDelegationReturnMetadata(True, string, what_parsed, 0)
 
     def combine_with_child_return(
         self,
@@ -313,12 +333,19 @@ class ParseDelegationReturnMetadata:
         new_remaining_starti = max(self.remaining_right_starti,
                                    child_return_data.remaining_right_starti + child_start_offset)
         return ParseDelegationReturnMetadata(
-            is_success, self.original_string, new_remaining_starti, fail_message)
+            is_success, self.original_string, self.what_parsed, new_remaining_starti, fail_message)
+
+    def change_what_parsed(self, new_what_parsed) -> 'ParseDelegationReturnMetadata':
+        """Returns a new return with same values accept different what_parsed"""
+        return ParseDelegationReturnMetadata(self.parse_success, self.original_string,
+                                             new_what_parsed, self.remaining_right_starti,
+                                             self.fail_reason)
 
     def add_fail(self, new_fail_reason) -> 'ParseDelegationReturnMetadata':
         """Returns with a new instance with an additiona fail message added"""
         new_fail_string = self.fail_reason + "\n" + new_fail_reason
-        return ParseDelegationReturnMetadata(False, self.original_string, None, new_fail_string)
+        return ParseDelegationReturnMetadata(
+            False, self.original_string, self.what_parsed, None, new_fail_string)
 
 
 class ObjectParserRun:
@@ -328,8 +355,15 @@ class ObjectParserRun:
         self._object = object_parsing
         self.all_arguments = self._object.children
 
-    def left_fill_arg(self, arg_name: str, string_to_parse: str) -> ArgParseDelegation:
-        return ArgParseDelegation(arg_name, self._object, string_to_parse)
+    def get_arg_by_name(self, name: str):
+        return self._object.get_arg_by_name(name)
+
+    def left_fill_arg(
+        self,
+        arg: 'typecontext.AInixArgument',
+        string_to_parse: str
+    ) -> ArgParseDelegation:
+        return ArgParseDelegation(arg, self._object, string_to_parse)
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -362,6 +396,19 @@ class ObjectParserResult:
         self._result_dict[arg_name] = ObjectParseArgData(
             (si, ei), self._get_slice_string(si, ei))
 
+    def accept_delegation(self, delegation_return: ParseDelegationReturnMetadata):
+        if not isinstance(delegation_return.what_parsed, typecontext.AInixArgument):
+            raise ValueError(f"Unable to accept a delegation that parsed a "
+                             f"{delegation_return.what_parsed}. Must be an AInixArgument")
+        if not delegation_return.parse_success:
+            raise ValueError("Can't accept a failed delegation")
+        # TODO (DNGros): slice is probably wrong
+        self._result_dict[delegation_return.what_parsed.name] = ObjectParseArgData(
+            slice=(0, delegation_return.remaining_right_starti),
+            slice_string=delegation_return.remaining_string,
+            set_from_delegation=delegation_return
+        )
+
     #def force_arg_value(self, arg_name, slice: Tuple[int, int], slice_str: str, forced_value):
     #    self._result_dict[arg_name] = ObjectParseArgData(
     #        slice=slice,
@@ -375,7 +422,7 @@ class ObjectParserResult:
     #                              f"fill in {self._object.name}. Valid options"
     #                              f"are [{', '.join(self._result_dict.keys())}]")
     #    arg_to_fill = self._object.get_arg_by_name(arg_name)
-    #    node, string_metadata = self._parser_ref.parse_object_choice_node(
+    #    node, string_metadata = self._parser_ref._parse_object_choice_node(
     #        string, arg_to_fill.type_parser, arg_to_fill.next_choice_type)
     #    self._result_dict[arg_name] = ObjectParseArgData(
     #        slice=(0, string_metadata.remaining_right_starti),

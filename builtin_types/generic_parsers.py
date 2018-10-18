@@ -9,7 +9,9 @@ def max_munch_type_parser(
     string: str,
     result: parse_primitives.TypeParserResult
 ) -> None:
-    """A type parser which consumes where each implementation has an associated string"""
+    """A type parser which consumes as much as possible. Each implementation
+    is expected to have a type_data equal to MAX_MUNCH_LOOKUP_KEY (specified
+    above."""
     implementations = run.all_type_implementations
     longest_match = None
     for implementation in implementations:

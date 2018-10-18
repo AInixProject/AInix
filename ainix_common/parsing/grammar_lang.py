@@ -95,29 +95,45 @@ def _visit_str_match(node, string):
     look_for = node.value[1:-1]
     does_start_with = string.startswith(look_for)
     if does_start_with:
-        return ParseDelegationReturnMetadata(does_start_with, string, len(look_for))
+        return ParseDelegationReturnMetadata(does_start_with, string, node, len(look_for))
     else:
-        return ParseDelegationReturnMetadata(False, string, None)
+        return ParseDelegationReturnMetadata(False, string, node, None)
 
 
-def gen_grammar_visitor(node: ParseTreeNode, string: str, run_data: ObjectParserRun):
+def _visit_suffix(node, string):
+    """A grammar visitor for the suffixes"""
+    print("YAY")
+
+
+def gen_grammar_visitor(
+    node: ParseTreeNode,
+    string: str,
+    run_data: ObjectParserRun,
+    result: ObjectParserResult
+):
     print("visiting", node, node.rule_name)
     if node.rule_name == "arg_identifier":
-        parse_return = yield run_data.left_fill_arg(node.value, string)
+        parse_return = yield run_data.left_fill_arg(run_data.get_arg_by_name(node.value), string)
         if not parse_return.parse_success:
             parse_return = parse_return.add_fail(f"Stack Message: Fail on arg {node.value}")
+        else:
+            result.accept_delegation(parse_return)
         return parse_return
     if node.rule_name == "str_match":
         return _visit_str_match(node, string)
+    if node.rule_name == "suffix":
+        return _visit_suffix(node, string)
     else:
         remaining_string = string
         if isinstance(node, arpeggio.NonTerminal):
             for child in node:
-                parse_return = yield from gen_grammar_visitor(child, remaining_string, run_data)
+                parse_return = yield from gen_grammar_visitor(
+                    child, remaining_string, run_data, result)
                 if not parse_return.parse_success:
                     return parse_return
                 remaining_string = parse_return.remaining_string
-        return ParseDelegationReturnMetadata.create_from_substring(string, remaining_string)
+        # TODO (DNGros): Figure out what to put in as what_parsed here
+        return ParseDelegationReturnMetadata.create_from_substring(None,string, remaining_string)
 
 
 def _create_object_parser_func_from_grammar(
@@ -127,7 +143,7 @@ def _create_object_parser_func_from_grammar(
 
     def out_func(run_data: ObjectParserRun, string: str, result: ObjectParserResult):
         nonlocal grammar_ast
-        parse_return = yield from gen_grammar_visitor(grammar_ast, string, run_data)
+        parse_return = yield from gen_grammar_visitor(grammar_ast, string, run_data, result)
         if not parse_return.parse_success:
             raise UnparseableObjectError(f"Error parseing string {string} with grammar {grammar}."
                                          f"Clunky 'stack trace' (can be made better): "

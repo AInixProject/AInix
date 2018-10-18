@@ -1,8 +1,10 @@
 import pytest
 from ainix_common.parsing.ast_components import *
 from ainix_common.parsing import loader
+from ainix_common.parsing.parse_primitives import TypeParser
 from ainix_common.parsing.stringparser import StringParser
-from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject
+from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject, AInixType
+from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
 
 BUILTIN_TYPES_PATH = "../../builtin_types"
 
@@ -48,6 +50,32 @@ def test_end_to_end_parse1(type_context):
     assert not a_choice.choice.implementation.name.endswith("NOTPRESENT")
     b_choice: ObjectChoiceNode = programArg.choice._arg_name_to_node[bArg.name]
     assert b_choice.choice.implementation.name.endswith("NOTPRESENT")
+
+
+@pytest.fixture(scope="function")
+def toy_string_context() -> TypeContext:
+    tc = TypeContext()
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", tc)
+    foo_string = AInixType(tc, "FooString")
+    foo_string_obj = AInixObject(tc, "foo_string_obj", "FooString",
+                                 children=[AInixArgument(tc, "CurWord", "FooWord", required=True),
+                                           AInixArgument(tc, "Nstr", "FooString", required=True)],
+                                 preferred_object_parser_name="foo_string_parser")
+    foo_string_parser = create_object_parser_from_grammar(
+        tc, "foo_string_parser", r"CurWord Nstr?")
+    foo_word = AInixType(tc, "FooWord", "max_munch_type_parser")
+    objects = [AInixObject(tc, "FooWordOf" + name, "FooWord",
+                           type_data={"ParseRepresentation": name})
+               for name in ("a", "bee", "c")]
+    tc.fill_default_parsers()
+    return tc
+
+
+def test_parse_with_delegations(toy_string_context):
+    """A test where one of the object parsers (a grammar parser) tries to
+    delegate its parseing"""
+    parser = StringParser(toy_string_context)
+    parser.create_parse_tree("a", "FooString")
 
 
 @pytest.fixture(scope="function")

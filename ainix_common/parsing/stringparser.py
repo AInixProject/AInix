@@ -42,7 +42,7 @@ class StringParser:
             if arg_is_present:
                 arg_has_substructure_to_parse = arg.type_name is not None
                 if arg_has_substructure_to_parse:
-                    inner_arg_node, arg_string_metadata = self.parse_object_choice_node(
+                    inner_arg_node, arg_string_metadata = self._parse_object_choice_node(
                         arg_data.slice_string, arg.type_parser, arg.type)
                     arg_map = pmap({typecontext.OPTIONAL_ARGUMENT_NEXT_ARG_NAME: inner_arg_node})
                 else:
@@ -52,7 +52,7 @@ class StringParser:
                 object_choice = ObjectNode(arg.not_present_object, pmap({}))
             return ObjectChoiceNode(arg.present_choice_type, object_choice), arg_string_metadata
         else:
-            return self.parse_object_choice_node(
+            return self._parse_object_choice_node(
                 arg_data.slice_string, arg.type_parser, arg.type
             )
 
@@ -70,23 +70,25 @@ class StringParser:
             ObjectChoiceNode: The parsed value for arg. If it was failure, then
                 will be None.
         """
-        arg = implementation.get_arg_by_name(delegation.arg_name)
+        arg = delegation.arg
 
         # Do parsing if needed.
         if arg.type is not None:
             try:
-                arg_type_choice, parse_metadata = self.parse_object_choice_node(
+                arg_type_choice, parse_metadata = self._parse_object_choice_node(
                     delegation.string_to_parse, arg.type_parser, arg.type)
-                out_delegation_return = parse_metadata
+                out_delegation_return = parse_metadata.change_what_parsed(arg)
             except StringProblemParseError as e:
                 # TODO (DNGros): Use the metadata rather than exceptions to manage this
-                return ParseDelegationReturnMetadata(False, delegation.string_to_parse, None), None
+                metadata = ParseDelegationReturnMetadata(
+                    False, delegation.string_to_parse, arg, None, str(e))
+                return metadata, None
         else:
             # If has None type, then we don't have to any parsing. Assume it was
             # a success and that the arg is present.
             arg_type_choice = None
             out_delegation_return = ParseDelegationReturnMetadata.make_for_unparsed_string(
-                delegation.string_to_parse)
+                delegation.string_to_parse, arg)
 
         # Figure out the actal node we need to output
         if not arg.required:
@@ -128,7 +130,7 @@ class StringParser:
             delegation_to_node[delegation_return] = out_node
             last_delegation_result = delegation_return
 
-    def parse_object_node(
+    def _parse_object_node(
         self,
         implementation: typecontext.AInixObject,
         string: str,
@@ -138,7 +140,8 @@ class StringParser:
         object_parse, delegation_to_node_map = self._run_object_parser_with_delegations(
             string, implementation, parser)
         arg_name_to_node: Dict[str, ObjectChoiceNode] = {}
-        my_return_metadata = ParseDelegationReturnMetadata.make_for_unparsed_string(string)
+        my_return_metadata = ParseDelegationReturnMetadata.make_for_unparsed_string(
+            string, implementation)
         for arg in implementation.children:
             arg_present_data = object_parse.get_arg_present(arg.name)
             arg_name_to_node[arg.name], arg_metadata = \
@@ -154,9 +157,9 @@ class StringParser:
         """Converts the result we get from a type parser into a string metadata
         result."""
         si, endi = result.get_next_slice()
-        return ParseDelegationReturnMetadata(True, result.string, endi)
+        return ParseDelegationReturnMetadata(True, result.string, result.type, endi)
 
-    def parse_object_choice_node(
+    def _parse_object_choice_node(
         self,
         string: str,
         parser: TypeParser,
@@ -165,7 +168,7 @@ class StringParser:
         """Parses a string into a ObjectChoiceNode. This is more internal use.
         For the more user friendly method see create_parse_tree()"""
         result = parser.parse_string(string, type)
-        next_object_node, child_string_metadata = self.parse_object_node(
+        next_object_node, child_string_metadata = self._parse_object_node(
             result.get_implementation(),  result.get_next_string(), result.next_parser
         )
         metadata = self._object_choice_result_to_string_metadata(result)
@@ -196,6 +199,6 @@ class StringParser:
             raise ValueError(f"Unable to get a parser type {root_type_name} and "
                              f"root_parser {root_parser_name}")
         root_type = self._type_context.get_type_by_name(root_type_name)
-        new_node, string_metadata = self.parse_object_choice_node(
+        new_node, string_metadata = self._parse_object_choice_node(
             string, root_parser, root_type)
         return new_node
