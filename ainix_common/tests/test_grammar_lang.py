@@ -120,4 +120,34 @@ def test_parse_litteral_after(mobject):
     assert delegation.string_to_parse == "helloHere"
     with pytest.raises(StringProblemParseError):
         p_res.send(delegation.next_from_substring("Here"))
-    assert result.get_arg_present("Foo") is None
+
+
+def test_parse_litteral_paren(mobject):
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser", 'Foo ("-" Bar)?')
+    p_res = instance.parse_string("hello-20", mobject)
+    assert isinstance(p_res, GeneratorType)
+    delegation: ArgParseDelegation = next(p_res)
+    assert delegation.string_to_parse == "hello-20"
+    assert delegation.arg.name == "Foo"
+    delegation = p_res.send(delegation.next_from_substring("-20"))
+    assert delegation.string_to_parse == "20"
+    assert delegation.arg.name == "Bar"
+    with pytest.raises(StopIteration):
+        p_res.send(delegation.next_from_substring(""))
+
+
+def test_parse_litteral_paren_fail(mobject):
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser", 'Foo ("-" Bar)?')
+    p_res = instance.parse_string("hello>20", mobject)
+    assert isinstance(p_res, GeneratorType)
+    delegation: ArgParseDelegation = next(p_res)
+    assert delegation.string_to_parse == "hello>20"
+    assert delegation.arg.name == "Foo"
+    try:
+        p_res.send(delegation.next_from_substring(">20"))
+    except StopIteration as stp:
+        result = stp.value
+    assert result.get_arg_present("Foo") is not None
+    assert result.get_arg_present("Bar") is None
+
+

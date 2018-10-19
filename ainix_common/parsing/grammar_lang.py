@@ -7,6 +7,7 @@ from arpeggio import Optional, ZeroOrMore, Not, OneOrMore, EOF, ParserPython, \
 from arpeggio import RegExMatch
 from arpeggio.peg import PEGVisitor
 import arpeggio.cleanpeg
+from pyrsistent import v
 
 # Lexical invariants
 from ainix_common.parsing.parse_primitives import ObjectParser, ObjectParserRun, \
@@ -90,7 +91,7 @@ def parse_grammar(string: str):
     return grammar_parser.parse(string)
 
 
-def _visit_str_match(node, string):
+def _visit_str_match(node, string) -> ParseDelegationReturnMetadata:
     """A grammar visitor for the literal string matches"""
     look_for = node.value[1:-1]
     does_start_with = string.startswith(look_for)
@@ -103,13 +104,13 @@ def _visit_str_match(node, string):
 def _visit_sufix(node, string, run_data, result):
     """A grammar visitor for the suffixes"""
     print("YAY", node, len(node))
-    expression = yield from gen_grammar_visitor(node[0], string, run_data, result)
+    expression, acceptables = yield from gen_grammar_visitor(node[0], string, run_data, result)
     if len(node) > 1:
         sufix = node[1]
         if sufix == OPTIONAL:
             if not expression.parse_success:
-                return ParseDelegationReturnMetadata.make_for_unparsed_string(string, None)
-    return expression
+                return ParseDelegationReturnMetadata.make_for_unparsed_string(string, None), v()
+    return expression, acceptables
 
 
 def gen_grammar_visitor(
@@ -123,25 +124,29 @@ def gen_grammar_visitor(
         parse_return = yield run_data.left_fill_arg(run_data.get_arg_by_name(node.value), string)
         if not parse_return.parse_success:
             parse_return = parse_return.add_fail(f"Stack Message: Fail on arg {node.value}")
-        else:
-            result.accept_delegation(parse_return)
-        return parse_return
+        return parse_return, v(parse_return)
     if node.rule_name == "str_match":
-        return _visit_str_match(node, string)
+        return _visit_str_match(node, string), v()
     if node.rule_name == "sufix":
-        o = yield from _visit_sufix(node, string, run_data, result)
-        return o
+        out_return, things_to_accept = yield from _visit_sufix(node, string, run_data, result)
+        return out_return, things_to_accept
     else:
         remaining_string = string
+        acceptables = []
         if isinstance(node, arpeggio.NonTerminal):
             for child in node:
-                parse_return = yield from gen_grammar_visitor(
+                visitv = yield from gen_grammar_visitor(
                     child, remaining_string, run_data, result)
+                parse_return, new_acceptables = visitv
                 if not parse_return.parse_success:
-                    return parse_return
+                    print("FAIL on", child)
+                    return parse_return, v()
+                acceptables.extend(new_acceptables)
                 remaining_string = parse_return.remaining_string
         # TODO (DNGros): Figure out what to put in as what_parsed here
-        return ParseDelegationReturnMetadata.create_from_substring(None,string, remaining_string)
+        new_return = ParseDelegationReturnMetadata.create_from_substring(
+            None, string, remaining_string)
+        return new_return, acceptables
 
 
 def _create_object_parser_func_from_grammar(
@@ -151,11 +156,15 @@ def _create_object_parser_func_from_grammar(
 
     def out_func(run_data: ObjectParserRun, string: str, result: ObjectParserResult):
         nonlocal grammar_ast
-        parse_return = yield from gen_grammar_visitor(grammar_ast, string, run_data, result)
+        visitv = yield from gen_grammar_visitor(grammar_ast, string, run_data, result)
+        parse_return, acceptables = visitv
         if not parse_return.parse_success:
             raise UnparseableObjectError(f"Error parseing string {string} with grammar {grammar}."
                                          f"Clunky 'stack trace' (can be made better): "
                                          f"{parse_return.fail_reason}")
+        print("acceptabls", acceptables)
+        for acceptable_delegation in acceptables:
+            result.accept_delegation(acceptable_delegation)
 
     return out_func
 
