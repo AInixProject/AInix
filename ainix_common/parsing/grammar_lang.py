@@ -91,20 +91,21 @@ def parse_grammar(string: str):
     return grammar_parser.parse(string)
 
 
-def _visit_str_match(node, string) -> ParseDelegationReturnMetadata:
+def _visit_str_match(node, string, left_offset) -> ParseDelegationReturnMetadata:
     """A grammar visitor for the literal string matches"""
     look_for = node.value[1:-1]
     does_start_with = string.startswith(look_for)
     if does_start_with:
-        return ParseDelegationReturnMetadata(does_start_with, string, node, len(look_for))
+        return ParseDelegationReturnMetadata(does_start_with, string, left_offset,
+                                             node, len(look_for))
     else:
-        return ParseDelegationReturnMetadata(False, string, node, None)
+        return ParseDelegationReturnMetadata(False, string, left_offset, node, None)
 
 
-def _visit_sufix(node, string, run_data, result):
+def _visit_sufix(node, string, left_offset, run_data):
     """A grammar visitor for the suffixes"""
     print("YAY", node, len(node))
-    expression, acceptables = yield from gen_grammar_visitor(node[0], string, run_data, result)
+    expression, acceptables = yield from gen_grammar_visitor(node[0], string, left_offset, run_data)
     if len(node) > 1:
         sufix = node[1]
         if sufix == OPTIONAL:
@@ -116,36 +117,40 @@ def _visit_sufix(node, string, run_data, result):
 def gen_grammar_visitor(
     node: ParseTreeNode,
     string: str,
-    run_data: ObjectParserRun,
-    result: ObjectParserResult
+    left_offset: int,
+    run_data: ObjectParserRun
 ):
     print("visiting", node, node.rule_name)
     if node.rule_name == "arg_identifier":
-        parse_return = yield run_data.left_fill_arg(run_data.get_arg_by_name(node.value), string)
+        slice_to_parse = (left_offset, left_offset+len(string))
+        delegation = run_data.left_fill_arg(run_data.get_arg_by_name(node.value), slice_to_parse)
+        parse_return = yield delegation
         if not parse_return.parse_success:
             parse_return = parse_return.add_fail(f"Stack Message: Fail on arg {node.value}")
         return parse_return, v(parse_return)
     if node.rule_name == "str_match":
-        return _visit_str_match(node, string), v()
+        return _visit_str_match(node, string, left_offset), v()
     if node.rule_name == "sufix":
-        out_return, things_to_accept = yield from _visit_sufix(node, string, run_data, result)
+        out_return, things_to_accept = yield from _visit_sufix(node, string, left_offset, run_data)
         return out_return, things_to_accept
     else:
         remaining_string = string
+        new_left_offset = left_offset
         acceptables = []
         if isinstance(node, arpeggio.NonTerminal):
             for child in node:
                 visitv = yield from gen_grammar_visitor(
-                    child, remaining_string, run_data, result)
+                    child, remaining_string, new_left_offset, run_data)
                 parse_return, new_acceptables = visitv
                 if not parse_return.parse_success:
                     print("FAIL on", child)
                     return parse_return, v()
                 acceptables.extend(new_acceptables)
                 remaining_string = parse_return.remaining_string
+                new_left_offset += parse_return.remaining_right_starti
         # TODO (DNGros): Figure out what to put in as what_parsed here
         new_return = ParseDelegationReturnMetadata.create_from_substring(
-            None, string, remaining_string)
+            None, string, remaining_string, left_offset)
         return new_return, acceptables
 
 
@@ -156,7 +161,7 @@ def _create_object_parser_func_from_grammar(
 
     def out_func(run_data: ObjectParserRun, string: str, result: ObjectParserResult):
         nonlocal grammar_ast
-        visitv = yield from gen_grammar_visitor(grammar_ast, string, run_data, result)
+        visitv = yield from gen_grammar_visitor(grammar_ast, string, 0, run_data)
         parse_return, acceptables = visitv
         if not parse_return.parse_success:
             raise UnparseableObjectError(f"Error parseing string {string} with grammar {grammar}."

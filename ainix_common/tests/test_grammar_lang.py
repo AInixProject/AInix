@@ -8,6 +8,15 @@ from ainix_common.parsing.parse_primitives import ArgParseDelegation, \
 from ainix_common.parsing.typecontext import AInixArgument
 
 
+def send_result(gen, send_value):
+    """Get the result from a generator when expected to return next."""
+    try:
+        gen.send(send_value)
+    except StopIteration as stp:
+        return stp.value
+    raise ValueError("Expected it to stop")
+
+
 @pytest.fixture()
 def mobject():
     """Makes a nice mock object that returns if an argument is ever requested
@@ -26,7 +35,9 @@ def test_parse(mobject):
     first_del: ArgParseDelegation = next(p_res)
     assert first_del.string_to_parse == "hello"
     assert first_del.arg.name == "Foo"
+    assert first_del.slice_to_parse == (0, 5)
     response = first_del.next_from_substring("")
+    assert response.original_start_offset == 0
     try:
         p_res.send(response)
     except StopIteration as stp:
@@ -34,21 +45,33 @@ def test_parse(mobject):
     arg_data = result.get_arg_present("Foo")
     assert arg_data is not None
     assert arg_data.set_from_delegation == response
-
+    assert arg_data.slice == (0, 5)
 
 
 def test_parse_2(mobject):
     instance = create_object_parser_from_grammar(MagicMock(), "FooParser", "Foo Bar")
-    p_res = instance.parse_string("hello20", mobject)
+    p_res = instance.parse_string("hello20blah", mobject)
     assert isinstance(p_res, GeneratorType)
     delegation: ArgParseDelegation = next(p_res)
-    assert delegation.string_to_parse == "hello20"
+    assert delegation.string_to_parse == "hello20blah"
     assert delegation.arg.name == "Foo"
-    delegation = p_res.send(delegation.next_from_substring("20"))
-    assert delegation.string_to_parse == "20"
+    response = delegation.next_from_substring("20blah")
+    delegation = p_res.send(response)
+    assert delegation.string_to_parse == "20blah"
     assert delegation.arg.name == "Bar"
-    with pytest.raises(StopIteration):
-        p_res.send(delegation.next_from_substring(""))
+    assert delegation.slice_to_parse == (5, 11)
+    response = delegation.next_from_substring("blah")
+    assert response.original_start_offset == 5
+    assert response.remaining_right_starti == 2
+    result = send_result(p_res, response)
+    foo_data = result.get_arg_present("Foo")
+    assert foo_data is not None
+    assert foo_data.slice == (0, 5)
+    assert foo_data.slice_string == "hello"
+    bar_data = result.get_arg_present("Bar")
+    assert bar_data is not None
+    assert bar_data.slice_string == "20"
+    assert bar_data.slice == (5, 7)
 
 
 def test_parse_with_err(mobject):

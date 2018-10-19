@@ -81,7 +81,8 @@ class StringParser:
             except StringProblemParseError as e:
                 # TODO (DNGros): Use the metadata rather than exceptions to manage this
                 metadata = ParseDelegationReturnMetadata(
-                    False, delegation.string_to_parse, arg, None, str(e))
+                    False, delegation.string_to_parse, delegation.slice_to_parse[0],
+                    arg, None, str(e))
                 return metadata, None
         else:
             # If has None type, then we don't have to any parsing. Assume it was
@@ -157,7 +158,7 @@ class StringParser:
         """Converts the result we get from a type parser into a string metadata
         result."""
         si, endi = result.get_next_slice()
-        return ParseDelegationReturnMetadata(True, result.string, result.type, endi)
+        return ParseDelegationReturnMetadata(True, result.string, 0, result.type, endi)
 
     def _parse_object_choice_node(
         self,

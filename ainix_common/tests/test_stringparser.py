@@ -53,7 +53,7 @@ def test_end_to_end_parse1(type_context):
 
 
 @pytest.fixture(scope="function")
-def toy_string_context() -> TypeContext:
+def toy_string_context_optional() -> TypeContext:
     tc = TypeContext()
     loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", tc)
     foo_string = AInixType(tc, "FooString")
@@ -71,11 +71,18 @@ def toy_string_context() -> TypeContext:
     return tc
 
 
-def test_parse_with_delegations(toy_string_context):
+def test_parse_with_delegations(toy_string_context_optional):
     """A test where one of the object parsers (a grammar parser) tries to
     delegate its parseing"""
-    parser = StringParser(toy_string_context)
+    parser = StringParser(toy_string_context_optional)
     parser.create_parse_tree("a", "FooString")
+
+
+def test_parse_with_delegations2(toy_string_context_optional):
+    """A test where one of the object parsers (a grammar parser) tries to
+    delegate its parseing"""
+    parser = StringParser(toy_string_context_optional)
+    parser.create_parse_tree("abeec", "FooString")
 
 
 @pytest.fixture(scope="function")
