@@ -26,8 +26,15 @@ def test_parse(mobject):
     first_del: ArgParseDelegation = next(p_res)
     assert first_del.string_to_parse == "hello"
     assert first_del.arg.name == "Foo"
-    with pytest.raises(StopIteration):
-        p_res.send(first_del.next_from_substring(""))
+    response = first_del.next_from_substring("")
+    try:
+        p_res.send(response)
+    except StopIteration as stp:
+        result = stp.value
+    arg_data = result.get_arg_present("Foo")
+    assert arg_data is not None
+    assert arg_data.set_from_delegation == response
+
 
 
 def test_parse_2(mobject):
@@ -88,6 +95,9 @@ def test_parse_optional(mobject):
     delegation = p_res.send(delegation.next_from_substring("20"))
     assert delegation.string_to_parse == "20"
     assert delegation.arg.name == "Bar"
-    with pytest.raises(StopIteration):
-        delegation = p_res.send(ParseDelegationReturnMetadata(
-            False, "hell20", delegation.arg, None, "Just no"))
+    try:
+        p_res.send(ParseDelegationReturnMetadata(False, "hell20", delegation.arg, None, "Just no"))
+    except StopIteration as stp:
+        result = stp.value
+    assert result.get_arg_present("Foo") is not None
+    assert result.get_arg_present("Bar") is None
