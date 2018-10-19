@@ -100,9 +100,16 @@ def _visit_str_match(node, string):
         return ParseDelegationReturnMetadata(False, string, node, None)
 
 
-def _visit_suffix(node, string):
+def _visit_sufix(node, string, run_data, result):
     """A grammar visitor for the suffixes"""
-    print("YAY")
+    print("YAY", node, len(node))
+    expression = yield from gen_grammar_visitor(node[0], string, run_data, result)
+    if len(node) > 1:
+        sufix = node[1]
+        if sufix == OPTIONAL:
+            if not expression.parse_success:
+                return ParseDelegationReturnMetadata.make_for_unparsed_string(string, None)
+    return expression
 
 
 def gen_grammar_visitor(
@@ -121,8 +128,9 @@ def gen_grammar_visitor(
         return parse_return
     if node.rule_name == "str_match":
         return _visit_str_match(node, string)
-    if node.rule_name == "suffix":
-        return _visit_suffix(node, string)
+    if node.rule_name == "sufix":
+        o = yield from _visit_sufix(node, string, run_data, result)
+        return o
     else:
         remaining_string = string
         if isinstance(node, arpeggio.NonTerminal):
@@ -148,7 +156,6 @@ def _create_object_parser_func_from_grammar(
             raise UnparseableObjectError(f"Error parseing string {string} with grammar {grammar}."
                                          f"Clunky 'stack trace' (can be made better): "
                                          f"{parse_return.fail_reason}")
-        yield
 
     return out_func
 

@@ -26,7 +26,8 @@ def test_parse(mobject):
     first_del: ArgParseDelegation = next(p_res)
     assert first_del.string_to_parse == "hello"
     assert first_del.arg.name == "Foo"
-    p_res.send(first_del.next_from_substring(""))
+    with pytest.raises(StopIteration):
+        p_res.send(first_del.next_from_substring(""))
 
 
 def test_parse_2(mobject):
@@ -39,7 +40,8 @@ def test_parse_2(mobject):
     delegation = p_res.send(delegation.next_from_substring("20"))
     assert delegation.string_to_parse == "20"
     assert delegation.arg.name == "Bar"
-    p_res.send(delegation.next_from_substring(""))
+    with pytest.raises(StopIteration):
+        p_res.send(delegation.next_from_substring(""))
 
 
 def test_parse_with_err(mobject):
@@ -64,7 +66,8 @@ def test_parse_str_litteral(mobject):
     delegation = p_res.send(delegation.next_from_substring("-20"))
     assert delegation.string_to_parse == "20"
     assert delegation.arg.name == "Bar"
-    p_res.send(delegation.next_from_substring(""))
+    with pytest.raises(StopIteration):
+        p_res.send(delegation.next_from_substring(""))
 
 
 def test_parse_str_litteral_fail(mobject):
@@ -74,3 +77,17 @@ def test_parse_str_litteral_fail(mobject):
     delegation: ArgParseDelegation = next(p_res)
     with pytest.raises(StringProblemParseError):
         delegation = p_res.send(delegation.next_from_substring("=20"))
+
+def test_parse_optional(mobject):
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser", "Foo Bar?")
+    p_res = instance.parse_string("hello20", mobject)
+    assert isinstance(p_res, GeneratorType)
+    delegation: ArgParseDelegation = next(p_res)
+    assert delegation.string_to_parse == "hello20"
+    assert delegation.arg.name == "Foo"
+    delegation = p_res.send(delegation.next_from_substring("20"))
+    assert delegation.string_to_parse == "20"
+    assert delegation.arg.name == "Bar"
+    with pytest.raises(StopIteration):
+        delegation = p_res.send(ParseDelegationReturnMetadata(
+            False, "hell20", delegation.arg, None, "Just no"))

@@ -59,7 +59,7 @@ def toy_string_context() -> TypeContext:
     foo_string = AInixType(tc, "FooString")
     foo_string_obj = AInixObject(tc, "foo_string_obj", "FooString",
                                  children=[AInixArgument(tc, "CurWord", "FooWord", required=True),
-                                           AInixArgument(tc, "Nstr", "FooString", required=True)],
+                                           AInixArgument(tc, "Nstr", "FooString", required=False)],
                                  preferred_object_parser_name="foo_string_parser")
     foo_string_parser = create_object_parser_from_grammar(
         tc, "foo_string_parser", r"CurWord Nstr?")
