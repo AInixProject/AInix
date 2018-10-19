@@ -409,32 +409,10 @@ class ObjectParserResult:
             set_from_delegation=delegation_return
         )
 
-    #def force_arg_value(self, arg_name, slice: Tuple[int, int], slice_str: str, forced_value):
-    #    self._result_dict[arg_name] = ObjectParseArgData(
-    #        slice=slice,
-    #        slice_string=slice_str,
-    #        already_parsed_val=forced_value
-    #    )
-
-    #def left_fill_arg(self, arg_name: str, string: str) -> str:
-    #    if arg_name not in self._result_dict:
-    #        raise AInixParseError(f"Invalid argument name {arg_name} for left "
-    #                              f"fill in {self._object.name}. Valid options"
-    #                              f"are [{', '.join(self._result_dict.keys())}]")
-    #    arg_to_fill = self._object.get_arg_by_name(arg_name)
-    #    node, string_metadata = self._parser_ref._parse_object_choice_node(
-    #        string, arg_to_fill.type_parser, arg_to_fill.next_choice_type)
-    #    self._result_dict[arg_name] = ObjectParseArgData(
-    #        slice=(0, string_metadata.remaining_right_starti),
-    #        slice_string=string[:string_metadata.remaining_right_starti],
-    #        already_parsed_val=node
-    #    )
-    #    remaining_string = string[string_metadata.remaining_right_starti:]
-    #    return remaining_string
-
 
 class AInixParseError(RuntimeError):
     pass
+
 
 class StringProblemParseError(AInixParseError):
     """Exception for when a something about the input string makes it unparsable
@@ -443,8 +421,10 @@ class StringProblemParseError(AInixParseError):
     for that string."""
     pass
 
+
 class UnparsableTypeError(StringProblemParseError):
     pass
+
 
 class UnparseableObjectError(StringProblemParseError):
     pass
