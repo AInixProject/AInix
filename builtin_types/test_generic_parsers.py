@@ -56,7 +56,7 @@ def test_regex_group_parser():
     mock_object = MagicMock()
     mock_object.children = mock_args
     test_string = "123foo"
-    run = parse_primitives.ObjectParserRun(mock_object)
+    run = parse_primitives.ObjectParserRun(mock_object, test_string)
     result = parse_primitives.ObjectParserResult(mock_object, test_string)
     regex_group_object_parser(run, test_string, result)
     a = result.get_arg_present("a")

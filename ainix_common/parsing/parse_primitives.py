@@ -393,11 +393,14 @@ class ObjectParserResult:
             {arg.name: None for arg in object_to_parse.children}
         self._sibling_result = None
         self.string = string
+        self.remaining_start_i = 0
 
     def _get_slice_string(self, start_idx: int, end_idx: int) -> str:
         return self.string[start_idx:end_idx].strip()
 
     def get_arg_present(self, name) -> Optional[ObjectParseArgData]:
+        if name not in self._result_dict and self._object.get_arg_by_name("name") is None:
+            raise ValueError(f"Arg name {name} not present in {self._object}")
         return self._result_dict.get(name, None)
 
     def set_arg_present(self, arg_name: str, start_idx: int, end_idx: int):
@@ -408,6 +411,8 @@ class ObjectParserResult:
                                   f"are [{', '.join(self._result_dict.keys())}]")
         self._result_dict[arg_name] = ObjectParseArgData(
             (si, ei), self._get_slice_string(si, ei))
+        self.remaining_start_i = max(self.remaining_start_i, ei)
+
 
     def accept_delegation(self, delegation_return: ParseDelegationReturnMetadata):
         if not isinstance(delegation_return.what_parsed, typecontext.AInixArgument):
@@ -423,6 +428,7 @@ class ObjectParserResult:
             slice_string=self.string[start_i: end_i],
             set_from_delegation=delegation_return
         )
+        self.remaining_start_i = max(self.remaining_start_i, end_i)
 
 
 class AInixParseError(RuntimeError):

@@ -141,16 +141,12 @@ class StringParser:
         object_parse, delegation_to_node_map = self._run_object_parser_with_delegations(
             string, implementation, parser)
         arg_name_to_node: Dict[str, ObjectChoiceNode] = {}
-        my_return_metadata = ParseDelegationReturnMetadata.make_for_unparsed_string(
-            string, implementation)
         for arg in implementation.children:
             arg_present_data = object_parse.get_arg_present(arg.name)
             arg_name_to_node[arg.name], arg_metadata = \
                 self._make_node_for_arg(arg, arg_present_data, delegation_to_node_map)
-            if arg_metadata:
-                start_of_arg_substring, _ = arg_present_data.slice
-                my_return_metadata.combine_with_child_return(
-                    arg_metadata, start_of_arg_substring)
+        my_return_metadata = ParseDelegationReturnMetadata(
+            True, string, None, implementation, object_parse.remaining_start_i)
         return ObjectNode(implementation, pmap(arg_name_to_node)), my_return_metadata
 
     def _object_choice_result_to_string_metadata(

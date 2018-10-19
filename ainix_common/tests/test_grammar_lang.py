@@ -46,6 +46,7 @@ def test_parse(mobject):
     assert arg_data is not None
     assert arg_data.set_from_delegation == response
     assert arg_data.slice == (0, 5)
+    assert result.remaining_start_i == 5
 
 
 def test_parse_2(mobject):
@@ -72,6 +73,7 @@ def test_parse_2(mobject):
     assert bar_data is not None
     assert bar_data.slice_string == "20"
     assert bar_data.slice == (5, 7)
+    assert result.remaining_start_i == 7
 
 
 def test_parse_with_err(mobject):
@@ -82,7 +84,7 @@ def test_parse_with_err(mobject):
     assert delegation.string_to_parse == "hello20"
     assert delegation.arg.name == "Foo"
     with pytest.raises(UnparseableObjectError):
-        delegation = p_res.send(ParseDelegationReturnMetadata(False, "hello20",
+        delegation = p_res.send(ParseDelegationReturnMetadata(False, "hello20", 0,
                                                               delegation.arg, None))
 
 
@@ -96,8 +98,9 @@ def test_parse_str_litteral(mobject):
     delegation = p_res.send(delegation.next_from_substring("-20"))
     assert delegation.string_to_parse == "20"
     assert delegation.arg.name == "Bar"
-    with pytest.raises(StopIteration):
-        p_res.send(delegation.next_from_substring(""))
+    result = send_result(p_res, delegation.next_from_substring(""))
+    bar_data = result.get_arg_present("Bar")
+    assert bar_data.slice == (6, 8)
 
 
 def test_parse_str_litteral_fail(mobject):
@@ -119,7 +122,7 @@ def test_parse_optional(mobject):
     assert delegation.string_to_parse == "20"
     assert delegation.arg.name == "Bar"
     try:
-        p_res.send(ParseDelegationReturnMetadata(False, "hell20", delegation.arg, None, "Just no"))
+        p_res.send(ParseDelegationReturnMetadata.make_failing())
     except StopIteration as stp:
         result = stp.value
     assert result.get_arg_present("Foo") is not None
@@ -155,8 +158,9 @@ def test_parse_litteral_paren(mobject):
     delegation = p_res.send(delegation.next_from_substring("-20"))
     assert delegation.string_to_parse == "20"
     assert delegation.arg.name == "Bar"
-    with pytest.raises(StopIteration):
-        p_res.send(delegation.next_from_substring(""))
+    result = send_result(p_res, delegation.next_from_substring(""))
+    bar_data = result.get_arg_present("Bar")
+    assert bar_data.slice == (6, 8)
 
 
 def test_parse_litteral_paren_fail(mobject):
@@ -184,8 +188,8 @@ def test_parse_litteralafter_paren(mobject):
     delegation = p_res.send(delegation.next_from_substring("20!"))
     assert delegation.string_to_parse == "20!"
     assert delegation.arg.name == "Bar"
-    with pytest.raises(StopIteration):
-        p_res.send(delegation.next_from_substring("!"))
+    result = send_result(p_res, delegation.next_from_substring("!"))
+    assert result.remaining_start_i == 8
 
 
 def test_parse_litteralafter_paren_fail(mobject):
@@ -203,3 +207,4 @@ def test_parse_litteralafter_paren_fail(mobject):
         result = stp.value
     assert result.get_arg_present("Foo") is not None
     assert result.get_arg_present("Bar") is None
+    assert result.remaining_start_i == 5

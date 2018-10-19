@@ -87,6 +87,8 @@ def comment():
 
 # Test
 grammar_parser = ParserPython(peg_obj_parser, None)
+
+
 def parse_grammar(string: str):
     return grammar_parser.parse(string)
 
@@ -105,7 +107,8 @@ def _visit_str_match(node, string, left_offset) -> ParseDelegationReturnMetadata
 def _visit_sufix(node, string, left_offset, run_data):
     """A grammar visitor for the suffixes"""
     print("YAY", node, len(node))
-    expression, acceptables = yield from gen_grammar_visitor(node[0], string, left_offset, run_data)
+    visitv = yield from gen_grammar_visitor(node[0], string, left_offset, run_data)
+    expression, acceptables = visitv
     if len(node) > 1:
         sufix = node[1]
         if sufix == OPTIONAL:
@@ -170,6 +173,8 @@ def _create_object_parser_func_from_grammar(
         print("acceptabls", acceptables)
         for acceptable_delegation in acceptables:
             result.accept_delegation(acceptable_delegation)
+        result.remaining_start_i = parse_return.remaining_right_starti + \
+                                   parse_return.original_start_offset
 
     return out_func
 
