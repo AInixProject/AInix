@@ -101,3 +101,23 @@ def test_parse_optional(mobject):
         result = stp.value
     assert result.get_arg_present("Foo") is not None
     assert result.get_arg_present("Bar") is None
+
+
+def test_parse_litteral_after(mobject):
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser", 'Foo "There"')
+    p_res = instance.parse_string("helloThere", mobject)
+    delegation: ArgParseDelegation = next(p_res)
+    assert delegation.string_to_parse == "helloThere"
+    assert delegation.arg.name == "Foo"
+    try:
+        p_res.send(delegation.next_from_substring("There"))
+    except StopIteration as stp:
+        result = stp.value
+    assert result.get_arg_present("Foo") is not None
+    # Now try something which doesn't have the litteral
+    p_res = instance.parse_string("helloHere", mobject)
+    delegation: ArgParseDelegation = next(p_res)
+    assert delegation.string_to_parse == "helloHere"
+    with pytest.raises(StringProblemParseError):
+        p_res.send(delegation.next_from_substring("Here"))
+    assert result.get_arg_present("Foo") is None
