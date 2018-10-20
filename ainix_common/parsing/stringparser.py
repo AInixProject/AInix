@@ -5,7 +5,7 @@ import ainix_common.parsing
 from ainix_common.parsing import typecontext
 from ainix_common.parsing.ast_components import ObjectChoiceNode, ObjectNode
 from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation, \
-    ParseDelegationReturnMetadata, StringProblemParseError
+    ParseDelegationReturnMetadata, AInixParseError
 
 
 class StringParser:
@@ -78,7 +78,7 @@ class StringParser:
                 arg_type_choice, parse_metadata = self._parse_object_choice_node(
                     delegation.string_to_parse, arg.type_parser, arg.type)
                 out_delegation_return = parse_metadata.change_what_parsed(arg)
-            except StringProblemParseError as e:
+            except AInixParseError as e:
                 # TODO (DNGros): Use the metadata rather than exceptions to manage this
                 metadata = ParseDelegationReturnMetadata(
                     False, delegation.string_to_parse, delegation.slice_to_parse[0],

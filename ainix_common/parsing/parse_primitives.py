@@ -1,3 +1,6 @@
+"""This module contains the basic classes for parsing. It defines the different
+kinds of parsers, as well as various helping classes for managing the data
+coming from parsers."""
 from ainix_common.parsing import typecontext
 import attr
 from typing import List, Callable, Tuple, Dict, Optional, Any, Union
@@ -432,6 +435,9 @@ class ObjectParserResult:
 
 
 class AInixParseError(RuntimeError):
+    """An exception for when something goes wrong during parsing. This is
+    potentially recoverable if one of the parent nodes that delegated the
+    parse expects an error and is able to catch it."""
     pass
 
 
@@ -449,6 +455,7 @@ class UnparsableTypeError(StringProblemParseError):
 
 class UnparseableObjectError(StringProblemParseError):
     pass
+
 
 def SingleTypeImplParserFunc(
     run: TypeParserRun,

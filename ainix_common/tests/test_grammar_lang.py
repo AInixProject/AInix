@@ -111,6 +111,7 @@ def test_parse_str_litteral_fail(mobject):
     with pytest.raises(StringProblemParseError):
         delegation = p_res.send(delegation.next_from_substring("=20"))
 
+
 def test_parse_optional(mobject):
     instance = create_object_parser_from_grammar(MagicMock(), "FooParser", "Foo Bar?")
     p_res = instance.parse_string("hello20", mobject)
