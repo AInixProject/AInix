@@ -12,7 +12,7 @@ from pyrsistent import v
 # Lexical invariants
 from ainix_common.parsing.parse_primitives import ObjectParser, ObjectParserRun, \
     ObjectParserResult, ParseDelegationReturnMetadata, UnparseableObjectError, \
-    ArgParseDelegation
+    ObjectParseFuncType
 from ainix_common.parsing.typecontext import TypeContext
 
 ASSIGNMENT = "="
@@ -159,8 +159,7 @@ def gen_grammar_visitor(
 
 def _create_object_parser_func_from_grammar(
     grammar: str
-) -> Callable[[ObjectParserRun, str, ObjectParserResult],
-              Union[Generator[ArgParseDelegation, ParseDelegationReturnMetadata,None], None]]:
+) -> ObjectParseFuncType:
     grammar_ast = parse_grammar(grammar)
 
     def out_func(run_data: ObjectParserRun, string: str, result: ObjectParserResult):
@@ -171,7 +170,6 @@ def _create_object_parser_func_from_grammar(
             raise UnparseableObjectError(f"Error parseing string {string} with grammar {grammar}."
                                          f"Clunky 'stack trace' (can be made better): "
                                          f"{parse_return.fail_reason}")
-        print("acceptabls", acceptables)
         for acceptable_delegation in acceptables:
             result.accept_delegation(acceptable_delegation)
         result.remaining_start_i = parse_return.remaining_right_starti + \

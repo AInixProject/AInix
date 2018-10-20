@@ -174,6 +174,12 @@ class TypeParserResult:
         return next_parser
 
 
+# Monstrosity that describes the type of a parser_func for Object parsers.
+# See the docstring of ObjectParser for more info.
+ObjectParseFuncType = Callable[['ObjectParserRun', str, 'ObjectParserResult'],
+    Union[typing.Generator['ArgParseDelegation', 'ParseDelegationReturnMetadata', None], None]]
+
+
 class ObjectParser:
     """An ObjectParser reads a string and determines which of the object's
     arguments are present. If the argument is present, it also selects the
@@ -191,7 +197,9 @@ class ObjectParser:
                 2) The string we would like to parse
                 3) An instance of ObjectParserResult which the callable should
                    interact with to store the result of the parse
-            The callable itself is not expected to return any value.
+            The callable itself is not expected to return any value. However,
+            it may optionally be a generator which "delegates" the parsing of
+            arguments. This can be used to do a "LL" style parsing.
           exclusive_type_name : An optional string. If supplied, this object
             parser will only work on objects of that type.
     """
@@ -199,7 +207,7 @@ class ObjectParser:
         self,
         type_context: 'typecontext.TypeContext',
         parser_name: str,
-        parse_function: Callable[['ObjectParserRun', str, 'ObjectParserResult'], None],
+        parse_function: ObjectParseFuncType,
         exclusive_type_name: str = None
     ):
         self.name = parser_name
