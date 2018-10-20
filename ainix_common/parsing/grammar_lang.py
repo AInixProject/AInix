@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Generator, Union
 
 from arpeggio import ParserPython, visit_parse_tree, PTNodeVisitor, SemanticActionResults, \
     ParseTreeNode
@@ -11,7 +11,8 @@ from pyrsistent import v
 
 # Lexical invariants
 from ainix_common.parsing.parse_primitives import ObjectParser, ObjectParserRun, \
-    ObjectParserResult, ParseDelegationReturnMetadata, UnparseableObjectError
+    ObjectParserResult, ParseDelegationReturnMetadata, UnparseableObjectError, \
+    ArgParseDelegation
 from ainix_common.parsing.typecontext import TypeContext
 
 ASSIGNMENT = "="
@@ -158,7 +159,8 @@ def gen_grammar_visitor(
 
 def _create_object_parser_func_from_grammar(
     grammar: str
-) -> Callable[[ObjectParserRun, str, ObjectParserResult], None]:
+) -> Callable[[ObjectParserRun, str, ObjectParserResult],
+              Union[Generator[ArgParseDelegation, ParseDelegationReturnMetadata,None], None]]:
     grammar_ast = parse_grammar(grammar)
 
     def out_func(run_data: ObjectParserRun, string: str, result: ObjectParserResult):
