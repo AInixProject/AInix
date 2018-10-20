@@ -85,7 +85,6 @@ def comment():
     return "//", RegExMatch(".*\n")
 
 
-# Test
 grammar_parser = ParserPython(peg_obj_parser, None)
 
 
@@ -191,50 +190,4 @@ def create_object_parser_from_grammar(
         _create_object_parser_func_from_grammar(grammar),
         exclusive_type_name
     )
-
-
-class CustPegVisitor(PTNodeVisitor):
-    def visit_ordered_choice(self, node, children: SemanticActionResults):
-        print("VISIT ordered choice")
-        raise NotImplemented
-
-    def visit_sequence(self, node, children: SemanticActionResults):
-        print("VISIT sequence", node)
-        return 3
-
-
-if __name__ == "__main__":
-    ast = parse_grammar(r'Foo "b" Bar?')
-    print(ast.__dir__())
-    #result = visit_parse_tree(ast, CustPegVisitor())
-    #print(result)
-    print(ast.name)
-    for child in ast:
-        print(child.name)
-
-    #import inspect
-    #import types
-    #def bar():
-    #    yield "b"
-    #    return 5
-
-
-    #def foo():
-    #    b = bar()
-    #    if isinstance(b, types.GeneratorType):
-    #        print("yield from")
-    #        w = yield from b
-    #        print("w = ", w)
-    #    else:
-    #        yield b
-    #    print("Done")
-    #    return 3
-
-    #g = foo()
-    #while True:
-    #    try:
-    #        print(next(g))
-    #    except StopIteration as se:
-    #        print("end", se.value + 2)
-    #        break
 
