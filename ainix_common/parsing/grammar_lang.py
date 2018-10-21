@@ -1,4 +1,4 @@
-from typing import Callable, Generator, Union
+from typing import Callable, Generator, Union, Tuple, Sequence
 
 from arpeggio import ParserPython, visit_parse_tree, PTNodeVisitor, SemanticActionResults, \
     ParseTreeNode
@@ -12,7 +12,7 @@ from pyrsistent import v
 # Lexical invariants
 from ainix_common.parsing.parse_primitives import ObjectParser, ObjectParserRun, \
     ObjectParserResult, ParseDelegationReturnMetadata, UnparseableObjectError, \
-    ObjectParseFuncType
+    ObjectParseFuncType, ArgParseDelegation
 from ainix_common.parsing.typecontext import TypeContext
 
 ASSIGNMENT = "="
@@ -93,6 +93,14 @@ def parse_grammar(string: str):
     return grammar_parser.parse(string)
 
 
+# A type decription for the return type for non-terminal visitors of the PEG grammar
+VisitorReturnType = Generator[
+    ArgParseDelegation,
+    ParseDelegationReturnMetadata,
+    Tuple[ParseDelegationReturnMetadata, Sequence[ParseDelegationReturnMetadata]]
+]
+
+
 def _visit_str_match(node, string, left_offset) -> ParseDelegationReturnMetadata:
     """A grammar visitor for the literal string matches"""
     look_for = node.value[1:-1]
@@ -104,7 +112,7 @@ def _visit_str_match(node, string, left_offset) -> ParseDelegationReturnMetadata
         return ParseDelegationReturnMetadata(False, string, left_offset, node, None)
 
 
-def _visit_sufix(node, string, left_offset, run_data):
+def _visit_sufix(node, string, left_offset, run_data) -> VisitorReturnType:
     """A grammar visitor for the suffixes"""
     print("YAY", node, len(node))
     visitv = yield from gen_grammar_visitor(node[0], string, left_offset, run_data)
@@ -122,7 +130,15 @@ def gen_grammar_visitor(
     string: str,
     left_offset: int,
     run_data: ObjectParserRun
-):
+) -> VisitorReturnType:
+    """A custom visitor on the PEG grammer which does the delegation as necessary.
+    It is a corroutine which yields delegations as needed. It returns metadata about
+    whether or not it succeeded at each visit as well as a pvec of metadata which
+    would need to be accepted as a valid parses assuming everything above it succeeds.
+
+    This is a terrible description I know. If you are reading this and it unclear
+    nag @DNGros to clean it up.
+    """
     print("visiting", node, node.rule_name)
     if node.rule_name == "arg_identifier":
         slice_to_parse = (left_offset, left_offset+len(string))
