@@ -191,8 +191,7 @@ class StringParser:
             except StopIteration as stop_iter:
                 return_result = stop_iter.value
                 return return_result, delegation_to_node
-            delegation_return, out_node = self._delegate_object_arg_parse(
-                implementation, delegation)
+            delegation_return, out_node = self._delegate_object_arg_parse(delegation)
             delegation_to_node[delegation_return] = out_node
             last_delegation_result = delegation_return
 
