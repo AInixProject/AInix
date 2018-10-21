@@ -169,7 +169,6 @@ class StringParser:
                 arg_data.slice_string, arg.type_parser, arg.type
             )
 
-
     def _run_object_parser_with_delegations(
         self,
         string: str,
@@ -191,6 +190,7 @@ class StringParser:
             except StopIteration as stop_iter:
                 return_result = stop_iter.value
                 return return_result, delegation_to_node
+            # Well it didn't reach the end, so it must have yielded a delegation. Handle that.
             delegation_return, out_node = self._delegate_object_arg_parse(delegation)
             delegation_to_node[delegation_return] = out_node
             last_delegation_result = delegation_return
