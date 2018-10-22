@@ -5,7 +5,7 @@ import ainix_common.parsing
 from ainix_common.parsing import typecontext
 from ainix_common.parsing.ast_components import ObjectChoiceNode, ObjectNode
 from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation, \
-    ParseDelegationReturnMetadata, AInixParseError
+    ParseDelegationReturnMetadata, AInixParseError, TypeParserResult, ImplementationParseDelegation
 
 
 class StringParser:
@@ -210,12 +210,38 @@ class StringParser:
     ) -> Tuple[ObjectChoiceNode, ParseDelegationReturnMetadata]:
         """Parses a string into a ObjectChoiceNode. This is more internal use.
         For the more user friendly method see create_parse_tree()"""
-        result = parser.parse_string(string, type)
+        result, delegation_map = self._run_type_parser_with_delegations(string, type, parser)
         next_object_node, child_string_metadata = self._parse_object_node(
             result.get_implementation(),  result.get_next_string(), result.next_parser
         )
         metadata = self._object_choice_result_to_string_metadata(result)
         return ObjectChoiceNode(type, next_object_node), metadata
+
+    def _run_type_parser_with_delegations(
+        self,
+        string: str,
+        type_to_parser: typecontext.AInixType,
+        parser: ainix_common.parsing.parse_primitives.TypeParser
+    ) -> Tuple[TypeParserResult, Dict[ParseDelegationReturnMetadata, ObjectNode]]:
+        """Run a type parser handling delegations it yields as needed."""
+        parser_gen = parser.parse_string(string, type_to_parser)
+        delegation_to_node: Dict[ParseDelegationReturnMetadata, ObjectNode] = {}
+        last_delegation_result = None
+        while True:
+            try:
+                delegation = parser_gen.send(last_delegation_result)
+            except StopIteration as stop_iter:
+                return_result = stop_iter.value
+                return return_result, delegation_to_node
+            # Well it didn't reach the end, so it must have yielded a delegation. Handle that.
+            node, return_metadata = self._parse_object_node(
+                delegation.implementation,
+                delegation.string_to_parse,
+                delegation.next_parser
+            )
+            delegation_to_node[return_metadata] = node
+            last_delegation_result = return_metadata
+
 
     def _get_root_parser(
         self,

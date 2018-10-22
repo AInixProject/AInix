@@ -43,12 +43,3 @@ def regex_group_object_parser(
             raise parse_primitives.AInixParseError(
                 f'Arg {arg.name} with RegexRepresentation "{regex}" did not '
                 f'match on "{string}", but the arg is required.')
-
-
-def grammar_object_parser(
-    run: parse_primitives.ObjectParserRun,
-    string: str,
-    result: parse_primitives.ObjectParserResult
-) -> None:
-    pass
-

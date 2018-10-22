@@ -58,7 +58,11 @@ class TypeParser:
         self,
         string: str,
         type_to_parse: 'typecontext.AInixType' = None
-    ) -> 'TypeParserResult':
+    ) -> typing.Generator[
+        'ImplementationParseDelegation',
+        'ParseDelegationReturnMetadata',
+        'TypeParserResult'
+    ]:
         """
         Args:
             string : a string that you would like would like to parse and get
@@ -80,10 +84,19 @@ class TypeParser:
                 raise AInixParseError(f"{self} expects to parse type "
                                       f"{self.type_name} but parser_string() "
                                       f"given {type_to_parse}")
-        run = TypeParserRun(self._type_context, result_type, self)
+        run = TypeParserRun(self._type_context, result_type, self, string)
         result = TypeParserResult(result_type, string)
-        self._parse_function(run, string, result)
+        parse_func_call = self._parse_function(run, string, result)
+        if isinstance(parse_func_call, types.GeneratorType):
+            yield from parse_func_call
+        self._validate_result(result)
         return result
+
+    def _validate_result(self, result: 'TypeParserResult'):
+        """Check if the result we have after running the parse func is valid"""
+        is_valid = result.get_implementation() is not None
+        if not is_valid:
+            raise AInixParseError(f"{self} did not set a valid implementation.")
 
     def __str__(self):
         return f"<TypeParser {self.parser_name}>"
@@ -96,18 +109,20 @@ class TypeParserRun:
         self,
         type_context: 'typecontext.TypeContext',
         type_instance: 'typecontext.AInixType',
-        parser: TypeParser
+        parser: TypeParser,
+        string_to_parse: str
     ):
         self._type = type_instance
         self._type_context = type_context
         self.parser_name = parser.parser_name
         self._type_implementations = None
+        self._string = string_to_parse
 
     @staticmethod
     def match_attribute(
-            object_list: List['typecontext.AInixObject'],
-            key: str,
-            value: str
+        object_list: List['typecontext.AInixObject'],
+        key: str,
+        value: str
     ) -> List['typecontext.AInixObject']:
         """Helper that filters a list objects that only have a certain attribute
 
@@ -126,6 +141,21 @@ class TypeParserRun:
                 self._type_context.get_implementations(self._type.name)
         return self._type_implementations
 
+    def delegate_parse_implementation(
+        self,
+        implementation: 'typecontext.AInixObject',
+        slice_to_parse: Tuple[int, int]
+    ) -> 'ImplementationParseDelegation':
+        """Create delegation to attempt to parse some implementation of the type.
+        This will return an object which should then be yielded. The StringParser"""
+        si, endi = slice_to_parse
+        return ImplementationParseDelegation(
+            implementation=implementation,
+            string_to_parse=self._string[si: endi],
+            slice_to_parse=slice_to_parse,
+            next_parser=_next_parser_of_impl(implementation, self._type)
+        )
+
 
 class TypeParserResult:
     """Stores the result of TypeParser.parse_string(). It also contains
@@ -141,6 +171,7 @@ class TypeParserResult:
         self._implementation: typecontext.AInixObject = None
         self._next_slice = None
         self._next_parser = None
+        self._accepted_delegation = None
 
     def get_implementation(self) -> 'typecontext.AInixObject':
         return self._implementation
@@ -165,13 +196,35 @@ class TypeParserResult:
         and is primarily intended for receivers of the result, not
         for the parser itself
         """
-        if self._implementation is None:
-            raise AInixParseError("No implementation set during parsing")
-        next_parser = self._implementation.preferred_object_parser
-        if next_parser is None:
-            next_parser = self.type.default_object_parser
-        # TODO (DNGros): allow parsers to override the object parser
-        return next_parser
+        # TODO (DNGros): allow parsers to override the object parser or keep
+        # track of it at the parser level
+        return _next_parser_of_impl(self._implementation, self.type)
+
+    def accept_delegation(self, delegation: 'ImplementationParseDelegation'):
+        self._implementation = delegation.implementation
+        self._accepted_delegation = delegation
+
+
+def _next_parser_of_impl(
+    implementation: 'typecontext.AInixObject',
+    type_: 'typecontext.AInixType'
+):
+    if implementation is None:
+        raise ValueError("No impl provided")
+    next_parser = implementation.preferred_object_parser
+    if next_parser is None:
+        next_parser = type_.default_object_parser
+    return next_parser
+
+
+@attr.s
+class ImplementationParseDelegation:
+    """Represents a delegation back to the calling parser asking to parse
+    an implementation object and see if it succeeds."""
+    implementation: 'typecontext.AInixObject'
+    string_to_parse: str
+    slice_to_parse: Tuple[int, int]
+    next_parser: 'ObjectParser'
 
 
 # Monstrosity that describes the type of a parser_func for Object parsers.
@@ -255,7 +308,16 @@ class ObjectParser:
 @attr.s(auto_attribs=True, frozen=True)
 class ArgParseDelegation:
     """A struct to hold data about requesting that the parsing of an argument
-    be handled by some other parser while getting the results reported back."""
+    be handled by some other parser while getting the results reported back.
+    This is constructed using methods in the ObjectParserRun
+
+    Args:
+        arg: the argument we want parsed
+        object_on: The object the argument is of
+        string_to_parse: The actual string we are parsing.
+        slice_to_parse: The slice into the origional string of the objectparser
+            which we would like to parser.
+    """
     arg: 'typecontext.AInixArgument'
     object_on: 'typecontext.AInixObject'
     string_to_parse: str
@@ -423,7 +485,6 @@ class ObjectParserResult:
         self._result_dict[arg_name] = ObjectParseArgData(
             (si, ei), self._get_slice_string(si, ei))
         self.remaining_start_i = max(self.remaining_start_i, ei)
-
 
     def accept_delegation(self, delegation_return: ParseDelegationReturnMetadata):
         if not isinstance(delegation_return.what_parsed, typecontext.AInixArgument):

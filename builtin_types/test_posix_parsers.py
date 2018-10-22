@@ -65,19 +65,16 @@ def test_prog_type_parser(type_context):
     AInixObject(type_context, "BarProgram", "Program", [],
                 type_data={"invoke_name": "bar"})
 
-    result = instance.parse_string("foo -rm df")
+    result = gen_result(instance.parse_string("foo -rm df"))
     assert result.get_implementation().name == "FooProgram"
     assert result.get_next_string() == "-rm df"
-    result = instance.parse_string("bar boop do")
+    result = gen_result(instance.parse_string("bar boop do"))
     assert result.get_implementation().name == "BarProgram"
     assert result.get_next_string() == "boop do"
 
-    got_excep = False
-    try:
-        instance.parse_string("baz fdf wd")
-    except AInixParseError:
-        got_excep = True
-    assert got_excep, "Expected to get a parse error"
+    # Try a program which doesn't exist and get error
+    with pytest.raises(AInixParseError):
+        result = gen_result(instance.parse_string("baz bdsf do"))
 
 
 def test_bash_lexer():

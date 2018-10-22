@@ -10,10 +10,11 @@ import arpeggio.cleanpeg
 from pyrsistent import v
 
 # Lexical invariants
+from ainix_common.parsing import parse_primitives
 from ainix_common.parsing.parse_primitives import ObjectParser, ObjectParserRun, \
     ObjectParserResult, ParseDelegationReturnMetadata, UnparseableObjectError, \
-    ObjectParseFuncType, ArgParseDelegation
-from ainix_common.parsing.typecontext import TypeContext
+    ObjectParseFuncType, ArgParseDelegation, UnparsableTypeError
+from ainix_common.parsing.typecontext import TypeContext, AInixObject
 
 ASSIGNMENT = "="
 ORDERED_CHOICE = "/"
@@ -206,4 +207,25 @@ def create_object_parser_from_grammar(
         _create_object_parser_func_from_grammar(grammar),
         exclusive_type_name
     )
+
+
+def _create_first_succeed_type_parser_func(
+    ordered_implementations: Sequence[AInixObject]
+):
+    """Closure which creates a parser function which parses a bunch of implementations
+    and takes the first one that succeeds"""
+    def out_func(
+        run: parse_primitives.TypeParserRun,
+        string: str,
+        result: parse_primitives.TypeParserResult
+    ):
+        slice_to_parse = (0, len(string))
+        for impl in ordered_implementations:
+            parse_return = yield run.delegate_parse_implementation(impl, slice_to_parse)
+            if parse_return.parse_success:
+                result.accept_delegation(parse_return)
+        raise UnparsableTypeError("A first succeed parser did not find a valid implementation")
+
+    return out_func
+
 
