@@ -3,11 +3,13 @@ kinds of parsers, as well as various helping classes for managing the data
 coming from parsers."""
 from ainix_common.parsing import typecontext
 import attr
-from typing import List, Callable, Tuple, Dict, Optional, Any, Union
+from typing import List, Callable, Tuple, Dict, Optional, Any, Union, Generator
 import typing
 import types
 #import ainix_common.parsing.ast_components
 #from ainix_common.parsing.stringparser import StringParser
+
+TypeParserToStringFuncType = Callable[[], Generator]
 
 
 class TypeParser:
@@ -26,6 +28,8 @@ class TypeParser:
                 2) The string we would like to parse
                 3) An instance of TypeParserResult where the callable should put
                    its result.
+          to_string_function: A callable which is used for unparsing (going from
+            a parsed AST back to a string).
           type_name : string identifier of the type this parser parses. If None
             is given, then this parser is able to work used with any type. The
             type is provided we are parsing is passed in with calls to parse_string
@@ -35,6 +39,7 @@ class TypeParser:
         type_context: 'typecontext.TypeContext',
         parser_name: str,
         parse_function: Callable[['TypeParserRun', str, 'TypeParserResult'], None],
+        to_string_function: TypeParserToStringFuncType,
         type_name: str = None
     ):
         self._type_context = type_context
@@ -47,6 +52,7 @@ class TypeParser:
         self._type = None
         self._type_implementations = None
         self._type_context.register_type_parser(self)
+        self._to_string_func = to_string_function
 
     def _resolve_type(self) -> None:
         """Sets the internal reference to the actual python object_name
@@ -91,6 +97,13 @@ class TypeParser:
             yield from parse_func_call
         self._validate_result(result)
         return result
+
+    def to_string(
+        self,
+        implementation_chosen: 'typecontext.AInixObject',
+        type_of_chosen: 'typecontext.AInixType'
+    ):
+        pass
 
     def _validate_result(self, result: 'TypeParserResult'):
         """Check if the result we have after running the parse func is valid"""
@@ -210,6 +223,37 @@ class TypeParserResult:
         self.set_next_slice(si, endi)
 
 
+class TypeToStringResult:
+    def __init__(
+        self,
+        implementation: 'typecontext.AInixObject',
+        type_of_impl: 'typecontext.AInixType'
+    ):
+        self._unparse_seq: List[Union[str, ImplementationUnparseDelegation]] = []
+        self._implementation = implementation
+        self._type_of_impl = type_of_impl
+        self._already_added_impl = False
+
+    @property
+    def implementation(self):
+        return self._implementation
+
+    @property
+    def type_of_impl(self):
+        return self._type_of_impl
+
+    def add_string(self, string: str):
+        self._unparse_seq += string
+
+    def add_impl_unparse(self):
+        if self._already_added_impl:
+            raise ValueError("Cannot add implementation multiple times in unparse")
+        self._unparse_seq.append(ImplementationUnparseDelegation(
+            _next_parser_of_impl(self._implementation, self._type_of_impl)
+        ))
+        self._already_added_impl = True
+
+
 def _next_parser_of_impl(
     implementation: 'typecontext.AInixObject',
     type_: 'typecontext.AInixType'
@@ -229,6 +273,12 @@ class ImplementationParseDelegation:
     implementation: 'typecontext.AInixObject'
     string_to_parse: str
     slice_to_parse: Tuple[int, int]
+    next_parser: 'ObjectParser'
+
+
+@attr.s
+class ImplementationUnparseDelegation:
+    """Used in an unparse to represent the slot where the implentation goes"""
     next_parser: 'ObjectParser'
 
 

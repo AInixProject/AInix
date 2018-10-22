@@ -121,7 +121,8 @@ def _load_object(define, type_context: typecontext.TypeContext):
 
 
 def _extract_parse_func_from_py_module(name: str, module_name: str, load_root: str) -> Callable:
-    """Extracts a parse function when the source of the function a python module"""
+    """Extracts a parse function when the source of the function a python module.
+    It can also be used for extracting a to_string func"""
     file_name = os.path.join(load_root, module_name)
     parser_module_spec = importlib.util.spec_from_file_location(
         "imparser." + name, file_name)
@@ -141,15 +142,22 @@ def _create_type_parser_from_python_module(
     load_root: str,
     type_name: Optional[str],
     parser_name: str,
+    to_string_name: Optional[str],
     module_name_to_load_from: str
 ):
     """Creates a type parser based off python code"""
     parse_func = _extract_parse_func_from_py_module(
         parser_name, module_name_to_load_from, load_root)
+    if to_string_name:
+        to_string_func = _extract_parse_func_from_py_module(
+            to_string_name, module_name_to_load_from, load_root)
+    else:
+        to_string_func = None
     parse_primitives.TypeParser(
         type_context, parser_name=parser_name,
         parse_function=parse_func,
-        type_name=type_name
+        to_string_function=to_string_func,
+        type_name=type_name,
     )
 
 
@@ -171,6 +179,7 @@ def _load_type_parser(
             load_root=load_root,
             type_name=define.get('type'),
             parser_name=define['name'],
+            to_string_name=define.get('to_string_func', None),
             module_name_to_load_from=define['file']
         )
     else:
