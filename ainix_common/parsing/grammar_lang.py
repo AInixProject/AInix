@@ -122,7 +122,6 @@ def _visit_sufix(node, string, left_offset, run_data) -> VisitorReturnType:
         sufix = node[1]
         if sufix == OPTIONAL:
             if not expression.parse_success:
-                print("Catch", string)
                 return ParseDelegationReturnMetadata.make_for_unparsed_string(string, None), v()
     return expression, acceptables
 
