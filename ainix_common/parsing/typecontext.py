@@ -222,6 +222,9 @@ class AInixArgument:
             return type_default_parser
         return self._type_context.get_type_parser_by_name(self.type_name)
 
+    def __repr__(self):
+        return f"<AInixArgument {self.name} type {self.type.name}>"
+
 
 class TypeContext:
     """Used to track a set types, objects, and parsers.

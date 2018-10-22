@@ -200,9 +200,14 @@ class TypeParserResult:
         # track of it at the parser level
         return _next_parser_of_impl(self._implementation, self.type)
 
-    def accept_delegation(self, delegation: 'ImplementationParseDelegation'):
-        self._implementation = delegation.implementation
-        self._accepted_delegation = delegation
+    def accept_delegation(self, delegation_resp: 'ParseDelegationReturnMetadata'):
+        if not delegation_resp.parse_success:
+            raise ValueError("Tried to accept unsucessful delegation")
+        self._implementation = delegation_resp.what_parsed
+        self._accepted_delegation = delegation_resp
+        si = delegation_resp.remaining_right_starti + delegation_resp.original_start_offset
+        endi = len(self.string)
+        self.set_next_slice(si, endi)
 
 
 def _next_parser_of_impl(
@@ -365,13 +370,15 @@ class ParseDelegationReturnMetadata:
         if new_string is None:
             return ParseDelegationReturnMetadata.make_failing()
         if new_string != "":
-            remaining_right_starti = original_string.find(new_string)
+            remaining_right_starti = original_string.rfind(new_string)
         else:
             remaining_right_starti = len(original_string)
         if remaining_right_starti == -1:
             raise ValueError("New string must be substring of original string")
         if original_string[remaining_right_starti:] != new_string:
-            raise ValueError("new string must appear at the end of the origional string")
+            raise ValueError(f"new string must appear at the end of the origional string."
+                             f"original string is '{original_string}' new string is '{new_string}'"
+                             f"remaining_right_starti is {remaining_right_starti}")
         return cls(True, original_string, start_offset, what_parsed, remaining_right_starti)
 
     @property

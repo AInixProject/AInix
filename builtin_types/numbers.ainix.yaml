@@ -25,6 +25,8 @@ defines:
             arg_data: {RegexRepresentation: ".*e([0-9]+)"}
       arg_grammar: |
             (Sign / "+")? IntBase ("." AfterDecimal)? ("e" Exponent)?
+    #- define_new: object_parser
+    #  name: number_o_parser
     # Sign
     - define_new: type
       name: Sign
@@ -43,7 +45,7 @@ defines:
     - define_new: object
       name: base_ten_list
       type: IntBase
-      preferred_object_parser: regex_group_object_parser
+      preferred_object_parser: base_ten_list_parser
       children:
           - name: CurrentDigit
             type: BaseTen

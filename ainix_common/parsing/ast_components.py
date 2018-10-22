@@ -198,7 +198,7 @@ class ObjectNode(AstNode):
     def implementation(self):
         return self._implementation
 
-    def get_choice_node_for_arg(self, arg_name):
+    def get_choice_node_for_arg(self, arg_name) -> 'ObjectChoiceNode':
         return self._arg_name_to_node[arg_name]
 
     def freeze(self):

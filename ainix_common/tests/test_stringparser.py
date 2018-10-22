@@ -1,7 +1,7 @@
 import pytest
 from ainix_common.parsing.ast_components import *
 from ainix_common.parsing import loader
-from ainix_common.parsing.parse_primitives import TypeParser
+from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation
 from ainix_common.parsing.stringparser import StringParser
 from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject, AInixType
 from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
@@ -75,14 +75,59 @@ def test_parse_with_delegations(toy_string_context_optional):
     """A test where one of the object parsers (a grammar parser) tries to
     delegate its parseing"""
     parser = StringParser(toy_string_context_optional)
-    parser.create_parse_tree("a", "FooString")
+    ast = parser.create_parse_tree("a", "FooString")
+    foo_string_obj = ast.next_node
+    assert foo_string_obj.implementation.name == "foo_string_obj"
+    cur_word = foo_string_obj.get_choice_node_for_arg("CurWord")
+    assert cur_word.get_chosen_impl_name() == "FooWordOfa"
+    next_str = foo_string_obj.get_choice_node_for_arg("Nstr")
+    print(next_str)
+    assert "NOTPRESENT" in next_str.get_chosen_impl_name()
+
+
+def test_parse_arg_delegation(toy_string_context_optional):
+    parser = StringParser(toy_string_context_optional)
+    foo_string_obj = toy_string_context_optional.get_object_by_name("foo_string_obj")
+    metadata, node = parser._delegate_object_arg_parse(ArgParseDelegation(
+        foo_string_obj.get_arg_by_name("CurWord"),
+        foo_string_obj,
+        "abee",
+        (0, 4)
+    ))
+    assert metadata.parse_success
+    assert metadata.remaining_right_starti == 1
+    assert metadata.remaining_string == "bee"
+    assert node.get_chosen_impl_name() == "FooWordOfa"
+
+
+def test_parse_arg_delegation2(toy_string_context_optional):
+    parser = StringParser(toy_string_context_optional)
+    foo_string_obj = toy_string_context_optional.get_object_by_name("foo_string_obj")
+    metadata, node = parser._delegate_object_arg_parse(ArgParseDelegation(
+        foo_string_obj.get_arg_by_name("Nstr"),
+        foo_string_obj,
+        "bee",
+        (1, 4)
+    ))
+    assert metadata.parse_success
+    assert metadata.remaining_string == ""
+    assert metadata.remaining_right_starti == 3
+    assert "NOTPRESENT" not in node.get_chosen_impl_name()
 
 
 def test_parse_with_delegations2(toy_string_context_optional):
     """A test where one of the object parsers (a grammar parser) tries to
     delegate its parseing"""
     parser = StringParser(toy_string_context_optional)
-    parser.create_parse_tree("abeec", "FooString")
+    ast = parser.create_parse_tree("abee", "FooString")
+    foo_string_obj = ast.next_node
+    assert foo_string_obj.implementation.name == "foo_string_obj"
+    cur_word = foo_string_obj.get_choice_node_for_arg("CurWord")
+    assert cur_word.get_chosen_impl_name() == "FooWordOfa"
+    next_str = foo_string_obj.get_choice_node_for_arg("Nstr")
+    print(next_str)
+    assert "NOTPRESENT" not in next_str.get_chosen_impl_name()
+
 
 
 @pytest.fixture(scope="function")
@@ -172,6 +217,7 @@ def test_parse_set_6(numbers_type_context, numbers_ast_set):
     print("---")
     numbers_ast_set.add(ast_2, False, 1, 0.3)
     assert numbers_ast_set.is_node_known_valid(ast_1)
+    print(ast_2.dump_str())
     assert not numbers_ast_set.is_node_known_valid(ast_2)
 
 

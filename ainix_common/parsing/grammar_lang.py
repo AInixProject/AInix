@@ -122,6 +122,7 @@ def _visit_sufix(node, string, left_offset, run_data) -> VisitorReturnType:
         sufix = node[1]
         if sufix == OPTIONAL:
             if not expression.parse_success:
+                print("Catch", string)
                 return ParseDelegationReturnMetadata.make_for_unparsed_string(string, None), v()
     return expression, acceptables
 
@@ -140,7 +141,7 @@ def gen_grammar_visitor(
     This is a terrible description I know. If you are reading this and it unclear
     nag @DNGros to clean it up.
     """
-    print("visiting", node, node.rule_name)
+    print("visiting", node, node.rule_name, "  :: ", string)
     if node.rule_name == "arg_identifier":
         slice_to_parse = (left_offset, left_offset+len(string))
         delegation = run_data.left_fill_arg(run_data.get_arg_by_name(node.value), slice_to_parse)
@@ -163,7 +164,7 @@ def gen_grammar_visitor(
                     child, remaining_string, new_left_offset, run_data)
                 parse_return, new_acceptables = visitv
                 if not parse_return.parse_success:
-                    print("FAIL on", child)
+                    print("FAIL on", child, string)
                     return parse_return, v()
                 acceptables.extend(new_acceptables)
                 remaining_string = parse_return.remaining_string

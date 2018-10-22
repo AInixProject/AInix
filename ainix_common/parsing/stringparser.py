@@ -66,6 +66,7 @@ class StringParser:
         """Parses a string into a ObjectNode"""
         object_parse, delegation_to_node_map = self._run_object_parser_with_delegations(
             string, implementation, parser)
+        print("Parse return ", object_parse.remaining_start_i)
         arg_name_to_node: Dict[str, ObjectChoiceNode] = {}
         for arg in implementation.children:
             arg_present_data = object_parse.get_arg_present(arg.name)
@@ -73,6 +74,7 @@ class StringParser:
                 self._make_node_for_arg(arg, arg_present_data, delegation_to_node_map)
         my_return_metadata = ParseDelegationReturnMetadata(
             True, string, None, implementation, object_parse.remaining_start_i)
+        print("Parse metadata ", my_return_metadata)
         return ObjectNode(implementation, pmap(arg_name_to_node)), my_return_metadata
 
     def _delegate_object_arg_parse(
@@ -95,6 +97,7 @@ class StringParser:
             try:
                 arg_type_choice, parse_metadata = self._parse_object_choice_node(
                     delegation.string_to_parse, arg.type_parser, arg.type)
+                print("delegated return:", parse_metadata)
                 out_delegation_return = parse_metadata.change_what_parsed(arg)
             except AInixParseError as e:
                 # TODO (DNGros): Use the metadata rather than exceptions to manage this
@@ -113,12 +116,13 @@ class StringParser:
         if not arg.required:
             # If it is an optional node, wrap it in a "is present" present node.
             if arg.type is None:
-                out_node = ObjectNode(arg.is_present_object, pmap({}))
+                object_choice = ObjectNode(arg.is_present_object, pmap({}))
             else:
                 parsed_v_as_arg = pmap({
                     typecontext.OPTIONAL_ARGUMENT_NEXT_ARG_NAME: arg_type_choice
                 })
-                out_node = ObjectNode(arg.is_present_object, parsed_v_as_arg)
+                object_choice = ObjectNode(arg.is_present_object, parsed_v_as_arg)
+            out_node = ObjectChoiceNode(arg.present_choice_type, object_choice)
         else:
             out_node = arg_type_choice
         return out_delegation_return, out_node
@@ -192,15 +196,21 @@ class StringParser:
                 return return_result, delegation_to_node
             # Well it didn't reach the end, so it must have yielded a delegation. Handle that.
             delegation_return, out_node = self._delegate_object_arg_parse(delegation)
+            print(delegation_return)
             delegation_to_node[delegation_return] = out_node
             last_delegation_result = delegation_return
 
     def _object_choice_result_to_string_metadata(
-            self, result: ainix_common.parsing.parse_primitives.TypeParserResult):
+        self,
+        result: ainix_common.parsing.parse_primitives.TypeParserResult,
+        child_metadata: ParseDelegationReturnMetadata
+    ):
         """Converts the result we get from a type parser into a string metadata
         result."""
         si, endi = result.get_next_slice()
-        return ParseDelegationReturnMetadata(True, result.string, 0, result.type, endi)
+        si += child_metadata.remaining_right_starti
+        endi += child_metadata.remaining_right_starti
+        return ParseDelegationReturnMetadata(True, result.string, 0, result.type, si)
 
     def _parse_object_choice_node(
         self,
@@ -211,10 +221,14 @@ class StringParser:
         """Parses a string into a ObjectChoiceNode. This is more internal use.
         For the more user friendly method see create_parse_tree()"""
         result, delegation_map = self._run_type_parser_with_delegations(string, type, parser)
-        next_object_node, child_string_metadata = self._parse_object_node(
-            result.get_implementation(),  result.get_next_string(), result.next_parser
-        )
-        metadata = self._object_choice_result_to_string_metadata(result)
+        if result._accepted_delegation is not None:
+            next_object_node, child_string_metadata = delegation_map[result._accepted_delegation]
+        else:
+            next_object_node, child_string_metadata = self._parse_object_node(
+                result.get_implementation(),  result.get_next_string(), result.next_parser
+            )
+        metadata = self._object_choice_result_to_string_metadata(result, child_string_metadata)
+        print("parse object choice", metadata)
         return ObjectChoiceNode(type, next_object_node), metadata
 
     def _run_type_parser_with_delegations(
@@ -232,16 +246,25 @@ class StringParser:
                 delegation = parser_gen.send(last_delegation_result)
             except StopIteration as stop_iter:
                 return_result = stop_iter.value
+                print("run type parser delegations return", return_result)
                 return return_result, delegation_to_node
             # Well it didn't reach the end, so it must have yielded a delegation. Handle that.
+            node, return_metadata = self._delegate_object_arg_parse(delegation)
+            delegation_to_node[return_metadata] = node
+            last_delegation_result = return_metadata
+
+    def _delegate_impl_parser(self, delegation: ImplementationParseDelegation):
+        try:
             node, return_metadata = self._parse_object_node(
                 delegation.implementation,
                 delegation.string_to_parse,
                 delegation.next_parser
             )
-            delegation_to_node[return_metadata] = node
-            last_delegation_result = return_metadata
-
+            return node, return_metadata
+        except AInixParseError as e:
+            fail_return = ParseDelegationReturnMetadata(
+                False, delegation.string_to_parse, None, delegation.implementation, None, str(e))
+            return None, fail_return
 
     def _get_root_parser(
         self,

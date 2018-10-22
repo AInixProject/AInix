@@ -17,6 +17,7 @@ def test_max_munch():
     max_munch_type_parser(mock_run, parse_str, result)
     assert result.get_implementation() == mock_types[3]
     assert result.get_next_string() == "bar"
+    assert result.get_next_slice() == (3, 6)
 
     with pytest.raises(parse_primitives.AInixParseError):
         parse_str = "moo"
