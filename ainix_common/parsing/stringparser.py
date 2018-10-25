@@ -1,11 +1,16 @@
+"""Userfacing classes for converting strings into ASTs or ASTs into strings"""
 from typing import Tuple, Optional, Dict
 import attr
 from pyrsistent import pmap
 import ainix_common.parsing
 from ainix_common.parsing import typecontext
 from ainix_common.parsing.ast_components import ObjectChoiceNode, ObjectNode
-from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation, \
-    ParseDelegationReturnMetadata, AInixParseError, TypeParserResult, ImplementationParseDelegation
+from ainix_common.parsing.parse_primitives import (TypeParser, ArgParseDelegation,
+                                                   ParseDelegationReturnMetadata, AInixParseError,
+                                                   TypeParserResult,
+                                                   ImplementationParseDelegation,
+                                                   TypeToStringResult,
+                                                   ImplementationToStringDelegation, ObjectParser)
 
 
 class StringParser:
@@ -48,7 +53,7 @@ class StringParser:
             root_parser_name: An optional TypeParser name which overrides the
                 default parser for the root_type_name.
         """
-        root_parser = self._get_root_parser(root_type_name, root_parser_name)
+        root_parser = _get_root_parser(self._type_context, root_type_name, root_parser_name)
         if not root_parser:
             raise ValueError(f"Unable to get a parser type {root_type_name} and "
                              f"root_parser {root_parser_name}")
@@ -260,18 +265,60 @@ class StringParser:
                 False, delegation.string_to_parse, None, delegation.implementation, None, str(e))
             return None, fail_return
 
-    def _get_root_parser(
-        self,
-        type_name: str,
-        parser_name: Optional[str]
-    ) -> ainix_common.parsing.parse_primitives.TypeParser:
-        """The public interface accepts a type name to parse as the root AST node
-        for the string. This method converts that type name into an actuall parser
-        instance."""
-        if parser_name:
-            return self._type_context.get_type_parser_by_name(parser_name)
-        else:
-            type_instance = self._type_context.get_type_by_name(type_name)
-            if type_instance.default_type_parser is None:
-                raise ValueError(f"No default type parser available for {type_instance}")
-            return type_instance.default_type_parser
+
+
+class AstUnparser:
+    """A class which is the main driver for converting from ASTs to strings. It
+    uses the to_string methods on TypeParsers and ObjectParsers"""
+    def __init__(self, type_context: typecontext.TypeContext):
+        self._type_context = type_context
+
+    def _unparse_object_choice_node(self, node: ObjectChoiceNode, parser: TypeParser):
+        unparse = parser.to_string(node.next_node.implementation, node.type_to_choose)
+        out_string = ""
+        for part_of_out in unparse.unparse_seq:
+            if isinstance(part_of_out, str):
+                out_string += out_string
+            elif isinstance(part_of_out, ImplementationToStringDelegation):
+                self._unparse_object_node(node.next_node.implementation, part_of_out.next_parser)
+            else:
+                raise ValueError("Unexpected object in unparse_seq")
+        return out_string
+
+    def _unparse_object_node(self, node: ObjectNode, parser: ObjectParser):
+        pass
+
+    def to_string(self, ast: ObjectChoiceNode, root_parser_name: str = None) -> 'UnparseResult':
+        root_parser = _get_root_parser(
+            self._type_context,
+            ast.get_type_to_choose_name(),
+            root_parser_name
+        )
+        if not root_parser:
+            raise ValueError(f"Unable to get a parser type {root_type_name} and "
+                             f"root_parser {root_parser_name}")
+
+class UnparseResult:
+    """Used to keep track about """
+    pass
+
+
+class _UnparseResultBuilder:
+    pass
+
+
+def _get_root_parser(
+    type_context: typecontext.TypeContext,
+    type_name: str,
+    parser_name: Optional[str]
+) -> ainix_common.parsing.parse_primitives.TypeParser:
+    """The public interface accepts a type name to parse as the root AST node
+    for the string. This method converts that type name into an actuall parser
+    instance."""
+    if parser_name:
+        return type_context.get_type_parser_by_name(parser_name)
+    else:
+        type_instance = type_context.get_type_by_name(type_name)
+        if type_instance.default_type_parser is None:
+            raise ValueError(f"No default type parser available for {type_instance}")
+        return type_instance.default_type_parser

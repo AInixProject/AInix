@@ -6,11 +6,15 @@ import attr
 from typing import List, Callable, Tuple, Dict, Optional, Any, Union, Generator
 import typing
 import types
-#import ainix_common.parsing.ast_components
-#from ainix_common.parsing.stringparser import StringParser
 
-TypeParserToStringFuncType = Callable[[], Generator]
+TypeParserToStringFuncType = Callable[['TypeToStringResult'], Generator]
 
+
+def DefaultTypeToString(
+    result: 'TypeToStringResult'
+):
+    result.add_impl_unparse()
+    
 
 class TypeParser:
     """A TypeParser reads a string and selects the AInixObject
@@ -39,13 +43,15 @@ class TypeParser:
         type_context: 'typecontext.TypeContext',
         parser_name: str,
         parse_function: Callable[['TypeParserRun', str, 'TypeParserResult'], None],
-        to_string_function: TypeParserToStringFuncType,
+        to_string_function: TypeParserToStringFuncType=DefaultTypeToString,
         type_name: str = None
     ):
         self._type_context = type_context
         if not parser_name:
             raise ValueError("TypeParser parser_name should be "
                              "non-None and non-empty")
+        if to_string_function is None:
+            to_string_function = DefaultTypeToString
         self.type_name = type_name
         self.parser_name = parser_name
         self._parse_function = parse_function
@@ -95,17 +101,19 @@ class TypeParser:
         parse_func_call = self._parse_function(run, string, result)
         if isinstance(parse_func_call, types.GeneratorType):
             yield from parse_func_call
-        self._validate_result(result)
+        self._validate_parse_result(result)
         return result
 
     def to_string(
         self,
         implementation_chosen: 'typecontext.AInixObject',
         type_of_chosen: 'typecontext.AInixType'
-    ):
-        pass
+    ) -> 'TypeToStringResult':
+        result = TypeToStringResult(implementation_chosen, type_of_chosen)
+        self._to_string_func(result)
+        return result
 
-    def _validate_result(self, result: 'TypeParserResult'):
+    def _validate_parse_result(self, result: 'TypeParserResult'):
         """Check if the result we have after running the parse func is valid"""
         is_valid = result.get_implementation() is not None
         if not is_valid:
@@ -229,7 +237,7 @@ class TypeToStringResult:
         implementation: 'typecontext.AInixObject',
         type_of_impl: 'typecontext.AInixType'
     ):
-        self._unparse_seq: List[Union[str, ImplementationUnparseDelegation]] = []
+        self._unparse_seq: List[Union[str, ImplementationToStringDelegation]] = []
         self._implementation = implementation
         self._type_of_impl = type_of_impl
         self._already_added_impl = False
@@ -237,6 +245,10 @@ class TypeToStringResult:
     @property
     def implementation(self):
         return self._implementation
+
+    @property
+    def unparse_seq(self) -> Tuple[Union[str, 'ImplementationToStringDelegation'],]:
+        return tuple(self._unparse_seq)
 
     @property
     def type_of_impl(self):
@@ -248,7 +260,7 @@ class TypeToStringResult:
     def add_impl_unparse(self):
         if self._already_added_impl:
             raise ValueError("Cannot add implementation multiple times in unparse")
-        self._unparse_seq.append(ImplementationUnparseDelegation(
+        self._unparse_seq.append(ImplementationToStringDelegation(
             _next_parser_of_impl(self._implementation, self._type_of_impl)
         ))
         self._already_added_impl = True
@@ -277,7 +289,7 @@ class ImplementationParseDelegation:
 
 
 @attr.s
-class ImplementationUnparseDelegation:
+class ImplementationToStringDelegation:
     """Used in an unparse to represent the slot where the implentation goes"""
     next_parser: 'ObjectParser'
 
@@ -316,6 +328,7 @@ class ObjectParser:
         type_context: 'typecontext.TypeContext',
         parser_name: str,
         parse_function: ObjectParseFuncType,
+        to_string_function: Callable,
         exclusive_type_name: str = None
     ):
         self.name = parser_name
@@ -324,6 +337,7 @@ class ObjectParser:
         self.type_name = exclusive_type_name
         self._parse_function = parse_function
         self._type_context.register_object_parser(self)
+        self._to_string_func = to_string_function
 
     def parse_string(
         self,
@@ -347,6 +361,9 @@ class ObjectParser:
         self._validate_parse_result(result, object_)
         return result
 
+    def to_string(self):
+        pass
+
     def _validate_parse_result(
         self,
         result: 'ObjectParserResult',
@@ -359,6 +376,7 @@ class ObjectParser:
                 raise AInixParseError(f"In object parser {self.name} arg "
                                       f"{arg.name} was not set but it is a "
                                       f"required arg")
+
 
 @attr.s(auto_attribs=True, frozen=True)
 class ArgParseDelegation:
@@ -382,6 +400,7 @@ class ArgParseDelegation:
         """Makes a return from a substring. Probably only useful in test"""
         return ParseDelegationReturnMetadata.create_from_substring(
             self.arg, self.string_to_parse, new_string, self.slice_to_parse[0])
+
 
 @attr.s(auto_attribs=True, frozen=True)
 class ParseDelegationReturnMetadata:
@@ -560,6 +579,18 @@ class ObjectParserResult:
         self.remaining_start_i = max(self.remaining_start_i, end_i)
 
 
+class ObjectNodeArgMap:
+    """A simple container which tracks which arguments are present of an object.
+    Is intended for use in unparsing."""
+    def __init__(self, implenetation: 'typecontext.AInixObject'):
+        self.implementation = implenetation
+        self.is_present_map: Dict[str, bool] = {}
+
+
+class ObjectToStringResult:
+    pass
+
+
 class AInixParseError(RuntimeError):
     """An exception for when something goes wrong during parsing. This is
     potentially recoverable if one of the parent nodes that delegated the
@@ -596,7 +627,7 @@ def SingleTypeImplParserFunc(
                               f"implementation. Found {num_impls} implementations.")
     result.set_valid_implementation(run.all_type_implementations[0])
     result.set_next_slice(0, len(string))
-
+    
 
 def NoArgsObjectParseFunc(
     run: ObjectParserRun,
@@ -604,5 +635,14 @@ def NoArgsObjectParseFunc(
     result: ObjectParserResult
 ) -> None:
     """A special builtin parser for objects with no args. Doesn't need to
+    really do anything..."""
+    pass
+
+
+def NoArgsObjectToStringFunc(
+    args: ObjectNodeArgMap,
+    result: ObjectToStringResult
+) -> None:
+    """A special builtin unparser for objects with no args. Doesn't need to
     really do anything..."""
     pass

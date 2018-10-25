@@ -307,7 +307,7 @@ class TypeContext:
                 self,
                 link_name,
                 ainix_common.parsing.parse_primitives.SingleTypeImplParserFunc,
-                type_to_change.name
+                type_name=type_to_change.name
             )
         type_to_change.default_type_parser_name = link_name
 
@@ -323,6 +323,7 @@ class TypeContext:
                 self,
                 link_name,
                 ainix_common.parsing.parse_primitives.NoArgsObjectParseFunc,
+                ainix_common.parsing.parse_primitives.NoArgsObjectToStringFunc,
                 obj_to_change.type_name
             )
         obj_to_change.preferred_object_parser_name = link_name

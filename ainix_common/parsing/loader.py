@@ -188,19 +188,26 @@ def _load_type_parser(
 
 
 def _create_object_parser_from_python_module(
-        type_context: typecontext.TypeContext,
-        load_root: str,
-        parser_name: str,
-        module_name_to_load_from: str,
-        exclusive_type_name: Optional[str]
+    type_context: typecontext.TypeContext,
+    load_root: str,
+    parser_name: str,
+    to_string_name: str,
+    module_name_to_load_from: str,
+    exclusive_type_name: Optional[str]
 ):
     """Creates a type parser based off python code"""
     parse_func = _extract_parse_func_from_py_module(
         parser_name, module_name_to_load_from, load_root)
+    if to_string_name:
+        to_string_func = _extract_parse_func_from_py_module(
+            to_string_name, module_name_to_load_from, load_root)
+    else:
+        to_string_func = None
     parse_primitives.ObjectParser(
         type_context,
         parser_name=parser_name,
         parse_function=parse_func,
+        to_string_function=to_string_func,
         exclusive_type_name=exclusive_type_name
     )
 
@@ -222,6 +229,7 @@ def _load_object_parser(
             type_context=type_context,
             load_root=load_root,
             parser_name=define['name'],
+            to_string_name=define.get('to_string_func', None),
             module_name_to_load_from=define['file'],
             exclusive_type_name=define.get('type')
         )

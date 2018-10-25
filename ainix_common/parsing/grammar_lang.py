@@ -195,6 +195,12 @@ def _create_object_parser_func_from_grammar(
     return out_func
 
 
+def _create_object_tostring_func_from_grammar(
+    grammar: str
+) -> ObjectParseFuncType:
+    pass
+
+
 def create_object_parser_from_grammar(
     type_context: TypeContext,
     parser_name: str,
@@ -205,6 +211,7 @@ def create_object_parser_from_grammar(
         type_context,
         parser_name ,
         _create_object_parser_func_from_grammar(grammar),
+        _create_object_tostring_func_from_grammar(grammar),
         exclusive_type_name
     )
 
