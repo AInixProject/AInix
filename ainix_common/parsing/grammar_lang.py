@@ -9,7 +9,6 @@ from arpeggio.peg import PEGVisitor
 import arpeggio.cleanpeg
 from pyrsistent import v
 
-# Lexical invariants
 from ainix_common.parsing import parse_primitives
 from ainix_common.parsing.parse_primitives import ObjectParser, ObjectParserRun, \
     ObjectParserResult, ParseDelegationReturnMetadata, UnparseableObjectError, \

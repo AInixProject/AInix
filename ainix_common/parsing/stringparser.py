@@ -1,5 +1,5 @@
 """Userfacing classes for converting strings into ASTs or ASTs into strings"""
-from typing import Tuple, Optional, Dict
+from typing import Tuple, Optional, Dict, Union, Mapping
 import attr
 from pyrsistent import pmap
 import ainix_common.parsing
@@ -10,7 +10,9 @@ from ainix_common.parsing.parse_primitives import (TypeParser, ArgParseDelegatio
                                                    TypeParserResult,
                                                    ImplementationParseDelegation,
                                                    TypeToStringResult,
-                                                   ImplementationToStringDelegation, ObjectParser)
+                                                   ImplementationToStringDelegation, ObjectParser,
+                                                   ObjectNodeArgMap, ArgToStringDelegation,
+                                                   ArgIsPresentToString)
 
 
 class StringParser:
@@ -273,20 +275,67 @@ class AstUnparser:
     def __init__(self, type_context: typecontext.TypeContext):
         self._type_context = type_context
 
-    def _unparse_object_choice_node(self, node: ObjectChoiceNode, parser: TypeParser):
+    def _unparse_object_choice_node(
+        self,
+        node: ObjectChoiceNode,
+        parser: TypeParser,
+        result_builder: '_UnparseResultBuilder',
+        left_offset: int
+    ) -> str:
         unparse = parser.to_string(node.next_node.implementation, node.type_to_choose)
         out_string = ""
+        new_left_offset = left_offset
         for part_of_out in unparse.unparse_seq:
             if isinstance(part_of_out, str):
-                out_string += out_string
+                out_string += part_of_out
+                new_left_offset += len(part_of_out)
             elif isinstance(part_of_out, ImplementationToStringDelegation):
-                self._unparse_object_node(node.next_node.implementation, part_of_out.next_parser)
+                impl_string = self._unparse_object_node(
+                    node.next_node, part_of_out.next_parser, result_builder, new_left_offset)
+                out_string += impl_string
+                new_left_offset += len(impl_string)
             else:
                 raise ValueError("Unexpected object in unparse_seq")
+        result_builder.add_subspan(node, out_string, left_offset)
         return out_string
 
-    def _unparse_object_node(self, node: ObjectNode, parser: ObjectParser):
-        pass
+    def _unparse_object_node(
+        self,
+        node: ObjectNode,
+        parser: ObjectParser,
+        result_builder: '_UnparseResultBuilder',
+        left_offset: int
+    ) -> str:
+        out_string = ""
+        new_left_offset = left_offset
+        unparse_result = parser.to_string(self._obj_node_to_arg_map(node))
+        for part_of_out in unparse_result.unparse_seq:
+            if isinstance(part_of_out, str):
+                out_string += part_of_out
+                new_left_offset += len(part_of_out)
+            if isinstance(part_of_out, ArgIsPresentToString):
+                out_string += part_of_out.string
+                new_left_offset += len(part_of_out.string)
+            if isinstance(part_of_out, ArgToStringDelegation):
+                next_node = node.get_choice_node_for_arg(part_of_out.arg.name)
+                arg_string = self._unparse_object_choice_node(
+                    next_node, part_of_out.arg.type_parser, result_builder, new_left_offset)
+                out_string += arg_string
+                new_left_offset += len(out_string)
+            else:
+                raise ValueError("Unexpected object in unparse_seq")
+        result_builder.add_subspan(node, out_string, left_offset)
+        return out_string
+
+    def _obj_node_to_arg_map(self, node: ObjectNode) -> ObjectNodeArgMap:
+        return ObjectNodeArgMap(
+            implenetation=node.implementation,
+            is_present_map={
+                arg: node.get_choice_node_for_arg(arg.name).next_node.implementation !=
+                     arg.not_present_object
+                for arg in node.implementation.children
+            }
+        )
 
     def to_string(self, ast: ObjectChoiceNode, root_parser_name: str = None) -> 'UnparseResult':
         root_parser = _get_root_parser(
@@ -297,15 +346,51 @@ class AstUnparser:
         if not root_parser:
             raise ValueError(f"Unable to get a parser type {root_type_name} and "
                              f"root_parser {root_parser_name}")
+        result_builder = _UnparseResultBuilder(ast)
+        self._unparse_object_choice_node(ast, root_parser, result_builder, 0)
+        return result_builder.as_result()
 
+
+@attr.s(auto_attribs=True, frozen=True, cache_hash=True)
 class UnparseResult:
-    """Used to keep track about """
-    pass
+    """Used to keep track about the relations of AST nodes to their unparsed
+    string representation."""
+    total_string: str
+    node_to_span: Mapping[Union[ObjectNode, ObjectChoiceNode], Tuple[str, int]]
+
+    def node_to_string(self, node) -> str:
+        si, endi = self.node_to_span[node]
+        return self.total_string[si:endi]
 
 
 class _UnparseResultBuilder:
-    pass
+    """Used in AstUnparser while building a result"""
+    def __init__(self, root: ObjectChoiceNode):
+        self.root = root
+        self._node_map: Dict[Union[ObjectNode, ObjectChoiceNode], Tuple[str, int]] = {}
 
+    def add_subspan(
+        self,
+        node: Union[ObjectNode, ObjectChoiceNode],
+        string: str,
+        left_offset: int
+    ):
+        """Adds adds a unparsed string
+
+        Args:
+            node: the node that this string relates to
+            string: the string which we have unparsed as
+            left_offset: the offset into the unparsed string this occurs
+        """
+        self._node_map[node] = (string, left_offset)
+
+    def as_result(self) -> UnparseResult:
+        top_string, _ = self._node_map[self.root]
+        node_to_span = pmap({
+            node: (left_offset, left_offset+len(string))
+            for node, (string, left_offset) in self._node_map.items()
+        })
+        return UnparseResult(top_string, node_to_span)
 
 def _get_root_parser(
     type_context: typecontext.TypeContext,

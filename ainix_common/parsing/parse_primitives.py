@@ -299,6 +299,8 @@ class ImplementationToStringDelegation:
 ObjectParseFuncType = Callable[['ObjectParserRun', str, 'ObjectParserResult'],
     Union[typing.Generator['ArgParseDelegation', 'ParseDelegationReturnMetadata', None], None]]
 
+ObjectToStringFuncType = Callable[['ObjectNodeArgMap', 'ObjectToStringResult'], None]
+
 
 class ObjectParser:
     """An ObjectParser reads a string and determines which of the object's
@@ -328,7 +330,7 @@ class ObjectParser:
         type_context: 'typecontext.TypeContext',
         parser_name: str,
         parse_function: ObjectParseFuncType,
-        to_string_function: Callable,
+        to_string_function: ObjectToStringFuncType,
         exclusive_type_name: str = None
     ):
         self.name = parser_name
@@ -361,8 +363,10 @@ class ObjectParser:
         self._validate_parse_result(result, object_)
         return result
 
-    def to_string(self):
-        pass
+    def to_string(self, arg_map: 'ObjectNodeArgMap') -> 'ObjectToStringResult':
+        result = ObjectToStringResult()
+        self._to_string_func(arg_map, result)
+        return result
 
     def _validate_parse_result(
         self,
@@ -582,13 +586,42 @@ class ObjectParserResult:
 class ObjectNodeArgMap:
     """A simple container which tracks which arguments are present of an object.
     Is intended for use in unparsing."""
-    def __init__(self, implenetation: 'typecontext.AInixObject'):
+    def __init__(
+        self,
+        implenetation: 'typecontext.AInixObject',
+        is_present_map: Dict['typecontext.AInixArgument', bool]
+    ):
         self.implementation = implenetation
-        self.is_present_map: Dict[str, bool] = {}
+        self.is_present_map: Dict[typecontext.AInixArgument, bool] = is_present_map
 
 
 class ObjectToStringResult:
-    pass
+    def __init__(self):
+        self.unparse_seq = []
+
+    def add_string(self, string: str):
+        self.unparse_seq.append(string)
+
+    def add_arg_tostring(self, arg: typecontext.AInixArgument):
+        self.unparse_seq.append(ArgToStringDelegation(arg))
+
+    def add_arg_present_string(self, arg: typecontext.AInixArgument, string: str):
+        self.unparse_seq.append(ArgIsPresentToString(arg, string))
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class ArgToStringDelegation:
+    """Used in a ObjectToStringResult to indicate where an arg value goes"""
+    arg: typecontext.AInixArgument
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class ArgIsPresentToString:
+    """Represents extra string data that a ObjectTostring methods can through
+    in which represents strings that was used to decide whether an arg is
+    present or not."""
+    arg: typecontext.AInixArgument
+    string: str
 
 
 class AInixParseError(RuntimeError):

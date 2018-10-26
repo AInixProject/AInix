@@ -195,7 +195,7 @@ class ObjectNode(AstNode):
         self._hash_cache = None
 
     @property
-    def implementation(self):
+    def implementation(self) -> ainix_common.parsing.typecontext.AInixObject:
         return self._implementation
 
     def get_choice_node_for_arg(self, arg_name) -> 'ObjectChoiceNode':
