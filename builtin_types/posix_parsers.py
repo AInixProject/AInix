@@ -64,11 +64,11 @@ def CmdSeqUnparser(
 ):
     if arg_map.is_argname_present("ProgramArg"):
         result.add_argname_tostring("ProgramArg")
+    result.add_string(" ")
     if arg_map.is_argname_present("CompoundOp"):
         result.add_argname_tostring("CompoundOp")
+
 ####
-
-
 def ProgramTypeParser(
     run: parse_primitives.TypeParserRun,
     string: str,
@@ -85,6 +85,13 @@ def ProgramTypeParser(
         result.set_next_slice(first_space_index, len(string))
     else:
         raise parse_primitives.AInixParseError("Unable to find program", first_word)
+
+
+def ProgramTypeUnparser(result: parse_primitives.TypeToStringResult):
+    impl = result.implementation
+    prog_name = impl.type_data['invoke_name']
+    result.add_string(prog_name + " ")
+    result.add_impl_unparse()
 ####
 
 

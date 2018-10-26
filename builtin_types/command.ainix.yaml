@@ -50,6 +50,7 @@ defines:
       file: posix_parsers.py
     - << : *type_parser_from_posix
       name: ProgramTypeParser
+      to_string_func: ProgramTypeUnparser
       type: Program
     - &object_parser_from_posix
       define_new: object_parser
