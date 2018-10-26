@@ -54,6 +54,7 @@ defines:
     - &object_parser_from_posix
       define_new: object_parser
       name: CmdSeqParser
+      to_string_func: CmdSeqUnparser
       type: CommandSequence
       source: python_module
       file: posix_parsers.py

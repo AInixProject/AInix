@@ -594,9 +594,13 @@ class ObjectNodeArgMap:
         self.implementation = implenetation
         self.is_present_map: Dict[typecontext.AInixArgument, bool] = is_present_map
 
+    def is_argname_present(self, arg_name: str) -> bool:
+        return self.is_present_map[self.implementation.get_arg_by_name(arg_name)]
+
 
 class ObjectToStringResult:
-    def __init__(self):
+    def __init__(self, arg_map: ObjectNodeArgMap):
+        self._arg_map = arg_map
         self.unparse_seq = []
 
     def add_string(self, string: str):
@@ -607,6 +611,9 @@ class ObjectToStringResult:
 
     def add_arg_present_string(self, arg: typecontext.AInixArgument, string: str):
         self.unparse_seq.append(ArgIsPresentToString(arg, string))
+
+    def add_argname_tostring(self, arg_name: str):
+        self.add_argname_tostring(self._arg_map.implementation.get_arg_by_name(arg_name))
 
 
 @attr.s(auto_attribs=True, frozen=True)

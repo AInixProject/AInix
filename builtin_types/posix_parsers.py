@@ -56,6 +56,16 @@ def _get_location_of_operator(string: str):
             inside_double_quotes = not inside_double_quotes
         last_was_slash_escape = c == "\\" and not last_was_slash_escape
     return None
+
+
+def CmdSeqUnparser(
+    arg_map: parse_primitives.ObjectNodeArgMap,
+    result: parse_primitives.ObjectToStringResult
+):
+    if arg_map.is_argname_present("ProgramArg"):
+        result.add_argname_tostring("ProgramArg")
+    if arg_map.is_argname_present("CompoundOp"):
+        result.add_argname_tostring("CompoundOp")
 ####
 
 
