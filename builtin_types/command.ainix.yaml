@@ -64,5 +64,6 @@ defines:
       type: CompoundOperator
     - << : *object_parser_from_posix
       name: ProgramObjectParser
+      to_string_func: ProgramObjectUnparser
       type: Program
 ...

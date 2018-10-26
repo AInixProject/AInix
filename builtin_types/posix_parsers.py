@@ -1,6 +1,8 @@
 from ainix_common.parsing import parse_primitives
 from typing import List
 
+from ainix_common.parsing.typecontext import AInixArgument
+
 
 def lex_bash(string: str) -> List[tuple]:
     inside_single_quotes = False
@@ -133,6 +135,9 @@ def _get_next_slice_of_lex_result(lex_result, current_index):
     return next_lex_slice
 
 
+SHORT_NAME = "short_name"
+LONG_NAME = "long_name"
+
 def ProgramObjectParser(
     run: parse_primitives.ObjectParserRun,
     string: str,
@@ -186,14 +191,38 @@ def ProgramObjectParser(
     if remaining_required_args:
         raise parse_primitives.AInixParseError(
             "Unexpected unmatched args", remaining_required_args)
+
+
+def _get_flag_for_arg_unparse(arg: AInixArgument) -> str:
+    """Converts an arg into it's representive flag. Defaults to long style"""
+    long_name = arg.arg_data.get(LONG_NAME, None)
+    if long_name:
+        return "--" + long_name
+    short_name = arg.arg_data.get(SHORT_NAME, None)
+    if not short_name:
+        raise ValueError("No long name or short name on arg for a program")
+    return "-" + short_name
+
+
+def ProgramObjectUnparser(
+    arg_map: parse_primitives.ObjectNodeArgMap,
+    result: parse_primitives.ObjectToStringResult
+):
+    for arg in arg_map.implementation.children:
+        if not arg_map.is_present_map[arg]:
+            continue
+        arg_flag = _get_flag_for_arg_unparse(arg)
+        result.add_string(arg_flag + " ")
+        result.add_arg_tostring(arg)
+        result.add_string(" ")
 ####
 
 
 def CommandOperatorParser(parser, string, result):
-    pass
+    raise NotImplemented()
 
 ####
 
 
 def CommandOperatorObjParser(parser, string, result):
-    pass
+    raise NotImplemented()
