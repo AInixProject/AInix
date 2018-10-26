@@ -364,7 +364,7 @@ class ObjectParser:
         return result
 
     def to_string(self, arg_map: 'ObjectNodeArgMap') -> 'ObjectToStringResult':
-        result = ObjectToStringResult()
+        result = ObjectToStringResult(arg_map)
         self._to_string_func(arg_map, result)
         return result
 

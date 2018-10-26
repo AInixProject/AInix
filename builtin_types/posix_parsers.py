@@ -208,13 +208,16 @@ def ProgramObjectUnparser(
     arg_map: parse_primitives.ObjectNodeArgMap,
     result: parse_primitives.ObjectToStringResult
 ):
+    had_prev_args = False
     for arg in arg_map.implementation.children:
         if not arg_map.is_present_map[arg]:
             continue
+        if had_prev_args:
+            result.add_string(" ")
         arg_flag = _get_flag_for_arg_unparse(arg)
         result.add_string(arg_flag + " ")
         result.add_arg_tostring(arg)
-        result.add_string(" ")
+        had_prev_args = True
 ####
 
 

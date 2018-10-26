@@ -2,7 +2,8 @@ import pytest
 from posix_parsers import *
 from unittest.mock import MagicMock
 from ainix_common.parsing.typecontext import AInixArgument, TypeContext, AInixObject, AInixType
-from ainix_common.parsing.parse_primitives import AInixParseError
+from ainix_common.parsing.parse_primitives import AInixParseError, ObjectNodeArgMap, \
+    ArgToStringDelegation
 from ainix_common.parsing import loader
 
 
@@ -113,6 +114,17 @@ def test_prog_object_parser_basic(type_context):
     result = gen_result(parser.parse_string("-a", onearg))
     assert result.get_arg_present("a") is not None
     assert result.get_arg_present("a").slice_string == ""
+
+
+def test_prog_object_tostring_basic(type_context):
+    a_arg = AInixArgument(type_context, "a", None, arg_data = {"short_name": "a"})
+    onearg = AInixObject(
+        type_context, "FooProgram", "Program",
+        [a_arg])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    # Unparse
+    unparse = parser.to_string(ObjectNodeArgMap(onearg, {a_arg: True}))
+    assert unparse.unparse_seq == ["-a ", ArgToStringDelegation(a_arg)]
 
 
 def test_prog_object_parser_argval(type_context):
