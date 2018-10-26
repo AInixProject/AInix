@@ -313,17 +313,18 @@ class AstUnparser:
             if isinstance(part_of_out, str):
                 out_string += part_of_out
                 new_left_offset += len(part_of_out)
-            if isinstance(part_of_out, ArgIsPresentToString):
+            elif isinstance(part_of_out, ArgIsPresentToString):
                 out_string += part_of_out.string
                 new_left_offset += len(part_of_out.string)
-            if isinstance(part_of_out, ArgToStringDelegation):
+            elif isinstance(part_of_out, ArgToStringDelegation):
                 next_node = node.get_choice_node_for_arg(part_of_out.arg.name)
                 arg_string = self._unparse_object_choice_node(
                     next_node, part_of_out.arg.type_parser, result_builder, new_left_offset)
                 out_string += arg_string
                 new_left_offset += len(out_string)
             else:
-                raise ValueError("Unexpected object in unparse_seq")
+                raise ValueError(f"Unexpected object in unparse_seq {part_of_out} of type "
+                                 f"{part_of_out.__class__}")
         result_builder.add_subspan(node, out_string, left_offset)
         return out_string
 
@@ -344,7 +345,7 @@ class AstUnparser:
             root_parser_name
         )
         if not root_parser:
-            raise ValueError(f"Unable to get a parser type {root_type_name} and "
+            raise ValueError(f"Unable to get a parser type {ast.get_type_to_choose_name()} and "
                              f"root_parser {root_parser_name}")
         result_builder = _UnparseResultBuilder(ast)
         self._unparse_object_choice_node(ast, root_parser, result_builder, 0)

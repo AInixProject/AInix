@@ -66,8 +66,8 @@ def CmdSeqUnparser(
 ):
     if arg_map.is_argname_present("ProgramArg"):
         result.add_argname_tostring("ProgramArg")
-    result.add_string(" ")
     if arg_map.is_argname_present("CompoundOp"):
+        result.add_string(" ")
         result.add_argname_tostring("CompoundOp")
 
 ####
@@ -215,8 +215,10 @@ def ProgramObjectUnparser(
         if had_prev_args:
             result.add_string(" ")
         arg_flag = _get_flag_for_arg_unparse(arg)
-        result.add_string(arg_flag + " ")
-        result.add_arg_tostring(arg)
+        result.add_string(arg_flag)
+        if arg.type is not None:
+            result.add_string(" ")
+            result.add_arg_tostring(arg)
         had_prev_args = True
 ####
 

@@ -1,3 +1,5 @@
+import collections
+
 import ainix_common.parsing.typecontext
 from typing import Optional, Generator, \
     Tuple, MutableMapping, Mapping
@@ -185,10 +187,12 @@ class ObjectNode(AstNode):
         frozen_arg_name_to_node: Mapping[str, ObjectChoiceNode] = None
     ):
         self._implementation = implementation
-        if frozen_arg_name_to_node:
+        if frozen_arg_name_to_node is not None:
             self._arg_name_to_node = frozen_arg_name_to_node
             if len(self._arg_name_to_node) != len(implementation.children):
                 raise ValueError("Unexepected number of children")
+            assert isinstance(self._arg_name_to_node, collections.Hashable)
+            assert not isinstance(self._arg_name_to_node, dict)
         else:
             self._arg_name_to_node = {}
         self._is_frozen = frozen_arg_name_to_node is not None

@@ -1,6 +1,8 @@
 import pytest
 from posix_parsers import *
 from unittest.mock import MagicMock
+
+from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import AInixArgument, TypeContext, AInixObject, AInixType
 from ainix_common.parsing.parse_primitives import AInixParseError, ObjectNodeArgMap, \
     ArgToStringDelegation
@@ -156,3 +158,18 @@ def test_prog_object_parser_twoargs(type_context):
     result = gen_result(parser.parse_string("-b", twoargs))
     assert result.get_arg_present("a") is None
     assert result.get_arg_present("barg") is not None
+
+
+def test_string_parse_e2e(type_context):
+    twoargs = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"}),
+         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"})],
+        type_data={"invoke_name": "hello"}
+    )
+    parser = StringParser(type_context)
+    ast = parser.create_parse_tree("hello -a", "CommandSequence")
+    unparser = AstUnparser(type_context)
+    to_string = unparser.to_string(ast)
+    assert to_string.total_string == "hello -a"
+

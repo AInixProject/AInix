@@ -260,9 +260,9 @@ class TypeToStringResult:
     def add_impl_unparse(self):
         if self._already_added_impl:
             raise ValueError("Cannot add implementation multiple times in unparse")
-        self._unparse_seq.append(ImplementationToStringDelegation(
-            _next_parser_of_impl(self._implementation, self._type_of_impl)
-        ))
+        next_parser = _next_parser_of_impl(self._implementation, self._type_of_impl)
+        to_string_del = ImplementationToStringDelegation(next_parser)
+        self._unparse_seq.append(to_string_del)
         self._already_added_impl = True
 
 
@@ -278,7 +278,7 @@ def _next_parser_of_impl(
     return next_parser
 
 
-@attr.s
+@attr.s(auto_attribs=True)
 class ImplementationParseDelegation:
     """Represents a delegation back to the calling parser asking to parse
     an implementation object and see if it succeeds."""
@@ -288,7 +288,7 @@ class ImplementationParseDelegation:
     next_parser: 'ObjectParser'
 
 
-@attr.s
+@attr.s(auto_attribs=True, frozen=True)
 class ImplementationToStringDelegation:
     """Used in an unparse to represent the slot where the implentation goes"""
     next_parser: 'ObjectParser'
@@ -613,7 +613,7 @@ class ObjectToStringResult:
         self.unparse_seq.append(ArgIsPresentToString(arg, string))
 
     def add_argname_tostring(self, arg_name: str):
-        self.add_argname_tostring(self._arg_map.implementation.get_arg_by_name(arg_name))
+        self.add_arg_tostring(self._arg_map.implementation.get_arg_by_name(arg_name))
 
 
 @attr.s(auto_attribs=True, frozen=True)
