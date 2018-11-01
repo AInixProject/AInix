@@ -606,10 +606,10 @@ class ObjectToStringResult:
     def add_string(self, string: str):
         self.unparse_seq.append(string)
 
-    def add_arg_tostring(self, arg: typecontext.AInixArgument):
+    def add_arg_tostring(self, arg: 'typecontext.AInixArgument'):
         self.unparse_seq.append(ArgToStringDelegation(arg))
 
-    def add_arg_present_string(self, arg: typecontext.AInixArgument, string: str):
+    def add_arg_present_string(self, arg: 'typecontext.AInixArgument', string: str):
         self.unparse_seq.append(ArgIsPresentToString(arg, string))
 
     def add_argname_tostring(self, arg_name: str):
@@ -619,7 +619,7 @@ class ObjectToStringResult:
 @attr.s(auto_attribs=True, frozen=True)
 class ArgToStringDelegation:
     """Used in a ObjectToStringResult to indicate where an arg value goes"""
-    arg: typecontext.AInixArgument
+    arg: 'typecontext.AInixArgument'
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -627,7 +627,7 @@ class ArgIsPresentToString:
     """Represents extra string data that a ObjectTostring methods can through
     in which represents strings that was used to decide whether an arg is
     present or not."""
-    arg: typecontext.AInixArgument
+    arg: 'typecontext.AInixArgument'
     string: str
 
 
