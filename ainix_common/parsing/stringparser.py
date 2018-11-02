@@ -153,7 +153,8 @@ class StringParser:
                 node. If the arg is not present, then it will be None.
         """
         arg_is_present = arg_data is not None
-        arg_has_already_been_delegated = arg_is_present and arg_data.set_from_delegation is not None
+        arg_has_already_been_delegated = arg_is_present and \
+            arg_data.set_from_delegation is not None
         if arg_has_already_been_delegated:
             done_delegation = arg_data.set_from_delegation
             return delegation_to_node_map[done_delegation], done_delegation
@@ -352,7 +353,7 @@ class AstUnparser:
         return result_builder.as_result()
 
 
-@attr.s(auto_attribs=True, frozen=True, cache_hash=True)
+@attr.s(auto_attribs=True, frozen=True)
 class UnparseResult:
     """Used to keep track about the relations of AST nodes to their unparsed
     string representation."""
@@ -392,6 +393,7 @@ class _UnparseResultBuilder:
             for node, (string, left_offset) in self._node_map.items()
         })
         return UnparseResult(top_string, node_to_span)
+
 
 def _get_root_parser(
     type_context: typecontext.TypeContext,

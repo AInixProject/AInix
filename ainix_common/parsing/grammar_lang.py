@@ -1,3 +1,4 @@
+"""This module is for handling parsers specified via a PEG-style grammar"""
 from typing import Callable, Generator, Union, Tuple, Sequence
 
 from arpeggio import ParserPython, visit_parse_tree, PTNodeVisitor, SemanticActionResults, \
@@ -173,8 +174,23 @@ def gen_grammar_visitor(
         return new_return, acceptables
 
 
+def create_object_parser_from_grammar(
+    type_context: TypeContext,
+    parser_name: str,
+    grammar: str,
+    exclusive_type_name: str = None
+) -> ObjectParser:
+    return ObjectParser(
+        type_context,
+        parser_name ,
+        _create_object_parser_func_from_grammar(grammar),
+        _create_object_tostring_func_from_grammar(grammar),
+        exclusive_type_name
+    )
+
+
 def _create_object_parser_func_from_grammar(
-    grammar: str
+        grammar: str
 ) -> ObjectParseFuncType:
     grammar_ast = parse_grammar(grammar)
 
@@ -192,27 +208,6 @@ def _create_object_parser_func_from_grammar(
                                    parse_return.original_start_offset
 
     return out_func
-
-
-def _create_object_tostring_func_from_grammar(
-    grammar: str
-) -> ObjectParseFuncType:
-    pass
-
-
-def create_object_parser_from_grammar(
-    type_context: TypeContext,
-    parser_name: str,
-    grammar: str,
-    exclusive_type_name: str = None
-) -> ObjectParser:
-    return ObjectParser(
-        type_context,
-        parser_name ,
-        _create_object_parser_func_from_grammar(grammar),
-        _create_object_tostring_func_from_grammar(grammar),
-        exclusive_type_name
-    )
 
 
 def _create_first_succeed_type_parser_func(
@@ -233,5 +228,22 @@ def _create_first_succeed_type_parser_func(
         raise UnparsableTypeError("A first succeed parser did not find a valid implementation")
 
     return out_func
+
+
+###################
+## Unparsing
+###################
+
+def _create_object_tostring_func_from_grammar(
+    grammar: str
+) -> ObjectParseFuncType:
+    grammar_ast = parse_grammar(grammar)
+
+    def out_unparser(
+        arg_map: parse_primitives.ObjectNodeArgMap,
+        result: parse_primitives.ObjectToStringResult
+    ):
+        pass
+    return out_unparser
 
 
