@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 from ainix_common.parsing.grammar_lang import *
 from ainix_common.parsing.parse_primitives import ArgParseDelegation, \
-    ParseDelegationReturnMetadata, StringProblemParseError
+    ParseDelegationReturnMetadata, StringProblemParseError, ObjectNodeArgMap
 from ainix_common.parsing.typecontext import AInixArgument
 
 
@@ -22,11 +22,13 @@ def mobject():
     """Makes a nice mock object that returns if an argument is ever requested
     it magically makes an argument with that name"""
     out = MagicMock()
+
     def magic_get_arg_by_name(name):
         new_arg = AInixArgument(MagicMock(), name, None)
         return new_arg
     out.get_arg_by_name = magic_get_arg_by_name
     return out
+
 
 def test_parse(mobject):
     instance = create_object_parser_from_grammar(MagicMock(), "FooParser", "Foo")
@@ -209,3 +211,11 @@ def test_parse_litteralafter_paren_fail(mobject):
     assert result.get_arg_present("Foo") is not None
     assert result.get_arg_present("Bar") is None
     assert result.remaining_start_i == 5
+
+
+def test_unparse_juststr(mobject):
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser", '"Hello"')
+    args = ObjectNodeArgMap(mobject, {})
+    result = instance.to_string(args)
+    assert result.unparse_seq == ["Hello",]
+

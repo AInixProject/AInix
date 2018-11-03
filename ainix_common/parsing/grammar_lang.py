@@ -137,7 +137,7 @@ def gen_grammar_visitor(
     whether or not it succeeded at each visit as well as a pvec of metadata which
     would need to be accepted as a valid parses assuming everything above it succeeds.
 
-    This is a terrible description I know. If you are reading this and it unclear
+    This isn't a great description I know. If you are reading this and it unclear
     nag @DNGros to clean it up.
     """
     print("visiting", node, node.rule_name, "  :: ", string)
@@ -234,6 +234,19 @@ def _create_first_succeed_type_parser_func(
 ## Unparsing
 ###################
 
+def unparse_visitor(
+    node: ParseTreeNode,
+    result: parse_primitives.ObjectToStringResult,
+    arg_map: parse_primitives.ObjectNodeArgMap
+):
+    if node.rule_name == "str_match":
+        result.add_string(node.value[1:-1])
+    else:
+        if isinstance(node, arpeggio.NonTerminal):
+            for child in node:
+                unparse_visitor(child, result, arg_map)
+
+
 def _create_object_tostring_func_from_grammar(
     grammar: str
 ) -> ObjectParseFuncType:
@@ -243,7 +256,7 @@ def _create_object_tostring_func_from_grammar(
         arg_map: parse_primitives.ObjectNodeArgMap,
         result: parse_primitives.ObjectToStringResult
     ):
-        pass
+        unparse_visitor(grammar_ast, result, arg_map)
     return out_unparser
 
 
