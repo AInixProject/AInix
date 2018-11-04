@@ -223,7 +223,15 @@ class AInixArgument:
         return self._type_context.get_type_parser_by_name(self.type_name)
 
     def __repr__(self):
-        return f"<AInixArgument {self.name} type {self.type.name}>"
+        type_name = self.type.name if self.type else "NONE"
+        return f"<AInixArgument {self.name} type {type_name}>"
+
+    def __eq__(self, other):
+        # This may need to be made more elaborate...
+        return self.name == other.name
+
+    def __hash__(self):
+        return hash((self.name,))
 
 
 class TypeContext:

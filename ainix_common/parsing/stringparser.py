@@ -333,8 +333,8 @@ class AstUnparser:
         return ObjectNodeArgMap(
             implenetation=node.implementation,
             is_present_map={
-                arg: node.get_choice_node_for_arg(arg.name).next_node.implementation !=
-                     arg.not_present_object
+                arg.name: node.get_choice_node_for_arg(arg.name).next_node.implementation !=
+                          arg.not_present_object
                 for arg in node.implementation.children
             }
         )

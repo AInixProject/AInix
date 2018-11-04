@@ -233,13 +233,29 @@ def _create_first_succeed_type_parser_func(
 ###################
 ## Unparsing
 ###################
+class UnparseError(Exception):
+    pass
+
+
+def _unparse_visit_identifier(
+    node: ParseTreeNode,
+    result: parse_primitives.ObjectToStringResult,
+    arg_map: parse_primitives.ObjectNodeArgMap
+):
+    arg_name = node.value
+    if not arg_map.is_argname_present(arg_name):
+        raise UnparseError(f"Arg {arg_name} is not present")
+    result.add_argname_tostring(arg_name)
+
 
 def unparse_visitor(
     node: ParseTreeNode,
     result: parse_primitives.ObjectToStringResult,
     arg_map: parse_primitives.ObjectNodeArgMap
 ):
-    if node.rule_name == "str_match":
+    if node.rule_name == "arg_identifier":
+        _unparse_visit_identifier(node, result, arg_map)
+    elif node.rule_name == "str_match":
         result.add_string(node.value[1:-1])
     else:
         if isinstance(node, arpeggio.NonTerminal):

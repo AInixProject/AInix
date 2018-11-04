@@ -125,7 +125,7 @@ def test_prog_object_tostring_basic(type_context):
         [a_arg])
     parser = type_context.get_object_parser_by_name("ProgramObjectParser")
     # Unparse
-    unparse = parser.to_string(ObjectNodeArgMap(onearg, {a_arg: True}))
+    unparse = parser.to_string(ObjectNodeArgMap(onearg, {"a": True}))
     assert unparse.unparse_seq == ["-a ", ArgToStringDelegation(a_arg)]
 
 

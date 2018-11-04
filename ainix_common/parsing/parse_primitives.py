@@ -589,13 +589,14 @@ class ObjectNodeArgMap:
     def __init__(
         self,
         implenetation: 'typecontext.AInixObject',
-        is_present_map: Dict['typecontext.AInixArgument', bool]
+        is_present_map: Dict[str, bool]
     ):
         self.implementation = implenetation
-        self.is_present_map: Dict[typecontext.AInixArgument, bool] = is_present_map
+        self.is_present_map: Dict[str, bool] = is_present_map
 
     def is_argname_present(self, arg_name: str) -> bool:
-        return self.is_present_map[self.implementation.get_arg_by_name(arg_name)]
+        print(self.is_present_map)
+        return self.is_present_map[arg_name]
 
 
 class ObjectToStringResult:
@@ -614,6 +615,20 @@ class ObjectToStringResult:
 
     def add_argname_tostring(self, arg_name: str):
         self.add_arg_tostring(self._arg_map.implementation.get_arg_by_name(arg_name))
+
+    def make_snapshot(self) -> 'ObjectToStringSnapshot':
+        return ObjectToStringSnapshot(self)
+
+class ObjectToStringSnapshot:
+    """A helper for saving the state of a result, and jumping back to the checkpoint
+    if needed."""
+    def __init__(self, result_it_is_of: ObjectToStringResult):
+        self._unparse_seq = [x for x in result_it_is_of.unparse_seq]
+        self._result = result_it_is_of
+
+    def restore(self):
+        """Unrolls the result back to this snapshot"""
+        self._result.unparse_seq = self._unparse_seq
 
 
 @attr.s(auto_attribs=True, frozen=True)

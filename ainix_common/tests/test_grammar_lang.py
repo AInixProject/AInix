@@ -4,7 +4,8 @@ from unittest.mock import MagicMock
 
 from ainix_common.parsing.grammar_lang import *
 from ainix_common.parsing.parse_primitives import ArgParseDelegation, \
-    ParseDelegationReturnMetadata, StringProblemParseError, ObjectNodeArgMap
+    ParseDelegationReturnMetadata, StringProblemParseError, ObjectNodeArgMap, \
+    ArgToStringDelegation
 from ainix_common.parsing.typecontext import AInixArgument
 
 
@@ -219,3 +220,10 @@ def test_unparse_juststr(mobject):
     result = instance.to_string(args)
     assert result.unparse_seq == ["Hello",]
 
+
+def test_unparse_juststr(mobject):
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser", 'FooArg')
+    foo_arg = mobject.get_arg_by_name("FooArg")
+    args = ObjectNodeArgMap(mobject, {"FooArg": True})
+    result = instance.to_string(args)
+    assert result.unparse_seq == [ArgToStringDelegation(foo_arg)]
