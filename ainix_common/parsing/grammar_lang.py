@@ -115,7 +115,6 @@ def _visit_str_match(node, string, left_offset) -> ParseDelegationReturnMetadata
 
 def _visit_sufix(node, string, left_offset, run_data) -> VisitorReturnType:
     """A grammar visitor for the suffixes"""
-    print("YAY", node, len(node))
     visitv = yield from gen_grammar_visitor(node[0], string, left_offset, run_data)
     expression, acceptables = visitv
     if len(node) > 1:
@@ -123,6 +122,8 @@ def _visit_sufix(node, string, left_offset, run_data) -> VisitorReturnType:
         if sufix == OPTIONAL:
             if not expression.parse_success:
                 return ParseDelegationReturnMetadata.make_for_unparsed_string(string, None), v()
+        else:
+            raise ValueError("Unsupported sufix")
     return expression, acceptables
 
 
@@ -237,17 +238,6 @@ class UnparseError(Exception):
     pass
 
 
-def _unparse_visit_identifier(
-    node: ParseTreeNode,
-    result: parse_primitives.ObjectToStringResult,
-    arg_map: parse_primitives.ObjectNodeArgMap
-):
-    arg_name = node.value
-    if not arg_map.is_argname_present(arg_name):
-        raise UnparseError(f"Arg {arg_name} is not present")
-    result.add_argname_tostring(arg_name)
-
-
 def unparse_visitor(
     node: ParseTreeNode,
     result: parse_primitives.ObjectToStringResult,
@@ -261,6 +251,33 @@ def unparse_visitor(
         if isinstance(node, arpeggio.NonTerminal):
             for child in node:
                 unparse_visitor(child, result, arg_map)
+
+
+def _unparse_visit_identifier(
+    node: ParseTreeNode,
+    result: parse_primitives.ObjectToStringResult,
+    arg_map: parse_primitives.ObjectNodeArgMap
+):
+    arg_name = node.value
+    if not arg_map.is_argname_present(arg_name):
+        raise UnparseError(f"Arg {arg_name} is not present")
+    result.add_argname_tostring(arg_name)
+
+
+def _unparse_visit_suffix(
+    node: ParseTreeNode,
+    result: parse_primitives.ObjectToStringResult,
+    arg_map: parse_primitives.ObjectNodeArgMap
+):
+    snapshot = result.make_snapshot()
+    try:
+        unparse_visitor(node[0], result, arg_map)
+    except UnparseError as e:
+        suffix = node[1]
+        if suffix == OPTIONAL:
+            snapshot.restore()
+        else:
+            raise ValueError(f"Unimplemented suffix {suffix}")
 
 
 def _create_object_tostring_func_from_grammar(
