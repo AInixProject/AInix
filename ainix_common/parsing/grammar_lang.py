@@ -149,9 +149,9 @@ def gen_grammar_visitor(
         if not parse_return.parse_success:
             parse_return = parse_return.add_fail(f"Stack Message: Fail on arg {node.value}")
         return parse_return, v(parse_return)
-    if node.rule_name == "str_match":
+    elif node.rule_name == "str_match":
         return _visit_str_match(node, string, left_offset), v()
-    if node.rule_name == "sufix":
+    elif node.rule_name == "sufix":
         out_return, things_to_accept = yield from _visit_sufix(node, string, left_offset, run_data)
         return out_return, things_to_accept
     else:
@@ -247,6 +247,8 @@ def unparse_visitor(
         _unparse_visit_identifier(node, result, arg_map)
     elif node.rule_name == "str_match":
         result.add_string(node.value[1:-1])
+    elif node.rule_name == "sufix":
+        _unparse_visit_suffix(node, result, arg_map)
     else:
         if isinstance(node, arpeggio.NonTerminal):
             for child in node:

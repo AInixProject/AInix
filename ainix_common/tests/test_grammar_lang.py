@@ -233,7 +233,7 @@ def test_unparse_fail(mobject):
     instance = create_object_parser_from_grammar(MagicMock(), "FooParser", 'FooArg')
     args = ObjectNodeArgMap(mobject, {"FooArg": False})
     with pytest.raises(UnparseError):
-        result = instance.to_string(args)
+        instance.to_string(args)
 
 
 def test_unparse_str_and_arg(mobject):
@@ -242,3 +242,10 @@ def test_unparse_str_and_arg(mobject):
     args = ObjectNodeArgMap(mobject, {"FooArg": True})
     result = instance.to_string(args)
     assert result.unparse_seq == ["Hello", ArgToStringDelegation(foo_arg)]
+
+
+def test_unparse_suffix(mobject):
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser", '"Hey" FooArg?')
+    args = ObjectNodeArgMap(mobject, {"FooArg": False})
+    result = instance.to_string(args)
+    assert result.unparse_seq == ["Hey"]
