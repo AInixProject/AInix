@@ -275,11 +275,12 @@ def _unparse_visit_suffix(
     try:
         unparse_visitor(node[0], result, arg_map)
     except UnparseError as e:
-        suffix = node[1]
-        if suffix == OPTIONAL:
-            snapshot.restore()
-        else:
-            raise ValueError(f"Unimplemented suffix {suffix}")
+        if len(node) > 1:
+            suffix = node[1]
+            if suffix == OPTIONAL:
+                snapshot.restore()
+            else:
+                raise ValueError(f"Unimplemented suffix {suffix}")
 
 
 def _create_object_tostring_func_from_grammar(

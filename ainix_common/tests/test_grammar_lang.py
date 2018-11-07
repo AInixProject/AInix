@@ -249,3 +249,20 @@ def test_unparse_suffix(mobject):
     args = ObjectNodeArgMap(mobject, {"FooArg": False})
     result = instance.to_string(args)
     assert result.unparse_seq == ["Hey"]
+
+
+def test_unparse_paren(mobject):
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser",
+                                                 '"Hey" ("9" FooArg "d")? "!"')
+    args = ObjectNodeArgMap(mobject, {"FooArg": True})
+    result = instance.to_string(args)
+    foo_arg = mobject.get_arg_by_name("FooArg")
+    assert result.unparse_seq == ["Hey", "9", ArgToStringDelegation(foo_arg), "d", "!"]
+
+
+def test_unparse_paren_fail(mobject):
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser",
+                                                 '"Hey" ("9" FooArg "d")? "!"')
+    args = ObjectNodeArgMap(mobject, {"FooArg": False})
+    result = instance.to_string(args)
+    assert result.unparse_seq == ["Hey", "!"]
