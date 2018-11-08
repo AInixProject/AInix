@@ -266,3 +266,22 @@ def test_unparse_paren_fail(mobject):
     args = ObjectNodeArgMap(mobject, {"FooArg": False})
     result = instance.to_string(args)
     assert result.unparse_seq == ["Hey", "!"]
+
+
+def test_unparse_twoarg(mobject):
+    instance = create_object_parser_from_grammar(
+        MagicMock(), "FooParser", '"Hey" FooArg " " BarArg')
+    args = ObjectNodeArgMap(mobject, {"FooArg": True, "BarArg": True})
+    result = instance.to_string(args)
+    foo_arg = mobject.get_arg_by_name("FooArg")
+    bar_arg = mobject.get_arg_by_name("BarArg")
+    assert result.unparse_seq == ["Hey", ArgToStringDelegation(foo_arg), " ",
+                                  ArgToStringDelegation(bar_arg)]
+
+
+def test_unparse_twoarg_fail(mobject):
+    instance = create_object_parser_from_grammar(
+        MagicMock(), "FooParser", '"Hey" FooArg " " BarArg')
+    args = ObjectNodeArgMap(mobject, {"FooArg": True, "BarArg": False})
+    with pytest.raises(UnparseError):
+        instance.to_string(args)
