@@ -1,23 +1,9 @@
 ---
 defines:
-    # TODO (DNGros): refactor so that this works now that parses are able to
-    # use dynamic types.
-    #- &from_file_type_parser
-    #  define_new: type_parser
-    #  name: single_impl_parser
-    #  doc: >
-    #      A type parser for when there is only exactly one implementation
-    #      of the type.
-    #  source: python_module
-    #  file: generic_parsers.py
-    #- << : *from_file_type_parser
-    #  define_new: object_parser
-    #  name: no_args_parser
-    #  doc: >
-    #      A default parser for when an object has no arguments.
     - &from_file_type_parser
       define_new: type_parser
       name: max_munch_type_parser
+      to_string_func: max_munch_type_unparser
       doc: >
           A type parser which chooses its type and the string by choosing the
           implementation with the type_data property ParseRepresentation that

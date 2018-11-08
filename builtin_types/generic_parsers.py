@@ -27,6 +27,12 @@ def max_munch_type_parser(
     result.set_next_slice(longest_match[0], len(string))
 
 
+def max_munch_type_unparser(result: parse_primitives.TypeToStringResult):
+    impl = result.implementation
+    munch_val = impl.type_data[MAX_MUNCH_LOOKUP_KEY]
+    result.add_string(munch_val)
+
+
 def regex_group_object_parser(
     run:  parse_primitives.ObjectParserRun,
     string: str,
