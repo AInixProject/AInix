@@ -3,7 +3,8 @@ from ainix_common.parsing.ast_components import *
 from ainix_common.parsing import loader
 from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
-from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject, AInixType
+from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject, AInixType, \
+    OPTIONAL_ARGUMENT_NEXT_ARG_NAME
 from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
 
 BUILTIN_TYPES_PATH = "../../builtin_types"
@@ -294,6 +295,18 @@ def test_unparse_single(simple_p_tc):
     unparser = AstUnparser(simple_p_tc)
     result = unparser.to_string(ast)
     assert result.total_string == "Hello Bar"
+    # Test spans
+    assert result.node_to_string(ast) == "Hello Bar"
+    objectOfFoo = ast.next_node
+    assert result.node_to_string(objectOfFoo) == "Hello Bar"
+    arg1_is_present = objectOfFoo.get_choice_node_for_arg("Arg1")
+    assert result.node_to_string(arg1_is_present) == "Bar"
+    arg1_present_o = arg1_is_present.next_node
+    assert result.node_to_string(arg1_present_o) == "Bar"
+    arg1_typechoice = arg1_present_o.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME)
+    assert result.node_to_string(arg1_typechoice) == "Bar"
+    baro = arg1_typechoice.next_node
+    assert result.node_to_string(baro) == "Bar"
 
 
 def test_simple_num_unparse(numbers_type_context):

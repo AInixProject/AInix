@@ -148,6 +148,8 @@ class ObjectChoiceNode(AstNode):
             return False
         if id(self) == id(other):
             return True
+        if not hasattr(other, "_type_to_choose"):
+            return False
         return self._type_to_choose == other._type_to_choose and \
                self._choice == other._choice
 
@@ -265,6 +267,8 @@ class ObjectNode(AstNode):
         return self._hash_cache
 
     def __eq__(self, other):
+        if not hasattr(other, "_implementation"):
+            return False
         val = self._implementation == other._implementation and \
                self._arg_name_to_node == other._arg_name_to_node
         return val

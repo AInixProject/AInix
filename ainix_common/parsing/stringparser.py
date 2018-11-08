@@ -301,6 +301,22 @@ class AstUnparser:
         result_builder.add_subspan(node, out_string, left_offset)
         return out_string
 
+    def _unparse_optional_obj_choice_node(
+        self,
+        node: ObjectChoiceNode,
+        parser_actual_type: TypeParser,
+        result_builder: '_UnparseResultBuilder',
+        left_offset: int
+    ) -> str:
+        """Unparses an ObjectChoiceNode for an arg present or not. Does not actually
+        use a parser and passes through the value to the next parser"""
+        next_node = node.next_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME)
+        arg_str = self._unparse_object_choice_node(next_node, parser_actual_type,
+                                                   result_builder, left_offset)
+        result_builder.add_subspan(node.next_node, arg_str, left_offset)
+        result_builder.add_subspan(node, arg_str, left_offset)
+        return arg_str
+
     def _unparse_object_node(
         self,
         node: ObjectNode,
@@ -319,15 +335,13 @@ class AstUnparser:
                 out_string += part_of_out.string
                 new_left_offset += len(part_of_out.string)
             elif isinstance(part_of_out, ArgToStringDelegation):
-                if not part_of_out.arg.required:
-                    # While unparsing we skip over the is_present node
-                    present_choice_node = node.get_choice_node_for_arg(part_of_out.arg.name)
-                    next_node = present_choice_node.next_node.get_choice_node_for_arg(
-                        OPTIONAL_ARGUMENT_NEXT_ARG_NAME)
+                next_node = node.get_choice_node_for_arg(part_of_out.arg.name)
+                if part_of_out.arg.required:
+                    arg_string = self._unparse_object_choice_node(
+                        next_node, part_of_out.arg.type_parser, result_builder, new_left_offset)
                 else:
-                    next_node = node.get_choice_node_for_arg(part_of_out.arg.name)
-                arg_string = self._unparse_object_choice_node(
-                    next_node, part_of_out.arg.type_parser, result_builder, new_left_offset)
+                    arg_string = self._unparse_optional_obj_choice_node(
+                        next_node, part_of_out.arg.type_parser, result_builder, new_left_offset)
                 out_string += arg_string
                 new_left_offset += len(out_string)
             else:
