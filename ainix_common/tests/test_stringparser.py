@@ -323,7 +323,7 @@ def test_num_unparse3(numbers_type_context):
     assert result.total_string == "51.0"
 
 
-def test_num_unparse3(numbers_type_context):
+def test_num_unparse4(numbers_type_context):
     parser = StringParser(numbers_type_context)
     root_type_name = "Number"
     ast = parser.create_parse_tree("-51.0", root_type_name)
@@ -332,7 +332,7 @@ def test_num_unparse3(numbers_type_context):
     assert result.total_string == "-51.0"
 
 
-def test_num_unparse4(numbers_type_context):
+def test_num_unparse5(numbers_type_context):
     parser = StringParser(numbers_type_context)
     root_type_name = "Number"
     ast = parser.create_parse_tree("5.4e8", root_type_name)
