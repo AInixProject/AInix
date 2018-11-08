@@ -281,6 +281,8 @@ def _unparse_visit_suffix(
                 snapshot.restore()
             else:
                 raise ValueError(f"Unimplemented suffix {suffix}")
+        else:
+            raise
 
 
 def _create_object_tostring_func_from_grammar(
