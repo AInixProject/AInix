@@ -303,3 +303,39 @@ def test_simple_num_unparse(numbers_type_context):
     unparse = AstUnparser(numbers_type_context)
     result = unparse.to_string(ast)
     assert result.total_string == "5"
+
+
+def test_num_unparse2(numbers_type_context):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast = parser.create_parse_tree("51", root_type_name)
+    unparse = AstUnparser(numbers_type_context)
+    result = unparse.to_string(ast)
+    assert result.total_string == "51"
+
+
+def test_num_unparse3(numbers_type_context):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast = parser.create_parse_tree("51.0", root_type_name)
+    unparse = AstUnparser(numbers_type_context)
+    result = unparse.to_string(ast)
+    assert result.total_string == "51.0"
+
+
+def test_num_unparse3(numbers_type_context):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast = parser.create_parse_tree("-51.0", root_type_name)
+    unparse = AstUnparser(numbers_type_context)
+    result = unparse.to_string(ast)
+    assert result.total_string == "-51.0"
+
+
+def test_num_unparse4(numbers_type_context):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast = parser.create_parse_tree("5.4e8", root_type_name)
+    unparse = AstUnparser(numbers_type_context)
+    result = unparse.to_string(ast)
+    assert result.total_string == "5.4e8"
