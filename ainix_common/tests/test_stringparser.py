@@ -294,3 +294,12 @@ def test_unparse_single(simple_p_tc):
     unparser = AstUnparser(simple_p_tc)
     result = unparser.to_string(ast)
     assert result.total_string == "Hello Bar"
+
+
+def test_simple_num_unparse(numbers_type_context):
+    parser = StringParser(numbers_type_context)
+    root_type_name = "Number"
+    ast = parser.create_parse_tree("5", root_type_name)
+    unparse = AstUnparser(numbers_type_context)
+    result = unparse.to_string(ast)
+    assert result.total_string == "5"

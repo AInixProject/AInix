@@ -5,28 +5,25 @@ defines:
     - define_new: object
       name: decimal_number
       type: Number
-      preferred_object_parser: regex_group_object_parser
+      preferred_object_parser: number_root_parser
       children:
           - name: SignArg
             type: Sign
             required: False
-            arg_data: {RegexRepresentation: "([\\-\\+]).*"}
           - name: BeforeDecimal
             type: IntBase
             required: True
-            arg_data: {RegexRepresentation: "[\\-\\+]?([0-9]+).*"}
           - name: AfterDecimal
             type: IntBase
             required: False
-            arg_data: {RegexRepresentation: ".*\\.([0-9]+).*"}
           - name: Exponent
             type: IntBase
             required: False
-            arg_data: {RegexRepresentation: ".*e([0-9]+)"}
-      arg_grammar: |
-            (Sign / "+")? IntBase ("." AfterDecimal)? ("e" Exponent)?
-    #- define_new: object_parser
-    #  name: number_o_parser
+    - define_new: object_parser
+      name: number_root_parser
+      source: arg_grammar
+      grammar: |
+            SignArg? BeforeDecimal ("." AfterDecimal)? ("e" Exponent)?
     # Sign
     - define_new: type
       name: Sign
@@ -50,11 +47,11 @@ defines:
           - name: CurrentDigit
             type: BaseTen
             required: True
-            arg_data: {RegexRepresentation: "([0-9])[0-9]*"}
+            arg_data: {}
           - name: NextDigit
             type: IntBase
             required: False
-            arg_data: {RegexRepresentation: "[0-9]([0-9]+)"}
+            arg_data: {}
     - define_new: object_parser
       name: base_ten_list_parser
       source: arg_grammar

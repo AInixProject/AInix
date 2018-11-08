@@ -528,6 +528,8 @@ class ObjectParserRun:
         slice_to_parse: Tuple[int, int]
     ) -> ArgParseDelegation:
         start, end = slice_to_parse
+        if arg is None:
+            raise ValueError("Can't delegate an arg that is None!")
         return ArgParseDelegation(arg, self._object,
                                   self._string_to_parse[start:end], slice_to_parse)
 
