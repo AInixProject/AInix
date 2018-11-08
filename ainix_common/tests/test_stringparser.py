@@ -2,7 +2,7 @@ import pytest
 from ainix_common.parsing.ast_components import *
 from ainix_common.parsing import loader
 from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation
-from ainix_common.parsing.stringparser import StringParser
+from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject, AInixType
 from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
 
@@ -253,3 +253,44 @@ def test_parse_set_9(numbers_type_context, numbers_ast_set):
     numbers_ast_set.add(ast, True, 1, 1)
     new_ast = parser.create_parse_tree("5", root_type_name)
     assert numbers_ast_set.is_node_known_valid(new_ast)
+
+
+@pytest.fixture(scope="function")
+def simple_p_tc():
+    tc = TypeContext()
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", tc)
+    AInixType(
+        type_context=tc,
+        name="FooType"
+    )
+    AInixType(
+        type_context=tc,
+        name="BarType"
+    )
+    create_object_parser_from_grammar(tc, "AParser", '"Hello " Arg1')
+    AInixObject(
+        type_context=tc,
+        name="objOfFoo",
+        type_name="FooType",
+        children=[AInixArgument(tc, "Arg1", "BarType")],
+        preferred_object_parser_name="AParser"
+    )
+    create_object_parser_from_grammar(tc, "BParser", '"Bar"')
+    AInixObject(
+        type_context=tc,
+        name="objOfBar",
+        type_name="BarType",
+        children=[],
+        preferred_object_parser_name="BParser"
+    )
+    tc.fill_default_parsers()
+    return tc
+
+
+def test_unparse_single(simple_p_tc):
+    parser = StringParser(simple_p_tc)
+    root_type_name = "FooType"
+    ast = parser.create_parse_tree("Hello Bar", root_type_name)
+    unparser = AstUnparser(simple_p_tc)
+    result = unparser.to_string(ast)
+    assert result.total_string == "Hello Bar"

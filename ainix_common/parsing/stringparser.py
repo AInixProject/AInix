@@ -13,6 +13,7 @@ from ainix_common.parsing.parse_primitives import (TypeParser, ArgParseDelegatio
                                                    ImplementationToStringDelegation, ObjectParser,
                                                    ObjectNodeArgMap, ArgToStringDelegation,
                                                    ArgIsPresentToString)
+from ainix_common.parsing.typecontext import OPTIONAL_ARGUMENT_NEXT_ARG_NAME
 
 
 class StringParser:
@@ -318,7 +319,13 @@ class AstUnparser:
                 out_string += part_of_out.string
                 new_left_offset += len(part_of_out.string)
             elif isinstance(part_of_out, ArgToStringDelegation):
-                next_node = node.get_choice_node_for_arg(part_of_out.arg.name)
+                if not part_of_out.arg.required:
+                    # While unparsing we skip over the is_present node
+                    present_choice_node = node.get_choice_node_for_arg(part_of_out.arg.name)
+                    next_node = present_choice_node.next_node.get_choice_node_for_arg(
+                        OPTIONAL_ARGUMENT_NEXT_ARG_NAME)
+                else:
+                    next_node = node.get_choice_node_for_arg(part_of_out.arg.name)
                 arg_string = self._unparse_object_choice_node(
                     next_node, part_of_out.arg.type_parser, result_builder, new_left_offset)
                 out_string += arg_string
