@@ -63,18 +63,18 @@ class ObjectChoiceNode(AstNode):
     def __init__(
         self,
         type_to_choose: ainix_common.parsing.typecontext.AInixType,
-        frozen_choice: 'ObjectNode' = None
+        frozen_choice: 'ObjectNodeLike' = None
     ):
         self._type_to_choose = type_to_choose
         if type_to_choose is None:
             raise ValueError("Unable to create a ObjectChoiceNode with no type. If"
                              "the type is none, this node just show not exist.")
         self._verify_matching_types(frozen_choice)
-        self._choice: 'ObjectNode' = frozen_choice
+        self._choice: 'ObjectNodeLike' = frozen_choice
         self._is_frozen = frozen_choice is not None
         self._hash_cache = None
 
-    def set_choice(self, new_choice: 'ObjectNode'):
+    def set_choice(self, new_choice: 'ObjectNodeLike'):
         if self._is_frozen:
             raise ValueError("Cannot mutate frozen node")
         self._verify_matching_types(new_choice)
@@ -88,17 +88,21 @@ class ObjectChoiceNode(AstNode):
     def choice(self):
         return self._choice
 
+    @property
+    def chose_copy(self) -> bool:
+        if self._choice is None:
+            raise ValueError("Not chosen yet")
+        return isinstance(self._choice, CopyNode)
+
     def freeze(self):
         self._choice.freeze()
         self._is_frozen = True
 
-    def _verify_matching_types(self, new_choice: 'ObjectNode'):
+    def _verify_matching_types(self, new_choice: 'ObjectNodeLike'):
         if new_choice is None:
             return
-        if new_choice.implementation.type_name != self._type_to_choose.name:
-            raise ValueError("Add unexpected choice as valid. Expected type " +
-                             self.get_type_to_choose_name() + " got " +
-                             new_choice.implementation.type_name)
+        if not new_choice.is_of_type(self._type_to_choose):
+            raise ValueError("Add unexpected choice as valid.")
 
     def get_type_to_choose_name(self) -> str:
         return self._type_to_choose.name
@@ -183,7 +187,15 @@ class ChildlessObjectNode:
         return not self.__eq__(other)
 
 
-class ObjectNode(AstNode):
+class ObjectNodeLike(AstNode, ABC):
+    """Something that is pickable in an ObjectChoice"""
+    @abstractmethod
+    def is_of_type(self, type_: ainix_common.parsing.typecontext.AInixType) -> bool:
+        """Checks whether this is object-like node is a valid choice for a certain type"""
+        pass
+
+
+class ObjectNode(ObjectNodeLike):
     def __init__(
         self,
         implementation: ainix_common.parsing.typecontext.AInixObject,
@@ -274,8 +286,11 @@ class ObjectNode(AstNode):
                self._arg_name_to_node == other._arg_name_to_node
         return val
 
+    def is_of_type(self, type_: ainix_common.parsing.typecontext.AInixType) -> bool:
+        return self._implementation.type_name == type_.name
 
-class CopyNode(AstNode):
+
+class CopyNode(ObjectNodeLike):
     def __init__(
         self,
         copy_type: 'ainix_common.parsing.typecontext.AInixType',
@@ -314,6 +329,9 @@ class CopyNode(AstNode):
             raise ValueError("Cannot hash CopyNode that is not frozen")
         self._hash_cache = hash((self._copy_type.name, self._start, self._end))
         return self._hash_cache
+
+    def is_of_type(self, type_: ainix_common.parsing.typecontext.AInixType) -> bool:
+        return type_ == self._copy_type
 
 
 class AstSet:
