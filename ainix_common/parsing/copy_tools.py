@@ -13,6 +13,7 @@ def string_in_tok_list(string: str, tok_list: List[str]) -> Optional[Tuple[int, 
          appears. NOTE: unlike a normal python indexing, the end index is INCLUSIVE.
     # TODO (DNGros): return multiple options if multiple occurances of the string
     """
+    # Maybe should left trim the tokens?
     def is_valid_start(i: int) -> Optional[int]:
         # Checks to see if index i in the tok_list is a valid start of the
         # string span. Returns the end index if so. None if False.
