@@ -4,12 +4,12 @@ from typing import Iterable, Type, List, Union
 from collections import defaultdict
 
 from ainix_common.parsing.typecontext import AInixType, AInixObject
-from ainix_kernel import constants
+from ainix_common.parsing.model_specific import parse_constants
 import torch
 from ainix_common.parsing.ast_components import AstObjectChoiceSet
 from ainix_common.parsing.stringparser import StringParser
 from ainix_kernel.indexing.examplestore import ExamplesStore
-from ainix_kernel.model_util.tokenizers import Tokenizer
+from ainix_common.parsing.model_specific.tokenizers import Tokenizer
 from typing import Hashable, TypeVar, Generic
 import numpy as np
 import typing
@@ -69,12 +69,12 @@ class CounterVocab(Vocab):
             token.
     """
     def __init__(self, counter: typing.Counter, max_size: int=None, min_freq: int = 1,
-                 specials=(constants.UNK,)):
+                 specials=(parse_constants.UNK,)):
         counter = counter.copy()
         min_freq = max(min_freq, 1)
         self.itos: List[T] = list(specials)
         try:
-            self.unk_index = self.itos.index(constants.UNK)
+            self.unk_index = self.itos.index(parse_constants.UNK)
         except ValueError:
             self.unk_index = None
 

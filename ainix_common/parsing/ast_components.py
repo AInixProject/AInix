@@ -59,6 +59,7 @@ class AstNode(ABC):
 
 
 class ObjectChoiceNode(AstNode):
+    """Given a certain type, represents a selection amoung the available implementations."""
     def __init__(
         self,
         type_to_choose: ainix_common.parsing.typecontext.AInixType,

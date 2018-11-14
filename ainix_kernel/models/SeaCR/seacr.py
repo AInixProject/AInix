@@ -1,16 +1,14 @@
 """This module defines the SeaCR (Search Compare Recurse) model"""
 from typing import Type
 
-from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.models.SeaCR.comparer import SimpleRulebasedComparer, OracleComparer
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
 from ainix_common.parsing.ast_components import AstNode, ObjectNode, \
     ObjectChoiceNode, AstObjectChoiceSet, ObjectNodeSet
-from ainix_common.parsing.stringparser import StringParser
 from ainix_common.parsing.typecontext import AInixType, TypeContext
-from ainix_kernel.model_util.tokenizers import NonAsciiTokenizer, AstStringTokenizer
-from ainix_kernel.model_util.vocab import CounterVocabBuilder, make_vocab_from_example_store
+from ainix_common.parsing.model_specific.tokenizers import NonAsciiTokenizer, AstStringTokenizer
+from ainix_kernel.model_util.vocab import make_vocab_from_example_store
 
 from ainix_kernel.models.SeaCR.type_predictor import SearchingTypePredictor, TypePredictor, \
     TerribleSearchTypePredictor

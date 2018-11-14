@@ -1,6 +1,6 @@
 from ainix_kernel.models.SeaCR.comparer import Comparer, SimpleRulebasedComparer
-from abc import ABC, abstractmethod
-from ainix_kernel.model_util.tokenizers import Tokenizer
+from abc import abstractmethod
+from ainix_common.parsing.model_specific.tokenizers import Tokenizer
 from ainix_kernel.model_util.transformer.layers import EncoderLayer
 from ainix_kernel.model_util.transformer.sublayers import MultiHeadAttention
 from ainix_kernel.model_util.vectorizers import VectorizerBase, TorchDeepEmbed
@@ -11,7 +11,7 @@ from ainix_common.parsing.ast_components import ObjectChoiceNode, AstNode
 import attr
 import torch
 from torch import nn
-from ainix_kernel.model_util.modelcomponents import EmbeddedAppender, TimingSignalAdd, EmbeddedAdder
+from ainix_kernel.model_util.modelcomponents import TimingSignalAdd, EmbeddedAdder
 
 
 class FieldComparerPredictor(torch.nn.Module):

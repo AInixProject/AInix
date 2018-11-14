@@ -5,8 +5,9 @@ import torch
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
-from ainix_kernel.model_util import tokenizers, vocab, vectorizers
-from ainix_kernel.model_util.tokenizers import NonAsciiTokenizer, AstValTokenizer
+from ainix_kernel.model_util import vocab, vectorizers
+from ainix_common.parsing.model_specific import tokenizers
+from ainix_common.parsing.model_specific.tokenizers import NonAsciiTokenizer, AstValTokenizer
 from ainix_kernel.models.EncoderDecoder import encoders, decoders
 from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder
 from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder

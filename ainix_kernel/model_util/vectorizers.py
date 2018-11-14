@@ -1,17 +1,17 @@
 """Vectorizers convert a elements of a vocab into a tensor of dense vectors.
 
 Vectorizers can be composed together to do more complex Vectorizing."""
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections import Counter
 
 import attr
 from ainix_common.parsing.ast_components import ObjectChoiceNode
 from ainix_kernel.indexing.examplestore import Example
-from ainix_kernel.model_util.tokenizers import Tokenizer
+from ainix_common.parsing.model_specific.tokenizers import Tokenizer
 from ainix_kernel.model_util.vocab import Vocab
 import torch
 from ainix_kernel.models.model_types import Pretrainable, Pretrainer
-from typing import Callable, Iterable, Tuple
+from typing import Callable
 
 
 class VectorizerBase(torch.nn.Module, Pretrainable):

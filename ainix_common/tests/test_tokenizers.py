@@ -1,11 +1,11 @@
-from ainix_kernel.model_util.tokenizers import *
-from ainix_kernel import constants
+from ainix_common.parsing.model_specific.tokenizers import *
+from ainix_common.parsing.model_specific import parse_constants
 
 
 def test_non_ascii():
     data = "my name is 'eve'"
-    expected = ['my', constants.SPACE, 'name', constants.SPACE, 'is',
-                constants.SPACE, "'", 'eve', "'"]
+    expected = ['my', parse_constants.SPACE, 'name', parse_constants.SPACE, 'is',
+                parse_constants.SPACE, "'", 'eve', "'"]
     tokenizer = NonAsciiTokenizer()
     result, _ = tokenizer.tokenize(data)
     assert result == expected

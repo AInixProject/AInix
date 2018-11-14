@@ -1,8 +1,12 @@
+"""Classes for tokenizeing a input string. Note this is not used by the actual
+string parsers. Rather it can be useful for something like models which wish
+to tokenize the input string. It is used in string parsers in order to enable
+producing AST's with copying."""
 from abc import ABC, abstractmethod
 from typing import Iterable, Generator, List, Tuple, Hashable, Union
 
 from ainix_common.parsing.typecontext import AInixObject, AInixType
-from ainix_kernel import constants
+from ainix_common.parsing.model_specific import parse_constants
 from ainix_common.parsing.ast_components import AstNode, ObjectNode, ObjectChoiceNode
 from ainix_common.parsing import ast_components
 import numpy as np
@@ -61,7 +65,7 @@ class NonAsciiTokenizer(Tokenizer):
                     out.append([])
 
                 if c == " ":
-                    out[-1].append(constants.SPACE)
+                    out[-1].append(parse_constants.SPACE)
                 else:
                     out[-1].append(c)
                 out.append([])

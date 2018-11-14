@@ -2,10 +2,10 @@ from abc import ABC, abstractmethod
 
 import torch
 from torch import nn
-from typing import Iterable, Tuple, Type, List, Sequence
+from typing import Tuple, Type, Sequence
 
 from ainix_kernel.model_util import vectorizers
-from ainix_kernel.model_util.tokenizers import Tokenizer
+from ainix_common.parsing.model_specific.tokenizers import Tokenizer
 from ainix_kernel.model_util.vectorizers import VectorizerBase
 from ainix_kernel.model_util.vocab import Vocab
 
