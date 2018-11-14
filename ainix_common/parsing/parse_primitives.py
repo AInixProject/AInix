@@ -594,11 +594,11 @@ class ObjectNodeArgMap:
         is_present_map: Dict[str, bool]
     ):
         self.implementation = implenetation
-        self.is_present_map: Dict[str, bool] = is_present_map
+        self._is_present_map: Dict[str, bool] = is_present_map
 
     def is_argname_present(self, arg_name: str) -> bool:
-        print(self.is_present_map)
-        return self.is_present_map[arg_name]
+        print(self._is_present_map)
+        return self._is_present_map[arg_name]
 
 
 class ObjectToStringResult:

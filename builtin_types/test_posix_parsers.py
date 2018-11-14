@@ -119,14 +119,25 @@ def test_prog_object_parser_basic(type_context):
 
 
 def test_prog_object_tostring_basic(type_context):
-    a_arg = AInixArgument(type_context, "a", None, arg_data = {"short_name": "a"})
+    a_arg = AInixArgument(type_context, "a", None, arg_data={"short_name": "a"})
     onearg = AInixObject(
         type_context, "FooProgram", "Program",
         [a_arg])
     parser = type_context.get_object_parser_by_name("ProgramObjectParser")
     # Unparse
     unparse = parser.to_string(ObjectNodeArgMap(onearg, {"a": True}))
-    assert unparse.unparse_seq == ["-a ", ArgToStringDelegation(a_arg)]
+    assert unparse.unparse_seq == ["-a"]
+
+
+def test_prog_object_tostring_basic_with_type(type_context):
+    a_arg = AInixArgument(type_context, "a", "Program", arg_data={"short_name": "a"})
+    onearg = AInixObject(
+        type_context, "FooProgram", "Program",
+        [a_arg])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    # Unparse
+    unparse = parser.to_string(ObjectNodeArgMap(onearg, {"a": True}))
+    assert unparse.unparse_seq == ["-a", " ", ArgToStringDelegation(a_arg)]
 
 
 def test_prog_object_parser_argval(type_context):

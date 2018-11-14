@@ -210,7 +210,7 @@ def ProgramObjectUnparser(
 ):
     had_prev_args = False
     for arg in arg_map.implementation.children:
-        if not arg_map.is_present_map[arg]:
+        if not arg_map.is_argname_present(arg.name):
             continue
         if had_prev_args:
             result.add_string(" ")

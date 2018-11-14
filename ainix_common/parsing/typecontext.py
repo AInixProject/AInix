@@ -224,7 +224,7 @@ class AInixArgument:
 
     def __repr__(self):
         type_name = self.type.name if self.type else "NONE"
-        return f"<AInixArgument {self.name} type {type_name}>"
+        return f"<AInixArgument '{self.name}' type {type_name}>"
 
     def __eq__(self, other):
         # This may need to be made more elaborate...
