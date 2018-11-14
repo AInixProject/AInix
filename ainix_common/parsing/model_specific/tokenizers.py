@@ -52,31 +52,46 @@ class Tokenizer(ABC):
         else:
             return [self.tokenize(s) for s in batch]
 
-class NonAsciiTokenizer(Tokenizer):
-    def tokenize(self, to_tokenize: str) -> Tuple[List[str], None]:
-        """Takes in a string and outputs a tokenization splitting at non-ascii boundries"""
+
+class StringTokenizer(Tokenizer):
+    def tokenize(self, to_tokenize: str) -> Tuple[List[str], List[str]]:
+        """Returns Tuple. The first is a list of the actual tokens that could
+        go into a vocab. The second is a list of strings that which when joined
+        form the origional string. This can be used for something like copying
+        where things like a <SPACE> token or 'begining of word' denomentator needs
+        to be different when actually doing copying."""
+        raise NotImplemented()
+
+
+class NonLetterTokenizer(StringTokenizer):
+    def tokenize(self, to_tokenize: str) -> Tuple[List[str], List[str]]:
+        """Takes in a string and outputs a tokenization splitting at non-letter boundries"""
         # TODO (DNGros): Maybe memoize this
         if not isinstance(to_tokenize, str):
             raise ValueError(f"NonAsciiTokenizer expects string inputs. Got {to_tokenize}")
-        out = [[]]
+        out_tokens = [[]]
         for c in to_tokenize:
-            if not (c <= 'z' and c >= 'A'):
-                if out[-1]:
-                    out.append([])
+            char_is_letter = ('A' <= c <= 'z')
+            if not char_is_letter:
+                if out_tokens[-1]:
+                    out_tokens.append([])
 
                 if c == " ":
-                    out[-1].append(parse_constants.SPACE)
+                    out_tokens[-1].append(parse_constants.SPACE)
                 else:
-                    out[-1].append(c)
-                out.append([])
+                    out_tokens[-1].append(c)
+                out_tokens.append([])
             else:
-                out[-1].append(c)
-        out = ["".join(toklist) for toklist in out if len(toklist) >= 1]
-        return out, None
+                out_tokens[-1].append(c)
+        out_tokens = ["".join(toklist) for toklist in out_tokens if len(toklist) >= 1]
+        replace_spaces = [x if x != parse_constants.SPACE else " " for x in out_tokens]
+        return out_tokens, replace_spaces
+
 
 class SpaceTokenizer(Tokenizer):
     def tokenize(self, to_tokenize: str) -> Tuple[List[str], None]:
         return to_tokenize.split(), None
+
 
 class AstStringTokenizer(Tokenizer):
     def tokenize(self, to_tokenize: AstNode) -> Tuple[List[str], List[AstNode]]:

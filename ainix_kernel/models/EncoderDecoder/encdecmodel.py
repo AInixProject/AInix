@@ -7,7 +7,7 @@ from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.model_util import vocab, vectorizers
 from ainix_common.parsing.model_specific import tokenizers
-from ainix_common.parsing.model_specific.tokenizers import NonAsciiTokenizer, AstValTokenizer
+from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer, AstValTokenizer
 from ainix_kernel.models.EncoderDecoder import encoders, decoders
 from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder
 from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder
@@ -73,7 +73,7 @@ class EncDecModel(StringTypeTranslateCF):
 # Factory methods for different versions
 def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenizer]:
     """Returns tuple (default x tokenizer, default y tokenizer)"""
-    return NonAsciiTokenizer(), AstValTokenizer()
+    return NonLetterTokenizer(), AstValTokenizer()
 
 
 def get_default_encdec_model(examples: ExamplesStore, standard_size = 16):

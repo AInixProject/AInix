@@ -7,7 +7,7 @@ from ainix_kernel.indexing.exampleindex import ExamplesIndex
 from ainix_common.parsing.ast_components import AstNode, ObjectNode, \
     ObjectChoiceNode, AstObjectChoiceSet, ObjectNodeSet
 from ainix_common.parsing.typecontext import AInixType, TypeContext
-from ainix_common.parsing.model_specific.tokenizers import NonAsciiTokenizer, AstStringTokenizer
+from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer, AstStringTokenizer
 from ainix_kernel.model_util.vocab import make_vocab_from_example_store
 
 from ainix_kernel.models.SeaCR.type_predictor import SearchingTypePredictor, TypePredictor, \
@@ -21,7 +21,7 @@ def make_rulebased_seacr(index: ExamplesIndex):
 
 def _get_default_tokenizers():
     """Returns tuple (default x tokenizer, default y tokenizer)"""
-    return NonAsciiTokenizer(), AstStringTokenizer()
+    return NonLetterTokenizer(), AstStringTokenizer()
 
 
 DEFAULT_WORD_VECTOR_SIZE = 64

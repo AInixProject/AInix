@@ -275,6 +275,47 @@ class ObjectNode(AstNode):
         return val
 
 
+class CopyNode(AstNode):
+    def __init__(
+        self,
+        copy_type: 'ainix_common.parsing.typecontext.AInixType',
+        start: int = None,
+        end: int = None
+    ):
+        self._copy_type = copy_type
+        self._start = start
+        self._end = end
+        self._is_frozen = start is not None and end is not None
+        self._hash_cache = None
+
+    def freeze(self):
+        if self._is_frozen:
+            return
+        if self._start is None:
+            raise ValueError("Cannot freeze copy node with unset start")
+        if self._end is None:
+            raise ValueError("Cannot freeze copy node with unset end")
+        self._is_frozen = True
+
+    def get_children(self) -> Generator['AstNode', None, None]:
+        yield from iter([])
+
+    def __eq__(self, other):
+        if id(self) == id(other):
+            return True
+        return self._copy_type == other._copy_type and \
+            self._start == other._start and \
+            self._end == other._end
+
+    def __hash__(self):
+        if self._hash_cache:
+            return self._hash_cache
+        if not self._is_frozen:
+            raise ValueError("Cannot hash CopyNode that is not frozen")
+        self._hash_cache = hash((self._copy_type.name, self._start, self._end))
+        return self._hash_cache
+
+
 class AstSet:
     def __init__(self, parent: Optional['AstSet']):
         self._parent = parent

@@ -2,13 +2,15 @@ from ainix_common.parsing.model_specific.tokenizers import *
 from ainix_common.parsing.model_specific import parse_constants
 
 
-def test_non_ascii():
+def test_non_letter():
     data = "my name is 'eve'"
     expected = ['my', parse_constants.SPACE, 'name', parse_constants.SPACE, 'is',
                 parse_constants.SPACE, "'", 'eve', "'"]
-    tokenizer = NonAsciiTokenizer()
-    result, _ = tokenizer.tokenize(data)
+    tokenizer = NonLetterTokenizer()
+    result, not_space = tokenizer.tokenize(data)
     assert result == expected
+    assert len(result) == len(not_space)
+    assert "".join(not_space) == "my name is 'eve'"
 
 
 def test_batch_tokenize():
