@@ -11,7 +11,8 @@ def string_in_tok_list(string: str, tok_list: List[str]) -> Optional[Tuple[int, 
     Returns:
          A tuple of the start and end index of the first place this substring
          appears. NOTE: unlike a normal python indexing, the end index is INCLUSIVE.
-    # TODO (DNGros): return multiple options if multiple occurances of the string
+    # TODO (DNGros): make version that returns multiple options if multiple
+    # ocurances of the string
     """
     # Maybe should left trim the tokens?
     def is_valid_start(i: int) -> Optional[int]:
@@ -21,7 +22,7 @@ def string_in_tok_list(string: str, tok_list: List[str]) -> Optional[Tuple[int, 
             return None
         remaining_str = string
         while remaining_str:
-            if remaining_str.startswith(tok_list[i]):
+            if i < len(tok_list) and remaining_str.startswith(tok_list[i]):
                 remaining_str = remaining_str[len(tok_list[i]):]
                 i += 1
             else:
