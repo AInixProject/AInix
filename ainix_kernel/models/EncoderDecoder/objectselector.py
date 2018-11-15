@@ -10,6 +10,7 @@ from ainix_kernel.model_util.vocab import Vocab
 
 
 class TypeImplTensorMap:
+    """Maps objects to tensors"""
     def __init__(self, ast_vocab: Vocab):
         self.vocab_size = len(ast_vocab)
         self._type_to_impl_tensor = defaultdict(list)

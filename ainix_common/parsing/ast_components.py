@@ -2,7 +2,7 @@ import collections
 
 import ainix_common.parsing.typecontext
 from typing import Optional, Generator, \
-    Tuple, MutableMapping, Mapping
+    Tuple, MutableMapping, Mapping, List
 from abc import ABC, abstractmethod
 import attr
 from pyrsistent import pmap
@@ -34,6 +34,31 @@ class AstNode(ABC):
         """Returns all descendants of this node"""
         pass
 
+    def path_clone(
+        self,
+        unfreeze_path: List['AstNode'] = None
+    ) -> Tuple['AstNode', Optional[List['AstNode']]]:
+        """Creates a deep copy of this node. In general frozen nodes are simply
+        returned as a reference and mutable nodes are instantiated to a new object.
+        Nodes along the path parameter are returned as mutable copies regardless
+        of whether they are frozen or not. This can be used to do substructure
+        sharing when you want to mutate along some path.
+        Args:
+            unfreeze_path: the path down which we will always create an
+                unfrozen copy. From the user's perspective this method will
+                probably called at the root of a tree. In which case self should
+                be unfreeze_path[0]. The path is always in root-to-leaf order
+                taking only branch at a time. If the unfreeze path is non-none,
+                but the last the last element in the list is not a leaf node,
+                then cloning halts at the element and it becomes a leaf.
+
+        Returns:
+            cloned_version: The cloned version of the node.
+            new_path: A list representing the same path as the unfreeze_path passed in except
+                that it is now the equivolent versions in the new AST
+        """
+        raise NotImplemented()
+
     def depth_first_iter(self) -> Generator['AstNode', None, None]:
         """Iterates through tree starting at this node in a depth-first manner"""
         stack = [self]
@@ -56,6 +81,14 @@ class AstNode(ABC):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+
+class AstIterPointer:
+    """A pointer into an AST. This can be used while iterating through an AST.
+    It keeps track of where it is in the tree. AST nodes don't store a reference
+    to their parent, so this class helps get back to the root of a node. This can
+    also be used to make a copy of tree with substructure sharing for common parts"""
+    pass
 
 
 class ObjectChoiceNode(AstNode):
@@ -89,7 +122,7 @@ class ObjectChoiceNode(AstNode):
         return self._choice
 
     @property
-    def chose_copy(self) -> bool:
+    def copy_was_chosen(self) -> bool:
         if self._choice is None:
             raise ValueError("Not chosen yet")
         return isinstance(self._choice, CopyNode)
@@ -139,6 +172,25 @@ class ObjectChoiceNode(AstNode):
     def get_children(self) -> Generator[AstNode, None, None]:
         if self._choice is not None:
             yield self._choice
+
+    def path_clone(
+        self,
+        unfreeze_path: List['AstNode'] = None
+    ) -> Tuple['AstNode', Optional[List['AstNode']]]:
+        on_unfreeze_path = unfreeze_path is not None and id(self) == id(unfreeze_path[0])
+        if self._is_frozen and not on_unfreeze_path:
+            return self, None
+        clone = ObjectChoiceNode(self.type_to_choose)
+        next_unfreeze_path = unfreeze_path[1:] if on_unfreeze_path else None
+        # If we have reached the end of the path the path list we "stop_early" and
+        # force the ourself to become a leaf on the new tree.
+        stop_early_on_path = len(next_unfreeze_path) == 0
+        new_path = None
+        if self._choice is not None and not stop_early_on_path:
+            clone._choice, new_path = self._choice.path_clone(next_unfreeze_path)
+        if on_unfreeze_path:
+            new_path.insert(0, self)
+        return clone, new_path
 
     def __hash__(self):
         if self._hash_cache:
