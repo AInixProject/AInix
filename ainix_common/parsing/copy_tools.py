@@ -33,3 +33,7 @@ def string_in_tok_list(string: str, tok_list: List[str]) -> Optional[Tuple[int, 
         if potential_end is not None:
             return potential_start, potential_end
     return None
+
+
+def make_copy_versions_of_tree(ast, unparser):
+    pass

@@ -19,3 +19,8 @@ def test_substring3():
 def test_substring4():
     res = string_in_tok_list("ello there", ["why", " ", "hello", " ", "there", " ", "friend"])
     assert res is None
+
+
+def test_substring5():
+    res = string_in_tok_list("fried yo", ["why", " ", "hello", " ", "there", " ", "friend"])
+    assert res is None
