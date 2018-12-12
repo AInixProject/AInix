@@ -122,6 +122,10 @@ class ObjectChoiceNode(AstNode):
         return self._choice
 
     @property
+    def is_frozen(self):
+        return self._is_frozen
+
+    @property
     def copy_was_chosen(self) -> bool:
         if self._choice is None:
             raise ValueError("Not chosen yet")
@@ -177,6 +181,7 @@ class ObjectChoiceNode(AstNode):
         self,
         unfreeze_path: List['AstNode'] = None
     ) -> Tuple['AstNode', Optional[List['AstNode']]]:
+        """See docstring on AstNode.path_clone()"""
         on_unfreeze_path = unfreeze_path is not None and id(self) == id(unfreeze_path[0])
         if self._is_frozen and not on_unfreeze_path:
             return self, None
@@ -185,11 +190,16 @@ class ObjectChoiceNode(AstNode):
         # If we have reached the end of the path the path list we "stop_early" and
         # force the ourself to become a leaf on the new tree.
         stop_early_on_path = len(next_unfreeze_path) == 0
+        if stop_early_on_path:
+            return clone, [clone]
+        #
         new_path = None
-        if self._choice is not None and not stop_early_on_path:
+        if self._choice is not None:
             clone._choice, new_path = self._choice.path_clone(next_unfreeze_path)
         if on_unfreeze_path:
-            new_path.insert(0, self)
+            if not new_path:
+                new_path = []
+            new_path.insert(0, clone)
         return clone, new_path
 
     def __hash__(self):

@@ -1,5 +1,6 @@
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode, ObjectNode
 from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixArgument, AInixObject
+from unittest.mock import MagicMock
 
 
 def test_parse_set_optional():
@@ -25,6 +26,47 @@ def test_parse_set_optional():
     assert data is not None
     assert data.arg_to_choice_set["test_arg"].type_to_choose_name == \
            test_arg.present_choice_type.name
+
+
+def test_objectchoice_node_copy_frozen():
+    mock_choice = MagicMock()
+    instance = ObjectChoiceNode(MagicMock(), mock_choice)
+    clone, path = instance.path_clone()
+    assert id(clone) == id(instance)
+    assert path is None
+
+
+def test_objectchoice_node_copy_frozen_with_child():
+    mock_choice = MagicMock()
+    mock_choice.path_copy.returns = mock_choice
+    instance = ObjectChoiceNode(MagicMock(), mock_choice)
+    clone, path = instance.path_clone()
+    assert id(clone) == id(instance)
+    assert clone.choice == mock_choice
+    assert path is None
+
+
+def test_objectchoice_node_copy_frozen_on_path():
+    mock_choice = MagicMock()
+    instance = ObjectChoiceNode(MagicMock(), mock_choice)
+    clone, path = instance.path_clone([instance])
+    assert id(clone) != id(instance)
+    assert clone.choice is None
+    assert not clone.is_frozen
+    assert path == [clone]
+
+
+def test_objectchoice_node_copy_frozen_on_paths():
+    mock_choice = MagicMock()
+    mock_copy = MagicMock()
+    mock_choice.path_clone.return_value = (mock_copy, [mock_copy])
+    instance = ObjectChoiceNode(MagicMock(), mock_choice)
+    clone, path = instance.path_clone([instance, mock_copy])
+    assert id(clone) != id(instance)
+    assert clone.choice == mock_copy
+    assert not clone.is_frozen
+    assert path[0] == clone
+    assert path[1] == mock_copy
 
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
