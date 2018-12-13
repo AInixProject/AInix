@@ -58,7 +58,7 @@ class VectorSeqEncoder(nn.Module, ABC):
     def __init__(self, input_dims):
         """
         Args:
-            input_dims: Diminsionality of input vectors
+            input_dims: Dimensionality of input vectors
         """
         super().__init__()
         self.input_dims = input_dims

@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 
 import torch
 
@@ -45,12 +45,20 @@ class EncDecModel(StringTypeTranslateCF):
         y_ast: AstObjectChoiceSet,
         teacher_force_path: ObjectChoiceNode
     ) -> torch.Tensor:
+        return self.train_batch([(x_string, y_ast)], [teacher_force_path])
+
+    def train_batch(
+        self,
+        batch: List[Tuple[str, AstObjectChoiceSet]],
+        teacher_force_paths: List[ObjectChoiceNode]
+    ):
         if not self.is_in_training_session:
             raise ValueError("Call start_training_session before calling this.")
         self.optimizer.zero_grad()
-        query_summary, encoded_tokens = self.query_encoder([x_string])
+        xs, ys = zip(*batch)
+        query_summary, encoded_tokens = self.query_encoder(xs)
         loss = self.decoder.forward_train(
-            query_summary, encoded_tokens, y_ast, teacher_force_path)
+            query_summary, encoded_tokens, ys, teacher_force_paths)
         loss.backward()
         self.optimizer.step(None)
         return loss

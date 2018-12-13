@@ -46,8 +46,8 @@ class TreeDecoder(nn.Module, ABC):
         self,
         query_summary: torch.Tensor,
         query_encoded_tokens: torch.Tensor,
-        y_ast: AstObjectChoiceSet,
-        teacher_force_path: ObjectChoiceNode
+        y_asts: List[AstObjectChoiceSet],
+        teacher_force_paths: List[ObjectChoiceNode]
     ) -> torch.Tensor:
         """
         A forward function to call during training.
@@ -57,10 +57,10 @@ class TreeDecoder(nn.Module, ABC):
                 vector summary representation of all queries in a batch.
             query_encoded_tokens: Tensor of dim (batch, query_len, hidden_size)
                 which is an contextual embedding of all tokens in the query.
-            y_ast: the ground truth set
-            teacher_force_path: The path to take down this the ground truth set
+            y_asts: the ground truth set
+            teacher_force_paths: The path to take down this the ground truth set
 
-        Returns:
+        Returns: loss
         """
         raise NotImplemented()
 
@@ -251,7 +251,7 @@ class TreeRNNDecoder(TreeDecoder):
         # Because not batch yet, just take first of each
         assert len(scores) == 1, "No batch yet"
         scores = scores[0]
-        impls_indices = impls_indices[0, :]
+        impls_indices = impls_indices[0]
         ####
         best_scores = torch.argmax(scores)
         best_obj_indxs = impls_indices[best_scores]
@@ -299,15 +299,22 @@ class TreeRNNDecoder(TreeDecoder):
         self,
         query_summary: torch.Tensor,
         memory_encoding: torch.Tensor,
-        y_ast: AstObjectChoiceSet,
-        teacher_force_path: ObjectChoiceNode
+        y_asts: List[AstObjectChoiceSet],
+        teacher_force_paths: List[ObjectChoiceNode]
     ) -> torch.Tensor:
         if not self.training:
             raise ValueError("Expect to be in training mode")
-        root_type = y_ast.type_to_choose
-        prediction, loss = self.forward(
-            query_summary, memory_encoding, root_type, True, y_ast, teacher_force_path)
-        return loss
+
+        # Temp hack while can't batch. Just loop through
+        batch_loss = 0
+        for i in range(len(y_asts)):
+            root_type = y_asts[i].type_to_choose
+            prediction, loss = self.forward(
+                query_summary[i:i+1], memory_encoding[i:i+1], root_type, True,
+                y_asts[i], teacher_force_paths[i]
+            )
+            batch_loss += loss
+        return batch_loss
 
     def _training_get_loss_from_select_vector(
         self,
@@ -318,9 +325,10 @@ class TreeRNNDecoder(TreeDecoder):
         assert len(types_to_select) == 1, "No batch yet"
         assert types_to_select[0] == current_gt_set.type_to_choose
         impls_indices, scores = self.object_selector(vectors_to_select_on, types_to_select)
-        impls_indices_correct = are_indices_valid(impls_indices, self.ast_vocab, current_gt_set)
+        assert len(impls_indices) == 1 and len(scores) == 1, "no batch yet"
+        impls_indices_correct = are_indices_valid(impls_indices[0], self.ast_vocab, current_gt_set)
         loss = 0
-        for correct_indicies, predicted_score in zip(impls_indices_correct, scores):
+        for correct_indicies, predicted_score in zip(impls_indices_correct, scores[0]):
             loss += F.binary_cross_entropy_with_logits(
                 predicted_score, correct_indicies,
                 pos_weight=self.bce_pos_weight

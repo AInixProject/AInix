@@ -138,7 +138,7 @@ def gen_grammar_visitor(
     whether or not it succeeded at each visit as well as a pvec of metadata which
     would need to be accepted as a valid parses assuming everything above it succeeds.
 
-    This isn't a great description I know. If you are reading this and it unclear
+    This isn't a great description I know. If you are reading this and it is unclear
     nag @DNGros to clean it up.
     """
     #print("visiting", node, node.rule_name, "  :: ", string)

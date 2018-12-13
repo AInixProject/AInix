@@ -23,7 +23,7 @@ class TypeImplTensorMap:
                                      for type_, v in self._type_to_impl_tensor.items()}
 
     def get_tensor_of_implementations(self, types: List[AInixType]):
-        return torch.stack([self._type_to_impl_tensor[t] for t in types])
+        return [self._type_to_impl_tensor[t] for t in types]
 
 
 class ObjectSelector(nn.Module, ABC):
@@ -41,7 +41,7 @@ class VectorizedObjectSelector(nn.Module, ABC):
         Scores the most likely implementations of certain type.
         Args:
             vectors: Tensor of shape (batch, features_to_select_on)
-            types_to_choose: A list of of what type to select for each batch
+            types_to_choose: A list of of what type to select for each item in batch
 
         Returns:
 

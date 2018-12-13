@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod, abstractclassmethod
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import Example, ExamplesStore
-from typing import Iterable, List
+from typing import Iterable, List, Tuple
 
 
 class ModelException(RuntimeError):
@@ -94,14 +94,25 @@ class StringTypeTranslateCF(Pretrainable):
         y_type_name: str,
         use_only_train_data: bool
     ) -> ObjectChoiceNode:
-        pass
+        raise NotImplemented
 
     @abstractmethod
     def train(self, x_string: str, y_ast: AstObjectChoiceSet,
               teacher_force_path: ObjectChoiceNode):
-        pass
+        raise NotImplemented
 
-    @abstractclassmethod
+    def train_batch(
+        self,
+        batch: List[Tuple[str, AstObjectChoiceSet]],
+        teacher_force_paths: List[ObjectChoiceNode]
+    ):
+        """Used for batch training. Will by default call train on each element
+        in batch."""
+        for (x, y), path in zip(batch, teacher_force_paths):
+            self.train(x, y, path)
+
+    @classmethod
+    @abstractmethod
     def make_examples_store(cls, type_context: TypeContext, is_training: bool) -> ExamplesStore:
         """Returns the an instance of the desired kind of example store"""
         raise NotImplemented
