@@ -125,3 +125,11 @@ class AstValTokenizer(Tokenizer):
                 raise ValueError(f"Unrecognized node {node}")
             out_nodes.append(node)
         return out_tokens, out_nodes
+
+
+def add_str_pads(token_seqs: List[List[str]], pad_with=parse_constants.PAD):
+    longest_len = max(map(len, token_seqs))
+    pad_val_arr = [pad_with]
+    return [existing + pad_val_arr*(longest_len - len(existing))
+            for existing in token_seqs]
+
