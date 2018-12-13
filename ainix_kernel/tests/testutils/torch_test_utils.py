@@ -1,6 +1,8 @@
 from typing import Any, Sequence, Tuple
 from torch import nn
 import torch
+import more_itertools
+import random
 
 def torch_epsilon_eq(a, b, epsilon=1e-12):
     """Test if two float tensors are equal within some epsilon"""
@@ -23,6 +25,8 @@ def torch_train_tester(
     early_stop_loss_delta=-1e-9,
     earyl_stop_patience=10,
     lr=1e-3,
+    batch_size = 1,
+    shuffle=False
 ):
     """A generic util for training a nn.Model to get some expected output.
 
@@ -53,10 +57,20 @@ def torch_train_tester(
     best_loss = 9e9
     for epoch in range(max_epochs):
         epoch_loss = 0
-        for x, y in data:
+        if shuffle:
+            random.shuffle(data)
+        batches = more_itertools.chunked(data, batch_size)
+        for batch in batches:
+            xs, ys = zip(*batch)
             optimizer.zero_grad()
-            y_hat = y_extractor_train(model(*x))
-            loss = criterion(y_hat, y)
+            # convert [(example1_param1, example1_param2), (example2_param1, example2_param2)] ->
+            # to ([example1_param1, example2_param1], [example1_param2, example2_param2])
+            rezipped_xs = zip(*xs)
+            rezipped_xs = tuple(map(list, rezipped_xs))
+            #
+            y_hat = y_extractor_train(model(*rezipped_xs))
+            ys = torch.stack(ys)
+            loss = criterion(y_hat, ys)
             loss.backward()
             optimizer.step()
             epoch_loss += loss

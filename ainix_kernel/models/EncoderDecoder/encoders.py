@@ -5,9 +5,9 @@ from torch import nn
 from typing import Tuple, Type, Sequence
 
 from ainix_kernel.model_util import vectorizers
-from ainix_common.parsing.model_specific.tokenizers import Tokenizer
 from ainix_kernel.model_util.vectorizers import VectorizerBase
 from ainix_kernel.model_util.vocab import Vocab
+from ainix_common.parsing.model_specific import tokenizers
 
 
 class QueryEncoder(nn.Module, ABC):
@@ -31,7 +31,7 @@ class QueryEncoder(nn.Module, ABC):
 class StringQueryEncoder(QueryEncoder):
     def __init__(
         self,
-        tokenizer: Tokenizer,
+        tokenizer: tokenizers.Tokenizer,
         query_vocab: Vocab,
         query_vectorizer: VectorizerBase,
         internal_encoder: nn.Module
@@ -44,10 +44,9 @@ class StringQueryEncoder(QueryEncoder):
         
     def _vectorize_query(self, queries: Sequence[Sequence[str]]):
         """Converts a batch of string queries into dense vectors"""
-        assert len(queries) == 1, "No batches yet"
         tokenized = self.tokenizer.tokenize_batch(queries, take_only_tokens=True)
-        batches_scary = tokenized[:1]  # when have batches will just need to add in pads
-        indices = self.query_vocab.token_seq_to_indices(batches_scary)
+        tokenizers.add_str_pads(tokenized)
+        indices = self.query_vocab.token_seq_to_indices(tokenized)
         return self.query_vectorizer.forward(indices), tokenized
 
     def forward(self, queries: Sequence[Sequence[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -142,7 +141,7 @@ class RNNSeqEncoder(VectorSeqEncoder):
 
 
 def make_default_query_encoder(
-    x_tokenizer: Tokenizer,
+    x_tokenizer: tokenizers.Tokenizer,
     query_vocab: Vocab,
     output_size=64
 ) -> QueryEncoder:

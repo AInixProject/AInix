@@ -69,7 +69,7 @@ class CounterVocab(Vocab):
             token.
     """
     def __init__(self, counter: typing.Counter, max_size: int=None, min_freq: int = 1,
-                 specials=(parse_constants.UNK,)):
+                 specials=(parse_constants.UNK, parse_constants.PAD)):
         counter = counter.copy()
         min_freq = max(min_freq, 1)
         self.itos: List[T] = list(specials)
