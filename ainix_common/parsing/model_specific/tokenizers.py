@@ -128,8 +128,16 @@ class AstValTokenizer(Tokenizer):
 
 
 def add_str_pads(token_seqs: List[List[str]], pad_with=parse_constants.PAD):
-    longest_len = max(map(len, token_seqs))
+    """Add padding tokens to an collection of tokenized values so all the same len
+
+    Returns:
+        padded_seqs: new vals but padded.
+        origional_lengths
+    """
+    lengths = list(map(len, token_seqs))
+    longest_len = max(lengths)
     pad_val_arr = [pad_with]
-    return [existing + pad_val_arr*(longest_len - len(existing))
-            for existing in token_seqs]
+    padded_seqs = [existing + pad_val_arr*(longest_len - length)
+                   for existing, length in zip(token_seqs, lengths)]
+    return padded_seqs, lengths
 

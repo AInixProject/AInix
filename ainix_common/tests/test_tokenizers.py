@@ -23,9 +23,10 @@ def test_batch_tokenize():
     assert r[0] == ["a", "b"]
     assert r[1] == ["foo", "bar"]
 
+
 def test_pad():
     pad = "PAD"
-    out = add_str_pads([
+    out, orig_lengths = add_str_pads([
         ["foo", "bar"],
         ["fo", "bax", "da"],
         ["sd"]
@@ -35,4 +36,5 @@ def test_pad():
         ["fo", "bax", "da"],
         ["sd", pad, pad]
     ]
+    assert orig_lengths == [2,3,1]
 
