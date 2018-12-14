@@ -56,6 +56,7 @@ class StringQueryEncoder(QueryEncoder):
         summary, memory = self.internal_encoder(vectorized, input_lens)
         return summary, memory
 
+
 class VectorSeqEncoder(nn.Module, ABC):
     def __init__(self, input_dims):
         """
