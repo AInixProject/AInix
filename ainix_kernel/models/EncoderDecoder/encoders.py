@@ -159,7 +159,9 @@ class RNNSeqEncoder(VectorSeqEncoder):
         if self.variable_lengths:
             input_lengths, sort_inds, (seqs,) = reorder_based_off_len(input_lengths, (seqs,))
             seqs = nn.utils.rnn.pack_padded_sequence(seqs, input_lengths, batch_first=True)
+
         outputs, final_hiddens = self.rnn(seqs)
+
         if self.variable_lengths:
             outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)
             input_lengths, outputs = undo_len_ordering(sort_inds, (input_lengths, outputs))
