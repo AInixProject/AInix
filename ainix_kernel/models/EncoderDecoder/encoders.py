@@ -2,12 +2,13 @@ from abc import ABC, abstractmethod
 
 import torch
 from torch import nn
-from typing import Tuple, Type, Sequence
+from typing import Tuple, Type, Sequence, List
 
 from ainix_kernel.model_util import vectorizers
 from ainix_kernel.model_util.vectorizers import VectorizerBase
 from ainix_kernel.model_util.vocab import Vocab
 from ainix_common.parsing.model_specific import tokenizers
+import numpy as np
 
 
 class QueryEncoder(nn.Module, ABC):
@@ -45,13 +46,15 @@ class StringQueryEncoder(QueryEncoder):
     def _vectorize_query(self, queries: Sequence[Sequence[str]]):
         """Converts a batch of string queries into dense vectors"""
         tokenized = self.tokenizer.tokenize_batch(queries, take_only_tokens=True)
-        tokenizers.add_str_pads(tokenized)
-        indices = self.query_vocab.token_seq_to_indices(tokenized)
-        return self.query_vectorizer.forward(indices), tokenized
+        tokenized, input_lens = tokenizers.add_str_pads(tokenized)
+        tokenized = np.array(tokenized)
+        indices = self.query_vocab.token_seq_to_indices(np.array(tokenized))
+        return self.query_vectorizer.forward(indices), tokenized, torch.LongTensor(input_lens)
 
     def forward(self, queries: Sequence[Sequence[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
-        vectorized, tokenized = self._vectorize_query(queries)
-        return self.internal_encoder(vectorized)
+        vectorized, tokenized, input_lens = self._vectorize_query(queries)
+        summary, memory = self.internal_encoder(vectorized, input_lens)
+        return summary, memory
 
 class VectorSeqEncoder(nn.Module, ABC):
     def __init__(self, input_dims):
@@ -80,6 +83,31 @@ class VectorSeqEncoder(nn.Module, ABC):
             mechanism in the decoder).
         """
         raise NotImplemented()
+
+
+def reorder_based_off_len(input_lens: torch.LongTensor, vals_to_reorder: Tuple[torch.Tensor]):
+    """Reorder a batch of values in descending order of lengths. Used to make
+    packing happy."""
+    sorted_lens, sorting_inds = torch.sort(input_lens, descending=True)
+    vals_after_reorder = [v[sorting_inds] for v in vals_to_reorder]
+    return sorted_lens, sorting_inds, vals_after_reorder
+
+
+def undo_len_ordering(sorting_inds, vals_to_undo: Tuple[torch.Tensor]):
+    """Applies the inverse of reordering based off lengths. Requires the origional
+    indicies that were used to index the ordering of the origional values"""
+    #return [v.scatter_(0, sorting_inds, v) for v in vals_to_undo]
+    vals_after_undo = []
+    for v in vals_to_undo:
+        unsorted = v.new(*v.size())
+        expanded_inds = sorting_inds
+        for unsqueeze_count in range(len(v.shape) - 1):
+            expanded_inds = expanded_inds.unsqueeze(1)
+        expanded_inds = expanded_inds.expand(*v.shape)
+        unsorted.scatter_(0, expanded_inds, v)
+        vals_after_undo.append(unsorted)
+    return vals_after_undo
+
 
 class RNNSeqEncoder(VectorSeqEncoder):
     """
@@ -125,16 +153,21 @@ class RNNSeqEncoder(VectorSeqEncoder):
 
     def forward(self, seqs: torch.Tensor, input_lengths=None) -> Tuple[torch.Tensor, torch.Tensor]:
         seqs = self.input_dropout(seqs)
+        assert (input_lengths is None) == (not self.variable_lengths)
         if self.variable_lengths:
             # NOTE (DNGros): this was just copied from the IBM implementation.
             # I am not sure exactly how this works. Look more into before using
             # variable lengths.
+            input_lengths, sort_inds, (seqs,) = reorder_based_off_len(input_lengths, (seqs,))
             seqs = nn.utils.rnn.pack_padded_sequence(seqs, input_lengths, batch_first=True)
         outputs, final_hiddens = self.rnn(seqs)
         if self.variable_lengths:
             outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)
-            raise NotImplemented("Make sure this is working as expected")
-        summaries = self.summary_linear(outputs[:, -1])
+            input_lengths, outputs = undo_len_ordering(sort_inds, (input_lengths, outputs))
+            last_val_of_each_in_batch = outputs[range(input_lengths.size(0)), input_lengths - 1]
+        else:
+            last_val_of_each_in_batch = outputs[:, -1]
+        summaries = self.summary_linear(last_val_of_each_in_batch)
         memory_tokens = self.memory_tokens_linear(outputs)
         return summaries, memory_tokens
 
@@ -148,10 +181,11 @@ def make_default_query_encoder(
     """Factory for making a default QueryEncoder"""
     x_vectorizer = vectorizers.TorchDeepEmbed(query_vocab, output_size)
     internal_encoder = RNNSeqEncoder(
-        x_vectorizer.feature_len(),
-        output_size,
-        output_size,
-        output_size
+        input_dims=x_vectorizer.feature_len(),
+        hidden_size=output_size,
+        summary_size=output_size,
+        memory_tokens_size=output_size,
+        variable_lengths=True
     )
     return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
 

@@ -23,7 +23,7 @@ def torch_train_tester(
     criterion=lambda x, y: y,
     max_epochs=1000,
     early_stop_loss_delta=-1e-9,
-    earyl_stop_patience=10,
+    earyl_stop_patience=50,
     lr=1e-3,
     batch_size = 1,
     shuffle=False
@@ -71,6 +71,8 @@ def torch_train_tester(
             y_hat = y_extractor_train(model(*rezipped_xs))
             ys = torch.stack(ys)
             loss = criterion(y_hat, ys)
+            if epoch > 800:
+                print(f"xs {rezipped_xs} y_hat {y_hat} ys {ys} loss {loss}")
             loss.backward()
             optimizer.step()
             epoch_loss += loss
@@ -78,15 +80,18 @@ def torch_train_tester(
         if epoch_loss - best_loss > early_stop_loss_delta:
             bad_epochs += 1
             if bad_epochs >= earyl_stop_patience:
+                print(f"quit at epoch {epoch}")
                 break
         else:
             bad_epochs = 0
         best_loss = min(best_loss, epoch_loss)
 
-
     # eval
     model.eval()
     for x, y in data:
-        y_hat = y_extractor_eval(model(*x))
-        assert comparer(y_hat, y), f"Expected {y}. Predicted {y_hat}"
+        x_as_one_batch = tuple([[v] for v in x])
+        y_as_one_batch = y.unsqueeze(0)
+        y_hat = y_extractor_eval(model(*x_as_one_batch))
+        assert comparer(y_hat, y_as_one_batch), f"Expected {y_as_one_batch}. Predicted {y_hat}. " \
+            f"x {x}. y {y}"
 
