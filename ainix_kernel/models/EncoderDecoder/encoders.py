@@ -157,9 +157,6 @@ class RNNSeqEncoder(VectorSeqEncoder):
         seqs = self.input_dropout(seqs)
         assert (input_lengths is None) == (not self.variable_lengths)
         if self.variable_lengths:
-            # NOTE (DNGros): this was just copied from the IBM implementation.
-            # I am not sure exactly how this works. Look more into before using
-            # variable lengths.
             input_lengths, sort_inds, (seqs,) = reorder_based_off_len(input_lengths, (seqs,))
             seqs = nn.utils.rnn.pack_padded_sequence(seqs, input_lengths, batch_first=True)
         outputs, final_hiddens = self.rnn(seqs)
