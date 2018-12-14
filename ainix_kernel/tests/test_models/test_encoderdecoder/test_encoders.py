@@ -68,3 +68,18 @@ def test_default_encoder_batched():
                             torch.Tensor([[0, 0, 0, -4]]), epsilon=1e-2)
     # make sure memory shape looks decent
     assert mem.shape == (1, 3, 4)
+
+
+def test_len_reoder():
+    vals_to_reorder = (torch.Tensor([[1,1,2,2], [3,4,4,3], [5,6,7,8]]), torch.randn(3, 4, 3))
+    sorted_lens, sorting_inds, vals_after_reorder = reorder_based_off_len(
+        input_lens=torch.LongTensor([2, 4, 1]),
+        vals_to_reorder=vals_to_reorder
+    )
+    assert torch_epsilon_eq(sorted_lens, torch.LongTensor([4, 2, 1]))
+    assert torch_epsilon_eq(sorting_inds, torch.LongTensor([1, 0, 2]))
+    assert torch_epsilon_eq(vals_after_reorder[0], torch.Tensor([[3,4,4,3], [1,1,2,2], [5,6,7,8]]))
+    put_back_together = undo_len_ordering(sorting_inds, vals_after_reorder)
+    assert torch_epsilon_eq(put_back_together[0], vals_to_reorder[0])
+    assert torch_epsilon_eq(put_back_together[1], vals_to_reorder[1])
+

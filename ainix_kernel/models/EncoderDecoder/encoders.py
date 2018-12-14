@@ -89,6 +89,7 @@ def reorder_based_off_len(input_lens: torch.LongTensor, vals_to_reorder: Tuple[t
     """Reorder a batch of values in descending order of lengths. Used to make
     packing happy."""
     sorted_lens, sorting_inds = torch.sort(input_lens, descending=True)
+    sorted_lens = sorted_lens.long()
     vals_after_reorder = [v[sorting_inds] for v in vals_to_reorder]
     return sorted_lens, sorting_inds, vals_after_reorder
 

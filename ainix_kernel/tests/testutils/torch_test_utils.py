@@ -3,9 +3,12 @@ from torch import nn
 import torch
 import more_itertools
 import random
+import math
 
 def torch_epsilon_eq(a, b, epsilon=1e-12):
     """Test if two float tensors are equal within some epsilon"""
+    if isinstance(a, torch.LongTensor):
+        epsilon = math.ceil(epsilon)
     return torch.all(torch.lt(torch.abs(torch.add(a, -b)), epsilon))
 
 
