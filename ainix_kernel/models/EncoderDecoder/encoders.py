@@ -98,7 +98,6 @@ def reorder_based_off_len(input_lens: torch.LongTensor, vals_to_reorder: Tuple[t
 def undo_len_ordering(sorting_inds, vals_to_undo: Tuple[torch.Tensor]):
     """Applies the inverse of reordering based off lengths. Requires the origional
     indicies that were used to index the ordering of the origional values"""
-    #return [v.scatter_(0, sorting_inds, v) for v in vals_to_undo]
     vals_after_undo = []
     for v in vals_to_undo:
         unsorted = v.new(*v.size())
