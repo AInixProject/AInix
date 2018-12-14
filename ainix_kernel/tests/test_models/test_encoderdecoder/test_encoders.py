@@ -49,8 +49,7 @@ def test_default_encoder_batched():
               (("foo bar", ), torch.Tensor([0, 0, 3, 1])),
               (("bar foo", ), torch.Tensor([0, 0, -3, 1])),
               (("boop baz", ), torch.Tensor([2, 0, -1, 0])),
-              (("boop imunk", ), torch.Tensor([0, 0, 0, -4])),
-              (("bar",), torch.Tensor([0, 0, 1, 0]))
+              (("boop imunk", ), torch.Tensor([0, 0, 0, -4]))
               ],
         comparer=eps_eq_at(1e-2),
         y_extractor_train=lambda y: y[0],

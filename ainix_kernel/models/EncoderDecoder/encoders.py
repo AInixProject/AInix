@@ -173,7 +173,6 @@ class RNNSeqEncoder(VectorSeqEncoder):
         return summaries, memory_tokens
 
 
-
 def make_default_query_encoder(
     x_tokenizer: tokenizers.Tokenizer,
     query_vocab: Vocab,
