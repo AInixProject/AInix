@@ -45,17 +45,16 @@ class EncDecModel(StringTypeTranslateCF):
         y_ast: AstObjectChoiceSet,
         teacher_force_path: ObjectChoiceNode
     ) -> torch.Tensor:
-        return self.train_batch([(x_string, y_ast)], [teacher_force_path])
+        return self.train_batch([(x_string, y_ast, teacher_force_path)])
 
     def train_batch(
         self,
-        batch: List[Tuple[str, AstObjectChoiceSet]],
-        teacher_force_paths: List[ObjectChoiceNode]
+        batch: List[Tuple[str, AstObjectChoiceSet, ObjectChoiceNode]]
     ):
         if not self.is_in_training_session:
             raise ValueError("Call start_training_session before calling this.")
         self.optimizer.zero_grad()
-        xs, ys = zip(*batch)
+        xs, ys, teacher_force_paths = zip(*batch)
         query_summary, encoded_tokens = self.query_encoder(xs)
         loss = self.decoder.forward_train(
             query_summary, encoded_tokens, ys, teacher_force_paths)
@@ -84,7 +83,7 @@ def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenize
     return NonLetterTokenizer(), AstValTokenizer()
 
 
-def get_default_encdec_model(examples: ExamplesStore, standard_size = 16):
+def get_default_encdec_model(examples: ExamplesStore, standard_size=16):
     x_tokenizer, y_tokenizer = _get_default_tokenizers()
     x_vocab, y_vocab = vocab.make_vocab_from_example_store(examples, x_tokenizer, y_tokenizer)
     hidden_size = standard_size

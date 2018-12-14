@@ -103,12 +103,18 @@ class StringTypeTranslateCF(Pretrainable):
 
     def train_batch(
         self,
-        batch: List[Tuple[str, AstObjectChoiceSet]],
-        teacher_force_paths: List[ObjectChoiceNode]
+        batch: List[Tuple[str, AstObjectChoiceSet, ObjectChoiceNode]]
     ):
         """Used for batch training. Will by default call train on each element
-        in batch."""
-        for (x, y), path in zip(batch, teacher_force_paths):
+        in batch, but expected to be overridden.
+
+        Args:
+            batch: List of tuples which have 3 values:
+                x: the string x value
+                y: the ast set we are trying to generate to
+                teacher_force_paths: the path to follow while decide
+        """
+        for x, y, path in zip(batch):
             self.train(x, y, path)
 
     @classmethod

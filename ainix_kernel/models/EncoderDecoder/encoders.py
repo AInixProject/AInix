@@ -126,7 +126,7 @@ class RNNSeqEncoder(VectorSeqEncoder):
         num_layers: Number of RNN layers to use
         input_dropout_p: A dropout over the inputs
         dropout_p: Dropout inside rnn_cell layers
-        variable_lengths: Whether to add in packing
+        variable_lengths: Whether to expect different lens
     """
     def __init__(
         self,

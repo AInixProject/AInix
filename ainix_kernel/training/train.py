@@ -6,18 +6,29 @@ from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPred
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
 from ainix_common.parsing.stringparser import StringParser
 from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
+import more_itertools
 
 
 class TypeTranslateCFTrainer:
-    def __init__(self, model: StringTypeTranslateCF, example_store: ExamplesStore):
+    def __init__(
+        self,
+        model: StringTypeTranslateCF,
+        example_store: ExamplesStore,
+        batch_size: int = 1
+    ):
         self.model = model
         self.example_store = example_store
         self.type_context = example_store.type_context
         self.string_parser = StringParser(self.type_context)
+        self.batch_size = batch_size
 
     def _train_one_epoch(self, which_epoch_on: int):
-        for example, y_ast_set, this_example_ast in self.data_pair_iterate((DataSplits.TRAIN,)):
-            self.model.train(example.xquery, y_ast_set, this_example_ast)
+        single_examples_iter = self.data_pair_iterate((DataSplits.TRAIN,))
+        batches_iter = more_itertools.chunked(single_examples_iter, self.batch_size)
+        for batch in batches_iter:
+            batch_as_query = [(example.xquery, y_ast_set, this_example_ast) for
+                              example, y_ast_set, this_example_ast in batch]
+            self.model.train_batch(batch_as_query)
         self.model.end_train_epoch()
 
     def train(self, epochs: int):
@@ -34,19 +45,12 @@ class TypeTranslateCFTrainer:
     ):
         self.model.end_train_session()
         for example, y_ast_set, this_example_ast in self.data_pair_iterate(splits):
-            #this_ex_p = self.string_parser.create_parse_tree(example.ytext, example.ytype)
-            #assert y_ast_set.is_node_known_valid(this_ex_p)
             try:
                 prediction = self.model.predict(example.xquery, example.ytype, True)
             except ModelCantPredictException:
                 prediction = None
             except ModelSafePredictError:
                 prediction = None
-
-            #if prediction == this_ex_p:
-            #    print("YAT")
-            #    assert y_ast_set.is_node_known_valid(prediction)
-
             logger.add_evaluation(AstEvaluation(prediction, y_ast_set))
 
     def data_pair_iterate(
