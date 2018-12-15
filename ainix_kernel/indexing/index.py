@@ -63,6 +63,10 @@ class IndexBackendABC(ABC):
         pass
 
     @abstractmethod
+    def get_doc_count(self):
+        pass
+
+    @abstractmethod
     def query(
         self,
         query: whoosh.query.Query,

@@ -52,6 +52,9 @@ class ExamplesIndex(ExamplesStore):
         return ainix_kernel.indexing.whooshbackend.WhooshIndexBackend(
             ExamplesIndex.get_scheme(), ram_only=True)
 
+    def get_doc_count(self) -> int:
+        return self.backend.get_doc_count()
+
     def _get_yparsed_rep(self, y_string: str, y_type: str) -> str:
         ast = self.parser.create_parse_tree(y_string, y_type)
         return ast.indexable_repr()

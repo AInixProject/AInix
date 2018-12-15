@@ -119,8 +119,13 @@ class ExampleAddHelper:
         )
 
 
-def do_train(model: StringTypeTranslateCF, example_store: ExamplesStore, epochs=10):
-    trainer = TypeTranslateCFTrainer(model, example_store)
+def do_train(
+    model: StringTypeTranslateCF,
+    example_store: ExamplesStore,
+    epochs: int = 10,
+    batch_size: int = 1
+):
+    trainer = TypeTranslateCFTrainer(model, example_store, batch_size)
     trainer.train(epochs)
 
 
@@ -297,6 +302,6 @@ def test_string_gen(model_name, basic_string_tc):
         #assert_val_acc(model, example_store, expect_fail=True)
         pass
     # Do training and expect it to work
-    do_train(model, example_store, epochs=35)
+    do_train(model, example_store, epochs=35, batch_size=8)
     assert_train_acc(model, example_store, required_accuracy=0.85)
     assert_val_acc(model, example_store, required_accuracy=0.8)

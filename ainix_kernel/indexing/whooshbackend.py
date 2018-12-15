@@ -37,6 +37,7 @@ class WhooshIndexBackend(ainix_kernel.indexing.index.IndexBackendABC):
         scheme : the scheme to use for the index
         ram_only : keeps the index in ram. Useful for testing without polluting filesystem
     """
+
     INDEX_DIR = "indexdir"
 
     def __init__(self, scheme: ainix_kernel.indexing.index.IndexBackendScheme,
@@ -124,3 +125,5 @@ class WhooshIndexBackend(ainix_kernel.indexing.index.IndexBackendABC):
         result = self.searcher.search(query, limit=max_results, scored=score)
         yield from _convert_whoosh_result_to_our_result(result)
 
+    def get_doc_count(self) -> int:
+        return self.index.doc_count()
