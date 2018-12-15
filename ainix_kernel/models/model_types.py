@@ -123,6 +123,9 @@ class StringTypeTranslateCF(Pretrainable):
         """Returns the an instance of the desired kind of example store"""
         raise NotImplemented
 
+    def set_shared_memory(self):
+        raise NotImplemented
+
     # Some methods for communicating state during training. This is sort of
     # a bad interface. Should maybe abstract out into a seperate trainer class.
 

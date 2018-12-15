@@ -1,3 +1,4 @@
+import random
 from typing import Tuple, Generator
 
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
@@ -59,7 +60,12 @@ class TypeTranslateCFTrainer:
     ) -> Generator[Tuple[Example, AstObjectChoiceSet, ObjectChoiceNode], None, None]:
         """Will yield one epoch of examples as a tuple of the example and the
         Ast set that represents all valid y_values for that example"""
-        for example in self.example_store.get_all_examples(splits):
+        # Temporary hack for shuffling
+        # TODO (DNGros): Make suffle up to a buffer or something
+        all_ex_list = list(self.example_store.get_all_examples(splits))
+        random.shuffle(all_ex_list)
+        #
+        for example in all_ex_list:  #self.example_store.get_all_examples(splits):
             all_y_examples = self.example_store.get_examples_from_y_set(example.y_set_id)
             y_type = self.type_context.get_type_by_name(example.ytype)
             y_ast_set = AstObjectChoiceSet(y_type, None)

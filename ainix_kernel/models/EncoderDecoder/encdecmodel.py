@@ -76,6 +76,9 @@ class EncDecModel(StringTypeTranslateCF):
         self.modules.eval()
         self.is_in_training_session = True
 
+    def set_shared_memory(self):
+        self.modules.share_memory()
+
 
 # Factory methods for different versions
 def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenizer]:
