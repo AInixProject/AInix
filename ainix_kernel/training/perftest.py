@@ -130,7 +130,6 @@ def get_examples_per_sec_multi(batch_size, procs, examples_sample_size=1e4):
 
     index = get_index()
     print("num docs", index.get_doc_count())
-    batch_size = 4
     model = get_default_encdec_model(examples=index, standard_size=64)
     # train
     mptrainer = MultiprocTrainer(
@@ -151,18 +150,33 @@ def get_examples_per_sec_multi(batch_size, procs, examples_sample_size=1e4):
     examples_per_second = examples_done / seconds_taken
     return examples_per_second
 
-    #trainer = TypeTranslateCFTrainer(model, index, batch_size)
-    #logger = EvaluateLogger()
-    #trainer.evaluate(logger)
-    #print("after:")
-    #print_ast_eval_log(logger)
+
+def get_multi_train_time(batch_size, procs):
+    os.environ["OMP_NUM_THREADS"] = "1"
+    torch.set_num_threads = 1
+
+    index = get_index()
+    print("num docs", index.get_doc_count())
+    model = get_default_encdec_model(examples=index, standard_size=64)
+    # train
+    mptrainer = MultiprocTrainer(
+        model,
+        make_default_trainer_fac(
+            model,
+            batch_size
+        )
+    )
+    num_docs = index.get_doc_count()
+    time = mptrainer.train(workers_count=procs, epochs_per_worker=50,
+                           index=index, batch_size=batch_size, converge_check_val=0.75)
+    return time
 
 
 def fig_multiproc_vs_throughput():
     sizes_to_test = [1, 4, 8, 12]
     #sizes_to_test = [1]
     list_data = []
-    batch_size = 4
+    batch_size = 1
     for rerun in range(3):
         for procs in sizes_to_test:
             print(f"running with procs {procs}")
@@ -179,10 +193,33 @@ def fig_multiproc_vs_throughput():
               file_name="./figures/multi_batched_speed.png")
 
 
+def fig_multiproc_vs_time():
+    sizes_to_test = [1, 4, 8, 12]
+    #sizes_to_test = [1]
+    list_data = []
+    batch_size = 1
+    for rerun in range(3):
+        for procs in sizes_to_test:
+            print(f"running with procs {procs}")
+            rt = get_multi_train_time(batch_size, procs)
+            print(f"time {rt}")
+            list_data.append({
+                "batch_size": batch_size,
+                "processes": procs,
+                "run_time": rt
+            })
+    data = pd.DataFrame(list_data)
+    plot_data(data, title="Multiprocess Model Training Time",
+              x="processes", y="run_time",
+              file_name="./figures/multi_time.png")
+
+
 if __name__ == "__main__":
     import os
     script_path = os.path.dirname(os.path.abspath(__file__))
     print(script_path)
     #fig_batchsize_vs_throughput()
-    #fig_multiproc_vs_throughput()
-    fig_batchsize_vs_converg()
+    fig_multiproc_vs_throughput()
+    #fig_batchsize_vs_converg()
+    #print(get_multi_train_time(1, 2))
+    #fig_multiproc_vs_time()

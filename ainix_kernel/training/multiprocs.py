@@ -17,6 +17,7 @@ import os
 
 from ainix_kernel.training.evaluate import EvaluateLogger, print_ast_eval_log
 from ainix_kernel.training.train import TypeTranslateCFTrainer
+import datetime
 
 
 def example_store_fac(
@@ -46,7 +47,10 @@ def bound_torch_threads(procs):
 
 
 def train_func(pid, model: StringTypeTranslateCF, index: ExamplesStore, batch_size, epochs,
-               force_single_thread):
+               force_single_thread, eval_thresh, total_proc_count,
+               working_count: torch.multiprocessing.Value,
+               continue_event, next_cont_event, total_proc_time_accum,
+               all_done_event):
     if force_single_thread:
         os.environ["OMP_NUM_THREADS"] = "1"
         torch.set_num_threads = 1
@@ -55,7 +59,39 @@ def train_func(pid, model: StringTypeTranslateCF, index: ExamplesStore, batch_si
     #for i in range(10):
     #    print(f"feelin racey? {len(list(index.get_all_examples()))}")
     trainer = TypeTranslateCFTrainer(model, index, batch_size)
-    trainer.train(epochs)
+    if eval_thresh is None:
+        trainer.train(epochs)
+    else:
+        for e in range(epochs):
+            start_time = datetime.datetime.now()
+            trainer.train(1)
+            should_wait = True
+            with working_count.get_lock():
+                working_count.value -= 1
+                if working_count.value == 0:
+                    working_count.value = total_proc_count
+                    # everyone done need to measure
+                    should_wait = False
+                    time_diff = (datetime.datetime.now() - start_time).total_seconds()
+                    #print("time diff", time_diff)
+                    total_proc_time_accum.value += time_diff
+                    #print("total val", total_proc_time_accum.value)
+                    logger = EvaluateLogger()
+                    trainer.evaluate(logger)
+                    acc = logger.stats['ExactMatch'].true_frac
+                    print(f"Curr acc {acc}")
+                    if acc >= eval_thresh:
+                        all_done_event.set()
+                    continue_event.set()
+                    # swap to new event.
+                    # still could have a race, but unlikely
+                    continue_event, next_cont_event = next_cont_event, continue_event
+                    continue_event.clear()
+            if should_wait:
+                continue_event.wait()
+                continue_event, next_cont_event = next_cont_event, continue_event
+            if all_done_event.is_set():
+                break
 
 
 class MultiprocTrainer:
@@ -74,14 +110,37 @@ class MultiprocTrainer:
         workers_count: int,
         epochs_per_worker: int,
         index: ExamplesStore,
-        batch_size
+        batch_size,
+        converge_check_val = None
     ):
         self.model.set_shared_memory()
         all_procs = []
+        counter = torch.multiprocessing.Value('i')
+        counter.value = workers_count
+        val_accum = torch.multiprocessing.Value('d')
+        val_accum.value = 0
+        event = torch.multiprocessing.Event()
+        event.clear()
+        other_event = torch.multiprocessing.Event()
+        event.clear()
+        all_done_event = torch.multiprocessing.Event()
+        all_done_event.clear()
         for procid in range(workers_count):
             p = torch.multiprocessing.Process(target=train_func,
-                args=(procid, self.model, index, batch_size, epochs_per_worker,
-                      self.force_single_thread))
+                args=(procid,
+                      self.model,
+                      index,
+                      batch_size,
+                      epochs_per_worker,
+                      self.force_single_thread,
+                      converge_check_val,
+                      workers_count,
+                      counter,
+                      event,
+                      other_event,
+                      val_accum,
+                      all_done_event
+                      ))
             p.start()
             all_procs.append(p)
 
@@ -89,6 +148,7 @@ class MultiprocTrainer:
             p.join()
 
         print("done!")
+        return val_accum.value
 
 
 if __name__ == "__main__":
