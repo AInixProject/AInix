@@ -136,7 +136,7 @@ class RNNSeqEncoder(VectorSeqEncoder):
         memory_tokens_size: int,
         rnn_cell: Type = nn.GRU,
         num_layers: int = 1,
-        input_dropout_p: float = 0,
+        input_dropout_p: float = 0.0,
         dropout_p: float = 0,
         bidirectional: bool = True,
         variable_lengths=False
@@ -144,7 +144,7 @@ class RNNSeqEncoder(VectorSeqEncoder):
         super().__init__(input_dims)
         self.hidden_size = hidden_size
         self.input_dropout = nn.Dropout(p=input_dropout_p)
-        self.rnn = rnn_cell(input_dims, hidden_size, num_layers, num_layers,
+        self.rnn = nn.GRU(input_dims, hidden_size, num_layers,
                             batch_first=True, dropout=dropout_p,
                             bidirectional=bidirectional)
         # Actual hidden size will be twice size since bidirectional
@@ -154,19 +154,21 @@ class RNNSeqEncoder(VectorSeqEncoder):
 
     def forward(self, seqs: torch.Tensor, input_lengths=None) -> Tuple[torch.Tensor, torch.Tensor]:
         seqs = self.input_dropout(seqs)
+        # Pepare if have variable lens
         assert (input_lengths is None) == (not self.variable_lengths)
         if self.variable_lengths:
             input_lengths, sort_inds, (seqs,) = reorder_based_off_len(input_lengths, (seqs,))
             seqs = nn.utils.rnn.pack_padded_sequence(seqs, input_lengths, batch_first=True)
-
+        # Do actual processing
         outputs, final_hiddens = self.rnn(seqs)
-
+        # Handle post processing if variable lengths
         if self.variable_lengths:
             outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)
             input_lengths, outputs = undo_len_ordering(sort_inds, (input_lengths, outputs))
             last_val_of_each_in_batch = outputs[range(input_lengths.size(0)), input_lengths - 1]
         else:
             last_val_of_each_in_batch = outputs[:, -1]
+        # Prepare output
         summaries = self.summary_linear(last_val_of_each_in_batch)
         memory_tokens = self.memory_tokens_linear(outputs)
         return summaries, memory_tokens

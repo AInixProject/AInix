@@ -48,6 +48,7 @@ def build_selector(selector_name) -> Tuple[ObjectSelector, TypeContext]:
         vectorizer = ToyVectorizer(vocab)
         return VectorizedObjectSelector(type_m, vectorizer), tc
 
+
 @pytest.mark.parametrize("selector_name", SELECTORS)
 def test_query(selector_name):
     instance, type_context = build_selector(selector_name)

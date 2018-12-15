@@ -121,15 +121,16 @@ class TreeRNNDecoder(TreeDecoder):
         rnn_cell: TreeRNNCell,
         object_selector: ObjectSelector,
         ast_vectorizer: VectorizerBase,
-        ast_vocab: Vocab,
-        bce_pos_weight=1.0
+        ast_vocab: Vocab#,
+        #bce_pos_weight=1.0
     ):
         super().__init__()
         self.rnn_cell = rnn_cell
         self.object_selector = object_selector
         self.ast_vectorizer = ast_vectorizer
         self.ast_vocab = ast_vocab
-        self.bce_pos_weight = bce_pos_weight
+        # TODO (DNGros): Figure this out. It changed in torch 1.0 and is weird now
+        #self.bce_pos_weight = bce_pos_weight
 
     def _node_to_token_type(self, node: AstNode):
         if isinstance(node, ObjectNode):
@@ -330,8 +331,8 @@ class TreeRNNDecoder(TreeDecoder):
         loss = 0
         for correct_indicies, predicted_score in zip(impls_indices_correct, scores[0]):
             loss += F.binary_cross_entropy_with_logits(
-                predicted_score, correct_indicies,
-                pos_weight=self.bce_pos_weight
+                predicted_score, correct_indicies#,
+                #pos_weight=self.bce_pos_weight
             )
         return loss
 
