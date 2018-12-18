@@ -271,7 +271,7 @@ class ObjectNode(ObjectNodeLike):
             assert isinstance(self._arg_name_to_node, collections.Hashable)
             assert not isinstance(self._arg_name_to_node, dict)
         else:
-            self._arg_name_to_node = {}
+            self._arg_name_to_node = {arg.name: None for arg in implementation.children}
         self._is_frozen = frozen_arg_name_to_node is not None
         self._hash_cache = None
 
@@ -297,6 +297,9 @@ class ObjectNode(ObjectNodeLike):
     def set_arg_value(self, arg_name: str, new_node: ObjectChoiceNode):
         if self._is_frozen:
             raise ValueError("Can't set an arg of frozen node")
+        if arg_name not in self._arg_name_to_node:
+            raise ValueError(f"Arg name {arg_name} not recognized for {self.implementation}."
+                             f"Options are {list(self._arg_name_to_node.keys())}")
         self._arg_name_to_node[arg_name] = new_node
 
     def __str__(self):
@@ -367,7 +370,7 @@ class ObjectNode(ObjectNodeLike):
         next_unfreeze_path = unfreeze_path[1:] if on_unfreeze_path else None
         # If we have reached the end of the path the path list we "stop_early" and
         # force the ourself to become a leaf on the new tree.
-        stop_early_on_path = next_unfreeze_path and len(next_unfreeze_path) == 0
+        stop_early_on_path = next_unfreeze_path is not None and len(next_unfreeze_path) == 0
         if stop_early_on_path:
             return clone, [clone]
         #

@@ -102,7 +102,7 @@ def test_objectnode_copy_simple():
 
 def test_objectnode_copy_with_child():
     """Copy with an arg"""
-    # Establish typesj
+    # Establish types
     tc = TypeContext()
     AInixType(tc, "footype")
     bartype = AInixType(tc, "bartype")
@@ -143,6 +143,15 @@ def test_objectnode_copy_with_child():
     assert not clone.is_frozen
     assert clone == instance
     assert path == [instance, is_pres_top, arg_node, is_pres, fin_choice]
+    # Partial unfreeze path (stop early)
+    clone, path = instance.path_clone([instance, is_pres_top, arg_node])
+    assert id(clone) != id(instance)
+    assert not clone.is_frozen
+    assert clone != instance
+    assert len(path) == 3
+    new_arg_node: ObjectNode = path[-1]
+    assert new_arg_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME) is None
+
 
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
