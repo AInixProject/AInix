@@ -189,7 +189,7 @@ class ObjectChoiceNode(AstNode):
         next_unfreeze_path = unfreeze_path[1:] if on_unfreeze_path else None
         # If we have reached the end of the path the path list we "stop_early" and
         # force the ourself to become a leaf on the new tree.
-        stop_early_on_path = len(next_unfreeze_path) == 0
+        stop_early_on_path = next_unfreeze_path and len(next_unfreeze_path) == 0
         if stop_early_on_path:
             return clone, [clone]
         #
@@ -350,6 +350,47 @@ class ObjectNode(ObjectNodeLike):
 
     def is_of_type(self, type_: ainix_common.parsing.typecontext.AInixType) -> bool:
         return self._implementation.type_name == type_.name
+
+    def path_clone(
+        self,
+        unfreeze_path: List['AstNode'] = None
+    ) -> Tuple['ObjectNode', Optional[List['AstNode']]]:
+        """See docstring on AstNode.path_clone()"""
+        on_unfreeze_path = unfreeze_path is not None and id(self) == id(unfreeze_path[0])
+        if self._is_frozen and not on_unfreeze_path:
+            return self, None
+        clone = ObjectNode(self.implementation)
+        next_unfreeze_path = unfreeze_path[1:] if on_unfreeze_path else None
+        # If we have reached the end of the path the path list we "stop_early" and
+        # force the ourself to become a leaf on the new tree.
+        stop_early_on_path = next_unfreeze_path and len(next_unfreeze_path) == 0
+        if stop_early_on_path:
+            return clone, [clone]
+        #
+        can_freeze = on_unfreeze_path
+        return_back_path = None
+        for arg in self.implementation.children:
+            if arg.name in self._arg_name_to_node:
+                arg_clone, arg_copy_path = self._arg_name_to_node[arg.name].path_clone(
+                    next_unfreeze_path
+                )
+                clone.set_arg_value(arg.name, arg_clone)
+                if arg_copy_path:
+                    assert return_back_path is None, "Multiple args can't be on freeze path"
+                    return_back_path = arg_copy_path
+                    can_freeze = False
+            else:
+                can_freeze = False
+        if on_unfreeze_path:
+            if not return_back_path:
+                return_back_path = []
+            return_back_path.insert(0, clone)
+        if can_freeze:
+            clone.freeze()
+        return clone, return_back_path
+
+
+
 
 
 class CopyNode(ObjectNodeLike):

@@ -1,6 +1,7 @@
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode, ObjectNode
 from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixArgument, AInixObject
 from unittest.mock import MagicMock
+import pytest
 
 
 def test_parse_set_optional():
@@ -67,6 +68,43 @@ def test_objectchoice_node_copy_frozen_on_paths():
     assert not clone.is_frozen
     assert path[0] == clone
     assert path[1] == mock_copy
+
+
+def test_objectnode_copy_simple():
+    """Copy with no children"""
+    tc = TypeContext()
+    AInixType(tc, "footype")
+    foo_object = AInixObject(tc, "foo_object", "footype")
+    instance = ObjectNode(foo_object)
+    # Unfrozen
+    clone, path = instance.path_clone()
+    assert id(clone) != id(instance)
+    assert clone.implementation == foo_object
+    assert instance == clone
+    assert path is None
+    # Frozen
+    instance.freeze()
+    clone, path = instance.path_clone()
+    assert id(clone) == id(instance)
+    assert clone == instance
+    assert path is None
+    # Frozen but on unfreeze path
+    clone, path = instance.path_clone([instance])
+    assert id(clone) != id(instance)
+    assert instance == clone
+    assert clone.implementation == foo_object
+
+
+#def test_objectnode_copy_with_child():
+#    """Copy with no children unfrozen"""
+#    tc = TypeContext()
+#    AInixType(tc, "footype")
+#    foo_object = AInixObject(tc, "foo_object", "footype")
+#    instance = ObjectNode(foo_object)
+#    clone, path = instance.path_clone()
+
+
+
 
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
