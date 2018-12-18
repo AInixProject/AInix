@@ -47,7 +47,7 @@ class BinaryStat:
         return f"{(self.true_count / self.total_count)*100:.2f}%"
 
     def __str__(self):
-        return f"{name}: {self.percent_true_str}"
+        return f"{self.name}: {self.percent_true_str}"
 
     def __add__(self, other):
         self.total_count += other.total_count
