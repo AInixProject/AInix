@@ -152,6 +152,73 @@ def test_objectnode_copy_with_child():
     new_arg_node: ObjectNode = path[-1]
     assert new_arg_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME) is None
 
+def test_objectnode_copy_with_2children():
+    """Copypasta of the above test, just with an extra arg thrown in"""
+    # Establish types
+    tc = TypeContext()
+    AInixType(tc, "footype")
+    bartype = AInixType(tc, "bartype")
+    arg1 = AInixArgument(tc, "arg1", "bartype")
+    arg2 = AInixArgument(tc, "arg2", "bartype")
+    foo_object = AInixObject(tc, "foo_object", "footype", [arg1, arg2])
+    bar_object = AInixObject(tc, "bar_object", "bartype")
+    # Make an ast
+    fin_choice = ObjectNode(bar_object)
+    is_pres = ObjectChoiceNode(bartype)
+    is_pres.set_choice(fin_choice)
+    arg_node = ObjectNode(arg1.is_present_object)
+    arg_node.set_arg_value(OPTIONAL_ARGUMENT_NEXT_ARG_NAME, is_pres)
+    is_pres_top = ObjectChoiceNode(arg1.present_choice_type)
+    is_pres_top.set_choice(arg_node)
+    instance = ObjectNode(foo_object)
+    instance.set_arg_value("arg1", is_pres_top)
+
+    fin_choice2 = ObjectNode(bar_object)
+    is_pres2 = ObjectChoiceNode(bartype)
+    is_pres2.set_choice(fin_choice2)
+    arg_node2 = ObjectNode(arg2.is_present_object)
+    arg_node2.set_arg_value(OPTIONAL_ARGUMENT_NEXT_ARG_NAME, is_pres2)
+    is_pres_top2 = ObjectChoiceNode(arg2.present_choice_type)
+    is_pres_top2.set_choice(arg_node2)
+    instance.set_arg_value("arg2", is_pres_top2)
+    # Do the tests:
+    # Unfrozen
+    clone, path = instance.path_clone()
+    assert id(clone) != id(instance)
+    assert clone == instance
+    # Freeze part
+    is_pres_top.freeze()
+    clone, path = instance.path_clone()
+    assert id(clone) != id(instance)
+    assert not clone.is_frozen
+    assert clone == instance
+    assert id(clone.get_choice_node_for_arg("arg1")) == id(is_pres_top)
+    assert id(clone.get_choice_node_for_arg("arg2")) != id(is_pres_top2)
+    # Freeze all
+    instance.freeze()
+    clone, path = instance.path_clone()
+    assert id(clone) == id(instance)
+    assert clone == instance
+    assert id(clone.get_choice_node_for_arg("arg1")) == id(is_pres_top)
+    assert id(clone.get_choice_node_for_arg("arg2")) == id(is_pres_top2)
+    # Full unfreeze path
+    clone, path = instance.path_clone([instance, is_pres_top, arg_node, is_pres, fin_choice])
+    assert id(clone) != id(instance)
+    assert not clone.is_frozen
+    assert clone == instance
+    assert path == [instance, is_pres_top, arg_node, is_pres, fin_choice]
+    assert id(clone.get_choice_node_for_arg("arg2")) == id(is_pres_top2)
+    assert clone.get_choice_node_for_arg("arg2").is_frozen
+    # Partial unfreeze path (stop early)
+    clone, path = instance.path_clone([instance, is_pres_top, arg_node])
+    assert id(clone) != id(instance)
+    assert not clone.is_frozen
+    assert clone != instance
+    assert len(path) == 3
+    new_arg_node: ObjectNode = path[-1]
+    assert new_arg_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME) is None
+    assert new_arg_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME) is None
+    assert clone.get_choice_node_for_arg("arg2") == is_pres_top2
 
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):

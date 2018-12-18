@@ -382,7 +382,6 @@ class ObjectNode(ObjectNodeLike):
                 )
                 clone.set_arg_value(arg.name, arg_clone)
                 if arg_copy_path:
-                    assert return_back_path is None, "Multiple args can't be on freeze path"
                     return_back_path = arg_copy_path
         if on_unfreeze_path:
             if not return_back_path:
