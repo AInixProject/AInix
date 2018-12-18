@@ -189,7 +189,7 @@ class ObjectChoiceNode(AstNode):
         next_unfreeze_path = unfreeze_path[1:] if on_unfreeze_path else None
         # If we have reached the end of the path the path list we "stop_early" and
         # force the ourself to become a leaf on the new tree.
-        stop_early_on_path = next_unfreeze_path and len(next_unfreeze_path) == 0
+        stop_early_on_path = next_unfreeze_path is not None and len(next_unfreeze_path) == 0
         if stop_early_on_path:
             return clone, [clone]
         #
@@ -290,6 +290,10 @@ class ObjectNode(ObjectNodeLike):
             node.freeze()
         self._arg_name_to_node = pmap(self._arg_name_to_node)
 
+    @property
+    def is_frozen(self):
+        return self._is_frozen
+
     def set_arg_value(self, arg_name: str, new_node: ObjectChoiceNode):
         if self._is_frozen:
             raise ValueError("Can't set an arg of frozen node")
@@ -367,7 +371,6 @@ class ObjectNode(ObjectNodeLike):
         if stop_early_on_path:
             return clone, [clone]
         #
-        can_freeze = on_unfreeze_path
         return_back_path = None
         for arg in self.implementation.children:
             if arg.name in self._arg_name_to_node:
@@ -378,15 +381,10 @@ class ObjectNode(ObjectNodeLike):
                 if arg_copy_path:
                     assert return_back_path is None, "Multiple args can't be on freeze path"
                     return_back_path = arg_copy_path
-                    can_freeze = False
-            else:
-                can_freeze = False
         if on_unfreeze_path:
             if not return_back_path:
                 return_back_path = []
             return_back_path.insert(0, clone)
-        if can_freeze:
-            clone.freeze()
         return clone, return_back_path
 
 

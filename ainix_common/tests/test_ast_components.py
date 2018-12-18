@@ -50,6 +50,8 @@ def test_objectchoice_node_copy_frozen_with_child():
 
 def test_objectchoice_node_copy_frozen_on_path():
     mock_choice = MagicMock()
+    mock_copy = MagicMock()
+    mock_choice.path_clone.return_value = (mock_copy, [mock_copy])
     instance = ObjectChoiceNode(MagicMock(), mock_choice)
     clone, path = instance.path_clone([instance])
     assert id(clone) != id(instance)
@@ -89,22 +91,25 @@ def test_objectnode_copy_simple():
     assert id(clone) == id(instance)
     assert clone == instance
     assert path is None
+    assert clone.is_frozen
     # Frozen but on unfreeze path
     clone, path = instance.path_clone([instance])
     assert id(clone) != id(instance)
     assert instance == clone
     assert clone.implementation == foo_object
+    assert not clone.is_frozen
 
 
 def test_objectnode_copy_with_child():
     """Copy with an arg"""
+    # Establish typesj
     tc = TypeContext()
     AInixType(tc, "footype")
     bartype = AInixType(tc, "bartype")
     arg1 = AInixArgument(tc, "arg1", "bartype")
     foo_object = AInixObject(tc, "foo_object", "footype", [arg1])
     bar_object = AInixObject(tc, "bar_object", "bartype")
-
+    # Make an ast
     fin_choice = ObjectNode(bar_object)
     is_pres = ObjectChoiceNode(bartype)
     is_pres.set_choice(fin_choice)
@@ -114,16 +119,30 @@ def test_objectnode_copy_with_child():
     is_pres_top.set_choice(arg_node)
     instance = ObjectNode(foo_object)
     instance.set_arg_value("arg1", is_pres_top)
+    # Do the tests:
     # Unfrozen
     clone, path = instance.path_clone()
     assert id(clone) != id(instance)
     assert clone == instance
-    # freeze part
+    # Freeze part
     is_pres_top.freeze()
     clone, path = instance.path_clone()
     assert id(clone) != id(instance)
+    assert not clone.is_frozen
     assert clone == instance
     assert id(clone.get_choice_node_for_arg("arg1")) == id(is_pres_top)
+    # Freeze all
+    instance.freeze()
+    clone, path = instance.path_clone()
+    assert id(clone) == id(instance)
+    assert clone == instance
+    assert id(clone.get_choice_node_for_arg("arg1")) == id(is_pres_top)
+    # Full unfreeze path
+    clone, path = instance.path_clone([instance, is_pres_top, arg_node, is_pres, fin_choice])
+    assert id(clone) != id(instance)
+    assert not clone.is_frozen
+    assert clone == instance
+    assert path == [instance, is_pres_top, arg_node, is_pres, fin_choice]
 
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
