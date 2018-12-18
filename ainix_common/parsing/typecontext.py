@@ -3,6 +3,9 @@ from typing import List, Optional, Dict
 import ainix_common.parsing.parse_primitives
 from ainix_common.util.strings import id_generator
 SINGLE_TYPE_IMPL_BUILTIN = "SingleTypeImplParser"
+# This is the arg of the dummy object for an arg is created
+OPTIONAL_ARGUMENT_NEXT_ARG_NAME = "__ARG_PRESENT_NEXT"
+
 
 
 class AInixType:
@@ -137,10 +140,6 @@ class AInixObject:
 
     def __gt__(self, other):
         return self.name > other.name
-
-
-# This is the arg of the dummy object for an arg is created
-OPTIONAL_ARGUMENT_NEXT_ARG_NAME = "__ARG_PRESENT_NEXT"
 
 
 class AInixArgument:

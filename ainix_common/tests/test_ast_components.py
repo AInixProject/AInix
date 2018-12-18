@@ -1,5 +1,6 @@
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode, ObjectNode
-from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixArgument, AInixObject
+from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixArgument, AInixObject, \
+    OPTIONAL_ARGUMENT_NEXT_ARG_NAME
 from unittest.mock import MagicMock
 import pytest
 
@@ -95,16 +96,34 @@ def test_objectnode_copy_simple():
     assert clone.implementation == foo_object
 
 
-#def test_objectnode_copy_with_child():
-#    """Copy with no children unfrozen"""
-#    tc = TypeContext()
-#    AInixType(tc, "footype")
-#    foo_object = AInixObject(tc, "foo_object", "footype")
-#    instance = ObjectNode(foo_object)
-#    clone, path = instance.path_clone()
+def test_objectnode_copy_with_child():
+    """Copy with an arg"""
+    tc = TypeContext()
+    AInixType(tc, "footype")
+    bartype = AInixType(tc, "bartype")
+    arg1 = AInixArgument(tc, "arg1", "bartype")
+    foo_object = AInixObject(tc, "foo_object", "footype", [arg1])
+    bar_object = AInixObject(tc, "bar_object", "bartype")
 
-
-
+    fin_choice = ObjectNode(bar_object)
+    is_pres = ObjectChoiceNode(bartype)
+    is_pres.set_choice(fin_choice)
+    arg_node = ObjectNode(arg1.is_present_object)
+    arg_node.set_arg_value(OPTIONAL_ARGUMENT_NEXT_ARG_NAME, is_pres)
+    is_pres_top = ObjectChoiceNode(arg1.present_choice_type)
+    is_pres_top.set_choice(arg_node)
+    instance = ObjectNode(foo_object)
+    instance.set_arg_value("arg1", is_pres_top)
+    # Unfrozen
+    clone, path = instance.path_clone()
+    assert id(clone) != id(instance)
+    assert clone == instance
+    # freeze part
+    is_pres_top.freeze()
+    clone, path = instance.path_clone()
+    assert id(clone) != id(instance)
+    assert clone == instance
+    assert id(clone.get_choice_node_for_arg("arg1")) == id(is_pres_top)
 
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
