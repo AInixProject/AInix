@@ -219,6 +219,7 @@ def test_objectnode_copy_with_2children():
     assert new_arg_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME) is None
     assert new_arg_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME) is None
     assert clone.get_choice_node_for_arg("arg2") == is_pres_top2
+    assert id(clone.get_choice_node_for_arg("arg2")) == id(is_pres_top2)
 
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
