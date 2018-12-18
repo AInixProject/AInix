@@ -390,9 +390,6 @@ class ObjectNode(ObjectNodeLike):
         return clone, return_back_path
 
 
-
-
-
 class CopyNode(ObjectNodeLike):
     def __init__(
         self,
