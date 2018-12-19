@@ -19,13 +19,24 @@ import os
 def load_path(
     path : str,
     type_context: typecontext.TypeContext,
+    up_search_limit: int = 0
 ) -> None:
     """Loads a *.ainix.yaml file and registers and defined types
     or objects with the supplied type_context"""
     # TODO (DNGros): validate that is actually a *.ainix.yaml file
     # TODO (DNGros): allow for you to specify a  path and recurse down
     load_root = os.path.dirname(path)
-    with open(path, 'r') as f:
+    new_path = path
+    for up_search_i in range(up_search_limit+1):
+        if os.path.isfile(new_path):
+            break
+        load_root = os.path.join(os.path.pardir, load_root)
+        new_path = os.path.join(os.path.pardir, new_path)
+    else:
+        raise ValueError(f"Path {path} not found in working dir or"
+                         f"{up_search_limit} paths above")
+
+    with open(new_path, 'r') as f:
         load_yaml(f, type_context, load_root)
 
 

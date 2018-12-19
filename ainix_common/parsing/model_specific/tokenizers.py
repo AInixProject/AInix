@@ -3,13 +3,15 @@ string parsers. Rather it can be useful for something like models which wish
 to tokenize the input string. It is used in string parsers in order to enable
 producing AST's with copying."""
 from abc import ABC, abstractmethod
-from typing import Iterable, Generator, List, Tuple, Hashable, Union
+from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional
 
+import attr
 from ainix_common.parsing.typecontext import AInixObject, AInixType
 from ainix_common.parsing.model_specific import parse_constants
 from ainix_common.parsing.ast_components import AstNode, ObjectNode, ObjectChoiceNode
 from ainix_common.parsing import ast_components
 import numpy as np
+from itertools import chain
 
 
 class Tokenizer(ABC):
@@ -63,8 +65,33 @@ class StringTokenizer(Tokenizer):
         raise NotImplemented()
 
 
+@attr.s(auto_attribs=True, frozen=True)
+class StringTokensMetadata:
+    """Metadata about the tokens returned by a StringTokenizer
+
+    Args:
+        joinable_tokens: A list of tokens which when joined with empty string
+            gets back to the origional input string. The tokenization process
+            might add in special tokens like "<SPACE>", "<SOS>", or some
+            customness for inner-word splitting. This is used for
+            something like copying which is only allowed to perform copies
+            on token boundries.
+        joinable_tokens_pos_to_actual: A mapping from the joinable tokens
+            back to original tokens. For example if origional tokens were
+            ["<SOS>", "foo", "<SPACE>", "_b", "ar"] joinable tokens might be
+            ["foo", " ", "b", "ar"] and the map might be [1, 2, 3, 4]. If
+            mapping is None it is considered there is no direct mapping for
+            this token and it cannot serve as the start or end of a copy.
+    """
+    joinable_tokens: List[str]
+    joinable_tokens_pos_to_actual: List[Optional[int]]
+
+    def __attrs_post_init__(self):
+        assert len(self.joinable_tokens) == len(self.joinable_tokens_pos_to_actual)
+
+
 class NonLetterTokenizer(StringTokenizer):
-    def tokenize(self, to_tokenize: str) -> Tuple[List[str], List[str]]:
+    def tokenize(self, to_tokenize: str) -> Tuple[List[str], StringTokensMetadata]:
         """Takes in a string and outputs a tokenization splitting at non-letter boundries"""
         # TODO (DNGros): Maybe memoize this
         if not isinstance(to_tokenize, str):
@@ -85,12 +112,18 @@ class NonLetterTokenizer(StringTokenizer):
                 out_tokens[-1].append(c)
         out_tokens = ["".join(toklist) for toklist in out_tokens if len(toklist) >= 1]
         replace_spaces = [x if x != parse_constants.SPACE else " " for x in out_tokens]
-        return out_tokens, replace_spaces
+        metadata = StringTokensMetadata(replace_spaces, list(range(len(replace_spaces))))
+        return out_tokens, metadata
 
 
 class SpaceTokenizer(Tokenizer):
-    def tokenize(self, to_tokenize: str) -> Tuple[List[str], None]:
-        return to_tokenize.split(), None
+    def tokenize(self, to_tokenize: str) -> Tuple[List[str], StringTokensMetadata]:
+        tokens = to_tokenize.split()
+        joinable = [tokens[0]] + list(chain.from_iterable(((" ", t) for t in tokens[1:])))
+        mapping = [0] + list(chain.from_iterable(
+            ((None, i + 1) for i in range(len(tokens[1:])))
+        ))
+        return to_tokenize.split(), StringTokensMetadata(joinable, mapping)
 
 
 class AstStringTokenizer(Tokenizer):

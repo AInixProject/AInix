@@ -1,0 +1,39 @@
+---
+defines:
+    - define_new: type
+      name: ToySimpleStrs
+    - define_new: object
+      name: two_string
+      type: ToySimpleStrs
+      preferred_object_parser: two_str_root_parser
+      children:
+          - name: arg1
+            type: ToyMetasyntactic
+            required: True
+          - name: arg2
+            type: ToyMetasyntactic
+            required: True
+    - define_new: object_parser
+      name: two_str_root_parser
+      source: arg_grammar
+      grammar: |
+          "TWO " arg1 " " arg2
+    # Metasyntactic
+    - define_new: type
+      name: ToyMetasyntactic
+      default_type_parser: max_munch_type_parser
+    - &metasyntactic_ob
+        define_new: object
+        name: foo
+        type: ToyMetasyntactic
+        type_data: {ParseRepresentation: "foo"}
+    - << : *metasyntactic_ob
+      name: bar
+      type_data: {ParseRepresentation: "bar"}
+    - << : *metasyntactic_ob
+      name: baz
+      type_data: {ParseRepresentation: "baz"}
+    - << : *metasyntactic_ob
+      name: pop
+      type_data: {ParseRepresentation: "pop"}
+...

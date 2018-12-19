@@ -9,6 +9,7 @@ from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
 
 BUILTIN_TYPES_PATH = "../../builtin_types"
 
+
 @pytest.fixture(scope="function")
 def type_context():
     context = TypeContext()
@@ -20,8 +21,8 @@ def type_context():
 @pytest.fixture(scope="function")
 def numbers_type_context():
     type_context = TypeContext()
-    loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", type_context)
-    loader.load_path(f"{BUILTIN_TYPES_PATH}/numbers.ainix.yaml", type_context)
+    loader.load_path(f"builtin_types/generic_parsers.ainix.yaml", type_context, up_search_limit=3)
+    loader.load_path(f"builtin_types/numbers.ainix.yaml", type_context, up_search_limit=3)
     type_context.fill_default_parsers()
     return type_context
 
