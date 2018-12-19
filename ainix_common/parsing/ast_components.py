@@ -32,12 +32,10 @@ class AstIterPointer:
 
     def dfs_get_next(self) -> Optional['AstIterPointer']:
         """Gets the next element as viewed as depth first search from root"""
-        print(f" dfs get next {self}")
         next_src = self
         parent_i = self.parent_child_ind
         on_indx = 0
         while next_src:
-            print(f"  nextsrc {next_src.cur_node} on_ind {on_indx}")
             n = next_src.cur_node.get_nth_child(on_indx, True)
             if n:
                 return AstIterPointer(n, next_src, on_indx)
@@ -100,7 +98,6 @@ class AstNode(ABC):
         """Iterates through tree starting at this node in a depth-first manner"""
         cur = AstIterPointer(self, None, None)
         while cur:
-            print(f"yielding {cur}")
             yield cur
             cur = cur.dfs_get_next()
 
