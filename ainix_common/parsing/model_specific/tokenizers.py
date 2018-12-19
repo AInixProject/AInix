@@ -134,7 +134,8 @@ class AstStringTokenizer(Tokenizer):
     def tokenize(self, to_tokenize: AstNode) -> Tuple[List[str], List[AstNode]]:
         out_tokens = []
         out_nodes = []
-        for node in to_tokenize.depth_first_iter():
+        for pointer in to_tokenize.depth_first_iter():
+            node = pointer.cur_node
             if isinstance(node, ObjectNode):
                 out_tokens.append(ast_components.indexable_repr_object(node.implementation.name))
             elif isinstance(node, ObjectChoiceNode):
@@ -153,7 +154,8 @@ class AstValTokenizer(Tokenizer):
     ) -> Tuple[List[Union[AInixObject, AInixType]], List[AstNode]]:
         out_tokens = []
         out_nodes = []
-        for node in to_tokenize.depth_first_iter():
+        for pointer in to_tokenize.depth_first_iter():
+            node = pointer.cur_node
             if isinstance(node, ObjectNode):
                 out_tokens.append(node.implementation)
             elif isinstance(node, ObjectChoiceNode):

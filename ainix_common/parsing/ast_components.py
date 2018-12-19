@@ -20,6 +20,35 @@ def convert_ast_to_indexable_repr():
     pass
 
 
+@attr.s(auto_attribs=True, frozen=True)
+class AstIterPointer:
+    """A pointer into an AST. This can be used while iterating through an AST.
+    It keeps track of where it is in the tree. AST nodes don't store a reference
+    to their parent, so this class helps get back to the root of a node. This can
+    also be used to make a copy of tree with substructure sharing for common parts"""
+    cur_node: 'AstNode'
+    parent: Optional['AstIterPointer']
+    parent_child_ind: Optional[int]
+
+    def dfs_get_next(self) -> Optional['AstIterPointer']:
+        """Gets the next element as viewed as depth first search from root"""
+        print(f" dfs get next {self}")
+        next_src = self
+        parent_i = self.parent_child_ind
+        on_indx = 0
+        while next_src:
+            print(f"  nextsrc {next_src.cur_node} on_ind {on_indx}")
+            n = next_src.cur_node.get_nth_child(on_indx, True)
+            if n:
+                return AstIterPointer(n, next_src, on_indx)
+            else:
+                if next_src.parent_child_ind is not None:
+                    on_indx = next_src.parent_child_ind + 1
+                else:
+                    return None
+                next_src = next_src.parent
+
+
 class AstNode(ABC):
     #def __init__(self, parent: Optional['AstNode']):
     #    self.parent = parent
@@ -32,6 +61,14 @@ class AstNode(ABC):
     @abstractmethod
     def get_children(self) -> Generator['AstNode', None, None]:
         """Returns all descendants of this node"""
+        pass
+
+    @abstractmethod
+    def get_nth_child(self, n, none_if_out_of_bounds = False) -> Optional['AstNode']:
+        """Get the nth child. Note this might be different than the nth element
+        in the result of get_children() as that only returns set children.
+        Might raise a IndexError unless none_if_out_of_bounds is true.
+        """
         pass
 
     def path_clone(
@@ -59,13 +96,13 @@ class AstNode(ABC):
         """
         raise NotImplemented()
 
-    def depth_first_iter(self) -> Generator['AstNode', None, None]:
+    def depth_first_iter(self) -> Generator['AstIterPointer', None, None]:
         """Iterates through tree starting at this node in a depth-first manner"""
-        stack = [self]
-        while stack:
-            cur = stack.pop()
+        cur = AstIterPointer(self, None, None)
+        while cur:
+            print(f"yielding {cur}")
             yield cur
-            stack.extend(reversed(list(cur.get_children())))
+            cur = cur.dfs_get_next()
 
     @abstractmethod
     def freeze(self):
@@ -81,14 +118,6 @@ class AstNode(ABC):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-
-class AstIterPointer:
-    """A pointer into an AST. This can be used while iterating through an AST.
-    It keeps track of where it is in the tree. AST nodes don't store a reference
-    to their parent, so this class helps get back to the root of a node. This can
-    also be used to make a copy of tree with substructure sharing for common parts"""
-    pass
 
 
 class ObjectChoiceNode(AstNode):
@@ -145,7 +174,7 @@ class ObjectChoiceNode(AstNode):
         return self._type_to_choose.name
 
     @property
-    def next_node(self) -> 'ObjectNode':
+    def next_node(self) -> 'ObjectNodeLike':
         return self._choice
 
     @property
@@ -177,6 +206,14 @@ class ObjectChoiceNode(AstNode):
         if self._choice is not None:
             yield self._choice
 
+    def get_nth_child(self, n, none_if_out_of_bounds = False) -> Optional['AstNode']:
+        if n == 0:
+            return self._choice
+        else:
+            if none_if_out_of_bounds:
+                return None
+            raise IndexError()
+
     def path_clone(
         self,
         unfreeze_path: List['AstNode'] = None
@@ -201,6 +238,9 @@ class ObjectChoiceNode(AstNode):
                 new_path = []
             new_path.insert(0, clone)
         return clone, new_path
+
+    def __repr__(self):
+        return f"<ObjecChoiceNode{'(F)' if self._is_frozen else ''} {self.type_to_choose.name}>"
 
     def __hash__(self):
         if self._hash_cache:
@@ -279,6 +319,9 @@ class ObjectNode(ObjectNodeLike):
     def implementation(self) -> ainix_common.parsing.typecontext.AInixObject:
         return self._implementation
 
+    def __repr__(self):
+        return f"<ObjectNode{'(F)' if self._is_frozen else ''} {self._implementation.name}>"
+
     def get_choice_node_for_arg(self, arg_name) -> 'ObjectChoiceNode':
         return self._arg_name_to_node[arg_name]
 
@@ -334,6 +377,15 @@ class ObjectNode(ObjectNodeLike):
         yield from (self._arg_name_to_node[arg.name]
                     for arg in self._implementation.children
                     if arg.name in self._arg_name_to_node)
+
+    def get_nth_child(self, n, none_if_out_of_bounds = False) -> Optional['AstNode']:
+        try:
+            return self._arg_name_to_node[self._implementation.children[n].name]
+        except IndexError:
+            if none_if_out_of_bounds:
+                return None
+            else:
+                raise
 
     def as_childless_node(self) -> ChildlessObjectNode:
         choices = tuple([self._arg_name_to_node[arg.name].get_chosen_impl_name()

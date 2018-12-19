@@ -4,6 +4,8 @@ from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixArgume
 from unittest.mock import MagicMock
 import pytest
 
+from ainix_common.tests.toy_contexts import get_toy_strings_context
+
 
 def test_parse_set_optional():
     """Manually build up an ast, and make sure the ast set is representing
@@ -220,6 +222,72 @@ def test_objectnode_copy_with_2children():
     assert new_arg_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME) is None
     assert clone.get_choice_node_for_arg("arg2") == is_pres_top2
     assert id(clone.get_choice_node_for_arg("arg2")) == id(is_pres_top2)
+
+
+def test_dfs():
+    tc = get_toy_strings_context()
+    ast = ObjectChoiceNode(tc.get_type_by_name("ToySimpleStrs"))
+    assert [n.cur_node for n in ast.depth_first_iter()] == [ast]
+
+
+def test_dfs2():
+    tc = get_toy_strings_context()
+    two_strs = ObjectNode(tc.get_object_by_name("two_string"))
+    assert [n.cur_node for n in two_strs.depth_first_iter()] == [two_strs]
+
+
+def test_dfs3():
+    tc = get_toy_strings_context()
+    ast = ObjectChoiceNode(tc.get_type_by_name("ToySimpleStrs"))
+    two_strs = ObjectNode(tc.get_object_by_name("two_string"))
+    ast.set_choice(two_strs)
+    assert [n.cur_node for n in ast.depth_first_iter()] == [ast, two_strs]
+
+
+def test_dfs4():
+    tc = get_toy_strings_context()
+    ast = ObjectChoiceNode(tc.get_type_by_name("ToySimpleStrs"))
+
+    two_strs = ObjectNode(tc.get_object_by_name("two_string"))
+    ast.set_choice(two_strs)
+
+    a1 = ObjectChoiceNode(tc.get_type_by_name("ToyMetasyntactic"))
+    two_strs.set_arg_value("arg1", a1)
+
+    assert [n.cur_node for n in ast.depth_first_iter()] == [ast, two_strs, a1]
+
+    a1v = ObjectNode(tc.get_object_by_name("foo"))
+    a1.set_choice(a1v)
+    assert [n.cur_node for n in ast.depth_first_iter()] == [ast, two_strs, a1, a1v]
+
+
+def test_dfs4half():
+    tc = get_toy_strings_context()
+    two_strs = ObjectNode(tc.get_object_by_name("two_string"))
+    a1 = ObjectChoiceNode(tc.get_type_by_name("ToyMetasyntactic"))
+    two_strs.set_arg_value("arg1", a1)
+    a2 = ObjectChoiceNode(tc.get_type_by_name("ToyMetasyntactic"))
+    two_strs.set_arg_value("arg2", a2)
+    assert [n.cur_node for n in two_strs.depth_first_iter()] == [two_strs, a1, a2]
+
+
+def test_dfs5():
+    tc = get_toy_strings_context()
+    ast = ObjectChoiceNode(tc.get_type_by_name("ToySimpleStrs"))
+    two_strs = ObjectNode(tc.get_object_by_name("two_string"))
+    ast.set_choice(two_strs)
+    a1 = ObjectChoiceNode(tc.get_type_by_name("ToyMetasyntactic"))
+    two_strs.set_arg_value("arg1", a1)
+    a1v = ObjectNode(tc.get_object_by_name("foo"))
+    a1.set_choice(a1v)
+
+    a2 = ObjectChoiceNode(tc.get_type_by_name("ToyMetasyntactic"))
+    two_strs.set_arg_value("arg2", a2)
+    assert [n.cur_node for n in ast.depth_first_iter()] == [ast, two_strs, a1, a1v, a2]
+    a2v = ObjectNode(tc.get_object_by_name("bar"))
+    a2.set_choice(a2v)
+    assert [n.cur_node for n in ast.depth_first_iter()] == [ast, two_strs, a1, a1v, a2, a2v]
+
 
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):

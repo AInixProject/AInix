@@ -44,9 +44,17 @@ def string_in_tok_list(string: str, metadata: StringTokensMetadata) -> Optional[
     return None
 
 
+class CopyInjector:
+    """Used to add copy tokens to an AST"""
+    pass
+
 def make_copy_versions_of_tree(
     ast: ObjectChoiceNode,
     unparser: AstUnparser,
     token_metadata: StringTokensMetadata
-):
-    pass
+) -> ObjectChoiceNode:
+    unparse = unparser.to_string(ast)
+    for i, pointer in enumerate(ast.depth_first_iter()):
+        if i > 10:
+            break
+

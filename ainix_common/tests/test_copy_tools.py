@@ -1,4 +1,5 @@
 from ainix_common.parsing.copy_tools import *
+from ainix_common.parsing.model_specific.tokenizers import SpaceTokenizer
 from ainix_common.parsing.stringparser import StringParser
 from ainix_common.tests.toy_contexts import get_toy_strings_context
 
@@ -44,4 +45,10 @@ def test_make_copy_ast():
     ast = parser.create_parse_tree("TWO foo bar", "ToySimpleStrs")
     unpar_res = unparser.to_string(ast)
     assert unpar_res.total_string == "TWO foo bar"
-    #make_copy_versions_of_tree(ast, unparser, "Hello there foo sir")
+    tokenizer = SpaceTokenizer()
+    in_str = "Hello there foo cow"
+    tokens, metadata = tokenizer.tokenize(in_str)
+    result = make_copy_versions_of_tree(ast, unparser, metadata)
+    toy_str_obj = result.next_node
+    assert toy_str_obj.implementation.name == "two_string"
+
