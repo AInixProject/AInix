@@ -31,9 +31,8 @@ class AstIterPointer:
     parent_child_ind: Optional[int]
 
     def dfs_get_next(self) -> Optional['AstIterPointer']:
-        """Gets the next element as viewed as depth first search from root"""
+        """Gets the next element as viewed as depth first iterate from root"""
         next_src = self
-        parent_i = self.parent_child_ind
         on_indx = 0
         while next_src:
             n = next_src.cur_node.get_nth_child(on_indx, True)
