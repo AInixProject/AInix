@@ -47,7 +47,6 @@ def string_in_tok_list(string: str, metadata: StringTokensMetadata) -> Optional[
 def make_copy_versions_of_tree(
     ast: ObjectChoiceNode,
     unparser: AstUnparser,
-    original_str: str,
-    tokenizer: StringTokenizer
+    token_metadata: StringTokensMetadata
 ):
     pass

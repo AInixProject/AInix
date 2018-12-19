@@ -4,27 +4,36 @@ from ainix_common.tests.toy_contexts import get_toy_strings_context
 
 
 def test_substring():
-    res = string_in_tok_list("hello there", ["hello", " there"])
+    res = string_in_tok_list(
+        "hello there",
+        StringTokensMetadata(["hello", " there"])
+    )
     assert res == (0, 1)
 
 
 def test_substring2():
-    res = string_in_tok_list("hello there", ["why", " ", "hello", " ", "there", " ", "friend"])
+    res = string_in_tok_list(
+        "hello there",
+        StringTokensMetadata(["why", " ", "hello", " ", "there", " ", "friend"])
+    )
     assert res == (2, 4)
 
 
 def test_substring3():
-    res = string_in_tok_list("hello", ["why", " ", "hello", " ", "there", " ", "friend"])
+    res = string_in_tok_list(
+        "hello", StringTokensMetadata(["why", " ", "hello", " ", "there", " ", "friend"]))
     assert res == (2, 2)
 
 
 def test_substring4():
-    res = string_in_tok_list("ello there", ["why", " ", "hello", " ", "there", " ", "friend"])
+    res = string_in_tok_list(
+        "ello there", StringTokensMetadata(["why", " ", "hello", " ", "there", " ", "friend"]))
     assert res is None
 
 
 def test_substring5():
-    res = string_in_tok_list("friend yo", ["why", " ", "hello", " ", "there", " ", "friend"])
+    res = string_in_tok_list(
+        "friend yo", StringTokensMetadata(["why", " ", "hello", " ", "there", " ", "friend"]))
     assert res is None
 
 
@@ -35,4 +44,4 @@ def test_make_copy_ast():
     ast = parser.create_parse_tree("TWO foo bar", "ToySimpleStrs")
     unpar_res = unparser.to_string(ast)
     assert unpar_res.total_string == "TWO foo bar"
-    make_copy_versions_of_tree(ast, unparser, "Hello there foo sir")
+    #make_copy_versions_of_tree(ast, unparser, "Hello there foo sir")

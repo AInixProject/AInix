@@ -65,7 +65,7 @@ class StringTokenizer(Tokenizer):
         raise NotImplemented()
 
 
-@attr.s(auto_attribs=True, frozen=True)
+@attr.s(frozen=True)
 class StringTokensMetadata:
     """Metadata about the tokens returned by a StringTokenizer
 
@@ -83,8 +83,12 @@ class StringTokensMetadata:
             mapping is None it is considered there is no direct mapping for
             this token and it cannot serve as the start or end of a copy.
     """
-    joinable_tokens: List[str]
-    joinable_tokens_pos_to_actual: List[Optional[int]]
+    joinable_tokens = attr.ib(type=List[str])
+    joinable_tokens_pos_to_actual = attr.ib(type=List[Optional[int]])
+
+    @joinable_tokens_pos_to_actual.default
+    def fac(self):
+        return list(range(len(self.joinable_tokens)))
 
     def __attrs_post_init__(self):
         assert len(self.joinable_tokens) == len(self.joinable_tokens_pos_to_actual)
