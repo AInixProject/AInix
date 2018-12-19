@@ -20,32 +20,6 @@ def convert_ast_to_indexable_repr():
     pass
 
 
-@attr.s(auto_attribs=True, frozen=True)
-class AstIterPointer:
-    """A pointer into an AST. This can be used while iterating through an AST.
-    It keeps track of where it is in the tree. AST nodes don't store a reference
-    to their parent, so this class helps get back to the root of a node. This can
-    also be used to make a copy of tree with substructure sharing for common parts"""
-    cur_node: 'AstNode'
-    parent: Optional['AstIterPointer']
-    parent_child_ind: Optional[int]
-
-    def dfs_get_next(self) -> Optional['AstIterPointer']:
-        """Gets the next element as viewed as depth first iterate from root"""
-        next_src = self
-        on_indx = 0
-        while next_src:
-            n = next_src.cur_node.get_nth_child(on_indx, True)
-            if n:
-                return AstIterPointer(n, next_src, on_indx)
-            else:
-                if next_src.parent_child_ind is not None:
-                    on_indx = next_src.parent_child_ind + 1
-                else:
-                    return None
-                next_src = next_src.parent
-
-
 class AstNode(ABC):
     #def __init__(self, parent: Optional['AstNode']):
     #    self.parent = parent
@@ -215,7 +189,7 @@ class ObjectChoiceNode(AstNode):
         unfreeze_path: List['AstNode'] = None
     ) -> Tuple['AstNode', Optional[List['AstNode']]]:
         """See docstring on AstNode.path_clone()"""
-        on_unfreeze_path = unfreeze_path is not None and id(self) == id(unfreeze_path[0])
+        on_unfreeze_path = unfreeze_path is not Nokne and id(self) == id(unfreeze_path[0])
         if self._is_frozen and not on_unfreeze_path:
             return self, None
         clone = ObjectChoiceNode(self.type_to_choose)
@@ -480,6 +454,60 @@ class CopyNode(ObjectNodeLike):
 
     def is_of_type(self, type_: ainix_common.parsing.typecontext.AInixType) -> bool:
         return type_ == self._copy_type
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class AstIterPointer:
+    """A pointer into an AST. This can be used while iterating through an AST.
+    It keeps track of where it is in the tree. AST nodes don't store a reference
+    to their parent, so this class helps get back to the root of a node. This can
+    also be used to make a copy of tree with substructure sharing for common parts"""
+    cur_node: 'AstNode'
+    parent: Optional['AstIterPointer']
+    parent_child_ind: Optional[int]
+
+    def dfs_get_next(self) -> Optional['AstIterPointer']:
+        """Gets the next element as viewed as depth first iterate from root"""
+        next_src = self
+        on_indx = 0
+        while next_src:
+            n = next_src.cur_node.get_nth_child(on_indx, True)
+            if n:
+                return AstIterPointer(n, next_src, on_indx)
+            else:
+                if next_src.parent_child_ind is not None:
+                    on_indx = next_src.parent_child_ind + 1
+                else:
+                    return None
+                next_src = next_src.parent
+
+    def get_root(self):
+        if self.parent is None:
+            return self
+        return self.parent.get_root()
+
+    def get_nodes_to_here(self) -> List[AstNode]:
+        """Get a list of nodes that lead to this location. Useful for copying"""
+        cur = self
+        out = []
+        while cur:
+            out.append(cur.cur_node)
+            cur = cur.parent
+        out = list(reversed(out)) # appended on bottom up. Switch to top down
+        return out
+
+
+    def change_here(self, new_val: 'AstNode', leave_unfrozen=False) -> 'AstIterPointer':
+        """Creates a copy AST with the value that this AST is pointing to different"""
+        if isinstance(self.cur_node, ObjectChoiceNode):
+            assert isinstance(new_val, ObjectChoiceNode)
+        elif isinstance(self.cur_node, ObjectNodeLike):
+            assert isinstance(new_val, ObjectNodeLike)
+        else:
+            raise ValueError("Unrecognized types in pointer???")
+        clone, new_pointer = self.cur_node.path_clone(self.get_nodes_to_here())
+        raise NotImplemented
+
 
 
 class AstSet:
