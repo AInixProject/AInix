@@ -5,7 +5,6 @@ defines:
     - define_new: object
       name: decimal_number
       type: Number
-      preferred_object_parser: number_root_parser
       children:
           - name: SignArg
             type: Sign
@@ -19,11 +18,9 @@ defines:
           - name: Exponent
             type: IntBase
             required: False
-    - define_new: object_parser
-      name: number_root_parser
-      source: arg_grammar
-      grammar: |
-            SignArg? BeforeDecimal ("." AfterDecimal)? ("e" Exponent)?
+      preferred_object_parser:
+          grammar: |
+                SignArg? BeforeDecimal ("." AfterDecimal)? ("e" Exponent)?
     # Sign
     - define_new: type
       name: Sign
@@ -42,7 +39,6 @@ defines:
     - define_new: object
       name: base_ten_list
       type: IntBase
-      preferred_object_parser: base_ten_list_parser
       children:
           - name: CurrentDigit
             type: BaseTen
@@ -52,11 +48,9 @@ defines:
             type: IntBase
             required: False
             arg_data: {}
-    - define_new: object_parser
-      name: base_ten_list_parser
-      source: arg_grammar
-      grammar: |
-          CurrentDigit NextDigit?
+      preferred_object_parser:
+          grammar: |
+              CurrentDigit NextDigit?
     # Base10 Digits
     - define_new: type
       name: BaseTen

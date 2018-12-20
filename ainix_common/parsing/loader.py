@@ -67,7 +67,7 @@ def _load(
         if what_to_define == "type":
             _load_type(define, type_context)
         elif what_to_define == "object":
-            _load_object(define, type_context)
+            _load_object(define, type_context, load_root)
         elif what_to_define == "type_parser":
             _load_type_parser(define, type_context, load_root)
         elif what_to_define == "object_parser":
@@ -117,15 +117,25 @@ def _load_type(define, type_context: typecontext.TypeContext) -> None:
     )
 
 
-def _load_object(define, type_context: typecontext.TypeContext):
+def _load_object(define, type_context: typecontext.TypeContext, load_root: str):
     """Parses the serialized form of a object_name and adds it to the supplied TypeContext"""
     # TODO (DNGros): validate that not extra keys in the define (would help catch people's typos)
+    preferred_object_parser = define.get("preferred_object_parser")
+    preferred_object_parser_name = None
+    if isinstance(preferred_object_parser, str):
+        preferred_object_parser_name = preferred_object_parser
+    elif preferred_object_parser is not None:
+        # Assume it is annonymous declaration
+        preferred_object_parser_name = f"{define['name']}.anon_obj_parser"
+        _load_object_parser(preferred_object_parser, type_context, load_root,
+                            preferred_object_parser_name)
+
     typecontext.AInixObject(
         type_context,
         name=define['name'],
         type_name=define.get("type"),
         children=_parse_arguments(define.get("children"), type_context),
-        preferred_object_parser_name=define.get("preferred_object_parser"),
+        preferred_object_parser_name=preferred_object_parser_name,
         type_data=define.get("type_data")  # TODO: validate is a dict
     )
 
@@ -221,10 +231,13 @@ def _create_object_parser_from_python_module(
         exclusive_type_name=exclusive_type_name
     )
 
+
 def _load_object_parser(
     define: Dict,
     type_context: typecontext.TypeContext,
-    load_root: str
+    load_root: str,
+    default_name=None,
+    force_type=None
 ) -> None:
     """
     Args:
@@ -232,23 +245,35 @@ def _load_object_parser(
         type_context: the context to define the parser in.
         load_root: The root load context. Used as the relative start point for
             any file imports
+        default_name: A name to use if a different name is not given (used when
+            loading anonymous parsers. Ordinarily would through an exception
+            if no name was specified in the define.)
+        force_type: force a certain exclusive type. Used in anonymous parsers.
     """
-    source = define.get("source", "python_module")
+    source = define.get("source", "arg_grammar")
+    use_name = define.get("name", default_name)
+    if use_name is None:
+        raise ValueError("No name given or defaulted")
+    if force_type is not None:
+        if "type" in define:
+            raise ValueError("Cannot have type when a type is forced")
+    exclusive_type_name = force_type or define.get('type')
+
     if source == "python_module":
         _create_object_parser_from_python_module(
             type_context=type_context,
             load_root=load_root,
-            parser_name=define['name'],
+            parser_name=use_name,
             to_string_name=define.get('to_string_func', None),
             module_name_to_load_from=define['file'],
-            exclusive_type_name=define.get('type')
+            exclusive_type_name=exclusive_type_name
         )
     elif source == "arg_grammar":
         grammar_lang.create_object_parser_from_grammar(
             type_context=type_context,
-            parser_name=define['name'],
+            parser_name=use_name,
             grammar=define['grammar'],
-            exclusive_type_name=define.get('type')
+            exclusive_type_name=exclusive_type_name
         )
     else:
         raise ValueError(f"Unrecognized source {source} for TypeParser "
