@@ -6,6 +6,7 @@ from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject, AInixType, \
     OPTIONAL_ARGUMENT_NEXT_ARG_NAME
 from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
+from ainix_common.tests.toy_contexts import get_toy_strings_context
 
 BUILTIN_TYPES_PATH = "../../builtin_types"
 
@@ -308,6 +309,23 @@ def test_unparse_single(simple_p_tc):
     assert result.node_to_string(arg1_typechoice) == "Bar"
     baro = arg1_typechoice.next_node
     assert result.node_to_string(baro) == "Bar"
+    for pointer in ast.depth_first_iter():
+        assert pointer.cur_node in result.node_to_span
+
+
+def test_unparse_double():
+    tc = get_toy_strings_context()
+    parser = StringParser(tc)
+    root_type_name = "ToySimpleStrs"
+    ast = parser.create_parse_tree("TWO foo bar", root_type_name)
+    unparser = AstUnparser(tc)
+    result = unparser.to_string(ast)
+    assert result.total_string == "TWO foo bar"
+    assert isinstance(ast.next_node, ObjectNode)
+    arg1_choice: ObjectChoiceNode = ast.next_node.get_choice_node_for_arg("arg1")
+    assert result.node_to_string(arg1_choice) == "foo"
+    arg1_ob: ObjectNode = arg1_choice.next_node
+    assert result.node_to_string(arg1_ob) == "foo"
 
 
 def test_simple_num_unparse(numbers_type_context):

@@ -10,7 +10,6 @@ except ImportError:
 from typing import Dict, List, Optional, Callable, IO
 from ainix_common.parsing import typecontext
 from ainix_common.parsing import parse_primitives
-from ainix_common.parsing import examplecontext
 import importlib.util
 from ainix_common.parsing import grammar_lang
 import os

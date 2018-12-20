@@ -1,5 +1,5 @@
 from typing import Optional, Tuple, List
-from ainix_common.parsing.ast_components import ObjectChoiceNode
+from ainix_common.parsing.ast_components import ObjectChoiceNode, CopyNode, ObjectNode
 from ainix_common.parsing.model_specific.tokenizers import StringTokensMetadata, StringTokenizer
 from ainix_common.parsing.stringparser import AstUnparser
 
@@ -44,9 +44,9 @@ def string_in_tok_list(string: str, metadata: StringTokensMetadata) -> Optional[
     return None
 
 
-class CopyInjector:
-    """Used to add copy tokens to an AST"""
-    pass
+#class CopyInjector:
+#    """Used to add copy tokens to an AST"""
+#    pass
 
 def make_copy_versions_of_tree(
     ast: ObjectChoiceNode,
@@ -55,6 +55,13 @@ def make_copy_versions_of_tree(
 ) -> ObjectChoiceNode:
     unparse = unparser.to_string(ast)
     for i, pointer in enumerate(ast.depth_first_iter()):
-        if i > 10:
-            break
+        if isinstance(pointer.cur_node, ObjectNode):
+            this_node_str = unparse.node_to_string(pointer.cur_node)
+            copy_pos = string_in_tok_list(this_node_str, token_metadata)
+            if copy_pos:
+                copy_node = CopyNode(
+                    pointer.cur_node.implementation.type, copy_pos[0], copy_pos[1])
+                new_pointer = pointer.change_here(copy_node, always_clone=True)
+                return new_pointer.get_root()
+
 

@@ -255,7 +255,7 @@ class TypeToStringResult:
         return self._type_of_impl
 
     def add_string(self, string: str):
-        self._unparse_seq += string
+        self._unparse_seq.append(string)
 
     def add_impl_unparse(self):
         if self._already_added_impl:
