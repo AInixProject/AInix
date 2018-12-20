@@ -44,8 +44,10 @@ class AstNode(ABC):
 
     def path_clone(
         self,
-        unfreeze_path: List['AstNode'] = None
-    ) -> Tuple['AstNode', Optional[List['AstNode']]]:
+        unfreeze_path: List['AstNode'] = None,
+        parent_pointer: 'AstIterPointer' = None,
+        parent_child_ind: int = None
+    ) -> Tuple['AstNode', Optional['AstIterPointer']]:
         """Creates a deep copy of this node. In general frozen nodes are simply
         returned as a reference and mutable nodes are instantiated to a new object.
         Nodes along the path parameter are returned as mutable copies regardless
@@ -59,11 +61,18 @@ class AstNode(ABC):
                 taking only branch at a time. If the unfreeze path is non-none,
                 but the last the last element in the list is not a leaf node,
                 then cloning halts at the element and it becomes a leaf.
+            parent_pointer: A reference to the caller pointer. This is not useful on the
+                public interface. However, it is used in recursive calls to allow
+                the new_leaf pointer that we return to properly point back up.
+            parent_child_ind: What index into the parent's children this node
+                copy will represent. This is only used if non-root, and has
+                a unfreeze_path (if you trying to use this in a public interface,
+                probably don't worry about it).
 
         Returns:
             cloned_version: The cloned version of the node.
-            new_path: A list representing the same path as the unfreeze_path passed in except
-                that it is now the equivolent versions in the new AST
+            new_leaf: A pointer to the last node in the on the unfreeze path in
+                the new tree.
         """
         raise NotImplemented()
 
@@ -186,28 +195,28 @@ class ObjectChoiceNode(AstNode):
 
     def path_clone(
         self,
-        unfreeze_path: List['AstNode'] = None
-    ) -> Tuple['AstNode', Optional[List['AstNode']]]:
+        unfreeze_path: List['AstNode'] = None,
+        parent_pointer: 'AstIterPointer' = None,
+        parent_child_ind: int = None
+    ) -> Tuple['AstNode', Optional['AstIterPointer']]:
         """See docstring on AstNode.path_clone()"""
-        on_unfreeze_path = unfreeze_path is not Nokne and id(self) == id(unfreeze_path[0])
+        on_unfreeze_path = unfreeze_path is not None and id(self) == id(unfreeze_path[0])
         if self._is_frozen and not on_unfreeze_path:
             return self, None
         clone = ObjectChoiceNode(self.type_to_choose)
         next_unfreeze_path = unfreeze_path[1:] if on_unfreeze_path else None
+        me_pointer = AstIterPointer(clone, parent_pointer, parent_child_ind)
         # If we have reached the end of the path the path list we "stop_early" and
         # force the ourself to become a leaf on the new tree.
         stop_early_on_path = next_unfreeze_path is not None and len(next_unfreeze_path) == 0
         if stop_early_on_path:
-            return clone, [clone]
+            return clone, me_pointer
         #
-        new_path = None
+        child_path_pointer = None
         if self._choice is not None:
-            clone._choice, new_path = self._choice.path_clone(next_unfreeze_path)
-        if on_unfreeze_path:
-            if not new_path:
-                new_path = []
-            new_path.insert(0, clone)
-        return clone, new_path
+            clone._choice, child_path_pointer = self._choice.path_clone(
+                next_unfreeze_path, me_pointer, 0)
+        return clone, child_path_pointer
 
     def __repr__(self):
         return f"<ObjecChoiceNode{'(F)' if self._is_frozen else ''} {self.type_to_choose.name}>"
@@ -382,34 +391,35 @@ class ObjectNode(ObjectNodeLike):
 
     def path_clone(
         self,
-        unfreeze_path: List['AstNode'] = None
-    ) -> Tuple['ObjectNode', Optional[List['AstNode']]]:
+        unfreeze_path: List['AstNode'] = None,
+        parent_pointer: 'AstIterPointer' = None,
+        parent_child_ind: int = None
+    ) -> Tuple['ObjectNode', Optional['AstIterPointer']]:
         """See docstring on AstNode.path_clone()"""
         on_unfreeze_path = unfreeze_path is not None and id(self) == id(unfreeze_path[0])
         if self._is_frozen and not on_unfreeze_path:
             return self, None
         clone = ObjectNode(self.implementation)
         next_unfreeze_path = unfreeze_path[1:] if on_unfreeze_path else None
+        me_pointer = AstIterPointer(clone, parent_pointer, parent_child_ind)
         # If we have reached the end of the path the path list we "stop_early" and
         # force the ourself to become a leaf on the new tree.
         stop_early_on_path = next_unfreeze_path is not None and len(next_unfreeze_path) == 0
         if stop_early_on_path:
-            return clone, [clone]
+            return clone, me_pointer
         #
-        return_back_path = None
-        for arg in self.implementation.children:
+        unfreeze_leaf = None
+        for i, arg in enumerate(self.implementation.children):
             if arg.name in self._arg_name_to_node:
-                arg_clone, arg_copy_path = self._arg_name_to_node[arg.name].path_clone(
-                    next_unfreeze_path
+                arg_clone, arg_leaf_point = self._arg_name_to_node[arg.name].path_clone(
+                    unfreeze_path=next_unfreeze_path,
+                    parent_pointer=me_pointer,
+                    parent_child_ind=i
                 )
+                if unfreeze_leaf is None:
+                    unfreeze_leaf = arg_leaf_point
                 clone.set_arg_value(arg.name, arg_clone)
-                if arg_copy_path:
-                    return_back_path = arg_copy_path
-        if on_unfreeze_path:
-            if not return_back_path:
-                return_back_path = []
-            return_back_path.insert(0, clone)
-        return clone, return_back_path
+        return clone, unfreeze_leaf
 
 
 class CopyNode(ObjectNodeLike):

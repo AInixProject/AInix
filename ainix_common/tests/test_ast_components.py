@@ -1,4 +1,5 @@
-from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode, ObjectNode
+from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode, ObjectNode, \
+    AstIterPointer
 from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixArgument, AInixObject, \
     OPTIONAL_ARGUMENT_NEXT_ARG_NAME
 from unittest.mock import MagicMock
@@ -35,19 +36,19 @@ def test_parse_set_optional():
 def test_objectchoice_node_copy_frozen():
     mock_choice = MagicMock()
     instance = ObjectChoiceNode(MagicMock(), mock_choice)
-    clone, path = instance.path_clone()
+    clone, leaf_pointer = instance.path_clone()
     assert id(clone) == id(instance)
-    assert path is None
+    assert leaf_pointer is None
 
 
 def test_objectchoice_node_copy_frozen_with_child():
     mock_choice = MagicMock()
     mock_choice.path_copy.returns = mock_choice
     instance = ObjectChoiceNode(MagicMock(), mock_choice)
-    clone, path = instance.path_clone()
+    clone, leaf_pointer = instance.path_clone()
     assert id(clone) == id(instance)
     assert clone.choice == mock_choice
-    assert path is None
+    assert leaf_pointer is None
 
 
 def test_objectchoice_node_copy_frozen_on_path():
@@ -55,24 +56,29 @@ def test_objectchoice_node_copy_frozen_on_path():
     mock_copy = MagicMock()
     mock_choice.path_clone.return_value = (mock_copy, [mock_copy])
     instance = ObjectChoiceNode(MagicMock(), mock_choice)
-    clone, path = instance.path_clone([instance])
+    clone, leaf_pointer = instance.path_clone([instance])
     assert id(clone) != id(instance)
     assert clone.choice is None
     assert not clone.is_frozen
-    assert path == [clone]
+    assert leaf_pointer == AstIterPointer(clone, None, None)
 
 
 def test_objectchoice_node_copy_frozen_on_paths():
     mock_choice = MagicMock()
     mock_copy = MagicMock()
-    mock_choice.path_clone.return_value = (mock_copy, [mock_copy])
     instance = ObjectChoiceNode(MagicMock(), mock_choice)
-    clone, path = instance.path_clone([instance, mock_copy])
+    last_pointer = AstIterPointer(mock_choice, AstIterPointer(instance, None, None), 0)
+    mock_choice.path_clone.return_value = (mock_copy, last_pointer)
+    clone, leaf_pointer = instance.path_clone([instance, mock_copy])
     assert id(clone) != id(instance)
     assert clone.choice == mock_copy
     assert not clone.is_frozen
-    assert path[0] == clone
-    assert path[1] == mock_copy
+    a = leaf_pointer.get_nodes_to_here()[0]
+    assert isinstance(a, ObjectChoiceNode)
+    assert a._type_to_choose == clone._type_to_choose
+    assert leaf_pointer.cur_node == mock_choice
+    assert leaf_pointer.parent_child_ind == 0
+    assert leaf_pointer.parent.cur_node._type_to_choose == clone._type_to_choose
 
 
 def test_objectnode_copy_simple():
@@ -102,6 +108,43 @@ def test_objectnode_copy_simple():
     assert not clone.is_frozen
 
 
+def test_objectnode_copy_simple_with_arg():
+    """Copy with an arg"""
+    # Establish types
+    tc = TypeContext()
+    AInixType(tc, "footype")
+    bartype = AInixType(tc, "bartype")
+    arg1 = AInixArgument(tc, "arg1", "bartype", required=True)
+    foo_object = AInixObject(tc, "foo_object", "footype", [arg1])
+    bar_object = AInixObject(tc, "bar_object", "bartype")
+    # Make an ast
+    arg_choice = ObjectChoiceNode(bartype)
+    ob_chosen = ObjectNode(bar_object)
+    arg_choice.set_choice(ob_chosen)
+    instance = ObjectNode(foo_object)
+    instance.set_arg_value("arg1", arg_choice)
+    # Do the tests:
+    # Unfrozen
+    clone, leaf = instance.path_clone()
+    assert id(clone) != id(instance)
+    assert leaf is None
+    # with a path
+    clone, leaf = instance.path_clone([instance])
+    assert id(clone) != id(instance)
+    assert leaf.cur_node == clone
+    assert leaf.parent is None
+    # with a deep path
+    clone, leaf = instance.path_clone([instance, arg_choice])
+    assert id(clone) != id(instance)
+    assert leaf.cur_node.choice is None
+    # with a deeper path
+    clone, leaf = instance.path_clone([instance, arg_choice, ob_chosen])
+    assert id(clone) != id(instance)
+    assert clone == instance
+    assert leaf.cur_node == ob_chosen
+    assert leaf.parent.cur_node.choice == ob_chosen
+
+
 def test_objectnode_copy_with_child():
     """Copy with an arg"""
     # Establish types
@@ -123,36 +166,38 @@ def test_objectnode_copy_with_child():
     instance.set_arg_value("arg1", is_pres_top)
     # Do the tests:
     # Unfrozen
-    clone, path = instance.path_clone()
+    clone, leaf = instance.path_clone()
     assert id(clone) != id(instance)
-    assert clone == instance
+    assert leaf is None
     # Freeze part
     is_pres_top.freeze()
-    clone, path = instance.path_clone()
+    clone, leaf = instance.path_clone()
     assert id(clone) != id(instance)
     assert not clone.is_frozen
     assert clone == instance
     assert id(clone.get_choice_node_for_arg("arg1")) == id(is_pres_top)
     # Freeze all
     instance.freeze()
-    clone, path = instance.path_clone()
+    clone, leaf = instance.path_clone()
     assert id(clone) == id(instance)
     assert clone == instance
     assert id(clone.get_choice_node_for_arg("arg1")) == id(is_pres_top)
     # Full unfreeze path
-    clone, path = instance.path_clone([instance, is_pres_top, arg_node, is_pres, fin_choice])
+    clone, leaf = instance.path_clone([instance, is_pres_top, arg_node, is_pres, fin_choice])
     assert id(clone) != id(instance)
     assert not clone.is_frozen
     assert clone == instance
-    assert path == [instance, is_pres_top, arg_node, is_pres, fin_choice]
+    assert leaf.get_nodes_to_here() == [instance, is_pres_top, arg_node, is_pres, fin_choice]
     # Partial unfreeze path (stop early)
-    clone, path = instance.path_clone([instance, is_pres_top, arg_node])
+    clone, leaf = instance.path_clone([instance, is_pres_top, arg_node])
     assert id(clone) != id(instance)
     assert not clone.is_frozen
     assert clone != instance
+    path = leaf.get_nodes_to_here()
     assert len(path) == 3
-    new_arg_node: ObjectNode = path[-1]
+    new_arg_node: ObjectNode = leaf.cur_node
     assert new_arg_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME) is None
+
 
 def test_objectnode_copy_with_2children():
     """Copypasta of the above test, just with an extra arg thrown in"""
@@ -185,12 +230,12 @@ def test_objectnode_copy_with_2children():
     instance.set_arg_value("arg2", is_pres_top2)
     # Do the tests:
     # Unfrozen
-    clone, path = instance.path_clone()
+    clone, leaf_pointer = instance.path_clone()
     assert id(clone) != id(instance)
     assert clone == instance
     # Freeze part
     is_pres_top.freeze()
-    clone, path = instance.path_clone()
+    clone, leaf_pointer = instance.path_clone()
     assert id(clone) != id(instance)
     assert not clone.is_frozen
     assert clone == instance
@@ -198,26 +243,28 @@ def test_objectnode_copy_with_2children():
     assert id(clone.get_choice_node_for_arg("arg2")) != id(is_pres_top2)
     # Freeze all
     instance.freeze()
-    clone, path = instance.path_clone()
+    clone, leaf_pointer = instance.path_clone()
     assert id(clone) == id(instance)
     assert clone == instance
     assert id(clone.get_choice_node_for_arg("arg1")) == id(is_pres_top)
     assert id(clone.get_choice_node_for_arg("arg2")) == id(is_pres_top2)
     # Full unfreeze path
-    clone, path = instance.path_clone([instance, is_pres_top, arg_node, is_pres, fin_choice])
+    clone, leaf_pointer = instance.path_clone(
+        [instance, is_pres_top, arg_node, is_pres, fin_choice])
     assert id(clone) != id(instance)
     assert not clone.is_frozen
     assert clone == instance
-    assert path == [instance, is_pres_top, arg_node, is_pres, fin_choice]
+    assert leaf_pointer.get_nodes_to_here() == \
+           [instance, is_pres_top, arg_node, is_pres, fin_choice]
     assert id(clone.get_choice_node_for_arg("arg2")) == id(is_pres_top2)
     assert clone.get_choice_node_for_arg("arg2").is_frozen
     # Partial unfreeze path (stop early)
-    clone, path = instance.path_clone([instance, is_pres_top, arg_node])
+    clone, leaf_pointer = instance.path_clone([instance, is_pres_top, arg_node])
     assert id(clone) != id(instance)
     assert not clone.is_frozen
     assert clone != instance
-    assert len(path) == 3
-    new_arg_node: ObjectNode = path[-1]
+    assert len(leaf_pointer.get_nodes_to_here()) == 3
+    new_arg_node: ObjectNode = leaf_pointer.cur_node
     assert new_arg_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME) is None
     assert new_arg_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME) is None
     assert clone.get_choice_node_for_arg("arg2") == is_pres_top2
