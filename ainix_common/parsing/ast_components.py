@@ -35,11 +35,23 @@ class AstNode(ABC):
         pass
 
     @abstractmethod
-    def get_nth_child(self, n, none_if_out_of_bounds = False) -> Optional['AstNode']:
+    def get_nth_child(self, n: int, none_if_out_of_bounds = False) -> Optional['AstNode']:
         """Get the nth child. Note this might be different than the nth element
         in the result of get_children() as that only returns set children.
         Might raise a IndexError unless none_if_out_of_bounds is true.
         """
+        pass
+
+    @abstractmethod
+    def set_nth_child(self, n: int, new_val: 'AstNode') -> None:
+        """Set the nth child of this node. As with get_nth_child, this n could
+        be different than the nth value in get_children() since that only returns
+        set children."""
+        pass
+
+    @property
+    @abstractmethod
+    def is_frozen(self) -> bool:
         pass
 
     def path_clone(
@@ -130,7 +142,7 @@ class ObjectChoiceNode(AstNode):
         return self._choice
 
     @property
-    def is_frozen(self):
+    def is_frozen(self) -> bool:
         return self._is_frozen
 
     @property
@@ -140,7 +152,10 @@ class ObjectChoiceNode(AstNode):
         return isinstance(self._choice, CopyNode)
 
     def freeze(self):
-        self._choice.freeze()
+        if self._is_frozen:
+            return
+        if self._choice:
+            self._choice.freeze()
         self._is_frozen = True
 
     def _verify_matching_types(self, new_choice: 'ObjectNodeLike'):
@@ -192,6 +207,12 @@ class ObjectChoiceNode(AstNode):
             if none_if_out_of_bounds:
                 return None
             raise IndexError()
+
+    def set_nth_child(self, n: int, new_val: 'ObjectNodeLike') -> None:
+        if n != 0:
+            raise IndexError(f"Tried to change index {n} on a ObjectChoiceNode. "
+                             f"It only has one child.")
+        self.set_choice(new_val)
 
     def path_clone(
         self,
@@ -366,6 +387,10 @@ class ObjectNode(ObjectNodeLike):
             else:
                 raise
 
+    def set_nth_child(self, n: int, new_val: 'ObjectChoiceNode') -> None:
+        name = self._implementation.children[n].name
+        self.set_arg_value(name, new_val)
+
     def as_childless_node(self) -> ChildlessObjectNode:
         choices = tuple([self._arg_name_to_node[arg.name].get_chosen_impl_name()
                          for arg in self._implementation.children])
@@ -444,6 +469,16 @@ class CopyNode(ObjectNodeLike):
             raise ValueError("Cannot freeze copy node with unset end")
         self._is_frozen = True
 
+    def get_nth_child(self, n: int, none_if_out_of_bounds=False) -> Optional['AstNode']:
+        return None
+
+    def set_nth_child(self, n: int, new_val: 'AstNode') -> None:
+        raise ValueError("Copy node does not have any children to set")
+
+    @property
+    def is_frozen(self) -> bool:
+        return self._is_frozen
+
     def get_children(self) -> Generator['AstNode', None, None]:
         yield from iter([])
 
@@ -506,18 +541,47 @@ class AstIterPointer:
         out = list(reversed(out)) # appended on bottom up. Switch to top down
         return out
 
+    def change_here(
+        self,
+        new_val: 'AstNode',
+        leave_unfrozen: bool = False,
+        always_clone: bool = False
+    ) -> 'AstIterPointer':
+        """Creates a copy AST with the value that this AST is pointing to different
+        value.
 
-    def change_here(self, new_val: 'AstNode', leave_unfrozen=False) -> 'AstIterPointer':
-        """Creates a copy AST with the value that this AST is pointing to different"""
+        Args:
+            new_val: The node we would like a the tree to be pointing to
+            leave_unfrozen: If the parent is frozen, we have to make a clone
+                of the tree in order to change the value, and the value we return
+                points into a new tree (with subtree sharing where possible). By
+                default, if we had to make a clone of the tree, we will freeze
+                the new tree. However, if this arg is set, we will leave the nodes
+                on the path here as mutable.
+            always_clone: By default if the parent is mutable, we will mutate the
+                value without any cloning. If this arg is set, we always make a clone.
+        """
+        # Make sure right type input
         if isinstance(self.cur_node, ObjectChoiceNode):
             assert isinstance(new_val, ObjectChoiceNode)
         elif isinstance(self.cur_node, ObjectNodeLike):
             assert isinstance(new_val, ObjectNodeLike)
         else:
             raise ValueError("Unrecognized types in pointer???")
-        clone, new_pointer = self.cur_node.path_clone(self.get_nodes_to_here())
-        raise NotImplemented
-
+        # Identify what our parent is (make clone if needed)
+        if self.parent is None:
+            return AstIterPointer(new_val, None, None)
+        if self.parent.cur_node.is_frozen or always_clone:
+            clone, leaf_pointer = self.get_root().cur_node.path_clone(self.get_nodes_to_here())
+            new_val_parent = leaf_pointer.parent
+        else:
+            new_val_parent = self.parent
+        # Actually set the new value
+        new_val_parent.cur_node.set_nth_child(self.parent_child_ind, new_val)
+        new_val_pointer = AstIterPointer(new_val, new_val_parent, self.parent_child_ind)
+        if self.parent.cur_node.is_frozen and not leave_unfrozen:
+            new_val_pointer.get_root().cur_node.freeze()
+        return new_val_pointer
 
 
 class AstSet:

@@ -336,6 +336,46 @@ def test_dfs5():
     assert [n.cur_node for n in ast.depth_first_iter()] == [ast, two_strs, a1, a1v, a2, a2v]
 
 
+@pytest.mark.parametrize("freeze_first", [False, True])
+def test_pointer_change_here_root(freeze_first):
+    node = ObjectChoiceNode(MagicMock())
+    pointer = AstIterPointer(node, None, None)
+    new_node = ObjectChoiceNode(MagicMock())
+    if freeze_first:
+        new_node.freeze()
+    new_pointer = pointer.change_here(new_node)
+    assert new_pointer.parent is None
+    assert new_pointer.cur_node == new_node
+    assert new_pointer.cur_node.is_frozen == freeze_first
+
+
+@pytest.mark.parametrize("freeze_first", [False, True])
+def test_pointer_change_here(freeze_first):
+    """Test an arg change"""
+    # Establish types
+    tc = TypeContext()
+    AInixType(tc, "footype")
+    bartype = AInixType(tc, "bartype")
+    arg1 = AInixArgument(tc, "arg1", "bartype", required=True)
+    foo_object = AInixObject(tc, "foo_object", "footype", [arg1])
+    bar_object = AInixObject(tc, "bar_object", "bartype")
+    other_bar_obj = AInixObject(tc, "other_bar_ob", "bartype")
+    # Make an ast
+    arg_choice = ObjectChoiceNode(bartype)
+    ob_chosen = ObjectNode(bar_object)
+    arg_choice.set_choice(ob_chosen)
+    instance = ObjectNode(foo_object)
+    instance.set_arg_value("arg1", arg_choice)
+    if freeze_first:
+        instance.freeze()
+    # Try change
+    deepest = list(instance.depth_first_iter())[-1]
+    assert deepest.cur_node == ob_chosen
+    new_node = ObjectNode(other_bar_obj)
+    new_point = deepest.change_here(new_node)
+    assert new_point.cur_node == new_node
+    assert new_point.cur_node.is_frozen == freeze_first
+
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
 #    parser = StringParser(numbers_type_context)
