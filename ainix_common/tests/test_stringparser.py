@@ -297,6 +297,29 @@ def test_parse_set_9(numbers_type_context, numbers_ast_set):
     assert numbers_ast_set.is_node_known_valid(new_ast)
 
 
+def test_set_with_copy():
+    tc = TypeContext()
+    ft = AInixType(tc, "FT")
+    AInixObject(tc, "FO", "FT")
+    bo = AInixObject(tc, "BO", "FT")
+    ast = ObjectChoiceNode(ft)
+    copy = CopyNode(ft, 0, 3)
+    ast.set_choice(copy)
+    ast.freeze()
+    #
+    ast_set = AstObjectChoiceSet(ft, None)
+    assert not ast_set.copy_is_known_choice()
+    ast_set.add(ast, True, 1, 1)
+    assert ast_set.copy_is_known_choice()
+    assert ast_set.is_node_known_valid(ast)
+    #
+    other_ast = ObjectChoiceNode(ft, None)
+    other_ast.set_choice(ObjectNode(bo))
+    assert not ast_set.is_node_known_valid(other_ast)
+    ast_set.add(other_ast, True, 1, 1)
+    assert ast_set.is_node_known_valid(other_ast)
+
+
 @pytest.fixture(scope="function")
 def simple_p_tc():
     tc = TypeContext()

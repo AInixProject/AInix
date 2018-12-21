@@ -178,6 +178,12 @@ class ObjectChoiceNode(AstNode):
         return self._choice
 
     @property
+    def next_node_is_copy(self) -> 'CopyNode':
+        if not isinstance(self._choice, CopyNode):
+            raise ValueError("Choice is not actually a copy")
+        return self._choice
+
+    @property
     def type_context(self) -> ainix_common.parsing.typecontext.TypeContext:
         return self._type_to_choose.type_context
 
@@ -475,6 +481,14 @@ class CopyNode(ObjectNodeLike):
             raise ValueError("Cannot freeze copy node with unset end")
         self._is_frozen = True
 
+    @property
+    def start(self) -> int:
+        return self._start
+
+    @property
+    def end(self) -> int:
+        return self._end
+
     def get_nth_child(self, n: int, none_if_out_of_bounds=False) -> Optional['AstNode']:
         return None
 
@@ -682,7 +696,6 @@ class ArgsSetData:
         self._max_weight = max(self._max_weight, new_weight)
 
 
-
 class ObjectNodeSet(AstSet):
     def __init__(
         self,
@@ -752,11 +765,22 @@ class ImplementationData:
 
 @attr.s(auto_attribs=True, frozen=True)
 class CopyValData:
-    start: int
-    end: int
     max_probability: float = 0
     is_known_valid: bool = False
     max_weight: float = 0
+
+    def update(
+        self,
+        probability_valid: float,
+        is_known_valid: bool,
+        weight: float
+    ) -> 'CopyValData':
+        """Returns a new instance with the data updated"""
+        return CopyValData(
+            max(probability_valid, self.max_probability),
+            is_known_valid or self.max_probability,
+            max(weight, self.max_weight)
+        )
 
 
 class AstObjectChoiceSet(AstSet):
@@ -768,8 +792,11 @@ class AstObjectChoiceSet(AstSet):
         super().__init__(parent)
         self._type_to_choose = type_to_choose
         self._impl_name_to_data: MutableMapping[str, 'ImplementationData'] = {}
+        # The copy options data maps from (start, end) to data about weight and stuff
+        self._copy_options: MutableMapping[Tuple[int, int], CopyValData] = {}
         self._max_weight = 0
         self._hash_cache = None
+        self._copy_is_a_known_option = False
 
     @property
     def type_to_choose(self):
@@ -790,6 +817,7 @@ class AstObjectChoiceSet(AstSet):
             if n.next_node:
                 n.next_node.freeze()
         self._impl_name_to_data = pmap(self._impl_name_to_data)
+        self._copy_options = pmap(self._copy_options)
 
     def _add_when_non_copy(
         self,
@@ -798,6 +826,7 @@ class AstObjectChoiceSet(AstSet):
         weight: float,
         probability_valid: float
     ):
+        """Used to add a node to the set when its chosen child is not a copy"""
         existing_data = self._impl_name_to_data.get(child.implementation.name, None)
         if existing_data:
             new_weight = max(weight, existing_data.max_weight)
@@ -825,14 +854,21 @@ class AstObjectChoiceSet(AstSet):
         if next_node:
             next_node.add(child, known_as_valid, weight, probability_valid)
 
-    def _add_when_copy(
+    def _add_node_when_copy(
         self,
         child: CopyNode,
         known_as_valid: bool,
         weight: float,
         probability_valid: float
     ):
-        pass
+        span = (child.start, child.end)
+        existing_data = self._copy_options.get(span)
+        if existing_data is not None:
+            new_data = existing_data.update(probability_valid, known_as_valid, weight)
+        else:
+            new_data = CopyValData(probability_valid, known_as_valid, weight)
+        self._copy_is_a_known_option = self._copy_is_a_known_option or known_as_valid
+        self._copy_options[span] = new_data
 
     def add(
         self,
@@ -851,7 +887,7 @@ class AstObjectChoiceSet(AstSet):
         if node.copy_was_chosen:
             child = node.next_node
             if isinstance(child, CopyNode):
-                self._add_when_copy(child, known_as_valid, weight, probability_valid)
+                self._add_node_when_copy(child, known_as_valid, weight, probability_valid)
             else:
                 raise ValueError("Unexpected kind of copynode?")
         else:
@@ -861,32 +897,43 @@ class AstObjectChoiceSet(AstSet):
     def is_node_known_valid(self, node: ObjectChoiceNode) -> bool:
         if node is None:
             return False
-        if node.get_chosen_impl_name() not in self._impl_name_to_data:
-            return False
-        data = self._impl_name_to_data[node.get_chosen_impl_name()]
-        if not data.known_as_valid:
-            return False
-        if data.next_node is None:
-            return node.next_node is None
-        return data.next_node.is_node_known_valid(node.next_node)
+        if node.copy_was_chosen:
+            child = node.next_node_is_copy
+            existing_data = self._copy_options.get((child.start, child.end))
+            if existing_data is None:
+                return False
+            return existing_data.is_known_valid
+        else:
+            if node.get_chosen_impl_name() not in self._impl_name_to_data:
+                return False
+            data = self._impl_name_to_data[node.get_chosen_impl_name()]
+            if not data.known_as_valid:
+                return False
+            if data.next_node is None:
+                return node.next_node is None
+            return data.next_node.is_node_known_valid(node.next_node_not_copy)
 
     def is_known_choice(self, choose_name: str):
         if choose_name not in self._impl_name_to_data:
             return False
         return self._impl_name_to_data[choose_name].known_as_valid
 
+    def copy_is_known_choice(self):
+        return self._copy_is_a_known_option
+
     def __eq__(self, other):
         if id(self) == id(other):
             return True
         return self._type_to_choose == other._type_to_choice and \
                self._impl_name_to_data == other._impl_name_to_data and \
-               self._max_weight == other._max_weight
+               self._max_weight == other._max_weight and \
+               self._copy_options == other._copy_options
 
     def __hash__(self):
         if self._hash_cache:
             return self._hash_cache
         super().__hash__()
-        hash_val = hash((self._type_to_choose, self._impl_name_to_data))
+        hash_val = hash((self._type_to_choose, self._impl_name_to_data, self._copy_options))
         self._hash_cache = hash_val
         return hash_val
 

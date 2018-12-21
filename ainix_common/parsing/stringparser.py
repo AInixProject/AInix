@@ -272,7 +272,6 @@ class StringParser:
             return None, fail_return
 
 
-
 class AstUnparser:
     """A class which is the main driver for converting from ASTs to strings. It
     uses the to_string methods on TypeParsers and ObjectParsers"""
