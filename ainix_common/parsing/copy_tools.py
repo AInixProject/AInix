@@ -62,6 +62,6 @@ def make_copy_versions_of_tree(
                 copy_node = CopyNode(
                     pointer.cur_node.implementation.type, copy_pos[0], copy_pos[1])
                 new_pointer = pointer.change_here(copy_node, always_clone=True)
-                return new_pointer.get_root()
+                return new_pointer.get_root().cur_node
 
 
