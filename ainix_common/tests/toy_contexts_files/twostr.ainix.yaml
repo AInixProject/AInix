@@ -23,17 +23,25 @@ defines:
       name: ToyMetasyntactic
       default_type_parser: max_munch_type_parser
     - &metasyntactic_ob
-        define_new: object
-        name: foo
-        type: ToyMetasyntactic
-        type_data: {ParseRepresentation: "foo"}
+      define_new: object
+      name: foo
+      type: ToyMetasyntactic
+      preferred_object_parser:
+          grammar: |
+            "foo"
     - << : *metasyntactic_ob
       name: bar
-      type_data: {ParseRepresentation: "bar"}
+      preferred_object_parser:
+          grammar: |
+            "bar"
     - << : *metasyntactic_ob
       name: baz
-      type_data: {ParseRepresentation: "baz"}
+      preferred_object_parser:
+          grammar: |
+            "baz"
     - << : *metasyntactic_ob
       name: pop
-      type_data: {ParseRepresentation: "pop"}
+      preferred_object_parser:
+          grammar: |
+            "bpop"
 ...

@@ -1,44 +1,54 @@
 import pytest
+
+from ainix_common.parsing.stringparser import StringParser
+from ainix_common.parsing.typecontext import TypeContext, AInixType
 from builtin_types.generic_parsers import *
+from ainix_common.parsing import loader
 from unittest.mock import MagicMock
 
 
 def test_max_munch():
+    tc = TypeContext()
+    loader.load_path("builtin_types/generic_parsers.ainix.yaml", tc, up_search_limit=3)
+    foo_type = "MMTestType"
+    AInixType(tc, foo_type, default_type_parser_name="max_munch_type_parser")
+
     def make_mock_with_parse_rep(representation: str):
-        out = MagicMock()
-        out.type_data = {MAX_MUNCH_LOOKUP_KEY: representation}
-        return out
-    mock_run = MagicMock()
-    mock_types = [make_mock_with_parse_rep(rep)
-                  for rep in ("fo", "bar", "f", "foo", "foot", 'baz')]
-    mock_run.all_type_implementations = mock_types
-    parse_str = "foobar"
-    result = parse_primitives.TypeParserResult(MagicMock, parse_str)
-    max_munch_type_parser(mock_run, parse_str, result)
-    assert result.get_implementation() == mock_types[3]
-    assert result.get_next_string() == "bar"
-    assert result.get_next_slice() == (3, 6)
+        loader._load_object({
+            "name": representation,
+            "type": foo_type,
+            "preferred_object_parser": {
+                "grammar": f'"{representation}"'
+            }
+        }, tc, "foopathsdf")
+        assert tc.get_object_by_name(representation).preferred_object_parser_name is not None
+    objects = [make_mock_with_parse_rep(rep)
+               for rep in ("fo", "bar", "f", "foo", "foot", 'baz')]
 
-    with pytest.raises(parse_primitives.AInixParseError):
-        parse_str = "moo"
-        result = parse_primitives.TypeParserResult(MagicMock, parse_str)
-        max_munch_type_parser(mock_run, parse_str, result)
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree("foobar", foo_type)
+    assert ast.next_node_not_copy.implementation.name == "foo"
+
+    #with pytest.raises(parse_primitives.AInixParseError):
+    #    parse_str = "moo"
+    #    result = parse_primitives.TypeParserResult(MagicMock, parse_str)
+    #    max_munch_type_parser(mock_run, parse_str, result)
 
 
-def test_max_munch_empty_string():
-    def make_mock_with_parse_rep(representation: str):
-        out = MagicMock()
-        out.type_data = {MAX_MUNCH_LOOKUP_KEY: representation}
-        return out
-    mock_run = MagicMock()
-    mock_types = [make_mock_with_parse_rep(rep)
-                  for rep in ("fo", "bar", "")]
-    mock_run.all_type_implementations = mock_types
-    parse_str = "moo"
-    result = parse_primitives.TypeParserResult(MagicMock, parse_str)
-    max_munch_type_parser(mock_run, parse_str, result)
-    assert result.get_implementation() == mock_types[2]
-    assert result.get_next_string() == "moo"
+#def test_max_munch_empty_string():
+#    def make_mock_with_parse_rep(representation: str):
+#        out = MagicMock()
+#        out.type_data = {MAX_MUNCH_LOOKUP_KEY: representation}
+#        return out
+#    mock_run = MagicMock()
+#    mock_types = [make_mock_with_parse_rep(rep)
+#                  for rep in ("fo", "bar", "")]
+#    mock_run.all_type_implementations = mock_types
+#    parse_str = "moo"
+#    result = parse_primitives.TypeParserResult(MagicMock, parse_str)
+#    max_munch_type_parser(mock_run, parse_str, result)
+#    assert result.get_implementation() == mock_types[2]
+#    assert result.get_next_string() == "moo"
 
 
 def test_regex_group_parser():

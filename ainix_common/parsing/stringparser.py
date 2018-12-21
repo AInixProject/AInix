@@ -80,7 +80,7 @@ class StringParser:
             arg_name_to_node[arg.name], arg_metadata = \
                 self._make_node_for_arg(arg, arg_present_data, delegation_to_node_map)
         my_return_metadata = ParseDelegationReturnMetadata(
-            True, string, None, implementation, object_parse.remaining_start_i)
+            True, string, 0, implementation, object_parse.remaining_start_i)
         return ObjectNode(implementation, pmap(arg_name_to_node)), my_return_metadata
 
     def _delegate_object_arg_parse(
@@ -213,9 +213,8 @@ class StringParser:
         """Converts the result we get from a type parser into a string metadata
         result."""
         si, endi = result.get_next_slice()
-        si += child_metadata.remaining_right_starti
-        endi += child_metadata.remaining_right_starti
-        return ParseDelegationReturnMetadata(True, result.string, 0, result.type, si)
+        ei = max(si, child_metadata.original_start_offset + child_metadata.remaining_right_starti)
+        return ParseDelegationReturnMetadata(True, result.string, 0, result.type, ei)
 
     def _parse_object_choice_node(
         self,
@@ -240,7 +239,10 @@ class StringParser:
         string: str,
         type_to_parser: typecontext.AInixType,
         parser: ainix_common.parsing.parse_primitives.TypeParser
-    ) -> Tuple[TypeParserResult, Dict[ParseDelegationReturnMetadata, ObjectNode]]:
+    ) -> Tuple[
+        TypeParserResult,
+        Dict[ParseDelegationReturnMetadata, Tuple[ObjectNode, ParseDelegationReturnMetadata]]
+    ]:
         """Run a type parser handling delegations it yields as needed."""
         parser_gen = parser.parse_string(string, type_to_parser)
         delegation_to_node: Dict[ParseDelegationReturnMetadata, ObjectNode] = {}
@@ -252,8 +254,8 @@ class StringParser:
                 return_result = stop_iter.value
                 return return_result, delegation_to_node
             # Well it didn't reach the end, so it must have yielded a delegation. Handle that.
-            node, return_metadata = self._delegate_object_arg_parse(delegation)
-            delegation_to_node[return_metadata] = node
+            node, return_metadata = self._delegate_impl_parser(delegation)
+            delegation_to_node[return_metadata] = node, return_metadata
             last_delegation_result = return_metadata
 
     def _delegate_impl_parser(self, delegation: ImplementationParseDelegation):

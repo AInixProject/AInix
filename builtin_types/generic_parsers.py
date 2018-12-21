@@ -1,6 +1,8 @@
 from ainix_common.parsing import parse_primitives
 import re
-MAX_MUNCH_LOOKUP_KEY = "ParseRepresentation"
+
+from ainix_common.parsing.parse_primitives import ParseDelegationReturnMetadata, UnparsableTypeError
+
 REGEX_GROUP_LOOKUP_KEY = "RegexRepresentation"
 
 
@@ -9,30 +11,25 @@ def max_munch_type_parser(
     string: str,
     result: parse_primitives.TypeParserResult
 ) -> None:
-    """A type parser which consumes as much as possible. Each implementation
-    is expected to have a type_data equal to MAX_MUNCH_LOOKUP_KEY (specified
-    above."""
+    """A type parser which consumes as much as possible."""
     implementations = run.all_type_implementations
-    longest_match = None
-    for implementation in implementations:
-        parse_rep: str = implementation.type_data[MAX_MUNCH_LOOKUP_KEY]
-        if string.startswith(parse_rep):
-            match = (len(parse_rep), implementation)
-            if longest_match is None or match > longest_match:
-                longest_match = match
-    if longest_match is None:
-        raise parse_primitives.UnparsableTypeError(
-            f"{run.parser_name} unable to find any matches inside {string}")
-    result.set_valid_implementation(longest_match[1])
-    result.set_next_slice(longest_match[0], len(string))
+    farthest_right = -9e9
+    longest_success: ParseDelegationReturnMetadata = None
+    for impl in implementations:
+        deleg = yield run.delegate_parse_implementation(impl, (0, len(string)))
+        if deleg.parse_success and deleg.remaining_right_starti > farthest_right:
+            farthest_right = deleg.remaining_right_starti
+            longest_success = deleg
+    if not longest_success:
+        raise UnparsableTypeError("A max munch parser did not find a valid implementation")
+    result.accept_delegation(longest_success)
 
 
 def max_munch_type_unparser(result: parse_primitives.TypeToStringResult):
-    impl = result.implementation
-    munch_val = impl.type_data[MAX_MUNCH_LOOKUP_KEY]
-    result.add_string(munch_val)
+    result.add_impl_unparse()
 
 
+# Deprecated. Should eventually remove dependencies on
 def regex_group_object_parser(
     run:  parse_primitives.ObjectParserRun,
     string: str,

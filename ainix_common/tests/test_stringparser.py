@@ -1,7 +1,8 @@
 import pytest
 from ainix_common.parsing.ast_components import *
 from ainix_common.parsing import loader
-from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation
+from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation, TypeParserRun, \
+    TypeParserResult
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject, AInixType, \
     OPTIONAL_ARGUMENT_NEXT_ARG_NAME
@@ -55,6 +56,42 @@ def test_end_to_end_parse1(type_context):
     assert b_choice.choice.implementation.name.endswith("NOTPRESENT")
 
 
+def test_no_arg():
+    tc = TypeContext()
+    AInixType(tc, "FooType")
+    AInixObject(tc, "FooO", "FooType")
+    tc.fill_default_parsers()
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree("a", "FooType")
+
+
+def test_no_arg_delegate():
+    tc = TypeContext()
+    def del_parse(run: TypeParserRun, string: str, result: TypeParserResult):
+        impls = run.all_type_implementations
+        assert len(impls) == 1
+        d = yield run.delegate_parse_implementation(impls[0], (0, len(string)))
+        result.accept_delegation(d)
+    p = TypeParser(tc, "del_parser", del_parse)
+    AInixType(tc, "FooType", "del_parser")
+    o = AInixObject(tc, "FooO", "FooType")
+    tc.fill_default_parsers()
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree("a", "FooType")
+    assert ast.next_node_not_copy.implementation == o
+
+
+def test_no_arg_max_munch():
+    tc = TypeContext()
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", tc)
+    AInixType(tc, "FooType", "max_munch_type_parser")
+    o = AInixObject(tc, "FooO", "FooType")
+    tc.fill_default_parsers()
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree("a", "FooType")
+    assert ast.next_node_not_copy.implementation == o
+
+
 @pytest.fixture(scope="function")
 def toy_string_context_optional() -> TypeContext:
     tc = TypeContext()
@@ -68,7 +105,9 @@ def toy_string_context_optional() -> TypeContext:
         tc, "foo_string_parser", r"CurWord Nstr?")
     foo_word = AInixType(tc, "FooWord", "max_munch_type_parser")
     objects = [AInixObject(tc, "FooWordOf" + name, "FooWord",
-                           type_data={"ParseRepresentation": name})
+                           preferred_object_parser_name=create_object_parser_from_grammar(
+                                tc, f"ParserOf{name}", f'"{name}"'
+                           ).name)
                for name in ("a", "bee", "c")]
     tc.fill_default_parsers()
     return tc

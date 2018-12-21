@@ -9,7 +9,7 @@ defines:
     - define_new: type
       name: CompoundOperator
       default_type_parser: CommandOperatorParser
-      default_object_paser: CommandOperatorObjParser
+      default_object_parser: CommandOperatorObjParser
     - define_new: type
       name: Program
       default_type_parser: ProgramTypeParser

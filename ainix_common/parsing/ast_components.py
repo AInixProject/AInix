@@ -172,6 +172,12 @@ class ObjectChoiceNode(AstNode):
         return self._choice
 
     @property
+    def next_node_not_copy(self) -> 'ObjectNode':
+        if not isinstance(self._choice, ObjectNode):
+            raise ValueError("Choice is actually a copy")
+        return self._choice
+
+    @property
     def type_context(self) -> ainix_common.parsing.typecontext.TypeContext:
         return self._type_to_choose.type_context
 

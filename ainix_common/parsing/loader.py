@@ -107,7 +107,11 @@ def _parse_arguments(
 
 def _load_type(define, type_context: typecontext.TypeContext) -> None:
     """Parses the serialized form of a type and adds it to the supplied TypeContext"""
-    # TODO (DNGros): validate that not extra keys in the define (would help catch people's typos)
+    valid_keys = ("name", "default_type_parser", "default_object_parser",
+                  "default_type_parser", "allowed_attributes", "define_new")
+    for key in define.keys():
+        if key not in valid_keys:
+            raise ValueError(f"Key {key} not recognized. Options are {valid_keys}")
     typecontext.AInixType(
         type_context,
         define['name'],
@@ -117,9 +121,12 @@ def _load_type(define, type_context: typecontext.TypeContext) -> None:
     )
 
 
-def _load_object(define, type_context: typecontext.TypeContext, load_root: str):
+def _load_object(define: dict, type_context: typecontext.TypeContext, load_root: str):
     """Parses the serialized form of a object_name and adds it to the supplied TypeContext"""
-    # TODO (DNGros): validate that not extra keys in the define (would help catch people's typos)
+    valid_keys = ("define_new", "name", "type", "children", "preferred_object_parser", "type_data")
+    for key in define.keys():
+        if key not in valid_keys:
+            raise ValueError(f"Key {key} not recognized. Options are {valid_keys}")
     preferred_object_parser = define.get("preferred_object_parser")
     preferred_object_parser_name = None
     if isinstance(preferred_object_parser, str):

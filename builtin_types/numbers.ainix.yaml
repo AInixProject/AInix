@@ -28,11 +28,15 @@ defines:
     - define_new: object
       name: positive_sign
       type: Sign
-      type_data: {ParseRepresentation: "+"}
+      preferred_object_parser:
+          grammar: |
+              "+"
     - define_new: object
       name: negative_sign
       type: Sign
-      type_data: {ParseRepresentation: "-"}
+      preferred_object_parser:
+          grammar: |
+              "-"
     # A string of base10 digits
     - define_new: type
       name: IntBase
@@ -59,32 +63,52 @@ defines:
       define_new: object
       name: zero
       type: BaseTen
-      type_data: {ParseRepresentation: "0"}
+      preferred_object_parser:
+          grammar: |
+            "0"
     - << : *base_ten_obj
       name: one
-      type_data: {ParseRepresentation: "1"}
+      preferred_object_parser:
+          grammar: |
+            "1"
     - << : *base_ten_obj
       name: two
-      type_data: {ParseRepresentation: "2"}
+      preferred_object_parser:
+          grammar: |
+            "2"
     - << : *base_ten_obj
       name: three
-      type_data: {ParseRepresentation: "3"}
+      preferred_object_parser:
+          grammar: |
+            "3"
     - << : *base_ten_obj
       name: four
-      type_data: {ParseRepresentation: "4"}
+      preferred_object_parser:
+          grammar: |
+            "4"
     - << : *base_ten_obj
       name: five
-      type_data: {ParseRepresentation: "5"}
+      preferred_object_parser:
+          grammar: |
+            "5"
     - << : *base_ten_obj
       name: six
-      type_data: {ParseRepresentation: "6"}
+      preferred_object_parser:
+          grammar: |
+            "6"
     - << : *base_ten_obj
       name: seven
-      type_data: {ParseRepresentation: "7"}
+      preferred_object_parser:
+          grammar: |
+            "7"
     - << : *base_ten_obj
       name: eight
-      type_data: {ParseRepresentation: "8"}
+      preferred_object_parser:
+          grammar: |
+            "8"
     - << : *base_ten_obj
       name: nine
-      type_data: {ParseRepresentation: "9"}
+      preferred_object_parser:
+          grammar: |
+            "9"
 ...

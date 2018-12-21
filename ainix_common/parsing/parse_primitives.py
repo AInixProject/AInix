@@ -7,6 +7,10 @@ from typing import List, Callable, Tuple, Dict, Optional, Any, Union, Generator
 import typing
 import types
 
+TypeParserFuncType = Callable[
+    ['TypeParserRun', str, 'TypeParserResult'],
+    Generator['ImplementationParseDelegation', 'ParseDelegationReturnMetadata', None]
+]
 TypeParserToStringFuncType = Callable[['TypeToStringResult'], Generator]
 
 
@@ -42,8 +46,8 @@ class TypeParser:
         self,
         type_context: 'typecontext.TypeContext',
         parser_name: str,
-        parse_function: Callable[['TypeParserRun', str, 'TypeParserResult'], None],
-        to_string_function: TypeParserToStringFuncType=DefaultTypeToString,
+        parse_function: TypeParserFuncType,
+        to_string_function: TypeParserToStringFuncType = DefaultTypeToString,
         type_name: str = None
     ):
         self._type_context = type_context
