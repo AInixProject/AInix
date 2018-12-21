@@ -2,7 +2,7 @@ import collections
 
 import ainix_common.parsing.typecontext
 from typing import Optional, Generator, \
-    Tuple, MutableMapping, Mapping, List
+    Tuple, MutableMapping, Mapping, List, MutableSet
 from abc import ABC, abstractmethod
 import attr
 from pyrsistent import pmap
@@ -112,7 +112,7 @@ class AstNode(ABC):
 
 
 class ObjectChoiceNode(AstNode):
-    """Given a certain type, represents a selection amoung the available implementations."""
+    """Given a certain type, represents a selection among the available implementations."""
     def __init__(
         self,
         type_to_choose: ainix_common.parsing.typecontext.AInixType,
@@ -182,7 +182,7 @@ class ObjectChoiceNode(AstNode):
         return self._type_to_choose.type_context
 
     def get_chosen_impl_name(self) -> str:
-        return self._choice._implementation.name
+        return self.next_node_not_copy.implementation.name
 
     def __str__(self):
         s = "<ObjectChoiceNode for " + str(self.get_type_to_choose_name())
@@ -682,6 +682,7 @@ class ArgsSetData:
         self._max_weight = max(self._max_weight, new_weight)
 
 
+
 class ObjectNodeSet(AstSet):
     def __init__(
         self,
@@ -690,18 +691,18 @@ class ObjectNodeSet(AstSet):
     ):
         super().__init__(parent)
         self._implementation = implementation
-        self.data: MutableMapping[ChildlessObjectNode, ArgsSetData] = {}
+        self._arg_data: MutableMapping[ChildlessObjectNode, ArgsSetData] = {}
 
     def freeze(self):
         if self._is_frozen:
             return
         self._is_frozen = True
-        for d in self.data.values():
+        for d in self._arg_data.values():
             d.freeze()
-        self.data = pmap(self.data)
+        self._arg_data = pmap(self._arg_data)
 
     def get_arg_set_data(self, arg_selection: ChildlessObjectNode) -> ArgsSetData:
-        return self.data.get(arg_selection, None)
+        return self._arg_data.get(arg_selection, None)
 
     def _verify_impl_of_new_node(self, node):
         if node.implementation != self._implementation:
@@ -712,16 +713,16 @@ class ObjectNodeSet(AstSet):
     def add(self, node: ObjectNode, known_as_valid: bool, weight: float, probability_valid: float):
         self._verify_impl_of_new_node(node)
         childless_args = node.as_childless_node()
-        if childless_args not in self.data:
-            self.data[childless_args] = ArgsSetData(node._implementation, self)
-        self.data[childless_args].add_from_other_data(
+        if childless_args not in self._arg_data:
+            self._arg_data[childless_args] = ArgsSetData(node._implementation, self)
+        self._arg_data[childless_args].add_from_other_data(
             node, probability_valid, known_as_valid, weight)
 
     def is_node_known_valid(self, node: ObjectNode) -> bool:
         childless_args = node.as_childless_node()
-        if childless_args not in self.data:
+        if childless_args not in self._arg_data:
             return False
-        node_data = self.data[childless_args]
+        node_data = self._arg_data[childless_args]
         if not node_data._is_known_valid:
             return False
         for arg in node.implementation.children:
@@ -734,11 +735,11 @@ class ObjectNodeSet(AstSet):
 
     def __hash__(self):
         super().__hash__()
-        return hash((self._implementation, self.data))
+        return hash((self._implementation, self._arg_data))
 
     def __eq__(self, other):
         return self._implementation == other._implementation and \
-               self.data == other.data
+               self._arg_data == other.data
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -747,6 +748,15 @@ class ImplementationData:
     max_probability_valid: float
     known_as_valid: bool
     max_weight: float
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class CopyValData:
+    start: int
+    end: int
+    max_probability: float = 0
+    is_known_valid: bool = False
+    max_weight: float = 0
 
 
 class AstObjectChoiceSet(AstSet):
@@ -781,21 +791,14 @@ class AstObjectChoiceSet(AstSet):
                 n.next_node.freeze()
         self._impl_name_to_data = pmap(self._impl_name_to_data)
 
-    def add(
+    def _add_when_non_copy(
         self,
-        node: ObjectChoiceNode,
+        child: ObjectNode,
         known_as_valid: bool,
         weight: float,
         probability_valid: float
     ):
-        if self._is_frozen:
-            raise ValueError("Cannot add to frozen AstObjectChoiceSet")
-        if node.type_to_choose.name != self._type_to_choose.name:
-            raise ValueError(f"Attempting to add node of ObjectChoiceNode of type "
-                             f"{node.type_to_choose.name} into AstObjectChoice set "
-                             f"of type {self.type_to_choose.name}")
-
-        existing_data = self._impl_name_to_data.get(node.get_chosen_impl_name(), None)
+        existing_data = self._impl_name_to_data.get(child.implementation.name, None)
         if existing_data:
             new_weight = max(weight, existing_data.max_weight)
             if existing_data.max_probability_valid is None:
@@ -813,14 +816,47 @@ class AstObjectChoiceSet(AstSet):
         # figure out the data's next node
         if existing_data and existing_data.next_node is not None:
             next_node = existing_data.next_node
-        elif node.next_node:
-            next_node = ObjectNodeSet(node.next_node.implementation, self)
+        elif child:
+            next_node = ObjectNodeSet(child.implementation, self)
         else:
             next_node = None
         new_data = ImplementationData(next_node, new_probability_valid, new_known_valid, new_weight)
-        self._impl_name_to_data[node.get_chosen_impl_name()] = new_data
+        self._impl_name_to_data[child.implementation.name] = new_data
         if next_node:
-            next_node.add(node.next_node, known_as_valid, weight, probability_valid)
+            next_node.add(child, known_as_valid, weight, probability_valid)
+
+    def _add_when_copy(
+        self,
+        child: CopyNode,
+        known_as_valid: bool,
+        weight: float,
+        probability_valid: float
+    ):
+        pass
+
+    def add(
+        self,
+        node: ObjectChoiceNode,
+        known_as_valid: bool,
+        weight: float,
+        probability_valid: float
+    ):
+        if self._is_frozen:
+            raise ValueError("Cannot add to frozen AstObjectChoiceSet")
+        if node.type_to_choose.name != self._type_to_choose.name:
+            raise ValueError(f"Attempting to add node of ObjectChoiceNode of type "
+                             f"{node.type_to_choose.name} into AstObjectChoice set "
+                             f"of type {self.type_to_choose.name}")
+
+        if node.copy_was_chosen:
+            child = node.next_node
+            if isinstance(child, CopyNode):
+                self._add_when_copy(child, known_as_valid, weight, probability_valid)
+            else:
+                raise ValueError("Unexpected kind of copynode?")
+        else:
+            self._add_when_non_copy(node.next_node_not_copy, known_as_valid,
+                                    weight, probability_valid)
 
     def is_node_known_valid(self, node: ObjectChoiceNode) -> bool:
         if node is None:
