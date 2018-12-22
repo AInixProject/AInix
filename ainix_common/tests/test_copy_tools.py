@@ -59,4 +59,3 @@ def test_make_copy_ast():
     assert n.implementation.name == "two_string"
     assert arg1set.copy_is_known_choice()
     assert arg1set.is_known_choice("foo")
-

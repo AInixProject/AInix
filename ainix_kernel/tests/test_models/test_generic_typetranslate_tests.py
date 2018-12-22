@@ -8,6 +8,7 @@ from typing import List
 
 import pytest
 
+from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
 from ainix_kernel.indexing.examplestore import Example, DataSplits, SPLIT_TYPE, ExamplesStore
 from ainix_kernel.models.EncoderDecoder import encdecmodel
 from ainix_kernel.models.SeaCR import seacr
@@ -67,9 +68,10 @@ def base_tc():
 def basic_classify_tc(base_tc):
     tc = base_tc
     AInixType(tc, "FooBarBazType", default_type_parser_name="max_munch_type_parser")
-    AInixObject(tc, "foo", "FooBarBazType", type_data={"ParseRepresentation": "foo"})
-    AInixObject(tc, "bar", "FooBarBazType", type_data={"ParseRepresentation": "bar"})
-    AInixObject(tc, "baz", "FooBarBazType", type_data={"ParseRepresentation": "baz"})
+    for word in ("foo", "baz", "bar"):
+        AInixObject(tc, word, "FooBarBazType",
+                    preferred_object_parser_name=create_object_parser_from_grammar(
+                        tc, f"par{word}", f'"{word}"').name)
     return tc
 
 
@@ -302,6 +304,6 @@ def test_string_gen(model_name, basic_string_tc):
         #assert_val_acc(model, example_store, expect_fail=True)
         pass
     # Do training and expect it to work
-    do_train(model, example_store, epochs=35, batch_size=8)
+    do_train(model, example_store, epochs=25, batch_size=1)
     assert_train_acc(model, example_store, required_accuracy=0.85)
     assert_val_acc(model, example_store, required_accuracy=0.8)

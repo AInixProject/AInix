@@ -60,8 +60,9 @@ def add_copies_to_ast_set(
     assert len(df_ast_nodes) == len(df_ast_set)
     for node, cur_set in zip(df_ast_nodes, df_ast_set):
         if isinstance(node, ObjectChoiceNode):
+            # TODO (DNGros): Figure out how to use the right weights and probability
             _try_add_copy_node_at_object_choice(
-                node, cur_set, True, 1, 1,unparse, token_metadata)
+                node, cur_set, True, 1, 1, unparse, token_metadata)
         elif isinstance(node, ObjectNode):
             pass
         else:
