@@ -4,9 +4,10 @@ from typing import Tuple, Callable, List, Optional
 import torch
 from torch import nn
 import attr
-from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet, ObjectNode, AstNode, \
-    ObjectNodeSet
+from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet, \
+    ObjectNode, AstNode, ObjectNodeSet
 from ainix_common.parsing.typecontext import AInixType, AInixObject
+from ainix_kernel.model_util.attending import attend
 from ainix_kernel.model_util.vectorizers import VectorizerBase
 from ainix_kernel.model_util.vocab import Vocab, are_indices_valid
 from ainix_kernel.models.EncoderDecoder import objectselector
@@ -129,6 +130,27 @@ class TreeRNNDecoder(TreeDecoder):
         self.object_selector = object_selector
         self.ast_vectorizer = ast_vectorizer
         self.ast_vocab = ast_vocab
+        # Copy stuff. Should probably be moved to its own module, but for now
+        # I'm being lazy because if switch to retrieval method this will change
+        # anyways.
+        self.copy_relevant_linear = nn.Sequential(
+            nn.Linear(rnn_cell.input_size, rnn_cell.input_size),
+            nn.ReLU()
+        )
+        self.should_copy_predictor = nn.Sequential(
+            self.copy_relevant_linear,
+            nn.Linear(rnn_cell.input_size, int(rnn_cell.input_size / 4)),
+            nn.ReLU(),
+            nn.Linear(int(rnn_cell.input_size / 4), 1)
+        )
+        self.copy_start_vec_predictor = nn.Sequential(
+            nn.Linear(rnn_cell.input_size, rnn_cell.input_size),
+            nn.ReLU()
+        )
+        self.copy_end_vec_predictor = nn.Sequential(
+            nn.Linear(rnn_cell.input_size, rnn_cell.input_size),
+            nn.ReLU()
+        )
         # TODO (DNGros): Figure this out. It changed in torch 1.0 and is weird now
         #self.bce_pos_weight = bce_pos_weight
 
@@ -176,6 +198,7 @@ class TreeRNNDecoder(TreeDecoder):
     def _train_objectchoice_step(
         self,
         last_hidden: torch.Tensor,
+        memory_tokens: torch.Tensor,
         parent_node_features: Optional[torch.Tensor],
         expected: AstObjectChoiceSet,
         teacher_force_path: ObjectChoiceNode
@@ -189,6 +212,7 @@ class TreeRNNDecoder(TreeDecoder):
 
         loss = self._training_get_loss_from_select_vector(
             vectors_to_select_on=outs,
+            memory_tokens=memory_tokens,
             types_to_select=[teacher_force_path.type_to_choose],
             current_gt_set=expected
         )
@@ -197,9 +221,9 @@ class TreeRNNDecoder(TreeDecoder):
             impl_name_chosen=teacher_force_path.get_chosen_impl_name()
         ).next_node
         assert next_expected_set is not None, "Teacher force path not in expected ast set!"
-        next_object_node = teacher_force_path.next_node
+        next_object_node = teacher_force_path.next_node_not_copy
         hiddens, child_loss = self._train_objectnode_step(
-            hiddens, next_expected_set, next_object_node)
+            hiddens, memory_tokens, next_expected_set, next_object_node)
         return hiddens, loss + child_loss
 
     def _inference_object_step(
@@ -226,6 +250,7 @@ class TreeRNNDecoder(TreeDecoder):
     def _train_objectnode_step(
         self,
         last_hidden: torch.Tensor,
+        memory_tokens: torch.Tensor,
         expected: ObjectNodeSet,
         teacher_force_path: ObjectNode
     ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -238,7 +263,7 @@ class TreeRNNDecoder(TreeDecoder):
             next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
             next_force_path = teacher_force_path.get_choice_node_for_arg(arg.name)
             latest_hidden, arg_loss = self._train_objectchoice_step(
-                latest_hidden, my_features, next_choice_set, next_force_path)
+                latest_hidden, memory_tokens, my_features, next_choice_set, next_force_path)
             child_loss += arg_loss
         return latest_hidden, child_loss
 
@@ -266,15 +291,11 @@ class TreeRNNDecoder(TreeDecoder):
         y_ast: Optional[AstObjectChoiceSet],
         teacher_force_path: Optional[ObjectChoiceNode]
     ) -> Tuple[Optional[ObjectChoiceNode], Optional[torch.Tensor]]:
-        #first_prediction = PredictionState(root_type, query_summary)
-        #predict_stack: List[PredictionState] = [first_prediction]
-        #while predict_stack:
-        #    pass
         if is_train:
             if y_ast is None or teacher_force_path is None:
                 raise ValueError("If training expect path to be previded")
             last_hidden, loss = self._train_objectchoice_step(
-                query_summary, None, y_ast, teacher_force_path)
+                query_summary, memory_tokens, None, y_ast, teacher_force_path)
             return None, loss
         else:
             # TODO (DNGros): make steps this not mutate state and iterative
@@ -316,9 +337,58 @@ class TreeRNNDecoder(TreeDecoder):
             batch_loss += loss
         return batch_loss
 
+    def _train_loss_from_choose_whether_copy(
+        self,
+        vectors_to_select_on: torch.Tensor,
+        types_to_select: List[AInixType],
+        current_gt_set: AstObjectChoiceSet
+    ) -> torch.Tensor:
+        assert len(types_to_select) == 1, "No batch yet"
+        assert types_to_select[0] == current_gt_set.type_to_choose
+        should_be_true = torch.Tensor([[1 if current_gt_set.copy_is_known_choice() else 0]])
+        predictions = self.should_copy_predictor(vectors_to_select_on)
+        return F.binary_cross_entropy_with_logits(
+            predictions,
+            should_be_true
+        )
+
+    def _train_loss_from_choosing_copy_span(
+        self,
+        vectors_to_select_on: torch.Tensor,
+        memory_tokens: torch.Tensor,
+        types_to_select: List[AInixType],
+        current_gt_set: AstObjectChoiceSet
+    ) -> torch.Tensor:
+        if not current_gt_set.copy_is_known_choice():
+            return 0
+        copy_vec = self.copy_relevant_linear(vectors_to_select_on)
+        start_vec = self.copy_start_vec_predictor(copy_vec)
+        # TODO (DNGros): when batch, should pass in the lengths so can mask right
+        start_options = attend.get_attend_weights(start_vec, vectors_to_select_on)
+        end_vec = self.copy_start_vec_predictor(copy_vec)
+        end_options = attend.get_attend_weights(end_vec, vectors_to_select_on)
+
+        si, ei = current_gt_set.earliest_known_copy()
+        correct_starts = torch.zeros(*vectors_to_select_on.shape)
+        correct_starts[si] = 1
+        correct_ends = torch.zeros(*vectors_to_select_on.shape)
+        correct_starts[ei] = 1
+
+        start_loss = F.cross_entropy(
+            start_options,
+            correct_starts
+        )
+        end_loss = F.cross_entropy(
+            end_options,
+            correct_ends
+        )
+        return start_loss + end_loss
+
+
     def _training_get_loss_from_select_vector(
         self,
         vectors_to_select_on: torch.Tensor,
+        memory_tokens: torch.Tensor,
         types_to_select: List[AInixType],
         current_gt_set: AstObjectChoiceSet,
     ) -> torch.Tensor:
@@ -333,6 +403,10 @@ class TreeRNNDecoder(TreeDecoder):
                 predicted_score, correct_indicies#,
                 #pos_weight=self.bce_pos_weight
             )
+        loss /= len(scores)
+        loss += self._train_loss_from_choose_whether_copy(
+            vectors_to_select_on, types_to_select, current_gt_set)
+
         return loss
 
 

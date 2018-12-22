@@ -948,6 +948,11 @@ class AstObjectChoiceSet(AstSet):
     def copy_is_known_choice(self):
         return self._copy_is_a_known_option
 
+    def earliest_known_copy(self) -> Tuple[int, int]:
+        """Span of the copy that starts the earliest"""
+        return sorted([span for span, data in self._copy_options.items()
+                      if data.is_known_valid])[0]
+
     def __eq__(self, other):
         if id(self) == id(other):
             return True
