@@ -144,7 +144,10 @@ def gen_grammar_visitor(
     #print("visiting", node, node.rule_name, "  :: ", string)
     if node.rule_name == "arg_identifier":
         slice_to_parse = (left_offset, left_offset+len(string))
-        delegation = run_data.left_fill_arg(run_data.get_arg_by_name(node.value), slice_to_parse)
+        arg = run_data.get_arg_by_name(node.value)
+        if arg is None:
+            raise ValueError(f"Trying to parse grammar with arg {node.value} but not found")
+        delegation = run_data.left_fill_arg(arg, slice_to_parse)
         parse_return = yield delegation
         if not parse_return.parse_success:
             parse_return = parse_return.add_fail(f"Stack Message: Fail on arg {node.value}")

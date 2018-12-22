@@ -78,12 +78,13 @@ def basic_classify_tc(base_tc):
 @pytest.fixture(scope="function")
 def basic_string_tc(basic_classify_tc):
     tc = basic_classify_tc
-    AInixType(tc, "FooStringType", default_object_parser_name="regex_group_object_parser")
-    lhsArg = AInixArgument(tc, "lhs", "FooBarBazType", required=True,
-                           arg_data={"RegexRepresentation": r"([a-z]+)"})
-    rhsArg = AInixArgument(tc, "rhs", "FooStringType", required=False,
-                           arg_data={"RegexRepresentation": r"[a-z]+ (.*)"})
-    AInixObject(tc, "foo_string", "FooStringType", [lhsArg, rhsArg])
+    AInixType(tc, "FooStringType")
+    lhsArg = AInixArgument(tc, "lhs", "FooBarBazType", required=True)
+    rhsArg = AInixArgument(tc, "rhs", "FooStringType", required=False)
+    AInixObject(tc, "foo_string", "FooStringType", [lhsArg, rhsArg],
+                preferred_object_parser_name=create_object_parser_from_grammar(
+                    tc, "itasdf", 'lhs (" " rhs)?'
+                ).name)
     return tc
 
 
