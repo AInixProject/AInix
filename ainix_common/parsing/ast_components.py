@@ -881,7 +881,7 @@ class AstObjectChoiceSet(AstSet):
         if next_node:
             next_node.add(child, known_as_valid, weight, probability_valid)
 
-    def _add_node_when_copy(
+    def add_node_when_copy(
         self,
         child: CopyNode,
         known_as_valid: bool,
@@ -914,7 +914,7 @@ class AstObjectChoiceSet(AstSet):
         if node.copy_was_chosen:
             child = node.next_node
             if isinstance(child, CopyNode):
-                self._add_node_when_copy(child, known_as_valid, weight, probability_valid)
+                self.add_node_when_copy(child, known_as_valid, weight, probability_valid)
             else:
                 raise ValueError("Unexpected kind of copynode?")
         else:

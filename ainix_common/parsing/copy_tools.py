@@ -1,6 +1,7 @@
 from typing import Optional, Tuple, List
 from ainix_common.parsing.ast_components import ObjectChoiceNode, CopyNode, \
-    ObjectNode, AstObjectChoiceSet, ObjectNodeSet, ImplementationSetData
+    ObjectNode, AstObjectChoiceSet, ObjectNodeSet, ImplementationSetData, \
+    depth_first_iterate_ast_set_along_path
 from ainix_common.parsing.model_specific.tokenizers import StringTokensMetadata, StringTokenizer
 from ainix_common.parsing.stringparser import AstUnparser, UnparseResult
 
@@ -54,15 +55,14 @@ def add_copies_to_ast_set(
     """Takes in an AST that has been parsed and adds copynodes where appropriate
     to an AstSet that contains that AST"""
     unparse = unparser.to_string(ast)
-    last_obj_choice_set: AstObjectChoiceSet = ast_set
-    last_obj_args_set: ObjectNodeSet = None
-    for i, pointer in enumerate(ast.depth_first_iter()):
-        if isinstance(pointer.cur_node, ObjectChoiceNode):
+    df_ast_nodes = [pointer.cur_node for pointer in ast.depth_first_iter()]
+    df_ast_set = list(depth_first_iterate_ast_set_along_path(ast_set, df_ast_nodes))
+    assert len(df_ast_nodes) == len(df_ast_set)
+    for node, cur_set in zip(df_ast_nodes, df_ast_set):
+        if isinstance(node, ObjectChoiceNode):
             _try_add_copy_node_at_object_choice(
-                pointer.cur_node, last_obj_choice_set, unparse, token_metadata)
-            last_obj_args_set = last_obj_choice_set.get_next_node_for_choice(
-                pointer.cur_node.next_node_not_copy.implementation.name)
-        elif isinstance(pointer.cur_node, ObjectNode):
+                node, cur_set, True, 1, 1,unparse, token_metadata)
+        elif isinstance(node, ObjectNode):
             pass
         else:
             raise ValueError("Unrecognized node?")
@@ -81,5 +81,5 @@ def _try_add_copy_node_at_object_choice(
     copy_pos = string_in_tok_list(this_node_str, token_metadata)
     if copy_pos:
         copy_node = CopyNode(node.type_to_choose, copy_pos[0], copy_pos[1])
-        ast_set.add(copy_node, known_valid, max_weight, max_probability)
+        ast_set.add_node_when_copy(copy_node, known_valid, max_weight, max_probability)
 
