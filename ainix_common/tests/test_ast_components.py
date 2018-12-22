@@ -398,11 +398,50 @@ def test_dfs_in_set():
     assert path == [ast, instance, arg_choice, ob_chosen]
     result = list(depth_first_iterate_ast_set_along_path(ast_set, path))
     assert len(result) == len(path)
-    assert isinstance(result[0], ImplementationSetData)
-    assert result[0].next_node.implementation == foo_object
-    assert isinstance(result[1], ArgsSetData)
+    assert isinstance(result[0], AstObjectChoiceSet)
+    assert result[0].type_to_choose == footype
+    assert isinstance(result[1], ObjectNodeSet)
     assert result[1].implementation == foo_object
-    assert isinstance(result[2], ImplementationSetData)
+    assert isinstance(result[2], AstObjectChoiceSet)
+    assert result[2].type_to_choose == bartype
+    assert isinstance(result[3], ObjectNodeSet)
+    assert result[3].implementation == bar_object
+
+
+def test_dfs_in_set_2args():
+    tc = get_toy_strings_context()
+    simp_strings = tc.get_type_by_name("ToySimpleStrs")
+    ast = ObjectChoiceNode(simp_strings)
+    two_strs = ObjectNode(tc.get_object_by_name("two_string"))
+    ast.set_choice(two_strs)
+    a1 = ObjectChoiceNode(tc.get_type_by_name("ToyMetasyntactic"))
+    two_strs.set_arg_value("arg1", a1)
+    a1v = ObjectNode(tc.get_object_by_name("foo"))
+    a1.set_choice(a1v)
+
+    a2 = ObjectChoiceNode(tc.get_type_by_name("ToyMetasyntactic"))
+    two_strs.set_arg_value("arg2", a2)
+    a2v = ObjectNode(tc.get_object_by_name("bar"))
+    a2.set_choice(a2v)
+    path = [n.cur_node for n in ast.depth_first_iter()]
+    assert path == [ast, two_strs, a1, a1v, a2, a2v]
+    ast_set = AstObjectChoiceSet(tc.get_type_by_name("ToySimpleStrs"))
+    ast_set.add(ast, True, 1, 1)
+    result = list(depth_first_iterate_ast_set_along_path(ast_set, path))
+    assert len(result) == len(path)
+    assert isinstance(result[0], AstObjectChoiceSet)
+    assert result[0].type_to_choose == simp_strings
+    assert isinstance(result[1], ObjectNodeSet)
+    assert result[1].implementation == tc.get_object_by_name("two_string")
+    assert isinstance(result[2], AstObjectChoiceSet)
+    assert result[2].type_to_choose == a1.type_to_choose
+    assert isinstance(result[3], ObjectNodeSet)
+    assert result[3].implementation == a1v.implementation
+    assert isinstance(result[4], AstObjectChoiceSet)
+    assert result[4].type_to_choose == a2.type_to_choose
+    assert isinstance(result[5], ObjectNodeSet)
+    assert result[5].implementation == a2v.implementation
+
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
 #    parser = StringParser(numbers_type_context)

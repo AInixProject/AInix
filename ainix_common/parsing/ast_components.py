@@ -979,7 +979,7 @@ def depth_first_iterate_ast_set_along_path(ast_set: AstSet, path_to_follow: List
                     want_to_get.next_node_not_copy.implementation.name)
                 if impl_data is None:
                     raise ValueError("Bad path")
-                yield impl_data
+                yield cur_set
                 rev_path.pop()
                 cur_set = impl_data.next_node
                 continue
@@ -996,7 +996,7 @@ def depth_first_iterate_ast_set_along_path(ast_set: AstSet, path_to_follow: List
                 cur_set = set_stack.pop()
                 continue
             arg_data = cur_set.get_arg_set_data(want_to_get.as_childless_node())
-            yield arg_data
+            yield cur_set
             set_stack.extend(reversed([arg_data.get_next_node_for_arg(arg.name)
                                        for arg in arg_data.implementation.children]))
             rev_path.pop()
