@@ -161,7 +161,7 @@ class SeaCRModel(StringTypeTranslateCF):
                                   expected, current_depth)
         # figure out where going next
         next_expected_node = expected.get_next_node_for_choice(
-            teacher_force_path.get_chosen_impl_name())
+            teacher_force_path.get_chosen_impl_name()).next_node
         assert next_expected_node is not None, "Teacher force path not in expected ast set!"
         next_object_node = ObjectNode(teacher_force_path.next_node.implementation)
         current_gen_leaf.set_choice(next_object_node)

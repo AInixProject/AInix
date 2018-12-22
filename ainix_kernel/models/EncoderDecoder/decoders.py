@@ -195,7 +195,7 @@ class TreeRNNDecoder(TreeDecoder):
 
         next_expected_set = expected.get_next_node_for_choice(
             impl_name_chosen=teacher_force_path.get_chosen_impl_name()
-        )
+        ).next_node
         assert next_expected_set is not None, "Teacher force path not in expected ast set!"
         next_object_node = teacher_force_path.next_node
         hiddens, child_loss = self._train_objectnode_step(
@@ -241,7 +241,6 @@ class TreeRNNDecoder(TreeDecoder):
                 latest_hidden, my_features, next_choice_set, next_force_path)
             child_loss += arg_loss
         return latest_hidden, child_loss
-
 
     def _predict_most_likely_implementation(
         self,

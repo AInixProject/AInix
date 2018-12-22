@@ -1,5 +1,4 @@
-from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode, ObjectNode, \
-    AstIterPointer
+from ainix_common.parsing.ast_components import *
 from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixArgument, AInixObject, \
     OPTIONAL_ARGUMENT_NEXT_ARG_NAME
 from unittest.mock import MagicMock
@@ -376,6 +375,34 @@ def test_pointer_change_here(freeze_first):
     assert new_point.cur_node == new_node
     assert new_point.cur_node.is_frozen == freeze_first
 
+def test_dfs_in_set():
+    tc = get_toy_strings_context()
+    footype = AInixType(tc, "footype")
+    bartype = AInixType(tc, "bartype")
+    arg1 = AInixArgument(tc, "arg1", "bartype", required=True)
+    foo_object = AInixObject(tc, "foo_object", "footype", [arg1])
+    bar_object = AInixObject(tc, "bar_object", "bartype")
+    other_bar_obj = AInixObject(tc, "other_bar_ob", "bartype")
+    #
+    arg_choice = ObjectChoiceNode(bartype)
+    ob_chosen = ObjectNode(bar_object)
+    arg_choice.set_choice(ob_chosen)
+    instance = ObjectNode(foo_object)
+    instance.set_arg_value("arg1", arg_choice)
+    ast = ObjectChoiceNode(footype)
+    ast.set_choice(instance)
+    #
+    ast_set = AstObjectChoiceSet(footype)
+    ast_set.add(ast, True, 1, 1)
+    path = [pointer.cur_node for pointer in list(ast.depth_first_iter())]
+    assert path == [ast, instance, arg_choice, ob_chosen]
+    result = list(depth_first_iterate_ast_set_along_path(ast_set, path))
+    assert len(result) == len(path)
+    assert isinstance(result[0], ImplementationSetData)
+    assert result[0].next_node.implementation == foo_object
+    assert isinstance(result[1], ArgsSetData)
+    assert result[1].implementation == foo_object
+    assert isinstance(result[2], ImplementationSetData)
 
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
 #    parser = StringParser(numbers_type_context)

@@ -1,7 +1,8 @@
 from typing import Optional, Tuple, List
-from ainix_common.parsing.ast_components import ObjectChoiceNode, CopyNode, ObjectNode
+from ainix_common.parsing.ast_components import ObjectChoiceNode, CopyNode, \
+    ObjectNode, AstObjectChoiceSet, ObjectNodeSet, ImplementationSetData
 from ainix_common.parsing.model_specific.tokenizers import StringTokensMetadata, StringTokenizer
-from ainix_common.parsing.stringparser import AstUnparser
+from ainix_common.parsing.stringparser import AstUnparser, UnparseResult
 
 
 def string_in_tok_list(string: str, metadata: StringTokensMetadata) -> Optional[Tuple[int, int]]:
@@ -44,24 +45,41 @@ def string_in_tok_list(string: str, metadata: StringTokensMetadata) -> Optional[
     return None
 
 
-#class CopyInjector:
-#    """Used to add copy tokens to an AST"""
-#    pass
-
-def make_copy_versions_of_tree(
+def add_copies_to_ast_set(
     ast: ObjectChoiceNode,
+    ast_set: AstObjectChoiceSet,
     unparser: AstUnparser,
     token_metadata: StringTokensMetadata
-) -> ObjectChoiceNode:
+) -> None:
+    """Takes in an AST that has been parsed and adds copynodes where appropriate
+    to an AstSet that contains that AST"""
     unparse = unparser.to_string(ast)
+    last_obj_choice_set: AstObjectChoiceSet = ast_set
+    last_obj_args_set: ObjectNodeSet = None
     for i, pointer in enumerate(ast.depth_first_iter()):
-        if isinstance(pointer.cur_node, ObjectNode):
-            this_node_str = unparse.node_to_string(pointer.cur_node)
-            copy_pos = string_in_tok_list(this_node_str, token_metadata)
-            if copy_pos:
-                copy_node = CopyNode(
-                    pointer.cur_node.implementation.type, copy_pos[0], copy_pos[1])
-                new_pointer = pointer.change_here(copy_node, always_clone=True)
-                return new_pointer.get_root().cur_node
+        if isinstance(pointer.cur_node, ObjectChoiceNode):
+            _try_add_copy_node_at_object_choice(
+                pointer.cur_node, last_obj_choice_set, unparse, token_metadata)
+            last_obj_args_set = last_obj_choice_set.get_next_node_for_choice(
+                pointer.cur_node.next_node_not_copy.implementation.name)
+        elif isinstance(pointer.cur_node, ObjectNode):
+            pass
+        else:
+            raise ValueError("Unrecognized node?")
 
+
+def _try_add_copy_node_at_object_choice(
+    node: ObjectChoiceNode,
+    ast_set: AstObjectChoiceSet,
+    known_valid: bool,
+    max_weight: float,
+    max_probability: float,
+    unparse: UnparseResult,
+    token_metadata: StringTokensMetadata,
+):
+    this_node_str = unparse.node_to_string(node)
+    copy_pos = string_in_tok_list(this_node_str, token_metadata)
+    if copy_pos:
+        copy_node = CopyNode(node.type_to_choose, copy_pos[0], copy_pos[1])
+        ast_set.add(copy_node, known_valid, max_weight, max_probability)
 

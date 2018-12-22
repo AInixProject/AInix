@@ -657,10 +657,30 @@ class ArgsSetData:
                       if arg.next_choice_type else None
             for arg in implementation.children
         }
+        self._implementation = implementation
         self._max_probability: float = 0
         self._is_known_valid: bool = False
         self._max_weight: float = 0
         self._is_frozen: bool = False
+
+    @property
+    def max_probability(self) -> float:
+        return self._max_probability
+
+    @property
+    def max_weight(self) -> float:
+        return self._max_weight
+
+    @property
+    def is_known_valid(self) -> float:
+        return self._is_known_valid
+
+    @property
+    def implementation(self) -> ainix_common.parsing.typecontext.AInixObject:
+        return self._implementation
+
+    def get_next_node_for_arg(self, arg_name: str) -> 'AstObjectChoiceSet':
+        return self.arg_to_choice_set[arg_name]
 
     def freeze(self):
         self._is_frozen = True
@@ -697,6 +717,8 @@ class ArgsSetData:
 
 
 class ObjectNodeSet(AstSet):
+    """For a given implementation on a type choice, this set keeps track of the
+    valid combinations of args."""
     def __init__(
         self,
         implementation: ainix_common.parsing.typecontext.AInixObject,
@@ -705,6 +727,10 @@ class ObjectNodeSet(AstSet):
         super().__init__(parent)
         self._implementation = implementation
         self._arg_data: MutableMapping[ChildlessObjectNode, ArgsSetData] = {}
+
+    @property
+    def implementation(self) -> ainix_common.parsing.typecontext.AInixObject:
+        return self._implementation
 
     def freeze(self):
         if self._is_frozen:
@@ -756,7 +782,7 @@ class ObjectNodeSet(AstSet):
 
 
 @attr.s(auto_attribs=True, frozen=True)
-class ImplementationData:
+class ImplementationSetData:
     next_node: ObjectNodeSet
     max_probability_valid: float
     known_as_valid: bool
@@ -787,11 +813,11 @@ class AstObjectChoiceSet(AstSet):
     def __init__(
         self,
         type_to_choose: ainix_common.parsing.typecontext.AInixType,
-        parent: Optional[AstSet]
+        parent: Optional[AstSet] = None
     ):
         super().__init__(parent)
         self._type_to_choose = type_to_choose
-        self._impl_name_to_data: MutableMapping[str, 'ImplementationData'] = {}
+        self._impl_name_to_data: MutableMapping[str, 'ImplementationSetData'] = {}
         # The copy options data maps from (start, end) to data about weight and stuff
         self._copy_options: MutableMapping[Tuple[int, int], CopyValData] = {}
         self._max_weight = 0
@@ -806,10 +832,11 @@ class AstObjectChoiceSet(AstSet):
     def type_to_choose_name(self):
         return self._type_to_choose.name
 
-    def get_next_node_for_choice(self, impl_name_chosen: str) -> Optional[ObjectNodeSet]:
+    def get_next_node_for_choice(self, impl_name_chosen: str) -> Optional[ImplementationSetData]:
+        """Checks if given impl name is in the set. Returns data about that choice."""
         if impl_name_chosen not in self._impl_name_to_data:
             return None
-        return self._impl_name_to_data[impl_name_chosen].next_node
+        return self._impl_name_to_data[impl_name_chosen]
 
     def freeze(self):
         self._is_frozen = True
@@ -849,7 +876,7 @@ class AstObjectChoiceSet(AstSet):
             next_node = ObjectNodeSet(child.implementation, self)
         else:
             next_node = None
-        new_data = ImplementationData(next_node, new_probability_valid, new_known_valid, new_weight)
+        new_data = ImplementationSetData(next_node, new_probability_valid, new_known_valid, new_weight)
         self._impl_name_to_data[child.implementation.name] = new_data
         if next_node:
             next_node.add(child, known_as_valid, weight, probability_valid)
@@ -938,3 +965,42 @@ class AstObjectChoiceSet(AstSet):
         return hash_val
 
 
+def depth_first_iterate_ast_set_along_path(ast_set: AstSet, path_to_follow: List[AstNode]):
+    """Given a list of nodes came from a depth iteration a single AST, this method
+    will yield the results from descending an AST set along the path of that AST"""
+    rev_path = list(reversed(path_to_follow))
+    set_stack = []
+    cur_set = ast_set
+    while rev_path:
+        want_to_get = rev_path[-1]
+        if isinstance(want_to_get, ObjectChoiceNode):
+            if isinstance(cur_set, AstObjectChoiceSet):
+                impl_data = cur_set.get_next_node_for_choice(
+                    want_to_get.next_node_not_copy.implementation.name)
+                if impl_data is None:
+                    raise ValueError("Bad path")
+                yield impl_data
+                rev_path.pop()
+                cur_set = impl_data.next_node
+                continue
+            else:
+                if not set_stack:
+                    raise ValueError("Things got messed up. Probably path not in set "
+                                     "or this code is just garbage...")
+                cur_set = set_stack.pop()
+        elif isinstance(want_to_get, ObjectNode):
+            if not isinstance(cur_set, ObjectNodeSet):
+                cur_set = set_stack.pop()
+                continue
+            if cur_set.implementation != want_to_get.implementation:
+                cur_set = set_stack.pop()
+                continue
+            arg_data = cur_set.get_arg_set_data(want_to_get.as_childless_node())
+            yield arg_data
+            set_stack.extend(reversed([arg_data.get_next_node_for_arg(arg.name)
+                                       for arg in arg_data.implementation.children]))
+            rev_path.pop()
+        elif isinstance(want_to_get, CopyNode):
+            raise NotImplemented
+        else:
+            raise ValueError("unrecognized node?")
