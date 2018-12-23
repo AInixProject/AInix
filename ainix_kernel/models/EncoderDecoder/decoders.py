@@ -254,8 +254,6 @@ class TreeRNNDecoder(TreeDecoder):
         start_preds, end_preds = self._get_copy_span_weights(select_on_vec, memory_tokens)
         starts = torch.argmax(start_preds, dim=1)
         ends = torch.argmax(end_preds, dim=1)
-        print(f"start preds {start_preds} starts {starts}")
-        print(f"end preds {end_preds} starts {ends}")
         # TODO should eventually also probably return the log probability of this span
         return [(int(s), int(e)) for s, e in zip(starts, ends)]
 
@@ -479,7 +477,6 @@ class TreeRNNDecoder(TreeDecoder):
         # What we really care about is getting the top level span prediction correct
         # as ideally we will predict copy at the highest level, and not need to predict
         # the lower spans. Therefore we discount the lower span predictions
-        print(f"Parents above {num_of_parents_with_copy_option}")
         copy_depth_discount = 1 / (1 + 1*num_of_parents_with_copy_option)
         loss += copy_depth_discount * span_pred_loss
 
