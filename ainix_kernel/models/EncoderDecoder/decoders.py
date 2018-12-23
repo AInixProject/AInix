@@ -5,7 +5,7 @@ import torch
 from torch import nn
 import attr
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet, \
-    ObjectNode, AstNode, ObjectNodeSet
+    ObjectNode, AstNode, ObjectNodeSet, CopyNode
 from ainix_common.parsing.typecontext import AInixType, AInixObject
 from ainix_kernel.model_util.attending import attend
 from ainix_kernel.model_util.vectorizers import VectorizerBase
@@ -171,6 +171,7 @@ class TreeRNNDecoder(TreeDecoder):
         current_leaf: ObjectChoiceNode,
         last_hidden: torch.Tensor,
         parent_node_features: Optional[torch.Tensor],
+        memory_tokens: torch.Tensor,
         cur_depth
     ) -> torch.Tensor:
         if cur_depth > self.MAX_DEPTH:
@@ -184,16 +185,78 @@ class TreeRNNDecoder(TreeDecoder):
         if len(outs) != 1:
             raise NotImplemented("Batches not implemented")
 
-        predicted_impl = self._predict_most_likely_implementation(
-            vectors_to_select_on=outs,
-            types_to_select=[current_leaf.type_to_choose]
-        )
-        assert len(predicted_impl) == len(outs)
+        copy_probs = self._predict_whether_copy(outs)
+        do_copy = copy_probs[0] > 0.5
+        if do_copy:
+            pred_start, pred_end = self._predict_copy_span(outs, memory_tokens)[0]
+            current_leaf.set_choice(CopyNode(current_leaf.type_to_choose, pred_start, pred_end))
+        else:
+            predicted_impl = self._predict_most_likely_implementation(
+                vectors_to_select_on=outs,
+                types_to_select=[current_leaf.type_to_choose]
+            )
+            assert len(predicted_impl) == len(outs)
 
-        new_node = ObjectNode(predicted_impl[0])
-        current_leaf.set_choice(new_node)
-        hiddens = self._inference_object_step(new_node, hiddens, cur_depth + 1)
+            new_node = ObjectNode(predicted_impl[0])
+            current_leaf.set_choice(new_node)
+            hiddens = self._inference_object_step(new_node, hiddens, memory_tokens, cur_depth + 1)
         return hiddens
+
+    def _predict_whether_copy(
+        self,
+        selection_vector: torch.Tensor,
+        to_logit=True
+    ) -> torch.Tensor:
+        """Returns a value representing whether or not a copy should be chosen.
+
+        Args:
+            selection_vector: the vector we use to predict. Of dim (batch, hidden_size)
+            to_logit: whether to apply a sigmoid before returning.
+        """
+        v = self.should_copy_predictor(selection_vector)
+        return F.sigmoid(v) if to_logit else v
+
+    def _get_copy_span_weights(
+        self,
+        select_on_vec: torch.Tensor,
+        memory_tokens: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Given a copy is valid, predicts the probability over each token in
+        of it being a start or end of a copy.
+
+        Args:
+            select_on_vec: A hidden state vector we will use when doing predictions.
+                Should be of size (batch, hidden_size)
+            memory_tokens: the hidden states of each token to predict on.
+                Should be of dim (batch, num_tokens, hidden_dim)
+        Returns:
+            start_weights: A prediction whether each token is the start of the span.
+                Of dim (batch, num_tokens). NOTE: this is not normalized (should pass
+                through softmax or log softmax to get actual probability)
+            end_weights: Same as start_weights, but for the INCLUSIVE end of the span
+        """
+        copy_vec = self.copy_relevant_linear(select_on_vec)
+        start_vec = self.copy_start_vec_predictor(copy_vec)
+        # TODO (DNGros): when batch, should pass in the lengths so can mask right
+        start_predictions = attend.get_attend_weights(
+            start_vec.unsqueeze(0), memory_tokens, normalize='identity').squeeze(0)
+        end_vec = self.copy_end_vec_predictor(copy_vec)
+        end_predictions = attend.get_attend_weights(
+            end_vec.unsqueeze(0), memory_tokens, normalize='identity').squeeze(0)
+        return start_predictions, end_predictions
+
+    def _predict_copy_span(
+        self,
+        select_on_vec: torch.Tensor,
+        memory_tokens: torch.Tensor
+    ) -> List[Tuple[int, int]]:
+        """Given a copy is valid, finds the most likely (start, end) span"""
+        start_preds, end_preds = self._get_copy_span_weights(select_on_vec, memory_tokens)
+        starts = torch.argmax(start_preds, dim=1)
+        ends = torch.argmax(end_preds, dim=1)
+        print(f"start preds {start_preds} starts {starts}")
+        # TODO should eventually also probably return the log probability of this span
+        return [(int(s), int(e)) for s, e in zip(starts, ends)]
 
     def _train_objectchoice_step(
         self,
@@ -230,6 +293,7 @@ class TreeRNNDecoder(TreeDecoder):
         self,
         current_leaf: ObjectNode,
         last_hidden: Optional[torch.Tensor],
+        memory_tokens: torch.Tensor,
         cur_depth
     ) -> torch.Tensor:
         """makes one step for ObjectNodes. Returns last hidden state"""
@@ -244,7 +308,7 @@ class TreeRNNDecoder(TreeDecoder):
                 continue
             current_leaf.set_arg_value(arg.name, new_node)
             latest_hidden = self._inference_objectchoice_step(
-                new_node, latest_hidden, my_features, cur_depth + 1)
+                new_node, latest_hidden, my_features, memory_tokens, cur_depth + 1)
         return latest_hidden
 
     def _train_objectnode_step(
@@ -301,7 +365,7 @@ class TreeRNNDecoder(TreeDecoder):
             # TODO (DNGros): make steps this not mutate state and iterative
             root_node = ObjectChoiceNode(root_type)
             last_hidden = self._inference_objectchoice_step(
-                root_node, query_summary, None, 0)
+                root_node, query_summary, None, memory_tokens, 0)
             return root_node, None
 
     def forward_predict(
@@ -346,7 +410,7 @@ class TreeRNNDecoder(TreeDecoder):
         assert len(types_to_select) == 1, "No batch yet"
         assert types_to_select[0] == current_gt_set.type_to_choose
         should_be_true = torch.Tensor([[1 if current_gt_set.copy_is_known_choice() else 0]])
-        predictions = self.should_copy_predictor(vectors_to_select_on)
+        predictions = self._predict_whether_copy(vectors_to_select_on, to_logit=False)
         return F.binary_cross_entropy_with_logits(
             predictions,
             should_be_true
@@ -361,27 +425,25 @@ class TreeRNNDecoder(TreeDecoder):
     ) -> torch.Tensor:
         if not current_gt_set.copy_is_known_choice():
             return 0
-        copy_vec = self.copy_relevant_linear(vectors_to_select_on)
-        start_vec = self.copy_start_vec_predictor(copy_vec)
-        # TODO (DNGros): when batch, should pass in the lengths so can mask right
-        start_options = attend.get_attend_weights(start_vec, vectors_to_select_on)
-        end_vec = self.copy_start_vec_predictor(copy_vec)
-        end_options = attend.get_attend_weights(end_vec, vectors_to_select_on)
 
         si, ei = current_gt_set.earliest_known_copy()
-        correct_starts = torch.zeros(*vectors_to_select_on.shape)
-        correct_starts[si] = 1
-        correct_ends = torch.zeros(*vectors_to_select_on.shape)
-        correct_starts[ei] = 1
+        correct_starts = torch.LongTensor([si])
+        correct_ends = torch.LongTensor([ei])
+        start_predictions, end_predictions = self._get_copy_span_weights(
+            vectors_to_select_on, memory_tokens)
+
+        print(f"start pred {start_predictions} want {correct_starts}")
+        print(f"end pred {end_predictions} want {correct_ends}")
 
         start_loss = F.cross_entropy(
-            start_options,
+            start_predictions,
             correct_starts
         )
         end_loss = F.cross_entropy(
-            end_options,
+            end_predictions,
             correct_ends
         )
+        # TODO Weight deeper copy predictions less to not saturate higher ones
         return start_loss + end_loss
 
 
@@ -406,6 +468,8 @@ class TreeRNNDecoder(TreeDecoder):
         loss /= len(scores)
         loss += self._train_loss_from_choose_whether_copy(
             vectors_to_select_on, types_to_select, current_gt_set)
+        loss += self._train_loss_from_choosing_copy_span(
+            vectors_to_select_on, memory_tokens, types_to_select, current_gt_set)
 
         return loss
 

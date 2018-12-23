@@ -4,6 +4,7 @@ and test specific aspects of the training.
 
 These tests can be somewhat flaky. Look into making this better perhaps with set
 seeds."""
+import sys
 from typing import List
 
 import pytest

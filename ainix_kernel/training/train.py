@@ -80,6 +80,8 @@ class TypeTranslateCFTrainer:
                     ast_for_this_example = parsed_ast
                 y_ast_set.add(parsed_ast, True, y_example.weight, 1.0)
                 tokens, metadata = self.str_tokenizer.tokenize(y_example.xquery)
+                print(f"query {y_example.xquery}")
+                print(f"tokens {tokens}")
                 add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
                                       metadata, example.weight)
             y_ast_set.freeze()
