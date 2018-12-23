@@ -3,6 +3,7 @@ from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoic
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import Example, ExamplesStore
 from typing import Iterable, List, Tuple
+from ainix_common.parsing.model_specific import tokenizers
 
 
 class ModelException(RuntimeError):
@@ -125,6 +126,10 @@ class StringTypeTranslateCF(Pretrainable):
 
     def set_shared_memory(self):
         raise NotImplemented
+
+    @abstractmethod
+    def get_string_tokenizer(self) -> tokenizers.StringTokenizer:
+        pass
 
     # Some methods for communicating state during training. This is sort of
     # a bad interface. Should maybe abstract out into a seperate trainer class.

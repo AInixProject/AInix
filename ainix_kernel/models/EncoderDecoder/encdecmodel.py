@@ -10,7 +10,7 @@ from ainix_common.parsing.model_specific import tokenizers
 from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer, AstValTokenizer
 from ainix_kernel.models.EncoderDecoder import encoders, decoders
 from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder
-from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder
+from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder, StringQueryEncoder
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 
 
@@ -18,7 +18,7 @@ class EncDecModel(StringTypeTranslateCF):
     def __init__(
         self,
         type_context: TypeContext,
-        query_encoder: QueryEncoder,
+        query_encoder: StringQueryEncoder,
         tree_decoder: TreeDecoder
     ):
         self.type_context = type_context
@@ -78,6 +78,9 @@ class EncDecModel(StringTypeTranslateCF):
 
     def set_shared_memory(self):
         self.modules.share_memory()
+
+    def get_string_tokenizer(self) -> tokenizers.StringTokenizer:
+        return self.query_encoder.get_tokenizer()
 
 
 # Factory methods for different versions

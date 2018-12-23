@@ -312,7 +312,7 @@ def test_string_gen(model_name, basic_string_tc):
 
 
 @pytest.mark.parametrize("model_name", FULL_MODELS)
-def test_string_gen(model_name, basic_string_tc):
+def test_copy(model_name, basic_string_tc):
     basic_string_tc.fill_default_parsers()
     example_store = make_example_store(model_name, basic_string_tc)
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,

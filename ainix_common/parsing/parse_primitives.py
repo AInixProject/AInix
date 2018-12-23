@@ -9,7 +9,7 @@ import types
 
 TypeParserFuncType = Callable[
     ['TypeParserRun', str, 'TypeParserResult'],
-    Generator['ImplementationParseDelegation', 'ParseDelegationReturnMetadata', None]
+    Union[Generator['ImplementationParseDelegation', 'ParseDelegationReturnMetadata', None], None]
 ]
 TypeParserToStringFuncType = Callable[['TypeToStringResult'], Generator]
 
@@ -706,4 +706,4 @@ def NoArgsObjectToStringFunc(
 ) -> None:
     """A special builtin unparser for objects with no args. Doesn't need to
     really do anything..."""
-    pass
+    return

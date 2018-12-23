@@ -1,11 +1,12 @@
 import random
 from typing import Tuple, Generator
 
+from ainix_common.parsing.copy_tools import add_copies_to_ast_set
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException, \
     ModelSafePredictError
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
-from ainix_common.parsing.stringparser import StringParser
+from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 import more_itertools
 
@@ -21,7 +22,9 @@ class TypeTranslateCFTrainer:
         self.example_store = example_store
         self.type_context = example_store.type_context
         self.string_parser = StringParser(self.type_context)
+        self.unparser = AstUnparser(self.type_context)
         self.batch_size = batch_size
+        self.str_tokenizer = self.model.get_string_tokenizer()
 
     def _train_one_epoch(self, which_epoch_on: int):
         single_examples_iter = self.data_pair_iterate((DataSplits.TRAIN,))
@@ -76,6 +79,9 @@ class TypeTranslateCFTrainer:
                 if y_example.ytext == example.ytext:
                     ast_for_this_example = parsed_ast
                 y_ast_set.add(parsed_ast, True, y_example.weight, 1.0)
+                tokens, metadata = self.str_tokenizer.tokenize(y_example.xquery)
+                add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
+                                      metadata, example.weight)
             y_ast_set.freeze()
             yield (example, y_ast_set, ast_for_this_example)
 

@@ -167,7 +167,7 @@ class AInixArgument:
             self.present_choice_type = AInixType(
                 self.type_context, self._make_optional_arg_type_name(), None, None, None
             )
-            is_present_name = f"{self.present_choice_type.name}.PRESENT"
+            is_present_name = f"{self.present_choice_type.name}.~PRESENT"
             if self.type_name is not None:
                 present_args = [AInixArgument(
                     self.type_context, OPTIONAL_ARGUMENT_NEXT_ARG_NAME,
@@ -179,7 +179,7 @@ class AInixArgument:
                 self.type_context, is_present_name,
                 self.present_choice_type.name, present_args
             )
-            not_present_name = f"{self.present_choice_type.name}.NOTPRESENT"
+            not_present_name = f"{self.present_choice_type.name}.~NOTPRESENT"
             self.not_present_object = AInixObject(
                 self.type_context, not_present_name, self.present_choice_type.name
             )

@@ -46,14 +46,14 @@ def test_end_to_end_parse1(type_context):
     assert result.type_to_choose == cmdSeqType
     assert result.choice.implementation == type_context.get_object_by_name("CommandSequenceObj")
     compoundOp: ObjectChoiceNode = result.choice._arg_name_to_node['CompoundOp']
-    assert compoundOp.choice.implementation.name.endswith("NOTPRESENT")
+    assert is_obj_choice_a_not_present_node(compoundOp)
     programArg: ObjectChoiceNode = result.choice._arg_name_to_node['ProgramArg']
     assert programArg.type_to_choose == type_context.get_type_by_name("Program")
     assert programArg.choice.implementation == foo
     a_choice: ObjectChoiceNode = programArg.choice._arg_name_to_node[aArg.name]
-    assert not a_choice.choice.implementation.name.endswith("NOTPRESENT")
+    assert is_obj_choice_a_present_node(a_choice)
     b_choice: ObjectChoiceNode = programArg.choice._arg_name_to_node[bArg.name]
-    assert b_choice.choice.implementation.name.endswith("NOTPRESENT")
+    assert is_obj_choice_a_not_present_node(b_choice)
 
 
 def test_no_arg():
@@ -124,7 +124,7 @@ def test_parse_with_delegations(toy_string_context_optional):
     assert cur_word.get_chosen_impl_name() == "FooWordOfa"
     next_str = foo_string_obj.get_choice_node_for_arg("Nstr")
     print(next_str)
-    assert "NOTPRESENT" in next_str.get_chosen_impl_name()
+    assert is_obj_choice_a_not_present_node(next_str)
 
 
 def test_parse_arg_delegation(toy_string_context_optional):
@@ -154,7 +154,7 @@ def test_parse_arg_delegation2(toy_string_context_optional):
     assert metadata.parse_success
     assert metadata.remaining_string == ""
     assert metadata.remaining_right_starti == 3
-    assert "NOTPRESENT" not in node.get_chosen_impl_name()
+    assert is_obj_choice_a_present_node(node)
 
 
 def test_parse_with_delegations2(toy_string_context_optional):
@@ -168,8 +168,7 @@ def test_parse_with_delegations2(toy_string_context_optional):
     assert cur_word.get_chosen_impl_name() == "FooWordOfa"
     next_str = foo_string_obj.get_choice_node_for_arg("Nstr")
     print(next_str)
-    assert "NOTPRESENT" not in next_str.get_chosen_impl_name()
-
+    assert is_obj_choice_a_present_node(next_str)
 
 
 @pytest.fixture(scope="function")
@@ -388,6 +387,73 @@ def test_unparse_double():
     assert result.node_to_string(arg1_choice) == "foo"
     arg1_ob: ObjectNode = arg1_choice.next_node
     assert result.node_to_string(arg1_ob) == "foo"
+
+
+def test_unparse_no_arg():
+    tc = TypeContext()
+    ft = AInixType(tc, "ft")
+    bt = AInixType(tc, "bt")
+    arg1 = AInixArgument(tc, "arg1", "bt", required=True)
+    fo = AInixObject(tc, "fo", "ft", [arg1],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         tc, "foo_par", '"foo" arg1?'
+                     ).name)
+    bo = AInixObject(tc, "bo", "bt", [],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         tc, "bar_par", '"here"'
+                     ).name)
+    tc.fill_default_parsers()
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree("foo here", "ft")
+    unparser = AstUnparser(tc)
+    result = unparser.to_string(ast)
+    assert result.total_string == "foohere"
+    noargs = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
+    assert result.node_to_string(noargs) == "here"
+    for pointer in ast.depth_first_iter():
+        assert pointer.cur_node in result.node_to_span
+
+
+def test_unparse_no_arg_no_str():
+    tc = TypeContext()
+    ft = AInixType(tc, "ft")
+    bt = AInixType(tc, "bt")
+    arg1 = AInixArgument(tc, "arg1", "bt", required=True)
+    fo = AInixObject(tc, "fo", "ft", [arg1],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         tc, "foo_par", '"foo" arg1?'
+                     ).name)
+    bo = AInixObject(tc, "bo", "bt", [])
+    tc.fill_default_parsers()
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree("fooasdf", "ft")
+    unparser = AstUnparser(tc)
+    result = unparser.to_string(ast)
+    assert result.total_string == "foo"
+    noargs = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
+    assert result.node_to_string(noargs) == ""
+    for pointer in ast.depth_first_iter():
+        assert pointer.cur_node in result.node_to_span
+
+
+#def test_unparse_optional_arg():
+#    tc = TypeContext()
+#    ft = AInixType(tc, "ft")
+#    arg1 = AInixArgument(tc, "arg1", "ft", required=False)
+#    fo = AInixObject(tc, "fo", "ft", [arg1],
+#                     preferred_object_parser_name=create_object_parser_from_grammar(
+#                        tc, "masfoo_parser", '"foo" arg1?'
+#                     ).name)
+#    tc.fill_default_parsers()
+#    parser = StringParser(tc)
+#    ast = parser.create_parse_tree("foo", "ft")
+#    unparser = AstUnparser(tc)
+#    result = unparser.to_string(ast)
+#    assert result.total_string == "foo"
+#    argnode = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
+#    assert result.node_to_string(argnode) == ""
+#    for pointer in ast.depth_first_iter():
+#        assert pointer.cur_node in result.node_to_span
 
 
 def test_simple_num_unparse(numbers_type_context):

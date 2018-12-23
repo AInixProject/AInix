@@ -273,6 +273,16 @@ class ObjectChoiceNode(AstNode):
                self._choice == other._choice
 
 
+def is_obj_choice_a_not_present_node(node: ObjectChoiceNode):
+    """Checks to see if this arg is a not present choice."""
+    return "~NOTPRESENT" in node.get_chosen_impl_name()
+
+
+def is_obj_choice_a_present_node(node: ObjectChoiceNode):
+    """Checks to see if this arg is a not present choice."""
+    return "~PRESENT" in node.get_chosen_impl_name()
+
+
 class ChildlessObjectNode:
     def __init__(
         self,

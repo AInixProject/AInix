@@ -56,12 +56,9 @@ class Tokenizer(ABC):
 
 
 class StringTokenizer(Tokenizer):
-    def tokenize(self, to_tokenize: str) -> Tuple[List[str], List[str]]:
+    def tokenize(self, to_tokenize: str) -> Tuple[List[str], 'StringTokensMetadata']:
         """Returns Tuple. The first is a list of the actual tokens that could
-        go into a vocab. The second is a list of strings that which when joined
-        form the origional string. This can be used for something like copying
-        where things like a <SPACE> token or 'begining of word' denomentator needs
-        to be different when actually doing copying."""
+        go into a vocab. The second is metadata about that. See StringTokensMetadata"""
         raise NotImplemented()
 
 

@@ -14,6 +14,7 @@ from ainix_common.parsing.parse_primitives import (TypeParser, ArgParseDelegatio
                                                    ObjectNodeArgMap, ArgToStringDelegation,
                                                    ArgIsPresentToString)
 from ainix_common.parsing.typecontext import OPTIONAL_ARGUMENT_NEXT_ARG_NAME
+import pprint
 
 
 class StringParser:
@@ -383,6 +384,10 @@ class UnparseResult:
     node_to_span: Mapping[Union[ObjectNode, ObjectChoiceNode], Tuple[str, int]]
 
     def node_to_string(self, node) -> str:
+        span = self.node_to_span.get(node)
+        if span is None:
+            raise KeyError(f"Unable to find node {node} in available options of "
+                           f"{self.node_to_span}")
         si, endi = self.node_to_span[node]
         return self.total_string[si:endi]
 

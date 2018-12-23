@@ -28,11 +28,15 @@ class QueryEncoder(nn.Module, ABC):
         """
         raise NotImplemented()
 
+    @abstractmethod
+    def get_tokenizer(self) -> tokenizers.Tokenizer:
+        pass
+
 
 class StringQueryEncoder(QueryEncoder):
     def __init__(
         self,
-        tokenizer: tokenizers.Tokenizer,
+        tokenizer: tokenizers.StringTokenizer,
         query_vocab: Vocab,
         query_vectorizer: VectorizerBase,
         internal_encoder: nn.Module
@@ -55,6 +59,9 @@ class StringQueryEncoder(QueryEncoder):
         vectorized, tokenized, input_lens = self._vectorize_query(queries)
         summary, memory = self.internal_encoder(vectorized, input_lens)
         return summary, memory
+
+    def get_tokenizer(self) -> tokenizers.StringTokenizer:
+        return self.tokenizer
 
 
 class VectorSeqEncoder(nn.Module, ABC):
