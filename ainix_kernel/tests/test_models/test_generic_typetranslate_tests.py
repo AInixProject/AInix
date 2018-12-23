@@ -323,17 +323,18 @@ def test_copy(model_name, basic_string_tc):
         ('hello there "bar bar foo foo"', "bar bar foo foo"),
         ('hello there "baz bar foo baz"', "baz bar foo baz"),
         ('hey there "baz baz bar baz"', "baz baz bar baz"),
-        ('hey there "foo bar baz"', "foo bar baz"),
-        ('hey there "foo bar foo baz foo"', "foo bar foo baz foo"),
-        ('hey there "bar bar baz foo bar baz"', "bar bar baz foo bar baz"),
-        ('hello there "foo bar"', "foo bar")
+        ('hey there "foo bar baz baz"', "foo bar baz baz"),
+        ('hey there "foo foo foo baz"', "foo foo foo baz"),
+        ('hey there "bar bar baz foo"', "bar bar baz foo"),
+        ('hello there "foo bar bar baz"', "foo bar bar baz"),
+        ('hey there "bar bar bar baz"', "bar bar bar baz"),
     ]:
         adder.add_examples([x], [y], insert_splits=ALL_TRAIN_SPLIT)
     for x, y in [
         ('hello there "bar foo baz foo"', "bar foo baz foo"),
         ('hello there "foo foo foo baz"', "foo foo foo baz"),
         ('hey there "baz bar bar foo"', "baz bar bar foo"),
-        ('hey there "baz foo foo baz bar"', "baz foo foo baz bar"),
+        ('hey there "baz foo foo baz"', "baz foo foo baz"),
     ]:
         adder.add_examples([x], [y], insert_splits=ALL_VAL_SPLIT)
     import torch
@@ -345,6 +346,6 @@ def test_copy(model_name, basic_string_tc):
         # Don't expect it to work before training.
         assert_val_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
-    do_train(model, example_store, epochs=25, batch_size=1)
+    do_train(model, example_store, epochs=30, batch_size=1)
     assert_train_acc(model, example_store, required_accuracy=0.85)
     assert_val_acc(model, example_store, required_accuracy=0.8)

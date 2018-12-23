@@ -255,6 +255,7 @@ class TreeRNNDecoder(TreeDecoder):
         starts = torch.argmax(start_preds, dim=1)
         ends = torch.argmax(end_preds, dim=1)
         print(f"start preds {start_preds} starts {starts}")
+        print(f"end preds {end_preds} starts {ends}")
         # TODO should eventually also probably return the log probability of this span
         return [(int(s), int(e)) for s, e in zip(starts, ends)]
 
@@ -264,7 +265,8 @@ class TreeRNNDecoder(TreeDecoder):
         memory_tokens: torch.Tensor,
         parent_node_features: Optional[torch.Tensor],
         expected: AstObjectChoiceSet,
-        teacher_force_path: ObjectChoiceNode
+        teacher_force_path: ObjectChoiceNode,
+        num_parents_with_a_copy_option: int
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         outs, hiddens = self.rnn_cell(
             last_hidden=last_hidden,
@@ -277,7 +279,8 @@ class TreeRNNDecoder(TreeDecoder):
             vectors_to_select_on=outs,
             memory_tokens=memory_tokens,
             types_to_select=[teacher_force_path.type_to_choose],
-            current_gt_set=expected
+            current_gt_set=expected,
+            num_of_parents_with_copy_option=num_parents_with_a_copy_option
         )
 
         next_expected_set = expected.get_next_node_for_choice(
@@ -286,7 +289,8 @@ class TreeRNNDecoder(TreeDecoder):
         assert next_expected_set is not None, "Teacher force path not in expected ast set!"
         next_object_node = teacher_force_path.next_node_not_copy
         hiddens, child_loss = self._train_objectnode_step(
-            hiddens, memory_tokens, next_expected_set, next_object_node)
+            hiddens, memory_tokens, next_expected_set, next_object_node,
+            num_parents_with_a_copy_option + (1 if expected.copy_is_known_choice() else 0))
         return hiddens, loss + child_loss
 
     def _inference_object_step(
@@ -316,7 +320,8 @@ class TreeRNNDecoder(TreeDecoder):
         last_hidden: torch.Tensor,
         memory_tokens: torch.Tensor,
         expected: ObjectNodeSet,
-        teacher_force_path: ObjectNode
+        teacher_force_path: ObjectNode,
+        num_of_parents_with_a_copy_option: int
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         arg_set_data = expected.get_arg_set_data(teacher_force_path.as_childless_node())
         assert arg_set_data is not None, "Teacher force path not in expected ast set!"
@@ -327,7 +332,8 @@ class TreeRNNDecoder(TreeDecoder):
             next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
             next_force_path = teacher_force_path.get_choice_node_for_arg(arg.name)
             latest_hidden, arg_loss = self._train_objectchoice_step(
-                latest_hidden, memory_tokens, my_features, next_choice_set, next_force_path)
+                latest_hidden, memory_tokens, my_features, next_choice_set,
+                next_force_path, num_of_parents_with_a_copy_option)
             child_loss += arg_loss
         return latest_hidden, child_loss
 
@@ -359,7 +365,7 @@ class TreeRNNDecoder(TreeDecoder):
             if y_ast is None or teacher_force_path is None:
                 raise ValueError("If training expect path to be previded")
             last_hidden, loss = self._train_objectchoice_step(
-                query_summary, memory_tokens, None, y_ast, teacher_force_path)
+                query_summary, memory_tokens, None, y_ast, teacher_force_path, 0)
             return None, loss
         else:
             # TODO (DNGros): make steps this not mutate state and iterative
@@ -432,8 +438,8 @@ class TreeRNNDecoder(TreeDecoder):
         start_predictions, end_predictions = self._get_copy_span_weights(
             vectors_to_select_on, memory_tokens)
 
-        print(f"start pred {start_predictions} want {correct_starts}")
-        print(f"end pred {end_predictions} want {correct_ends}")
+        #print(f"start pred {start_predictions} want {correct_starts}")
+        #print(f"end pred {end_predictions} want {correct_ends}")
 
         start_loss = F.cross_entropy(
             start_predictions,
@@ -446,13 +452,13 @@ class TreeRNNDecoder(TreeDecoder):
         # TODO Weight deeper copy predictions less to not saturate higher ones
         return start_loss + end_loss
 
-
     def _training_get_loss_from_select_vector(
         self,
         vectors_to_select_on: torch.Tensor,
         memory_tokens: torch.Tensor,
         types_to_select: List[AInixType],
         current_gt_set: AstObjectChoiceSet,
+        num_of_parents_with_copy_option: int
     ) -> torch.Tensor:
         assert len(types_to_select) == 1, "No batch yet"
         assert types_to_select[0] == current_gt_set.type_to_choose
@@ -468,8 +474,14 @@ class TreeRNNDecoder(TreeDecoder):
         loss /= len(scores)
         loss += self._train_loss_from_choose_whether_copy(
             vectors_to_select_on, types_to_select, current_gt_set)
-        loss += self._train_loss_from_choosing_copy_span(
+        span_pred_loss = self._train_loss_from_choosing_copy_span(
             vectors_to_select_on, memory_tokens, types_to_select, current_gt_set)
+        # What we really care about is getting the top level span prediction correct
+        # as ideally we will predict copy at the highest level, and not need to predict
+        # the lower spans. Therefore we discount the lower span predictions
+        print(f"Parents above {num_of_parents_with_copy_option}")
+        copy_depth_discount = 1 / (1 + 1*num_of_parents_with_copy_option)
+        loss += copy_depth_discount * span_pred_loss
 
         return loss
 
