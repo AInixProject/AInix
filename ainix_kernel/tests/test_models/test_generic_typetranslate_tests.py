@@ -68,7 +68,7 @@ def base_tc():
 def basic_classify_tc(base_tc):
     tc = base_tc
     AInixType(tc, "FooBarBazType", default_type_parser_name="max_munch_type_parser")
-    for word in ("foo", "baz", "bar"):
+    for word in ("foo", "baz", "bar", "pop"):
         AInixObject(tc, word, "FooBarBazType",
                     preferred_object_parser_name=create_object_parser_from_grammar(
                         tc, f"par{word}", f'"{word}"').name)
@@ -89,6 +89,7 @@ def basic_string_tc(basic_classify_tc):
 
 
 ALL_TRAIN_SPLIT: SPLIT_TYPE = ((1, DataSplits.TRAIN),)
+ALL_VAL_SPLIT: SPLIT_TYPE = ((1, DataSplits.VALIDATION),)
 
 
 class ExampleAddHelper:
@@ -304,6 +305,44 @@ def test_string_gen(model_name, basic_string_tc):
         # Don't expect it to work before training.
         #assert_val_acc(model, example_store, expect_fail=True)
         pass
+    # Do training and expect it to work
+    do_train(model, example_store, epochs=25, batch_size=1)
+    assert_train_acc(model, example_store, required_accuracy=0.85)
+    assert_val_acc(model, example_store, required_accuracy=0.8)
+
+
+@pytest.mark.parametrize("model_name", FULL_MODELS)
+def test_string_gen(model_name, basic_string_tc):
+    basic_string_tc.fill_default_parsers()
+    example_store = make_example_store(model_name, basic_string_tc)
+    adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
+                             "FooStringType", ALL_TRAIN_SPLIT)
+    for x, y in [
+        ('hello there "foo bar baz foo"', "foo bar baz foo"),
+        ('hello there "bar bar foo foo"', "bar bar foo foo"),
+        ('hello there "baz bar foo baz"', "baz bar foo baz"),
+        ('hey there "baz baz bar baz"', "baz baz bar baz"),
+        ('hey there "foo bar baz"', "foo bar baz"),
+        ('hey there "foo bar foo baz foo"', "foo bar foo baz foo"),
+        ('hey there "bar bar baz foo bar baz"', "bar bar baz foo bar baz"),
+        ('hello there "foo bar"', "foo bar")
+    ]:
+        adder.add_examples([x], [y], insert_splits=ALL_TRAIN_SPLIT)
+    for x, y in [
+        ('hello there "bar foo baz foo"', "bar foo baz foo"),
+        ('hello there "foo foo foo baz"', "foo foo foo baz"),
+        ('hey there "baz bar bar foo"', "baz bar bar foo"),
+        ('hey there "baz foo foo baz bar"', "baz foo foo baz bar"),
+    ]:
+        adder.add_examples([x], [y], insert_splits=ALL_VAL_SPLIT)
+    import torch
+    torch.manual_seed(1)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(1)
+    model = make_model(model_name, example_store)
+    if "Oracle" not in model_name:
+        # Don't expect it to work before training.
+        assert_val_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
     do_train(model, example_store, epochs=25, batch_size=1)
     assert_train_acc(model, example_store, required_accuracy=0.85)
