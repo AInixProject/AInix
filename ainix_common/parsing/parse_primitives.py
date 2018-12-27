@@ -208,7 +208,7 @@ class TypeParserResult:
     def get_next_slice(self) -> Tuple[int, int]:
         return self._next_slice
 
-    def set_valid_implementation(self, implementation):
+    def set_valid_implementation(self, implementation: typecontext.AInixObject):
         self._implementation = implementation
 
     def set_next_slice(self, start_idx, end_idx):
