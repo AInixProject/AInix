@@ -1,11 +1,12 @@
 from ainix_common.parsing.parse_primitives import TypeParserResult
+from ainix_common.parsing.stringparser import StringParser
 from ainix_common.tests.testutils import send_result
 from ainix_kernel.specialtypes.generic_strings import *
 from ainix_kernel.specialtypes.generic_strings import \
     _get_all_symbols, _create_root_types, _create_all_word_parts, _name_for_word_part
 
 
-def test_word_parts():
+def test_word_parts_type_parser():
     tc = TypeContext()
     _create_root_types(tc)
     word_part_type = tc.get_type_by_name(WORD_PART_TYPE_NAME)
@@ -33,3 +34,22 @@ def test_word_parts():
     result: TypeParserResult = send_result(
         parser.parse_string("*!fobw", word_part_type), None)
     assert result.get_implementation().name == WORD_PART_TERMINAL_NAME
+
+
+def test_word_parts():
+    tc = TypeContext()
+    _create_root_types(tc)
+    _create_all_word_parts(
+        tc, [('foo', True), ("bar", True), ("fo", True), ("!", False)])
+    tc.fill_default_parsers()
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree("foo", WORD_PART_TYPE_NAME)
+    word_part_o = ast.next_node_not_copy
+    assert word_part_o.implementation.name == _name_for_word_part("foo")
+    mod_type_choice = word_part_o.get_choice_node_for_arg(WORD_PART_MODIFIER_ARG_NAME)
+    mod_type_object = mod_type_choice.next_node_not_copy
+    assert mod_type_object.implementation.name == MODIFIER_LOWER_NAME
+    next_type_choice = word_part_o.get_choice_node_for_arg(WORD_PART_NEXT_ARG_NAME)
+    next_part_o = next_type_choice.next_node_not_copy
+    assert next_part_o.implementation.name == WORD_PART_TERMINAL_NAME
+

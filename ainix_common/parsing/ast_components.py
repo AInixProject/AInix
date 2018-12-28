@@ -138,7 +138,7 @@ class ObjectChoiceNode(AstNode):
         return self._type_to_choose
 
     @property
-    def choice(self):
+    def choice(self) -> Optional['ObjectNodeLike']:
         return self._choice
 
     @property

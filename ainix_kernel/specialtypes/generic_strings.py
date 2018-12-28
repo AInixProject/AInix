@@ -10,6 +10,11 @@ from typing import List, Tuple
 WORD_PART_TYPE_NAME = "GenericWordPart"
 WORD_PART_TERMINAL_NAME = "generic_word_part_terminal"
 WORD_PART_TYPE_PARSER_NAME = "word_part_type_parser"
+MODIFIER_LOWER_NAME = "unmodified_lower"
+MODIFIER_FIRST_CAP_NAME = "modifier_first_cap"
+MODIFIER_ALL_UPPER = "all_cap_modifier"
+WORD_PART_MODIFIER_ARG_NAME = "modifier"
+WORD_PART_NEXT_ARG_NAME = "next_part"
 
 
 def create_generic_strings(type_context: TypeContext):
@@ -43,23 +48,25 @@ def _create_root_types(type_context: TypeContext):
 def _create_modifier_types(type_context: TypeContext):
     modifer_type_parser_name = "str_modifier_type_parser"
     AInixType(type_context, "GenericWordPartModifier", modifer_type_parser_name)
-    lower = AInixObject(type_context, "unmodified_lower", "GenericWordPartModifier")
-    first_cap = AInixObject(type_context, "first_letter_upper", "GenericWordPartModifier")
-    all_upper = AInixObject(type_context, "all_letters_upper", "GenericWordPartModifier")
+    lower = AInixObject(type_context, MODIFIER_LOWER_NAME, "GenericWordPartModifier")
+    first_cap = AInixObject(type_context, MODIFIER_FIRST_CAP_NAME, "GenericWordPartModifier")
+    all_upper = AInixObject(type_context, MODIFIER_ALL_UPPER, "GenericWordPartModifier")
 
     def mod_parser_func(
         run: parse_primitives.TypeParserRun,
         string: str,
         result: parse_primitives.TypeParserResult
     ) -> None:
+        result.set_next_slice(len(string), len(string))
         if string.isupper():
             result.set_valid_implementation(all_upper)
         elif string.islower():
             result.set_valid_implementation(lower)
         elif string[0].isupper() and string[1:].islower():
             result.set_valid_implementation(first_cap)
-        raise parse_primitives.AInixParseError(
-            f"String {string} did match an expected modifier")
+        else:
+            raise parse_primitives.AInixParseError(
+                f"String {string} did match an expected modifier")
     TypeParser(type_context, modifer_type_parser_name, mod_parser_func)
 
 
@@ -70,10 +77,10 @@ def _name_for_word_part(part_string: str):
 def _create_word_part_obj(tc: TypeContext, symb: str, allow_modifier: bool) -> AInixObject:
     """Creates an individual word part object with the proper parsers"""
     if allow_modifier:
-        children = [AInixArgument(tc, "modifier", "GenericWordPartModifier")]
+        children = [AInixArgument(tc, WORD_PART_MODIFIER_ARG_NAME, "GenericWordPartModifier", required=True)]
     else:
         children = []
-    children += [AInixArgument(tc, "next_part", "GenericWordPart")]
+    children += [AInixArgument(tc, WORD_PART_NEXT_ARG_NAME, "GenericWordPart", required=True)]
 
     def parser(
         run: parse_primitives.ObjectParserRun,
@@ -85,7 +92,13 @@ def _create_word_part_obj(tc: TypeContext, symb: str, allow_modifier: bool) -> A
                 f"Expected string {string} to start with {symb}")
         if allow_modifier:
             mod_arg = run.all_arguments[0]
-            result.set_arg_present(mod_arg.name, 0, len(symb))
+            next_arg = run.all_arguments[1]
+            deleg = yield run.left_fill_arg(mod_arg, (0, len(symb)))
+            result.accept_delegation(deleg)
+        else:
+            next_arg = run.all_arguments[0]
+        deleg = yield run.left_fill_arg(next_arg, (len(symb), len(string)))
+        result.accept_delegation(deleg)
 
     def unparser(
         arg_map: parse_primitives.ObjectNodeArgMap,
