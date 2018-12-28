@@ -219,7 +219,7 @@ class AInixArgument:
                                  f"not have prefered parser name or default"
                                  f"type parser")
             return type_default_parser
-        return self._type_context.get_type_parser_by_name(self.type_name)
+        return self._type_context.get_type_parser_by_name(self.type_parser_name)
 
     def __repr__(self):
         type_name = self.type.name if self.type else "NONE"

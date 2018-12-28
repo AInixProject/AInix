@@ -211,6 +211,9 @@ class TypeParserResult:
     def set_valid_implementation(self, implementation: typecontext.AInixObject):
         self._implementation = implementation
 
+    def set_valid_implementation_name(self, impl_name: str):
+        self._implementation = self.type.type_context.get_object_by_name(impl_name)
+
     def set_next_slice(self, start_idx, end_idx):
         self._next_slice = (int(start_idx), int(end_idx))
 

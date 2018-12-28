@@ -44,30 +44,27 @@ def _create_root_types(type_context: TypeContext):
     AInixObject(type_context, WORD_PART_TERMINAL_NAME, WORD_PART_TYPE_NAME)
     _create_modifier_types(type_context)
 
-
-def _create_modifier_types(type_context: TypeContext):
-    modifer_type_parser_name = "str_modifier_type_parser"
-    AInixType(type_context, "GenericWordPartModifier", modifer_type_parser_name)
-    lower = AInixObject(type_context, MODIFIER_LOWER_NAME, "GenericWordPartModifier")
-    first_cap = AInixObject(type_context, MODIFIER_FIRST_CAP_NAME, "GenericWordPartModifier")
-    all_upper = AInixObject(type_context, MODIFIER_ALL_UPPER, "GenericWordPartModifier")
-
-    def mod_parser_func(
+def mod_type_parser_func(
         run: parse_primitives.TypeParserRun,
         string: str,
         result: parse_primitives.TypeParserResult
-    ) -> None:
-        result.set_next_slice(len(string), len(string))
-        if string.isupper():
-            result.set_valid_implementation(all_upper)
-        elif string.islower():
-            result.set_valid_implementation(lower)
-        elif string[0].isupper() and string[1:].islower():
-            result.set_valid_implementation(first_cap)
-        else:
-            raise parse_primitives.AInixParseError(
-                f"String {string} did match an expected modifier")
-    TypeParser(type_context, modifer_type_parser_name, mod_parser_func)
+) -> None:
+    result.set_next_slice(len(string), len(string))
+    if string.isupper():
+        result.set_valid_implementation_name(MODIFIER_ALL_UPPER)
+    elif string.islower():
+        result.set_valid_implementation_name(MODIFIER_LOWER_NAME)
+    elif string[0].isupper() and string[1:].islower():
+        result.set_valid_implementation(MODIFIER_FIRST_CAP_NAME)
+    else:
+        raise parse_primitives.AInixParseError(
+            f"String {string} did match an expected modifier")
+
+def _create_modifier_types(type_context: TypeContext):
+    AInixType(type_context, "GenericWordPartModifier")
+    AInixObject(type_context, MODIFIER_LOWER_NAME, "GenericWordPartModifier")
+    AInixObject(type_context, MODIFIER_FIRST_CAP_NAME, "GenericWordPartModifier")
+    AInixObject(type_context, MODIFIER_ALL_UPPER, "GenericWordPartModifier")
 
 
 def _name_for_word_part(part_string: str):
@@ -77,7 +74,23 @@ def _name_for_word_part(part_string: str):
 def _create_word_part_obj(tc: TypeContext, symb: str, allow_modifier: bool) -> AInixObject:
     """Creates an individual word part object with the proper parsers"""
     if allow_modifier:
-        children = [AInixArgument(tc, WORD_PART_MODIFIER_ARG_NAME, "GenericWordPartModifier", required=True)]
+        def modifier_type_unparser(result: parse_primitives.TypeToStringResult):
+            impl = result.implementation
+            if impl.name == MODIFIER_LOWER_NAME:
+                result.add_string(symb)
+            elif impl.name == MODIFIER_ALL_UPPER:
+                result.add_string(symb.upper())
+            elif impl.name == MODIFIER_FIRST_CAP_NAME:
+                result.add_string(symb[0].upper() + symb[1:])
+            else:
+                raise parse_primitives.AInixParseError(f"Unexpected impl {impl.name}")
+            result.add_impl_unparse()
+        mod_tp_name = f"modifier_parser_for_{symb}"
+        TypeParser(tc, mod_tp_name, mod_type_parser_func, modifier_type_unparser)
+
+        children = [AInixArgument(
+            tc, WORD_PART_MODIFIER_ARG_NAME, "GenericWordPartModifier",
+            required=True, type_parser_name=mod_tp_name)]
     else:
         children = []
     children += [AInixArgument(tc, WORD_PART_NEXT_ARG_NAME, "GenericWordPart", required=True)]
@@ -87,7 +100,7 @@ def _create_word_part_obj(tc: TypeContext, symb: str, allow_modifier: bool) -> A
         string: str,
         result: parse_primitives.ObjectParserResult
     ):
-        if not string.startswith(symb):
+        if not string.lower().startswith(symb):
             raise parse_primitives.AInixParseError(
                 f"Expected string {string} to start with {symb}")
         if allow_modifier:
@@ -106,7 +119,8 @@ def _create_word_part_obj(tc: TypeContext, symb: str, allow_modifier: bool) -> A
     ):
         if allow_modifier:
             result.add_argname_tostring(WORD_PART_MODIFIER_ARG_NAME)
-        result.add_string(symb)
+        else:
+            result.add_string(symb)
         result.add_argname_tostring(WORD_PART_NEXT_ARG_NAME)
     p = ObjectParser(tc, f"parser_for_word_part_{symb}", parser, unparser)
     part = AInixObject(tc, _name_for_word_part(symb), WORD_PART_TYPE_NAME, children, p.name)
