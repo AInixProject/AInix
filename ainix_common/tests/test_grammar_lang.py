@@ -7,15 +7,7 @@ from ainix_common.parsing.parse_primitives import ArgParseDelegation, \
     ParseDelegationReturnMetadata, StringProblemParseError, ObjectNodeArgMap, \
     ArgToStringDelegation
 from ainix_common.parsing.typecontext import AInixArgument
-
-
-def send_result(gen, send_value):
-    """Get the result from a generator when expected to return next."""
-    try:
-        gen.send(send_value)
-    except StopIteration as stp:
-        return stp.value
-    raise ValueError("Expected it to stop")
+from ainix_common.tests.testutils import send_result
 
 
 @pytest.fixture()
