@@ -104,7 +104,10 @@ def _create_word_part_obj(tc: TypeContext, symb: str, allow_modifier: bool) -> A
         arg_map: parse_primitives.ObjectNodeArgMap,
         result: parse_primitives.ObjectToStringResult
     ):
+        if allow_modifier:
+            result.add_argname_tostring(WORD_PART_MODIFIER_ARG_NAME)
         result.add_string(symb)
+        result.add_argname_tostring(WORD_PART_NEXT_ARG_NAME)
     p = ObjectParser(tc, f"parser_for_word_part_{symb}", parser, unparser)
     part = AInixObject(tc, _name_for_word_part(symb), WORD_PART_TYPE_NAME, children, p.name)
     return part

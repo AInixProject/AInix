@@ -1,5 +1,5 @@
 from ainix_common.parsing.parse_primitives import TypeParserResult
-from ainix_common.parsing.stringparser import StringParser
+from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.tests.testutils import send_result
 from ainix_kernel.specialtypes.generic_strings import *
 from ainix_kernel.specialtypes.generic_strings import \
@@ -52,4 +52,11 @@ def test_word_parts():
     next_type_choice = word_part_o.get_choice_node_for_arg(WORD_PART_NEXT_ARG_NAME)
     next_part_o = next_type_choice.next_node_not_copy
     assert next_part_o.implementation.name == WORD_PART_TERMINAL_NAME
+    ### Unparse
+    unparser = AstUnparser(tc)
+    result = unparser.to_string(ast)
+    assert result.total_string == "foo"
+    assert result.node_to_string(word_part_o) == "foo"
+    assert result.node_to_string(mod_type_choice) == ""
+    assert result.node_to_string(mod_type_object) == ""
 
