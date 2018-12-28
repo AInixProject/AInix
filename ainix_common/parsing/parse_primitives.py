@@ -209,6 +209,10 @@ class TypeParserResult:
         return self._next_slice
 
     def set_valid_implementation(self, implementation: typecontext.AInixObject):
+        if not isinstance(implementation, typecontext.AInixObject):
+            raise AInixParseError(f"Expected a object. Got a {implementation}")
+        if implementation.type != self.type:
+            raise AInixParseError("Wrong type! How did that happen?")
         self._implementation = implementation
 
     def set_valid_implementation_name(self, impl_name: str):
@@ -580,7 +584,8 @@ class ObjectParserResult:
             raise ValueError(f"Unable to accept a delegation that parsed a "
                              f"{delegation_return.what_parsed}. Must be an AInixArgument")
         if not delegation_return.parse_success:
-            raise ValueError("Can't accept a failed delegation")
+            raise ValueError("Can't accept a failed delegation.\n"
+                             "Fail reason " + delegation_return.fail_reason)
         # TODO (DNGros): slice is probably wrong
         start_i = delegation_return.original_start_offset
         end_i = start_i + delegation_return.remaining_right_starti

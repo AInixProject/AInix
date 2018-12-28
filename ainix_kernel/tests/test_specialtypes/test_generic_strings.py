@@ -105,7 +105,10 @@ def test_word_parts_2():
     ### Unparse
     unparser = AstUnparser(tc)
     result = unparser.to_string(ast)
-    assert result.total_string == "foobar"
-    assert result.node_to_string(word_part_o) == "foo"
-    assert result.node_to_string(mod_type_choice) == ""
+    assert result.total_string == "fooBar"
+    assert result.node_to_string(word_part_o) == "fooBar"
+    assert result.node_to_string(mod_type_choice) == "foo"
     assert result.node_to_string(mod_type_object) == ""
+    assert result.node_to_string(next_type_choice) == "Bar"
+    assert result.node_to_string(next_part_o) == "Bar"
+    assert result.node_to_string(next_part_o) == "Bar"

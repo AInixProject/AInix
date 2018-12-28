@@ -55,7 +55,7 @@ def mod_type_parser_func(
     elif string.islower():
         result.set_valid_implementation_name(MODIFIER_LOWER_NAME)
     elif string[0].isupper() and string[1:].islower():
-        result.set_valid_implementation(MODIFIER_FIRST_CAP_NAME)
+        result.set_valid_implementation_name(MODIFIER_FIRST_CAP_NAME)
     else:
         raise parse_primitives.AInixParseError(
             f"String {string} did match an expected modifier")
