@@ -1,6 +1,7 @@
 import pytest
 from ainix_common.parsing.ast_components import *
 from ainix_common.parsing import loader
+from ainix_common.parsing.model_specific.tokenizers import SpaceTokenizer
 from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation, TypeParserRun, \
     TypeParserResult
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
@@ -436,6 +437,21 @@ def test_unparse_no_arg_no_str():
         assert pointer.cur_node in result.node_to_span
 
 
+def test_unparse_copy_node():
+    tc = TypeContext()
+    ft = AInixType(tc, "ft")
+    fo = AInixObject(tc, "fo", "ft")
+    tc.fill_default_parsers()
+    ast = ObjectChoiceNode(ft)
+    ast.set_choice(CopyNode(ft, 2, 4))
+    ast.freeze()
+    unparser = AstUnparser(tc, SpaceTokenizer())
+    in_str = "hello there foo bar pop wow"
+    result = unparser.to_string(ast, in_str)
+    assert result.total_string == "foo bar pop"
+
+
+# This currently doesn't work and it is not clear whether it even should
 #def test_unparse_optional_arg():
 #    tc = TypeContext()
 #    ft = AInixType(tc, "ft")

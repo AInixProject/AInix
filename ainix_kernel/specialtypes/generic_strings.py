@@ -6,6 +6,7 @@ from ainix_common.parsing.parse_primitives import ObjectParser, TypeParser
 from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixObject, AInixArgument
 import pygtrie
 from typing import List, Tuple
+from ainix_kernel.specialtypes.ngram_data import *
 
 WORD_PART_TYPE_NAME = "GenericWordPart"
 WORD_PART_TERMINAL_NAME = "generic_word_part_terminal"
@@ -16,22 +17,23 @@ MODIFIER_ALL_UPPER = "all_cap_modifier"
 WORD_PART_MODIFIER_ARG_NAME = "modifier"
 WORD_PART_NEXT_ARG_NAME = "next_part"
 
-
 def create_generic_strings(type_context: TypeContext):
     """Main public interface for creating the appropriate types inside context"""
     _create_root_types(type_context)
-    all_part_strs = [(symb, False) for symb in _get_all_symbols()] + \
+    all_part_strs = [(symb, False) for symb in ["_", "$", "'"]] + \
                     [(symb, True) for symb in _get_all_letters()]
+    all_part_strs += [(symb, True) for symb in MOST_COMMON_BIGRAM]
+    all_part_strs += [(symb, True) for symb in MOST_COMMON_TRIGRAM]
+    all_part_strs += [(symb, True) for symb in MOST_COMMON_4GRAMS]
+    all_part_strs += [(symb, True) for symb in MOST_COMMON_5GRAM]
     _create_all_word_parts(type_context, all_part_strs)
 
 
 def _get_all_symbols() -> List[str]:
-    #first_symbls = [chr(c) for c in range(32, 65)]
-    #middle_symbls = [chr(c) for c in range(91, 97)]
-    #end_symbls = [chr(c) for c in range(123, 127)]
-    #return first_symbls + middle_symbls + end_symbls
-    # don't actually return everything because then will consume everything
-    return ["_", "$"]
+    first_symbls = [chr(c) for c in range(32, 65)]
+    middle_symbls = [chr(c) for c in range(91, 97)]
+    end_symbls = [chr(c) for c in range(123, 127)]
+    return first_symbls + middle_symbls + end_symbls
 
 
 def _get_all_letters() -> List[str]:

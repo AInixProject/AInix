@@ -47,6 +47,7 @@ def test_space_tokenizer():
     assert tokens == ["hello", "there", "you"]
     assert "".join(metadata.joinable_tokens) == str
     assert metadata.joinable_tokens_pos_to_actual == [0, None, 1, None, 2]
+    assert metadata.actual_pos_to_joinable_pos == [0, 2, 4]
 
 
 def test_space_tokenizer2():

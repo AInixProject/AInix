@@ -208,7 +208,7 @@ class TypeParserResult:
     def get_next_slice(self) -> Tuple[int, int]:
         return self._next_slice
 
-    def set_valid_implementation(self, implementation: typecontext.AInixObject):
+    def set_valid_implementation(self, implementation: 'typecontext.AInixObject'):
         if not isinstance(implementation, typecontext.AInixObject):
             raise AInixParseError(f"Expected a object. Got a {implementation}")
         if implementation.type != self.type:

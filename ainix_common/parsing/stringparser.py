@@ -1,10 +1,13 @@
-"""Userfacing classes for converting strings into ASTs or ASTs into strings"""
+"""Userfacing classes for converting strings into Abstract Syntax Trees (AST's)
+or ASTs into strings"""
 from typing import Tuple, Optional, Dict, Union, Mapping
 import attr
 from pyrsistent import pmap
 import ainix_common.parsing
 from ainix_common.parsing import typecontext
-from ainix_common.parsing.ast_components import ObjectChoiceNode, ObjectNode
+from ainix_common.parsing.ast_components import ObjectChoiceNode, ObjectNode, CopyNode, \
+    ObjectNodeLike
+from ainix_common.parsing.model_specific.tokenizers import StringTokensMetadata
 from ainix_common.parsing.parse_primitives import (TypeParser, ArgParseDelegation,
                                                    ParseDelegationReturnMetadata, AInixParseError,
                                                    TypeParserResult,
@@ -14,6 +17,7 @@ from ainix_common.parsing.parse_primitives import (TypeParser, ArgParseDelegatio
                                                    ObjectNodeArgMap, ArgToStringDelegation,
                                                    ArgIsPresentToString)
 from ainix_common.parsing.typecontext import OPTIONAL_ARGUMENT_NEXT_ARG_NAME
+from ainix_common.parsing.model_specific import tokenizers
 import pprint
 
 
@@ -275,9 +279,22 @@ class StringParser:
 
 class AstUnparser:
     """A class which is the main driver for converting from ASTs to strings. It
-    uses the to_string methods on TypeParsers and ObjectParsers"""
-    def __init__(self, type_context: typecontext.TypeContext):
+    uses the to_string methods on TypeParsers and ObjectParsers
+
+    Args:
+        type_context: The type context to unparse in
+        default_input_str_tokenizer: The tokenizer to use when trying to unparse
+            something with copytokens. This should match the same tokenizer that
+            was used when creating the input ast in order for things to match
+            correctly.
+    """
+    def __init__(
+        self,
+        type_context: typecontext.TypeContext,
+        default_input_str_tokenizer: tokenizers.StringTokenizer = None
+    ):
         self._type_context = type_context
+        self._input_str_tokenizr = default_input_str_tokenizer
 
     def _unparse_object_choice_node(
         self,
@@ -286,6 +303,10 @@ class AstUnparser:
         result_builder: '_UnparseResultBuilder',
         left_offset: int
     ) -> str:
+        if node.copy_was_chosen:
+            out_string = result_builder.add_from_copy_node(node.next_node_is_copy, left_offset)
+            result_builder.add_subspan(node, out_string, left_offset)
+            return out_string
         unparse = parser.to_string(node.next_node.implementation, node.type_to_choose)
         out_string = ""
         new_left_offset = left_offset
@@ -362,7 +383,25 @@ class AstUnparser:
             }
         )
 
-    def to_string(self, ast: ObjectChoiceNode, root_parser_name: str = None) -> 'UnparseResult':
+    def to_string(
+        self,
+        ast: ObjectChoiceNode,
+        copy_from_str: str = None,
+        root_parser_name: str = None
+    ) -> 'UnparseResult':
+        """The main method used to convert an AST into a string
+
+        Args:
+            ast: The ast to convert into a string form
+            copy_from_str: The string to refer to when unparsing copy nodes
+            root_parser_name: Overrides the unparsing to use a certain type
+                parser for the root of the ast.
+        """
+        if copy_from_str:
+            _, tokenized_metadata = self._input_str_tokenizr.tokenize(copy_from_str)
+        else:
+            tokenized_metadata = None
+
         root_parser = _get_root_parser(
             self._type_context,
             ast.get_type_to_choose_name(),
@@ -371,7 +410,7 @@ class AstUnparser:
         if not root_parser:
             raise ValueError(f"Unable to get a parser type {ast.get_type_to_choose_name()} and "
                              f"root_parser {root_parser_name}")
-        result_builder = _UnparseResultBuilder(ast)
+        result_builder = _UnparseResultBuilder(ast, tokenized_metadata)
         self._unparse_object_choice_node(ast, root_parser, result_builder, 0)
         return result_builder.as_result()
 
@@ -394,13 +433,14 @@ class UnparseResult:
 
 class _UnparseResultBuilder:
     """Used in AstUnparser while building a result"""
-    def __init__(self, root: ObjectChoiceNode):
+    def __init__(self, root: ObjectChoiceNode, copy_input_token_data: StringTokensMetadata):
         self.root = root
-        self._node_map: Dict[Union[ObjectNode, ObjectChoiceNode], Tuple[str, int]] = {}
+        self._node_map: Dict[Union[ObjectNodeLike, ObjectChoiceNode], Tuple[str, int]] = {}
+        self._copy_input_token_data = copy_input_token_data
 
     def add_subspan(
         self,
-        node: Union[ObjectNode, ObjectChoiceNode],
+        node: Union[ObjectNodeLike, ObjectChoiceNode],
         string: str,
         left_offset: int
     ):
@@ -420,6 +460,21 @@ class _UnparseResultBuilder:
             for node, (string, left_offset) in self._node_map.items()
         })
         return UnparseResult(top_string, node_to_span)
+
+    def add_from_copy_node(self, node: CopyNode, left_offset: int) -> str:
+        """Used to add a span from a CopyNode appropriately copy from the input string
+
+        Returns:
+            The string that was copied over
+        """
+        if self._copy_input_token_data is None:
+            raise RuntimeError("No copy string data given for tree with copy nodes")
+        string = "".join(self._copy_input_token_data.joinable_tokens[
+            self._copy_input_token_data.actual_pos_to_joinable_pos[node.start]:
+            self._copy_input_token_data.actual_pos_to_joinable_pos[node.end] + 1
+        ])
+        self.add_subspan(node, string, left_offset)
+        return string
 
 
 def _get_root_parser(

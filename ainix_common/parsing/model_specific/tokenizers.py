@@ -79,12 +79,20 @@ class StringTokensMetadata:
             ["foo", " ", "b", "ar"] and the map might be [1, 2, 3, 4]. If
             mapping is None it is considered there is no direct mapping for
             this token and it cannot serve as the start or end of a copy.
+        actual_pos_to_joinable_pos: The inverse of the above arg
     """
     joinable_tokens = attr.ib(type=List[str])
+    # TODO (DNGros): Change these maps to callable functions. Having them as
+    # lists is kinda excessive when sometimes have a closedform map
     joinable_tokens_pos_to_actual = attr.ib(type=List[Optional[int]])
+    actual_pos_to_joinable_pos = attr.ib(type=List[Optional[int]])
 
     @joinable_tokens_pos_to_actual.default
     def fac(self):
+        return list(range(len(self.joinable_tokens)))
+
+    @actual_pos_to_joinable_pos.default
+    def ofac(self):
         return list(range(len(self.joinable_tokens)))
 
     def __attrs_post_init__(self):
@@ -113,18 +121,20 @@ class NonLetterTokenizer(StringTokenizer):
                 out_tokens[-1].append(c)
         out_tokens = ["".join(toklist) for toklist in out_tokens if len(toklist) >= 1]
         replace_spaces = [x if x != parse_constants.SPACE else " " for x in out_tokens]
-        metadata = StringTokensMetadata(replace_spaces, list(range(len(replace_spaces))))
+        metadata = StringTokensMetadata(replace_spaces)
         return out_tokens, metadata
 
 
-class SpaceTokenizer(Tokenizer):
+class SpaceTokenizer(StringTokenizer):
     def tokenize(self, to_tokenize: str) -> Tuple[List[str], StringTokensMetadata]:
         tokens = to_tokenize.split()
         joinable = [tokens[0]] + list(chain.from_iterable(((" ", t) for t in tokens[1:])))
-        mapping = [0] + list(chain.from_iterable(
+        joinable_to_actual = [0] + list(chain.from_iterable(
             ((None, i + 1) for i in range(len(tokens[1:])))
         ))
-        return to_tokenize.split(), StringTokensMetadata(joinable, mapping)
+        actual_to_joinable = list(range(0, len(tokens)*2, 2))
+        return to_tokenize.split(), StringTokensMetadata(
+            joinable, joinable_to_actual, actual_to_joinable)
 
 
 class AstStringTokenizer(Tokenizer):
