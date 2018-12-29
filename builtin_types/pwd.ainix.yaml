@@ -1,0 +1,14 @@
+---
+defines:
+  - define_new: object
+    name: pwd
+    type: Program
+    type_data: {invoke_name: "pwd"}
+    children:
+      - name: P
+        required: False
+        arg_data: {short_name: "P"}
+      - name: L
+        required: False
+        arg_data: {short_name: "L"}
+...

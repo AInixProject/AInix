@@ -414,9 +414,14 @@ class ObjectNode(ObjectNodeLike):
         self.set_arg_value(name, new_val)
 
     def as_childless_node(self) -> ChildlessObjectNode:
-        choices = tuple([self._arg_name_to_node[arg.name].get_chosen_impl_name()
-                         for arg in self._implementation.children])
-        return ChildlessObjectNode(self._implementation, choices)
+        choices = []
+        for arg in self._implementation.children:
+            node = self._arg_name_to_node[arg.name]
+            if not node.copy_was_chosen:
+                choices.append(node.get_chosen_impl_name())
+            else:
+                choices.append("~COPYVALNAME")
+        return ChildlessObjectNode(self._implementation, tuple(choices))
 
     def __hash__(self):
         if self._hash_cache:

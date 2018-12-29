@@ -73,17 +73,16 @@ class TypeTranslateCFTrainer:
             y_type = self.type_context.get_type_by_name(example.ytype)
             y_ast_set = AstObjectChoiceSet(y_type, None)
             ast_for_this_example = None
+            parsed_ast = None
             for y_example in all_y_examples:
                 parsed_ast = self.string_parser.create_parse_tree(
                     y_example.ytext, y_type.name)
                 if y_example.ytext == example.ytext:
                     ast_for_this_example = parsed_ast
                 y_ast_set.add(parsed_ast, True, y_example.weight, 1.0)
-                tokens, metadata = self.str_tokenizer.tokenize(y_example.xquery)
-                print(f"query {y_example.xquery}")
-                print(f"tokens {tokens}")
-                add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
-                                      metadata, example.weight)
+            tokens, metadata = self.str_tokenizer.tokenize(example.xquery)
+            add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
+                                  metadata, example.weight)
             y_ast_set.freeze()
             yield (example, y_ast_set, ast_for_this_example)
 
@@ -97,15 +96,15 @@ if __name__ == "__main__":
 
     print("start time", datetime.datetime.now())
     type_context = TypeContext()
-    loader.load_path("../../builtin_types/numbers.ainix.yaml", type_context)
-    loader.load_path("../../builtin_types/generic_parsers.ainix.yaml", type_context)
-    #loader.load_path("builtin_types/numbers.ainix.yaml", type_context)
-    #loader.load_path("builtin_types/generic_parsers.ainix.yaml", type_context)
+    loader.load_path("builtin_types/numbers.ainix.yaml", type_context, up_search_limit=4)
+    loader.load_path("builtin_types/generic_parsers.ainix.yaml", type_context, up_search_limit=4)
+    loader.load_path("builtin_types/command.ainix.yaml", type_context, up_search_limit=4)
+    loader.load_path("builtin_types/pwd.ainix.yaml", type_context, up_search_limit=4)
     type_context.fill_default_parsers()
 
     index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)
     exampleloader.load_path("../../builtin_types/numbers_examples.ainix.yaml", index)
-    #exampleloader.load_path("builtin_types/numbers_examples.ainix.yaml", index)
+    exampleloader.load_path("../../builtin_types/pwd_examples.ainix.yaml", index)
     print("num docs", index.backend.index.doc_count())
 
     from ainix_kernel.models.SeaCR.seacr import make_default_seacr, make_rulebased_seacr

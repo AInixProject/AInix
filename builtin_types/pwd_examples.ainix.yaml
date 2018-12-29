@@ -1,0 +1,23 @@
+---
+defines:
+  - define_new: example_set
+    y_type: Program
+    examples:
+    - x:
+      - what file am I in
+      - print working directory
+      - where am I
+      - print current dir
+      - what file am I in
+      - get my current directory
+      - print working dir
+      - get current path
+      - what directory am I in
+      - prnt working dir
+      - print out what directory am in
+      - get my current directory
+      - print current working directory
+      - get my cur path
+      - print cur dir
+      y: pwd
+...

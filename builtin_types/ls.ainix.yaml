@@ -1,0 +1,54 @@
+---
+defines:
+  - define_new: object
+    name: ls
+    type: program
+    type_data: {invoke_name: "ls"}
+    children:
+      - name: a
+        required: False
+        arg_data: {short_name: "a"}
+      - name: A
+        required: False
+        arg_data: {short_name: "A"}
+      - name: l
+        required: False
+        arg_data: {short_name: "l"}
+      - name: s
+        required: False
+        arg_data: {short_name: "s"}
+      - name: S
+        required: False
+        arg_data: {short_name: "S"}
+      - name: t
+        required: False
+        arg_data: {short_name: "t"}
+      - name: r
+        required: False
+        arg_data: {short_name: "r"}
+      - name: i
+        required: False
+        arg_data: {short_name: "r"}
+      - name: R
+        required: False
+        arg_data: {short_name: "R"}
+      - name: h
+        required: False
+        arg_data: {short_name: "h"}
+      - name: X
+        required: False
+        arg_data: {short_name: "X"}
+      - name: d
+        required: False
+        arg_data: {short_name: "d"}
+      - name: m
+        required: False
+        arg_data: {short_name: "m"}
+      - name: "1"
+        required: False
+        arg_data: {short_name: "1"}
+      #- name: filelist
+      #  required: False
+      #  type: FileList
+      #  arg_data: {position: 0}
+...

@@ -101,7 +101,7 @@ class AInixObject:
         self.type_name = type_name
         self.children: List['AInixArgument'] = children if children else []
         self.arg_name_to_index = {arg.name: i for i, arg in enumerate(self.children)}
-        self.type_data = type_data
+        self.type_data = type_data or {}
         self.preferred_object_parser_name = preferred_object_parser_name
         self._type_context.register_object(self)
 
@@ -373,6 +373,8 @@ class TypeContext:
                 if len(self.get_implementations(type_)) == 1:
                     self._link_single_type_impl_parser(type_)
         for object_ in self._name_to_object.values():
+            if object_.type is None:
+                continue
             no_children = len(object_.children) == 0
             no_default = object_.preferred_object_parser_name is None and \
                 object_.type.default_object_parser_name is None

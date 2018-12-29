@@ -443,6 +443,25 @@ def test_dfs_in_set_2args():
     assert result[5].implementation == a2v.implementation
 
 
+def test_object_node_set_equals_with_copy():
+    tc = get_toy_strings_context()
+    two_strs = ObjectNode(tc.get_object_by_name("two_string"))
+    a1 = ObjectChoiceNode(tc.get_type_by_name("ToyMetasyntactic"))
+    two_strs.set_arg_value("arg1", a1)
+    a1v = ObjectNode(tc.get_object_by_name("foo"))
+    a1.set_choice(a1v)
+    a2 = ObjectChoiceNode(tc.get_type_by_name("ToyMetasyntactic"))
+    two_strs.set_arg_value("arg2", a2)
+    a2.set_choice(CopyNode(tc.get_type_by_name("ToyMetasyntactic"), 1, 4))
+    two_strs.freeze()
+
+    set_instance = ObjectNodeSet(tc.get_object_by_name("two_string"), None)
+    set_instance.add(two_strs, True, 1, 1)
+    assert set_instance.is_node_known_valid(two_strs)
+
+
+
+
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
 #    parser = StringParser(numbers_type_context)
 #    root_type_name = "Number"

@@ -88,7 +88,7 @@ def _parse_argument(
     return typecontext.AInixArgument(
         type_context,
         doc['name'],
-        type_name=doc['type'],
+        type_name=doc.get('type', None),
         type_parser_name=doc.get("type_parser"),
         required=doc.get("required", False),
         arg_data=doc.get("arg_data")

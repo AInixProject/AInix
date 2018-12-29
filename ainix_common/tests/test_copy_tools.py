@@ -1,6 +1,10 @@
+import pytest
+
+from ainix_common.parsing import loader
 from ainix_common.parsing.copy_tools import *
-from ainix_common.parsing.model_specific.tokenizers import SpaceTokenizer
+from ainix_common.parsing.model_specific.tokenizers import SpaceTokenizer, NonLetterTokenizer
 from ainix_common.parsing.stringparser import StringParser
+from ainix_common.parsing.typecontext import TypeContext
 from ainix_common.tests.toy_contexts import get_toy_strings_context
 
 
@@ -59,3 +63,26 @@ def test_make_copy_ast():
     assert n.implementation.name == "two_string"
     assert arg1set.copy_is_known_choice()
     assert arg1set.is_known_choice("foo")
+
+
+@pytest.fixture(scope="function")
+def numbers_type_context():
+    type_context = TypeContext()
+    loader.load_path(f"builtin_types/generic_parsers.ainix.yaml", type_context, up_search_limit=3)
+    loader.load_path(f"builtin_types/numbers.ainix.yaml", type_context, up_search_limit=3)
+    type_context.fill_default_parsers()
+    return type_context
+
+
+def test_numbers_copys(numbers_type_context):
+    tc = numbers_type_context
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    ast = parser.create_parse_tree("0", "Number")
+    tokenizer = NonLetterTokenizer()
+    in_str = "nil"
+    tokens, metadata = tokenizer.tokenize(in_str)
+    ast_set = AstObjectChoiceSet(tc.get_type_by_name("Number"))
+    ast_set.add(ast, True, 1, 1)
+    add_copies_to_ast_set(ast, ast_set, unparser, metadata)
+    assert not ast_set.copy_is_known_choice()
