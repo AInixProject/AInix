@@ -1,4 +1,6 @@
 import pytest
+
+from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
 from builtin_types.posix_parsers import *
 from unittest.mock import MagicMock
 
@@ -182,6 +184,66 @@ def test_prog_object_parser_posarg(type_context):
     assert result.get_arg_present("p1").slice_string == "hello"
 
 
+def test_prog_object_parser_2posarg(type_context):
+    fooType = AInixType(type_context, "FooType")
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "p1", fooType.name, arg_data={POSITION: 0}, required=True),
+         AInixArgument(type_context, "p2", fooType.name, arg_data={POSITION: 1}, required=True)])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    result = gen_result(parser.parse_string("hello there", argval))
+    assert result.get_arg_present("p1") is not None
+    assert result.get_arg_present("p1").slice_string == "hello"
+    assert result.get_arg_present("p2") is not None
+    assert result.get_arg_present("p2").slice_string == "there"
+
+
+def test_prog_object_parser_posarg_multword(type_context):
+    fooType = AInixType(type_context, "FooType")
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "p1", fooType.name,
+                       arg_data={POSITION: 0, MULTIWORD_POS_ARG: True}, required=True)])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    result = gen_result(parser.parse_string("hello yo there", argval))
+    assert result.get_arg_present("p1") is not None
+    assert result.get_arg_present("p1").slice_string == "hello yo there"
+
+
+def test_prog_object_parser_2posarg_multword(type_context):
+    fooType = AInixType(type_context, "FooType")
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "p1", fooType.name,
+                       arg_data={POSITION: 0, MULTIWORD_POS_ARG: True}, required=True),
+         AInixArgument(type_context, "p2", fooType.name,
+                       arg_data={POSITION: 1}, required=True)
+         ])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    result = gen_result(parser.parse_string("hello yo there woo", argval))
+    assert result.get_arg_present("p1") is not None
+    assert result.get_arg_present("p1").slice_string == "hello yo there"
+    assert result.get_arg_present("p2") is not None
+    assert result.get_arg_present("p2").slice_string == "woo"
+
+
+def test_prog_object_parser_2posarg_multword_end(type_context):
+    fooType = AInixType(type_context, "FooType")
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "p1", fooType.name,
+                       arg_data={POSITION: 0}, required=True),
+         AInixArgument(type_context, "p2", fooType.name,
+                       arg_data={POSITION: 1, MULTIWORD_POS_ARG: True}, required=True)
+         ])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    result = gen_result(parser.parse_string("hello yo there woo", argval))
+    assert result.get_arg_present("p1") is not None
+    assert result.get_arg_present("p1").slice_string == "hello"
+    assert result.get_arg_present("p2") is not None
+    assert result.get_arg_present("p2").slice_string == "yo there woo"
+
+
 def test_string_parse_e2e(type_context):
     twoargs = AInixObject(
         type_context, "FooProgram", "Program",
@@ -195,3 +257,24 @@ def test_string_parse_e2e(type_context):
     to_string = unparser.to_string(ast)
     assert to_string.total_string == "hello -a"
 
+
+def test_string_parse_e2e_multiword(type_context):
+    fooType = AInixType(type_context, "FooType")
+    fo = AInixObject(type_context, "fo", "FooType", [],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         type_context,
+                         "fooname", '"foo"'
+                     ).name)
+    twoargs = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"}),
+         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"}),
+         AInixArgument(type_context, "p1", "FooType", arg_data={"position": 0})],
+        type_data={"invoke_name": "hello"}
+    )
+    type_context.fill_default_parsers()
+    parser = StringParser(type_context)
+    ast = parser.create_parse_tree("hello -a foo", "CommandSequence")
+    unparser = AstUnparser(type_context)
+    to_string = unparser.to_string(ast)
+    assert to_string.total_string == "hello -a foo"

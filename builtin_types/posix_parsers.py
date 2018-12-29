@@ -99,7 +99,7 @@ def ProgramTypeUnparser(result: parse_primitives.TypeToStringResult):
 
 def get_arg_with_short_name(arg_list, short_name: str):
     assert len(short_name) == 1, "unexpectedly long short_name"
-    matches = [a for a in arg_list if a.arg_data[SHORT_NAME] == short_name]
+    matches = [a for a in arg_list if a.arg_data.get(SHORT_NAME, None) == short_name]
     if not matches:
         return None
     if len(matches) > 1:
@@ -207,6 +207,8 @@ def ProgramObjectParser(
             if not sorted_pos_args:
                 raise ValueError(f"Unexpected word '{word}' with no remaing positional args")
             arg_to_do = sorted_pos_args[0]
+            if SHORT_NAME in arg_to_do.arg_data or LONG_NAME in arg_to_do.arg_data:
+                raise ValueError("Can't be both positional and a flag")
             is_multiword = arg_to_do.arg_data.get(MULTIWORD_POS_ARG, False) is True
             if is_multiword and already_seen_multiword_positional:
                 raise ValueError("Cannot parse a multiword positional argument as a previous"
@@ -243,8 +245,11 @@ def ProgramObjectUnparser(
     result: parse_primitives.ObjectToStringResult
 ):
     had_prev_args = False
+    # First add in all the flag args
     for arg in arg_map.implementation.children:
         if not arg_map.is_argname_present(arg.name):
+            continue
+        if POSITION in arg.arg_data:
             continue
         if had_prev_args:
             result.add_string(" ")
@@ -253,6 +258,12 @@ def ProgramObjectUnparser(
         if arg.type is not None:
             result.add_string(" ")
             result.add_arg_tostring(arg)
+        had_prev_args = True
+    # Now do all the positional args in order
+    for arg in get_all_positional_args(arg_map.implementation.children):
+        if had_prev_args:
+            result.add_string(" ")
+        result.add_arg_tostring(arg)
         had_prev_args = True
 ####
 
