@@ -1,0 +1,20 @@
+defines:
+    - define_new: example_set
+      y_type: Program
+      examples:
+          - x:
+            - list all files
+            - print all files and directories here
+            - list all files here
+            - list my files
+            - list what is here
+            - list files and dirs here
+            - list
+            - print the contents of this directory
+            - what files are here
+            - list all files here please
+            - list all files and directories here
+            - list all files and dirs in this dir
+            - display a list of files and or directories only
+            y:
+            - ls

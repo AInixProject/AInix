@@ -2,7 +2,7 @@
 defines:
   - define_new: object
     name: ls
-    type: program
+    type: Program
     type_data: {invoke_name: "ls"}
     children:
       - name: a
