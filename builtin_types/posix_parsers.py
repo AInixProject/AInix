@@ -99,13 +99,20 @@ def ProgramTypeUnparser(result: parse_primitives.TypeToStringResult):
 
 def get_arg_with_short_name(arg_list, short_name: str):
     assert len(short_name) == 1, "unexpectedly long short_name"
-    matches = [a for a in arg_list if a.arg_data['short_name'] == short_name]
+    matches = [a for a in arg_list if a.arg_data[SHORT_NAME] == short_name]
     if not matches:
         return None
     if len(matches) > 1:
         raise parse_primitives.AInixParseError(
             "Program has multiple args with same short_name", matches)
     return matches[0]
+
+
+def get_all_positional_args(arg_list):
+    """Returns all the positional args in order"""
+    all_positional_args = [arg for arg in arg_list if POSITION in arg.arg_data]
+    all_positional_args.sort(key=lambda arg: arg.arg_data[POSITION])
+    return all_positional_args
 
 
 def _get_arg_with_long_name(
@@ -137,6 +144,8 @@ def _get_next_slice_of_lex_result(lex_result, current_index):
 
 SHORT_NAME = "short_name"
 LONG_NAME = "long_name"
+POSITION = "position"
+MULTIWORD_POS_ARG = "multiword_pos_arg"
 
 def ProgramObjectParser(
     run: parse_primitives.ObjectParserRun,
@@ -145,8 +154,11 @@ def ProgramObjectParser(
 ):
     remaining_args = list(run.all_arguments)
     parameter_end_seen = False
+    already_seen_multiword_positional = False
     lex_result = lex_bash(string)
-    for (lex_index, (word, (start_idx, end_idx))) in enumerate(lex_result):
+    lex_index = 0
+    while lex_index < len(lex_result):
+        word, (start_idx, end_idx) = lex_result[lex_index]
         if word == "--":
             parameter_end_seen = True
         single_dash = not parameter_end_seen and len(word) >= 2 and \
@@ -169,9 +181,11 @@ def ProgramObjectParser(
                             next_slice = _get_next_slice_of_lex_result(
                                 lex_result, lex_index)
                             use_start_idx, use_end_idx = next_slice
+                        lex_index += 1
                     result.set_arg_present(shortname_match.name,
                                            use_start_idx, use_end_idx)
                     remaining_args.remove(shortname_match)
+            lex_index += 1
         elif double_dash:
             long_name_match = _get_arg_with_long_name(
                 remaining_args, word[2:])
@@ -182,11 +196,31 @@ def ProgramObjectParser(
                     next_slice = _get_next_slice_of_lex_result(
                         lex_result, lex_index)
                     use_start_idx, use_end_idx = next_slice
+                    lex_index += 1
                 result.set_arg_present(long_name_match.name,
                                        use_start_idx, use_end_idx)
                 remaining_args.remove(long_name_match)
+            lex_index += 1
+        else:
+            # Must be a positional arg
+            sorted_pos_args = get_all_positional_args(remaining_args)
+            if not sorted_pos_args:
+                raise ValueError(f"Unexpected word '{word}' with no remaing positional args")
+            arg_to_do = sorted_pos_args[0]
+            is_multiword = arg_to_do.arg_data.get(MULTIWORD_POS_ARG, False) is True
+            if is_multiword and already_seen_multiword_positional:
+                raise ValueError("Cannot parse a multiword positional argument as a previous"
+                                 "argument was also specified as multiword. Parse is ambigious")
+            if is_multiword:
+                already_seen_multiword_positional = True
+                words_to_consume = len(lex_result) - lex_index - len(sorted_pos_args[1:])
+            else:
+                words_to_consume = 1
+            _, use_end_idx = lex_result[lex_index+words_to_consume-1][1]
+            result.set_arg_present(arg_to_do.name, start_idx, use_end_idx)
+            remaining_args.remove(arg_to_do)
+            lex_index += words_to_consume
 
-    # TODO (DNGros): handle positional args
     remaining_required_args = [a for a in remaining_args if a.required]
     if remaining_required_args:
         raise parse_primitives.AInixParseError(

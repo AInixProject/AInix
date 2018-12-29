@@ -1,5 +1,5 @@
 import pytest
-from posix_parsers import *
+from builtin_types.posix_parsers import *
 from unittest.mock import MagicMock
 
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
@@ -159,8 +159,8 @@ def test_prog_object_parser_argval(type_context):
 def test_prog_object_parser_twoargs(type_context):
     twoargs = AInixObject(
         type_context, "FooProgram", "Program",
-        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"}),
-         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"})]
+        [AInixArgument(type_context, "a", None, arg_data={SHORT_NAME: "a"}),
+         AInixArgument(type_context, "barg", None, arg_data={SHORT_NAME: "b"})]
     )
     parser = type_context.get_object_parser_by_name("ProgramObjectParser")
     result = gen_result(parser.parse_string("-a -b", twoargs))
@@ -169,6 +169,17 @@ def test_prog_object_parser_twoargs(type_context):
     result = gen_result(parser.parse_string("-b", twoargs))
     assert result.get_arg_present("a") is None
     assert result.get_arg_present("barg") is not None
+
+
+def test_prog_object_parser_posarg(type_context):
+    fooType = AInixType(type_context, "FooType")
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "p1", fooType.name, arg_data={POSITION: 0}, required=True)])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    result = gen_result(parser.parse_string("hello", argval))
+    assert result.get_arg_present("p1") is not None
+    assert result.get_arg_present("p1").slice_string == "hello"
 
 
 def test_string_parse_e2e(type_context):

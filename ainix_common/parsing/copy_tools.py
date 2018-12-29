@@ -82,6 +82,8 @@ def _try_add_copy_node_at_object_choice(
 ):
     if is_obj_choice_a_not_present_node(node):
         return
+    if node not in unparse.node_to_span:
+        return  # This might be a terrible idea since won't know when bad parser...
     this_node_str = unparse.node_to_string(node)
     copy_pos = string_in_tok_list(this_node_str, token_metadata)
     if copy_pos:

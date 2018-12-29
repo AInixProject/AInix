@@ -28,7 +28,7 @@ defines:
         arg_data: {short_name: "r"}
       - name: i
         required: False
-        arg_data: {short_name: "r"}
+        arg_data: {short_name: "i"}
       - name: R
         required: False
         arg_data: {short_name: "R"}

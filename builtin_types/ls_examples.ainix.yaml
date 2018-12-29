@@ -18,3 +18,101 @@ defines:
             - display a list of files and or directories only
             y:
             - ls
+          - x:
+            - ls sorted by file size
+            - ls biggest files first
+            - list files here biggest files first
+            - list files largest files first
+            - ls in order of decreasing size
+            - ls order with decreasing file size
+            - list filese here sorted by files size decending
+            - ls sorted smallest to biggest
+            - ls -l sorted by size
+            - display files in order of size
+            - display files biggest files first
+            - list files sort by the largest file size first
+            - ls sort files with size
+            y:
+            - "ls -lS"
+          - x:
+            - list all files with stuff like file size
+            - list all files in long format
+            - ls with date changed and size
+            - show info about files here
+            - ls with long format
+            - ls in long format
+            - what files are here with file information
+            - list with long format - show permissions
+            - display a long list of the content of current directory
+            - show long listing information about each file/directory here
+            - display total information about Files/Directories
+            y:
+            - "ls -l"
+          - x:
+            - list all files with dot files
+            - list all files with hidden files
+            - list all including dot files
+            - ls with dot files
+            - ls with hidden files
+            - list with dot files
+            - list all files including hidden file starting with '.'
+            y:
+            - "ls -a"
+          - x:
+            - list files here sorted by modified data
+            - ls sorted newest to oldest
+            - ls -l sorted by change data
+            - ls -l sorted by modification data
+            - ls -l sorted by mod data
+            - ls -l sort by mod data
+            - ls -l sort the list by modification time which the newest first
+            y:
+            - "ls -lt"
+          - x:
+            - list inode numbers of files here
+            - find inode numbers of files
+            - print inode numbers of files here
+            - ls with inode numbers
+            - list file's inode index number
+            - check inode number of files and directories
+            y:
+            - ls -i
+          - x:
+            - ls recursively down all dirs
+            - list files recursively exploring directories
+            - list recursively directory tree
+            - show all files recursively
+            y:
+            - "ls -R"
+          - x:
+            - ls sort by extension name
+            - ls group extension together
+            - list files grouped by file extension
+            - ls sort list by extension
+            y:
+            - "ls -X"
+          - x:
+            - ls sort by time & date
+            - list files sort by date/time
+            - ls order files based on last modified time
+            - list files with newest file first
+            y:
+            - "ls -t"
+          - x:
+            - ls one file per line
+            - ls single entry per line
+            - display files one file per line
+            y:
+            - "ls -1"
+          - x:
+            - ls in reverse alphabetical order
+            - list in reverse order
+            - ls in reverse order
+            y:
+            - "ls -r"
+          - x:
+            - list long format with readable file size
+            - ls -l with human readable file sizes
+            - display files with file size in human readable form
+            y:
+            - "ls -lh"
