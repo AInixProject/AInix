@@ -16,7 +16,7 @@ This will properly fill in whatever was the first sampled value in the first spo
 and the second sampled value in the second value
 
 Code was written for replacer arguments like
-    [-[NAME -t foo]-]
+    [-[NUMBER --lessthan 15]-]
 which could be used to give parameters to the replacers in case the user wanted
 somehow use that, but this isn't actually really used or builtout.
 """
@@ -41,64 +41,63 @@ class Replacer:
         self.nameToTypes = {t.name: t for t in types}
 
     def strings_replace(self, nl, cmd):
-        """The main method used"""
+        """The main method used to replace"""
         nl_matches = Replacer.reg.findall(nl)
         cmd_matches = Replacer.reg.findall(cmd)
         # Go through and find variable assignments
         var_to_val_map = {}
 
-        def parse_assignment(nobrackets):
-            var_and_val = nobrackets.split("=")
+        def parse_assignment(no_brackets):
+            var_and_val = no_brackets.split("=")
             if len(var_and_val) != 2:
                 raise ReplacementError("Only one equal sign expected. Got", match)
-            var_name, val = var_and_val
-            var_name.strip()
-            val.strip()
-            return var_name, val
+            var_name_, val_ = var_and_val
+            var_name_.strip()
+            val_.strip()
+            return var_name_, val_
 
         for match in nl_matches + cmd_matches:
-            nobrackets = match[3:-3]
-            replaceExpression = None
-            if "=" in nobrackets:
-                varname, val = parse_assignment(nobrackets)
+            no_brackets = match[3:-3]
+            if "=" in no_brackets:
+                var_name, val = parse_assignment(no_brackets)
                 # an assignment
-                if not varname.isalnum() or not varname.lower() == varname:
+                if not var_name.isalnum() or not var_name.lower() == var_name:
                     raise ReplacementError(
-                        "Assignment name should be lowercase alphanumeric. Got", varname)
-                if varname in var_to_val_map:
+                        "Assignment name should be lowercase alphanumeric. Got", var_name)
+                if var_name in var_to_val_map:
                     raise ReplacementError("Duplicate assignment in: ", nl, ", ", cmd)
-                var_to_val_map[varname] = val
+                var_to_val_map[var_name] = val
         # replace
-        newnl, newcmd = nl, cmd
+        new_nl, new_cmd = nl, cmd
         for match in nl_matches:
             # A match will have be surrounded with dash-brackets
-            nobrackets = match[3:-3]
-            val = nobrackets
-            varname = None
-            if "=" in nobrackets:
-                varname, val = parse_assignment(nobrackets)
-            elif nobrackets[0] == "$":
-                varname = nobrackets[1:]
-                if varname not in var_to_val_map:
-                    raise ReplacementError("Use of unassigned value : ", nobrackets,
+            no_brackets = match[3:-3]
+            val = no_brackets
+            var_name = None
+            if "=" in no_brackets:
+                var_name, val = parse_assignment(no_brackets)
+            elif no_brackets[0] == "$":
+                var_name = no_brackets[1:]
+                if var_name not in var_to_val_map:
+                    raise ReplacementError("Use of unassigned value : ", no_brackets,
                                            " cmd ", cmd, " nl ", nl)
-                val = var_to_val_map[varname]
+                val = var_to_val_map[var_name]
 
-            valWords = val.split(" ")
-            matchtypename = valWords[0]
+            val_words = val.split(" ")
+            match_typename = val_words[0]
 
             # sample
-            if matchtypename not in self.nameToTypes:
-                raise ValueError("unrecognized replacement type", matchtypename,
+            if match_typename not in self.nameToTypes:
+                raise ValueError("unrecognized replacement type", match_typename,
                                  "accepted = ", self.nameToTypes)
-            nlreplace, cmdreplace = self.nameToTypes[matchtypename].sample_replacement(valWords)
-            newnl = newnl.replace(match, nlreplace)
-            newcmd = newcmd.replace(match, cmdreplace)
-            if varname:
-                newnl = newnl.replace("[-[$"+varname+"]-]", nlreplace)
-                newcmd = newcmd.replace("[-[$"+varname+"]-]", cmdreplace)
+            nlreplace, cmdreplace = self.nameToTypes[match_typename].sample_replacement(val_words)
+            new_nl = new_nl.replace(match, nlreplace)
+            new_cmd = new_cmd.replace(match, cmdreplace)
+            if var_name:
+                new_nl = new_nl.replace("[-[$"+var_name+"]-]", nlreplace)
+                new_cmd = new_cmd.replace("[-[$"+var_name+"]-]", cmdreplace)
 
-        return newnl, newcmd
+        return new_nl, new_cmd
 
 
 class Replacement:
