@@ -9,6 +9,7 @@ from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoice
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 import more_itertools
+from ainix_kernel.specialtypes import generic_strings
 
 
 class TypeTranslateCFTrainer:
@@ -101,6 +102,8 @@ if __name__ == "__main__":
     loader.load_path("builtin_types/command.ainix.yaml", type_context, up_search_limit=4)
     loader.load_path("builtin_types/pwd.ainix.yaml", type_context, up_search_limit=4)
     loader.load_path("builtin_types/ls.ainix.yaml", type_context, up_search_limit=4)
+    generic_strings.create_generic_strings(type_context)
+    loader.load_path("builtin_types/paths.ainix.yaml", type_context, up_search_limit=4)
     type_context.fill_default_parsers()
 
     index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)

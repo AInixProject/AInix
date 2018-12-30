@@ -108,7 +108,7 @@ def _parse_arguments(
 def _load_type(define, type_context: typecontext.TypeContext) -> None:
     """Parses the serialized form of a type and adds it to the supplied TypeContext"""
     valid_keys = ("name", "default_type_parser", "default_object_parser",
-                  "default_type_parser", "allowed_attributes", "define_new")
+                  "default_type_parser", "allowed_attributes", "define_new", "doc")
     for key in define.keys():
         if key not in valid_keys:
             raise ValueError(f"Key {key} not recognized. Options are {valid_keys}")
@@ -123,7 +123,8 @@ def _load_type(define, type_context: typecontext.TypeContext) -> None:
 
 def _load_object(define: dict, type_context: typecontext.TypeContext, load_root: str):
     """Parses the serialized form of a object_name and adds it to the supplied TypeContext"""
-    valid_keys = ("define_new", "name", "type", "children", "preferred_object_parser", "type_data")
+    valid_keys = ("define_new", "name", "type", "children",
+                  "preferred_object_parser", "type_data", "doc")
     for key in define.keys():
         if key not in valid_keys:
             raise ValueError(f"Key {key} not recognized. Options are {valid_keys}")

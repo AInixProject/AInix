@@ -96,7 +96,6 @@ MOST_COMMON_5GRAM = (
     "state",
     #....
     "these",
-    "state",
     "thing",
     "under"
 )

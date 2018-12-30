@@ -1,0 +1,266 @@
+---
+defines:
+    - define_new: type
+      name: Path
+      doc: Represents a path in the file system
+      default_type_parser: max_munch_type_parser
+    - define_new: object
+      type: Path
+      name: path_all_parts
+      children:
+          - name: start_directory
+            required: True
+            type: StartDirectoryModifier
+          - name: main_path
+            required: True
+            type: SlashSeperatedWords
+          - name: extension
+            required: False
+            type: FileExtension
+      preferred_object_parser:
+          grammar: |
+              start_directory "/" main_path ("." extension)?
+    - define_new: object
+      type: Path
+      name: path_only_start_dir
+      children:
+          - name: start_directory
+            required: True
+            type: StartDirectoryModifier
+      preferred_object_parser:
+          grammar: |
+              start_directory
+    - define_new: object
+      type: Path
+      name: path_only_main_part
+      children:
+          - name: main_path
+            type: SlashSeparatedWords
+            required: True
+          - name: extension
+            required: False
+            type: FileExtension
+      preferred_object_parser:
+          grammar: |
+              main_path ("." extension)?
+    # SlashSeparatedWords
+    - define_new: type
+      name: SlashSeparatedWords
+    - define_new: object
+      type: SlashSeparatedWords
+      name: slash_seperated_words
+      children:
+          - name: current
+            type: GenericWordPart
+            required: True
+          - name: current
+            type: SlashSeperatedWords
+            required: False
+      preferred_object_parser:
+          grammar: |
+              current ("/" next)?
+    # Start dir
+    - define_new: type
+      name: StartDirectoryModifier
+      default_type_parser: max_munch_type_parser
+    - define_new: object
+      name: directory_parent
+      type: StartDirectoryModifier
+      preferred_object_parser:
+          grammar: |
+              ".."
+    - define_new: object
+      name: directory_current
+      type: StartDirectoryModifier
+      preferred_object_parser:
+          grammar: |
+              "."
+    - define_new: object
+      name: directory_home
+      type: StartDirectoryModifier
+      preferred_object_parser:
+          grammar: |
+              "~"
+    - define_new: object
+      name: directory_two_up
+      type: StartDirectoryModifier
+      preferred_object_parser:
+          grammar: |
+              "../.."
+    - define_new: object
+      name: directory_three_up
+      type: StartDirectoryModifier
+      preferred_object_parser:
+          grammar: |
+              "../../.."
+    - define_new: object
+      name: directory_four_up
+      type: StartDirectoryModifier
+      preferred_object_parser:
+          grammar: |
+              "../../../.."
+    # Path list
+    - define_new: type
+      name: SpaceSeperatedPathList
+      doc: Represents a path in the file system
+    - define_new: object
+      type: SpaceSeperatedPathList
+      name: space_seperated_path_list_object
+      children:
+          - name: current
+            type: Path
+            required: True
+          - name: current
+            type: SpaceSeperatedPathList
+            required: False
+      preferred_object_parser:
+          grammar: |
+            current (" " next)?
+    # Extensions
+    - define_new: type
+      name: FileExtension
+      default_type_parser: max_munch_type_parser
+    - define_new: object
+      name: extension_generic
+      type: FileExtension
+      doc: A special extension that just spells out the extension
+      children:
+          - name: value
+            required: True
+            type: GenericWordPart
+      preferred_object_parser:
+          grammar: |
+              value
+    - &extension_obj
+      define_new: object
+      name: extension_none
+      type: FileExtension
+      preferred_object_parser:
+          grammar: |
+              ""
+    - << : *extension_obj
+      name: extension_py
+      preferred_object_parser:
+          grammar: |
+              "py"
+    - << : *extension_obj
+      name: extension_java
+      preferred_object_parser:
+          grammar: |
+              "java"
+    - << : *extension_obj
+      name: extension_mp3
+      preferred_object_parser:
+          grammar: |
+              "mp3"
+    - << : *extension_obj
+      name: extension_deb
+      preferred_object_parser:
+          grammar: |
+              "deb"
+    - << : *extension_obj
+      name: extension_tarball
+      preferred_object_parser:
+          grammar: |
+              "tar.gz"
+    - << : *extension_obj
+      name: extension_tar
+      preferred_object_parser:
+          grammar: |
+              "tar"
+    - << : *extension_obj
+      name: extension_zip
+      preferred_object_parser:
+          grammar: |
+              "zip"
+    - << : *extension_obj
+      name: extension_csv
+      preferred_object_parser:
+          grammar: |
+              "csv"
+    - << : *extension_obj
+      name: extension_log
+      preferred_object_parser:
+          grammar: |
+              "log"
+    - << : *extension_obj
+      name: extension_xml
+      preferred_object_parser:
+          grammar: |
+              "xml"
+    - << : *extension_obj
+      name: extension_jar
+      preferred_object_parser:
+          grammar: |
+              "jar"
+    - << : *extension_obj
+      name: extension_png
+      preferred_object_parser:
+          grammar: |
+              "png"
+    - << : *extension_obj
+      name: extension_jpg
+      preferred_object_parser:
+          grammar: |
+              "jpg"
+    - << : *extension_obj
+      name: extension_svg
+      preferred_object_parser:
+          grammar: |
+              "svg"
+    - << : *extension_obj
+      name: extension_javascript
+      preferred_object_parser:
+          grammar: |
+              "js"
+    - << : *extension_obj
+      name: extension_css
+      preferred_object_parser:
+          grammar: |
+              "css"
+    - << : *extension_obj
+      name: extension_php
+      preferred_object_parser:
+          grammar: |
+              "php"
+    - << : *extension_obj
+      name: extension_html
+      preferred_object_parser:
+          grammar: |
+              "html"
+    - << : *extension_obj
+      name: extension_c
+      preferred_object_parser:
+          grammar: |
+              "c"
+    - << : *extension_obj
+      name: extension_h
+      preferred_object_parser:
+          grammar: |
+              "h"
+    - << : *extension_obj
+      name: extension_cpp
+      preferred_object_parser:
+          grammar: |
+              "cpp"
+    - << : *extension_obj
+      name: extension_cs
+      preferred_object_parser:
+          grammar: |
+              "cs"
+    - << : *extension_obj
+      name: extension_sh
+      preferred_object_parser:
+          grammar: |
+              "sh"
+    - << : *extension_obj
+      name: extension_tex
+      preferred_object_parser:
+          grammar: |
+              "tex"
+    - << : *extension_obj
+      name: extension_pdf
+      preferred_object_parser:
+          grammar: |
+              "pdf"
+...
