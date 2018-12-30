@@ -1,6 +1,7 @@
 import pytest
 
 from ainix_common.parsing import loader
+from ainix_common.parsing.parse_primitives import AInixParseError
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.specialtypes import generic_strings
@@ -33,6 +34,12 @@ def test_path_parse_and_unparse_without_error(tc, in_str):
     unparser = AstUnparser(tc)
     to_string = unparser.to_string(ast)
     assert to_string.total_string == in_str
+
+
+def test_empty_string_not_a_path(tc):
+    parser = StringParser(tc)
+    with pytest.raises(AInixParseError):
+        ast = parser.create_parse_tree("", "Path")
 
 
 @pytest.mark.parametrize("in_str",

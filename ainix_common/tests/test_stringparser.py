@@ -1,9 +1,9 @@
 import pytest
 from ainix_common.parsing.ast_components import *
-from ainix_common.parsing import loader
+from ainix_common.parsing import loader, parse_primitives
 from ainix_common.parsing.model_specific.tokenizers import SpaceTokenizer
 from ainix_common.parsing.parse_primitives import TypeParser, ArgParseDelegation, TypeParserRun, \
-    TypeParserResult
+    TypeParserResult, AInixParseError, ParseDelegationReturnMetadata, ObjectParser
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext, AInixArgument, AInixObject, AInixType, \
     OPTIONAL_ARGUMENT_NEXT_ARG_NAME
@@ -451,25 +451,57 @@ def test_unparse_copy_node():
     assert result.total_string == "foo bar pop"
 
 
-# This currently doesn't work and it is not clear whether it even should
-#def test_unparse_optional_arg():
-#    tc = TypeContext()
-#    ft = AInixType(tc, "ft")
-#    arg1 = AInixArgument(tc, "arg1", "ft", required=False)
-#    fo = AInixObject(tc, "fo", "ft", [arg1],
-#                     preferred_object_parser_name=create_object_parser_from_grammar(
-#                        tc, "masfoo_parser", '"foo" arg1?'
-#                     ).name)
-#    tc.fill_default_parsers()
-#    parser = StringParser(tc)
-#    ast = parser.create_parse_tree("foo", "ft")
-#    unparser = AstUnparser(tc)
-#    result = unparser.to_string(ast)
-#    assert result.total_string == "foo"
-#    argnode = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
-#    assert result.node_to_string(argnode) == ""
-#    for pointer in ast.depth_first_iter():
-#        assert pointer.cur_node in result.node_to_span
+def test_unparse_optional_arg():
+    tc = TypeContext()
+    ft = AInixType(tc, "ft")
+    arg1 = AInixArgument(tc, "arg1", "ft", required=False)
+    fo = AInixObject(tc, "fo", "ft", [arg1],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                        tc, "masfoo_parser", '"foo" arg1?'
+                     ).name)
+    tc.fill_default_parsers()
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree("foo", "ft")
+    unparser = AstUnparser(tc)
+    result = unparser.to_string(ast)
+    assert result.total_string == "foo"
+    argnode = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
+    #assert result.node_to_string(argnode) == ""
+    # This currently doesn't work and it is not clear whether it even should
+    #for pointer in ast.depth_first_iter():
+    #    assert pointer.cur_node in result.node_to_span
+
+
+def test_unparse_optional_arg_cust_parser():
+    tc = TypeContext()
+    ft = AInixType(tc, "ft")
+    arg1 = AInixArgument(tc, "arg1", "ft", required=False)
+    def cust_foo_func(
+        run: parse_primitives.ObjectParserRun,
+        string: str,
+        result: parse_primitives.ObjectParserResult
+    ):
+        if not string.startswith("foo"):
+            raise AInixParseError("That's not a foo string!")
+        deleg = yield run.left_fill_arg(arg1, (len("foo"), len(string)))
+        if deleg.parse_success:
+            result.accept_delegation(deleg)
+    def unparser(
+        arg_map: parse_primitives.ObjectNodeArgMap,
+        result: parse_primitives.ObjectToStringResult
+    ):
+        result.add_string("foo")
+        result.add_arg_tostring(arg1)
+
+    fo = AInixObject(tc, "fo", "ft", [arg1],
+                     ObjectParser(tc, 'pname', cust_foo_func, unparser).name)
+    tc.fill_default_parsers()
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree("foo", "ft")
+    unparser = AstUnparser(tc)
+    result = unparser.to_string(ast)
+    assert result.total_string == "foo"
+    argnode = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
 
 
 def test_simple_num_unparse(numbers_type_context):

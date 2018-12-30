@@ -2,12 +2,14 @@
 which are basically just a string of usually natural language words,
 but poteneitally might just be other letters and words"""
 from ainix_common.parsing import parse_primitives
-from ainix_common.parsing.parse_primitives import ObjectParser, TypeParser
+from ainix_common.parsing.parse_primitives import ObjectParser, TypeParser, AInixParseError
 from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixObject, AInixArgument
 import pygtrie
 from typing import List, Tuple
 from ainix_kernel.specialtypes.ngram_data import *
 
+WORD_TYPE_NAME = "GenericWord"
+WORD_OBJ_NAME = "generic_word_non_empty_str"
 WORD_PART_TYPE_NAME = "GenericWordPart"
 WORD_PART_TERMINAL_NAME = "generic_word_part_terminal"
 WORD_PART_TYPE_PARSER_NAME = "word_part_type_parser"
@@ -45,6 +47,24 @@ def _create_root_types(type_context: TypeContext):
     AInixType(type_context, WORD_PART_TYPE_NAME, WORD_PART_TYPE_PARSER_NAME)
     AInixObject(type_context, WORD_PART_TERMINAL_NAME, WORD_PART_TYPE_NAME)
     _create_modifier_types(type_context)
+    AInixType(type_context, WORD_TYPE_NAME)
+    # Create a word which cannot be empty str
+    parts = AInixArgument(type_context, "parts", WORD_PART_TYPE_NAME, required=True)
+    def non_empty_word_parser(
+        run: parse_primitives.ObjectParserRun,
+        string: str,
+        result: parse_primitives.ObjectParserResult
+    ):
+        if string == "":
+            raise AInixParseError("Expect a non-empty word")
+        run.left_fill_arg(parts, (0, len(string)))
+    def unparser(
+        arg_map: parse_primitives.ObjectNodeArgMap,
+        result: parse_primitives.ObjectToStringResult
+    ):
+        result.add_arg_tostring(parts)
+    parser = ObjectParser(type_context, "non_empty_word_parser", non_empty_word_parser, unparser)
+    AInixObject(type_context, WORD_OBJ_NAME, WORD_TYPE_NAME, [parts], parser.name)
 
 def mod_type_parser_func(
     run: parse_primitives.TypeParserRun,

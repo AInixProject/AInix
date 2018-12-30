@@ -51,7 +51,7 @@ defines:
       name: slash_seperated_words
       children:
           - name: current
-            type: GenericWordPart
+            type: GenericWord
             required: True
           - name: next
             type: SlashSeparatedWords
@@ -126,12 +126,13 @@ defines:
       children:
           - name: value
             required: True
-            type: GenericWordPart
+            type: GenericWord
       preferred_object_parser:
           grammar: |
               value
     # need to figure out a way to unambigiously have file paths.
-    # needs to somehow detect if the only value or not
+    # For example txt should go to the txt node, not a generic spelled out extension
+    # Also needs to somehow detect if the only value or not
     #- &extension_obj
     #  define_new: object
     #  type: FileExtension

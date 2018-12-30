@@ -6,7 +6,7 @@ from pyrsistent import pmap
 import ainix_common.parsing
 from ainix_common.parsing import typecontext
 from ainix_common.parsing.ast_components import ObjectChoiceNode, ObjectNode, CopyNode, \
-    ObjectNodeLike
+    ObjectNodeLike, is_obj_choice_a_not_present_node, is_obj_choice_a_present_node
 from ainix_common.parsing.model_specific.tokenizers import StringTokensMetadata
 from ainix_common.parsing.parse_primitives import (TypeParser, ArgParseDelegation,
                                                    ParseDelegationReturnMetadata, AInixParseError,
@@ -66,7 +66,6 @@ class StringParser:
             raise ValueError(f"Unable to get a parser type {root_type_name} and "
                              f"root_parser {root_parser_name}")
         root_type = self._type_context.get_type_by_name(root_type_name)
-        print(f"PARSE {string}")
         new_node, string_metadata = self._parse_object_choice_node(
             string, root_parser, root_type)
         return new_node
@@ -338,10 +337,16 @@ class AstUnparser:
     ) -> str:
         """Unparses an ObjectChoiceNode for an arg present or not. Does not actually
         use a parser and passes through the value to the next parser"""
-        next_node = node.next_node.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME)
-        arg_str = self._unparse_object_choice_node(next_node, parser_actual_type,
-                                                   result_builder, left_offset)
-        result_builder.add_subspan(node.next_node, arg_str, left_offset)
+        if is_obj_choice_a_present_node(node):
+            next_node = node.next_node_not_copy.get_choice_node_for_arg(
+                OPTIONAL_ARGUMENT_NEXT_ARG_NAME)
+            arg_str = self._unparse_object_choice_node(next_node, parser_actual_type,
+                                                       result_builder, left_offset)
+            result_builder.add_subspan(node.next_node, arg_str, left_offset)
+        elif is_obj_choice_a_not_present_node(node):
+            arg_str = ""
+        else:
+            raise ValueError("Expected a present node choice here")
         result_builder.add_subspan(node, arg_str, left_offset)
         return arg_str
 
@@ -375,6 +380,8 @@ class AstUnparser:
             else:
                 raise ValueError(f"Unexpected object in unparse_seq {part_of_out} of type "
                                  f"{part_of_out.__class__}")
+        # TODO (DNGros): Loop through all not present args and unparse them to add their span.
+        # This will allow us to add back in checks into copytools to make sure everything unparses
         result_builder.add_subspan(node, out_string, left_offset)
         return out_string
 

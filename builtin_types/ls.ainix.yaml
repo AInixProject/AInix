@@ -47,10 +47,10 @@ defines:
       - name: "1"
         required: False
         arg_data: {short_name: "1"}
-      #- name: filelist
-      #  required: False
-      #  type: PathList
-      #  arg_data:
-      #    position: 0
-      #    multiword_pos_arg: True
+      - name: filelist
+        required: False
+        type: PathList
+        arg_data:
+          position: 0
+          multiword_pos_arg: True
 ...
