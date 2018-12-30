@@ -101,6 +101,8 @@ class AInixObject:
         self.type_name = type_name
         self.children: List['AInixArgument'] = children if children else []
         self.arg_name_to_index = {arg.name: i for i, arg in enumerate(self.children)}
+        if len(self.arg_name_to_index) < len(self.children):
+            raise ValueError(f"Children of {name} have same names")
         self.type_data = type_data or {}
         self.preferred_object_parser_name = preferred_object_parser_name
         self._type_context.register_object(self)
@@ -195,7 +197,10 @@ class AInixArgument:
     def type(self) -> Optional[AInixType]:
         if self.type_name is None:
             return None
-        return self._type_context.get_type_by_name(self.type_name)
+        retrieved_type = self._type_context.get_type_by_name(self.type_name)
+        if retrieved_type is None:
+            raise ValueError(f"Arg {self.name} unable to find type {self.type_name}")
+        return retrieved_type
 
     @property
     def next_choice_type(self) -> Optional[AInixType]:

@@ -109,6 +109,7 @@ if __name__ == "__main__":
     index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)
     exampleloader.load_path("../../builtin_types/numbers_examples.ainix.yaml", index)
     exampleloader.load_path("../../builtin_types/pwd_examples.ainix.yaml", index)
+    print("ls")
     exampleloader.load_path("../../builtin_types/ls_examples.ainix.yaml", index)
     print("num docs", index.backend.index.doc_count())
 

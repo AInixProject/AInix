@@ -206,6 +206,8 @@ class TypeParserResult:
         return self.string[si:ei].strip()
 
     def get_next_slice(self) -> Tuple[int, int]:
+        """Gets the slice of the input string used to parse the implementation
+        that we chose"""
         return self._next_slice
 
     def set_valid_implementation(self, implementation: 'typecontext.AInixObject'):
@@ -219,6 +221,8 @@ class TypeParserResult:
         self._implementation = self.type.type_context.get_object_by_name(impl_name)
 
     def set_next_slice(self, start_idx, end_idx):
+        """Sets the slice of the input string used to parse the implementation
+        that we chose"""
         self._next_slice = (int(start_idx), int(end_idx))
 
     @property
@@ -475,15 +479,17 @@ class ParseDelegationReturnMetadata:
     @staticmethod
     def make_for_unparsed_string(
         string: str,
-        what_parsed
+        what_parsed,
+        original_start_offset: int = 0
     ) -> 'ParseDelegationReturnMetadata':
         """A return value with nothing consumed yet
 
         Args:
             string: The unparsed string
             what_parsed: What we are parsing. Should be an Arg, Object, or Type
+            original_start_offset: The offset into the original object this return happened on
         """
-        return ParseDelegationReturnMetadata(True, string, 0, what_parsed, 0)
+        return ParseDelegationReturnMetadata(True, string, original_start_offset, what_parsed, 0)
 
     @staticmethod
     def make_failing(

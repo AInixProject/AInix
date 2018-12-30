@@ -116,3 +116,105 @@ defines:
             - display files with file size in human readable form
             y:
             - "ls -lh"
+          #- x:
+          #  - list all subdirectories
+          #  y:
+          #  - "ls *"
+          #- x:
+          #  - list files in home dir
+          #  - list my home directory
+          #  y:
+          #  - "ls ~"
+          #- x:
+          #  - ls -a but dont include . or ..
+          #  - list hidden files but dont include . or ..
+          #  y:
+          #  - "ls -A"
+          #- x:
+          #  - list all files in ..
+          #  - list parent directory
+          #  y:
+          #  - "ls .."
+          #- x:
+          #  - ls sorted oldest to newest
+          #  - ls sorted oldest to newest modified date
+          #  - ls with latest modified file or directory date as last
+          #  y:
+          #  - "ls -ltr"
+          #- x:
+          #  - list only text files
+          #  - list all text files here
+          #  y:
+          #  - "ls *.txt"
+          #- x:
+          #  - ls but only list directories
+          #  - list directories only
+          #  - list directory entries only
+          #  y:
+          #  - "ls -d */"
+          #- x:
+          #  - list root directory
+          #  y:
+          #  - "ls /"
+          #- x:
+          #  - list file size
+          #  y:
+          #  - "ls -s"
+          #- x:
+          #  - ls -a with inode index number
+          #  y:
+          #  - "ls -ai"
+          #- x:
+          #  - list long format including hidden files
+          #  - ls in long format with dot files
+          #  y:
+          #  - "ls -la"
+          #- x:
+          #  - ls -r with i-node numbers
+          #  y:
+          #  - "ls -ir"
+          #- x:
+          #  - ls -l sort by file extension
+          #  y:
+          #  - "ls -lX"
+          #- x:
+          #  - list files sort by extension with hidden files
+          #  y:
+          #  - "ls -Xa"
+          #- x:
+          #  - ls order files based on last modified time in dec-ending order
+          #  - list files here ordering by last mod time with oldest files first
+          #  - ls -l sorted by last modified time oldest first
+          #  - ls -lt in reverse
+          #  - ls -lr by modified date
+          #  y:
+          #  - "ls -lrt"
+          #- x:
+          #  - list all jpg files here
+          #  - ls all jpg files
+          #  y:
+          #  - "ls *.jpg"
+          #- x:
+          #  - list display file Inode number one per line
+          #  y:
+          #  - "ls -i -1"
+          #- x:
+          #  - list inode numbers of *.h
+          #  y:
+          #  - "ls -i *.h"
+          #- x:
+          #  - list all files in pictures
+          #  y:
+          #  - "ls pictures"
+          #- x:
+          #  - ls *.txt sorted by file size
+          #  y:
+          #  - "ls -lS *.txt"
+          #- x:
+          #  - get the inode numbers of *.java
+          #  y:
+          #  - "ls -i *.java"
+          #- x:
+          #  - ls all files in pictures and home
+          #  y:
+          #  - "ls pictures ~"

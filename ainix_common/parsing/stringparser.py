@@ -66,6 +66,7 @@ class StringParser:
             raise ValueError(f"Unable to get a parser type {root_type_name} and "
                              f"root_parser {root_parser_name}")
         root_type = self._type_context.get_type_by_name(root_type_name)
+        print(f"PARSE {string}")
         new_node, string_metadata = self._parse_object_choice_node(
             string, root_parser, root_type)
         return new_node
@@ -108,7 +109,11 @@ class StringParser:
             try:
                 arg_type_choice, parse_metadata = self._parse_object_choice_node(
                     delegation.string_to_parse, arg.type_parser, arg.type)
-                out_delegation_return = parse_metadata.change_what_parsed(arg)
+                out_delegation_return = ParseDelegationReturnMetadata(
+                    parse_metadata.parse_success, parse_metadata.string_parsed,
+                    delegation.slice_to_parse[0], arg, parse_metadata.remaining_right_starti,
+                    parse_metadata.fail_reason
+                )
             except AInixParseError as e:
                 # TODO (DNGros): Use the metadata rather than exceptions to manage this
                 metadata = ParseDelegationReturnMetadata(
@@ -120,7 +125,7 @@ class StringParser:
             # a success and that the arg is present.
             arg_type_choice = None
             out_delegation_return = ParseDelegationReturnMetadata.make_for_unparsed_string(
-                delegation.string_to_parse, arg)
+                delegation.string_to_parse, arg, delegation.slice_to_parse[0])
 
         # Figure out the actual node we need to output
         if not arg.required:

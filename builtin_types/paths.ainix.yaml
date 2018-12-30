@@ -13,7 +13,7 @@ defines:
             type: StartDirectoryModifier
           - name: main_path
             required: True
-            type: SlashSeperatedWords
+            type: SlashSeparatedWords
           - name: extension
             required: False
             type: FileExtension
@@ -53,12 +53,12 @@ defines:
           - name: current
             type: GenericWordPart
             required: True
-          - name: current
-            type: SlashSeperatedWords
+          - name: next
+            type: SlashSeparatedWords
             required: False
       preferred_object_parser:
           grammar: |
-              current ("/" next)?
+            current ("/" next)?
     # Start dir
     - define_new: type
       name: StartDirectoryModifier
@@ -99,19 +99,18 @@ defines:
       preferred_object_parser:
           grammar: |
               "../../../.."
-    # Path list
+    # PathList
     - define_new: type
-      name: SpaceSeperatedPathList
-      doc: Represents a path in the file system
+      name: PathList
     - define_new: object
-      type: SpaceSeperatedPathList
+      type: PathList
       name: space_seperated_path_list_object
       children:
           - name: current
             type: Path
             required: True
-          - name: current
-            type: SpaceSeperatedPathList
+          - name: next
+            type: PathList
             required: False
       preferred_object_parser:
           grammar: |
@@ -131,136 +130,133 @@ defines:
       preferred_object_parser:
           grammar: |
               value
-    - &extension_obj
-      define_new: object
-      name: extension_none
-      type: FileExtension
-      preferred_object_parser:
-          grammar: |
-              ""
-    - << : *extension_obj
-      name: extension_py
-      preferred_object_parser:
-          grammar: |
-              "py"
-    - << : *extension_obj
-      name: extension_java
-      preferred_object_parser:
-          grammar: |
-              "java"
-    - << : *extension_obj
-      name: extension_mp3
-      preferred_object_parser:
-          grammar: |
-              "mp3"
-    - << : *extension_obj
-      name: extension_deb
-      preferred_object_parser:
-          grammar: |
-              "deb"
-    - << : *extension_obj
-      name: extension_tarball
-      preferred_object_parser:
-          grammar: |
-              "tar.gz"
-    - << : *extension_obj
-      name: extension_tar
-      preferred_object_parser:
-          grammar: |
-              "tar"
-    - << : *extension_obj
-      name: extension_zip
-      preferred_object_parser:
-          grammar: |
-              "zip"
-    - << : *extension_obj
-      name: extension_csv
-      preferred_object_parser:
-          grammar: |
-              "csv"
-    - << : *extension_obj
-      name: extension_log
-      preferred_object_parser:
-          grammar: |
-              "log"
-    - << : *extension_obj
-      name: extension_xml
-      preferred_object_parser:
-          grammar: |
-              "xml"
-    - << : *extension_obj
-      name: extension_jar
-      preferred_object_parser:
-          grammar: |
-              "jar"
-    - << : *extension_obj
-      name: extension_png
-      preferred_object_parser:
-          grammar: |
-              "png"
-    - << : *extension_obj
-      name: extension_jpg
-      preferred_object_parser:
-          grammar: |
-              "jpg"
-    - << : *extension_obj
-      name: extension_svg
-      preferred_object_parser:
-          grammar: |
-              "svg"
-    - << : *extension_obj
-      name: extension_javascript
-      preferred_object_parser:
-          grammar: |
-              "js"
-    - << : *extension_obj
-      name: extension_css
-      preferred_object_parser:
-          grammar: |
-              "css"
-    - << : *extension_obj
-      name: extension_php
-      preferred_object_parser:
-          grammar: |
-              "php"
-    - << : *extension_obj
-      name: extension_html
-      preferred_object_parser:
-          grammar: |
-              "html"
-    - << : *extension_obj
-      name: extension_c
-      preferred_object_parser:
-          grammar: |
-              "c"
-    - << : *extension_obj
-      name: extension_h
-      preferred_object_parser:
-          grammar: |
-              "h"
-    - << : *extension_obj
-      name: extension_cpp
-      preferred_object_parser:
-          grammar: |
-              "cpp"
-    - << : *extension_obj
-      name: extension_cs
-      preferred_object_parser:
-          grammar: |
-              "cs"
-    - << : *extension_obj
-      name: extension_sh
-      preferred_object_parser:
-          grammar: |
-              "sh"
-    - << : *extension_obj
-      name: extension_tex
-      preferred_object_parser:
-          grammar: |
-              "tex"
-    - << : *extension_obj
-      name: extension_pdf
-      preferred_object_parser:
-          grammar: |
-              "pdf"
+    # need to figure out a way to unambigiously have file paths.
+    # needs to somehow detect if the only value or not
+    #- &extension_obj
+    #  define_new: object
+    #  type: FileExtension
+    #  name: extension_py
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "py"
+    #- << : *extension_obj
+    #  name: extension_java
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "java"
+    #- << : *extension_obj
+    #  name: extension_mp3
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "mp3"
+    #- << : *extension_obj
+    #  name: extension_deb
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "deb"
+    #- << : *extension_obj
+    #  name: extension_tarball
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "tar.gz"
+    #- << : *extension_obj
+    #  name: extension_tar
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "tar"
+    #- << : *extension_obj
+    #  name: extension_zip
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "zip"
+    #- << : *extension_obj
+    #  name: extension_csv
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "csv"
+    #- << : *extension_obj
+    #  name: extension_log
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "log"
+    #- << : *extension_obj
+    #  name: extension_xml
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "xml"
+    #- << : *extension_obj
+    #  name: extension_jar
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "jar"
+    #- << : *extension_obj
+    #  name: extension_png
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "png"
+    #- << : *extension_obj
+    #  name: extension_jpg
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "jpg"
+    #- << : *extension_obj
+    #  name: extension_svg
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "svg"
+    #- << : *extension_obj
+    #  name: extension_javascript
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "js"
+    #- << : *extension_obj
+    #  name: extension_css
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "css"
+    #- << : *extension_obj
+    #  name: extension_php
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "php"
+    #- << : *extension_obj
+    #  name: extension_html
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "html"
+    #- << : *extension_obj
+    #  name: extension_c
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "c"
+    #- << : *extension_obj
+    #  name: extension_h
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "h"
+    #- << : *extension_obj
+    #  name: extension_cpp
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "cpp"
+    #- << : *extension_obj
+    #  name: extension_cs
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "cs"
+    #- << : *extension_obj
+    #  name: extension_sh
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "sh"
+    #- << : *extension_obj
+    #  name: extension_tex
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "tex"
+    #- << : *extension_obj
+    #  name: extension_pdf
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "pdf"
 ...

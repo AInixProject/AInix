@@ -112,3 +112,18 @@ def test_word_parts_2():
     assert result.node_to_string(next_type_choice) == "Bar"
     assert result.node_to_string(next_part_o) == "Bar"
     assert result.node_to_string(next_part_o) == "Bar"
+
+
+def test_word_parts_3():
+    tc = TypeContext()
+    _create_root_types(tc)
+    _create_all_word_parts(
+        tc, [('f', True), ('ooo', True), ("bar", True), ("!", False)])
+    tc.fill_default_parsers()
+    word_part_type = tc.get_type_by_name(WORD_PART_TYPE_NAME)
+    parser = StringParser(tc)
+    node, data = parser._parse_object_choice_node("fooo.bar", word_part_type.default_type_parser,
+                                     word_part_type)
+    assert data.parse_success
+    assert data.remaining_string == ".bar"
+
