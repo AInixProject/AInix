@@ -46,20 +46,10 @@ class Replacer:
         cmd_matches = Replacer.reg.findall(cmd)
         # Go through and find variable assignments
         var_to_val_map = {}
-
-        def parse_assignment(no_brackets):
-            var_and_val = no_brackets.split("=")
-            if len(var_and_val) != 2:
-                raise ReplacementError("Only one equal sign expected. Got", match)
-            var_name_, val_ = var_and_val
-            var_name_.strip()
-            val_.strip()
-            return var_name_, val_
-
         for match in nl_matches + cmd_matches:
             no_brackets = match[3:-3]
             if "=" in no_brackets:
-                var_name, val = parse_assignment(no_brackets)
+                var_name, val = self._parse_assignment(no_brackets)
                 # an assignment
                 if not var_name.isalnum() or not var_name.lower() == var_name:
                     raise ReplacementError(
@@ -75,7 +65,7 @@ class Replacer:
             val = no_brackets
             var_name = None
             if "=" in no_brackets:
-                var_name, val = parse_assignment(no_brackets)
+                var_name, val = self._parse_assignment(no_brackets)
             elif no_brackets[0] == "$":
                 var_name = no_brackets[1:]
                 if var_name not in var_to_val_map:
@@ -98,6 +88,18 @@ class Replacer:
                 new_cmd = new_cmd.replace("[-[$"+var_name+"]-]", cmdreplace)
 
         return new_nl, new_cmd
+
+    @staticmethod
+    def _parse_assignment(no_brackets: str):
+        """Separates the name and the number of a replacement item"""
+        var_and_val = no_brackets.split("=")
+        if len(var_and_val) != 2:
+            raise ReplacementError(f"Only one equal sign expected. Got {no_brackets}")
+        var_name, val = var_and_val
+        var_name.strip()
+        val.strip()
+        return var_name, val
+
 
 
 class Replacement:
