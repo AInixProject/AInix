@@ -150,7 +150,7 @@ def gen_grammar_visitor(
         delegation = run_data.left_fill_arg(arg, slice_to_parse)
         parse_return = yield delegation
         if not parse_return.parse_success:
-            parse_return = parse_return.add_fail(f"Stack Message: Fail on arg {node.value}")
+            parse_return = parse_return.add_fail(f"Stack Message: Fail on arg '{node.value}'")
         return parse_return, v(parse_return)
     elif node.rule_name == "str_match":
         return _visit_str_match(node, string, left_offset), v()
@@ -204,7 +204,7 @@ def _create_object_parser_func_from_grammar(
         parse_return, acceptables = visitv
         if not parse_return.parse_success:
             raise UnparseableObjectError(f"Error parseing string {string} with grammar {grammar}."
-                                         f"Clunky 'stack trace' (can be made better): "
+                                         f"Clunky 'stack trace' (can be made better):\n"
                                          f"{parse_return.fail_reason}")
         for acceptable_delegation in acceptables:
             result.accept_delegation(acceptable_delegation)

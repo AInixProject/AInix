@@ -57,7 +57,8 @@ def _create_root_types(type_context: TypeContext):
     ):
         if string == "":
             raise AInixParseError("Expect a non-empty word")
-        run.left_fill_arg(parts, (0, len(string)))
+        deleg = yield run.left_fill_arg(parts, (0, len(string)))
+        result.accept_delegation(deleg)
     def unparser(
         arg_map: parse_primitives.ObjectNodeArgMap,
         result: parse_primitives.ObjectToStringResult

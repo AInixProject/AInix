@@ -118,7 +118,7 @@ defines:
     # Extensions
     - define_new: type
       name: FileExtension
-      default_type_parser: max_munch_type_parser
+      #default_type_parser: max_munch_type_parser (this won'd actualy work since ambigious)
     - define_new: object
       name: extension_generic
       type: FileExtension

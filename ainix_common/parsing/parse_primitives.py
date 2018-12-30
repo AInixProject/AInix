@@ -523,7 +523,7 @@ class ParseDelegationReturnMetadata:
 
     def add_fail(self, new_fail_reason) -> 'ParseDelegationReturnMetadata':
         """Returns with a new instance with an additiona fail message added"""
-        new_fail_string = self.fail_reason + "\n" + new_fail_reason
+        new_fail_string = " >>> " + self.fail_reason + "\n >>> " + new_fail_reason
         return ParseDelegationReturnMetadata(
             False, self.string_parsed, 0, self.what_parsed, None, new_fail_string)
 
