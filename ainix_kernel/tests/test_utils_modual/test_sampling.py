@@ -1,5 +1,6 @@
-from ainix_kernel.utils import WeightedRandomChooser
+from ainix_kernel.util.sampling import WeightedRandomChooser
 from collections import Counter
+
 
 def test_rand_choser():
     elements = ["foo", "bar", "baz", "bloop"]
