@@ -1,0 +1,55 @@
+defines:
+- define_new: example_set
+  examples:
+  y_type: Program
+  - x:
+    - copy [-[1=FILENAME]-] to [-[2=FILENAME]-]
+    - create a copy of [-[1=FILENAME]-] as [-[2=FILENAME]-]
+    - make a new version [-[1=FILENAME]-] named [-[2=FILENAME]-]
+    y:
+    - cp [-[$1]-] [-[$2]-]
+  - x:
+    - copy [-[1=FILENAME]-] into [-[2=DIRNAME]-]
+    y:
+    - cp [-[$1]-] [-[$2]-]
+  - x:
+    - make a copy of [-[1=FILENAME]-] in parent dir
+    - copy [-[1=FILENAME]-] to parent directory
+    - copy [-[1=FILENAME]-] up one directory
+    y:
+    - cp [-[$1]-] ..
+  - x:
+    - copy [-[1=DIRNAME]-] to [-[2=DIRNAME]-]
+    - create a copy of everything in [-[1=DIRNAME]-] to [-[2=DIRNAME]-]
+    - recursive copy [-[1=DIRNAME]-] to [-[2=DIRNAME]-]
+    - cp [-[1=DIRNAME]-] [-[2=DIRNAME]-] but recursively
+    - cp for directories [-[1=DIRNAME]-] [-[2=DIRNAME]-]
+    - cp a folder [-[1=DIRNAME]-] into [-[2=DIRNAME]-]
+    y:
+    - cp -r [-[$1]-] [-[$2]-]
+  - x:
+    - copy everything in pictures dir to piccopy
+    y:
+    - cp -r pictures/* piccopy
+  - x:
+    - cp all files in src to current directory
+    y:
+    - cp -r src/* .
+  - x:
+    - copy [-[1=DIRNAME]-] to [-[2=DIRNAME]-] displaying the name of every file copied
+    - cp -r [-[1=DIRNAME]-] [-[2=DIRNAME]-] but print each file copied
+    y:
+    - cp -vr [-[$1]-] [-[$2]-]
+  - x:
+    - cp -r [-[1=DIRNAME]-] [-[2=DIRNAME]-] but prompt before every copy
+    - copy recursive [-[1=DIRNAME]-] [-[2=DIRNAME]-] ask me first
+    y:
+    - cp -ir [-[$1]-] [-[$2]-]
+  - x:
+    - cp everything here to home dir
+    y:
+    - cp -r * ~
+  - x:
+    - cp everything here to [-[1=DIRNAME]-]
+    y:
+    - cp -r * [-[$1]-]
