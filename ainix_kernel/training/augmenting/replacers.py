@@ -173,7 +173,7 @@ class ReplacementSampling:
 
     def _verify_no_replacers_left(self, string):
         if len(Replacer.get_bracketless_matches(string)) != 0:
-            raise ValueError(f"Still replacers remaining. {string}")
+            raise ReplacementError(f"Still replacers remaining. {string}")
 
 
 class Replacement:

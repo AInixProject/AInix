@@ -1,6 +1,8 @@
 from collections import Counter
 from unittest.mock import MagicMock
 
+import pytest
+
 from ainix_kernel.training.augmenting.replacers import *
 
 
@@ -85,3 +87,13 @@ def test_replacer8():
     replacer = Replacer([rg])
     nl, cmd = replacer.strings_replace("hello [-[1=TEST -t foo]-]", "run [-[$1]-]")
     rg.sample_replacement.assert_called_once_with(["TEST", '-t', "foo"])
+
+
+def test_replacer_bad():
+    """Test reusing same thing multiple times in cmd"""
+    replacement = Replacement("foo", "bar", 1)
+    rg = ReplacementGroup('TEST', [replacement])
+    replacer = Replacer([rg])
+    with pytest.raises(ReplacementError):
+        nl, cmd = replacer.strings_replace("hello [-[TEST]-]", "run [-[BLOOP]-]")
+
