@@ -1,0 +1,41 @@
+defines:
+- define_new: example_set
+  y_type: Program
+  examples:
+  - x:
+    - go home
+    - cd to home directory
+    - cd to my home dir
+    - change directory to home directory
+    - cd to my home directory
+    y:
+    - cd ~
+  - x:
+    - go up one directory
+    - cd up one directory
+    - cd to parent dir
+    - go up to parent directory
+    y:
+    - cd ..
+  - x:
+    - cd to where I was before
+    - go back to where I was
+    - go back to directory was in before last cd
+    y:
+    - cd -
+  - x:
+    - go to tmp directory
+    y:
+    - cd /tmp
+  - x:
+    - go up two directories
+    y:
+    - cd ../..
+  - x:
+    - cd up three directories
+    y:
+    - cd ../../..
+  - x:
+    - go into pictures dir
+    y:
+    - cd pictures

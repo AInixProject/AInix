@@ -22,7 +22,7 @@ WORD_PART_NEXT_ARG_NAME = "next_part"
 def create_generic_strings(type_context: TypeContext):
     """Main public interface for creating the appropriate types inside context"""
     _create_root_types(type_context)
-    all_part_strs = [(symb, False) for symb in ("_", "$", "'", "*")] + \
+    all_part_strs = [(symb, False) for symb in ("_", "$", "'", "*", "-")] + \
                     [(symb, True) for symb in _get_all_letters()]
     all_part_strs += [(symb, True) for symb in MOST_COMMON_BIGRAM]
     all_part_strs += [(symb, True) for symb in MOST_COMMON_TRIGRAM]

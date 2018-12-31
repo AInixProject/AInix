@@ -1,0 +1,12 @@
+---
+defines:
+    - define_new: object
+      name: cd
+      type: Program
+      type_data: {invoke_name: "cd"}
+      children:
+          - name: new_apth
+            required: False
+            type: Path
+            arg_data: {position: 0}
+...
