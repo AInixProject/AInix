@@ -27,7 +27,8 @@ def test_path_parse_extension(tc, in_str):
 
 
 @pytest.mark.parametrize("in_str",
-    ("foo", "foo.txt", "foo/bar", "..", "../foo", "*", "~", "~/hello*/fdf.bar"))
+    ("foo", "foo.txt", "foo/bar", "..", "../foo", "*", "~", "~/hello*/fdf.bar",
+     ".dotfile", ".dotfile.txt"))
 def test_path_parse_and_unparse_without_error(tc, in_str):
     parser = StringParser(tc)
     ast = parser.create_parse_tree(in_str, "Path")

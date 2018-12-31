@@ -218,3 +218,12 @@ defines:
             - ls all files in pictures and home
             y:
             - "ls pictures ~"
+          #- x:
+          #  - what files are in [-[DIRNAME]-]
+          #  - list the files that are in [-[DIRNAME]-]
+          #  y:
+          #  - "ls [-[DIRNAME]-]"
+          #- x:
+          #  - list the files in [-[DIRNAME]-] sorted by file size
+          #  y:
+          #  - "ls -lS [-[DIRNAME]-]"

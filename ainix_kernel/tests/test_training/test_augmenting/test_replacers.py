@@ -97,3 +97,12 @@ def test_replacer_bad():
     with pytest.raises(ReplacementError):
         nl, cmd = replacer.strings_replace("hello [-[TEST]-]", "run [-[BLOOP]-]")
 
+
+def test_replacer_no_group():
+    """Test reusing same thing multiple times in cmd"""
+    replacement = Replacement("foo", "bar", 1)
+    rg = ReplacementGroup('TEST', [replacement])
+    replacer = Replacer([rg])
+    with pytest.raises(ReplacementError):
+        _ = replacer.create_replace_sampling("hello [-[BAD]-]")
+

@@ -126,10 +126,26 @@ defines:
       children:
           - name: value
             required: True
-            type: GenericWord
+            type: DotSeperatedWords
       preferred_object_parser:
           grammar: |
               value
+    - define_new: type
+      name: DotSeperatedWords
+    - define_new: object
+      type: DotSeperatedWords
+      name: dot_seperated_word_list_object
+      children:
+          - name: current
+            type: GenericWord
+            required: True
+          - name: next
+            type: GenericWord
+            required: False
+      preferred_object_parser:
+          grammar: |
+              current ("." next)?
+
     # need to figure out a way to unambigiously have file paths.
     # For example txt should go to the txt node, not a generic spelled out extension
     # Also needs to somehow detect if the only value or not

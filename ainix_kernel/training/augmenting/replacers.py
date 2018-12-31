@@ -73,8 +73,8 @@ class Replacer:
             val_words = val.split(" ")
             match_typename = val_words[0]
             if match_typename not in self.name_to_types:
-                raise ValueError("unrecognized replacement type", match_typename,
-                                 "accepted = ", self.name_to_types)
+                raise ReplacementError("unrecognized replacement type", match_typename,
+                                       "accepted = ", self.name_to_types)
             x_replace, y_replace = self.name_to_types[match_typename].sample_replacement(val_words)
             var_to_x_y_vals[var] = (x_replace, y_replace)
         return ReplacementSampling(var_to_x_y_vals)

@@ -7,7 +7,7 @@ from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPred
     ModelSafePredictError
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
-from ainix_kernel.training.augmenting.replacers import Replacer
+from ainix_kernel.training.augmenting.replacers import Replacer, ReplacementGroup, Replacement
 from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 import more_itertools
 from ainix_kernel.specialtypes import generic_strings
@@ -29,6 +29,9 @@ class TypeTranslateCFTrainer:
         self.batch_size = batch_size
         self.str_tokenizer = self.model.get_string_tokenizer()
         self.replacer = replacer
+        if self.replacer is None:
+            self.replacer = Replacer([])
+
 
     def _train_one_epoch(self, which_epoch_on: int):
         single_examples_iter = self.data_pair_iterate((DataSplits.TRAIN,))
@@ -79,29 +82,29 @@ class TypeTranslateCFTrainer:
             y_ast_set = AstObjectChoiceSet(y_type, None)
             ast_for_this_example = None
             parsed_ast = None
-            replacement_sample = None
-            if self.replacer:
-                replacement_sample = self.replacer.create_replace_sampling(example.xquery)
+            replacement_sample = self.replacer.create_replace_sampling(example.xquery)
             for y_example in all_y_examples:
-                if self.replacer:
-                    replaced_y = replacement_sample.replace_x(y_example.ytext)
-                else:
-                    replaced_y = y_example.ytext
+                replaced_y = replacement_sample.replace_x(y_example.ytext)
                 parsed_ast = self.string_parser.create_parse_tree(
                     replaced_y, y_type.name)
                 if y_example.ytext == example.ytext:
                     ast_for_this_example = parsed_ast
                 y_ast_set.add(parsed_ast, True, y_example.weight, 1.0)
             # handle copies
-            if replacement_sample:
-                this_example_replaced_x = replacement_sample.replace_x(example.xquery)
-            else:
-                this_example_replaced_x = example.xquery
+            this_example_replaced_x = replacement_sample.replace_x(example.xquery)
             tokens, metadata = self.str_tokenizer.tokenize(this_example_replaced_x)
             add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
                                   metadata, example.weight)
             y_ast_set.freeze()
             yield (example, this_example_replaced_x, y_ast_set, ast_for_this_example)
+
+# A bunch of code for running the thing which really shouldn't be here.
+
+def _get_all_replacers() -> Replacer:
+    filename_repl = ReplacementGroup('FILENAME', Replacement.from_tsv("./data/FILENAME.tsv"))
+    dirname_repl = ReplacementGroup('DIRNAME', Replacement.from_tsv("./data/DIRNAME.tsv"))
+    replacer = Replacer([filename_repl, dirname_repl])
+    return replacer
 
 
 if __name__ == "__main__":
@@ -133,7 +136,8 @@ if __name__ == "__main__":
     from ainix_kernel.models.EncoderDecoder.encdecmodel import get_default_encdec_model
     model = get_default_encdec_model(index, standard_size=64)
     #model = make_rulebased_seacr(index)
-    trainer = TypeTranslateCFTrainer(model, index)
+
+    trainer = TypeTranslateCFTrainer(model, index, replacer=_get_all_replacers())
     train_time = datetime.datetime.now()
     print("train time", train_time)
     trainer.train(30)
