@@ -7,6 +7,7 @@ from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPred
     ModelSafePredictError
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
+from ainix_kernel.training.augmenting.replacers import Replacer
 from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 import more_itertools
 from ainix_kernel.specialtypes import generic_strings
@@ -17,7 +18,8 @@ class TypeTranslateCFTrainer:
         self,
         model: StringTypeTranslateCF,
         example_store: ExamplesStore,
-        batch_size: int = 1
+        batch_size: int = 1,
+        replacer: Replacer = None
     ):
         self.model = model
         self.example_store = example_store
@@ -26,6 +28,7 @@ class TypeTranslateCFTrainer:
         self.unparser = AstUnparser(self.type_context)
         self.batch_size = batch_size
         self.str_tokenizer = self.model.get_string_tokenizer()
+        self.replacer = replacer
 
     def _train_one_epoch(self, which_epoch_on: int):
         single_examples_iter = self.data_pair_iterate((DataSplits.TRAIN,))
@@ -76,6 +79,9 @@ class TypeTranslateCFTrainer:
             ast_for_this_example = None
             parsed_ast = None
             for y_example in all_y_examples:
+                # need code to create a single sampling
+                replaced_x, replaced_y = self.replacer.strings_replace(
+                    example.xquery, y_example.ytext)
                 parsed_ast = self.string_parser.create_parse_tree(
                     y_example.ytext, y_type.name)
                 if y_example.ytext == example.ytext:

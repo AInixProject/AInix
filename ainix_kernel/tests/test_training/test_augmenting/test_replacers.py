@@ -73,7 +73,7 @@ def test_replacer7():
     rg = ReplacementGroup('TEST', [replacement])
     rg.sample_replacement = MagicMock(return_value=("foo", "bar"))
     replacer = Replacer([rg])
-    nl, cmd = replacer.strings_replace("hello [-[TEST -t foo]-]", "run")
+    nl, cmd = replacer.strings_replace("hello [-[1=TEST -t foo]-]", "run")
     rg.sample_replacement.assert_called_once_with(["TEST", '-t', "foo"])
 
 
@@ -83,5 +83,5 @@ def test_replacer8():
     rg = ReplacementGroup('TEST', [replacement])
     rg.sample_replacement = MagicMock(return_value=("foo", "bar"))
     replacer = Replacer([rg])
-    nl, cmd = replacer.strings_replace("hello [-[1=TEST -t foo]-]", "run")
+    nl, cmd = replacer.strings_replace("hello [-[1=TEST -t foo]-]", "run [-[$1]-]")
     rg.sample_replacement.assert_called_once_with(["TEST", '-t', "foo"])

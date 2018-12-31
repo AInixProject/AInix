@@ -16,19 +16,25 @@ This will properly fill in whatever was the first sampled value in the first spo
 and the second sampled value in the second value
 
 Code was written for replacer arguments like
-    [-[NUMBER --lessthan 15]-]
+    [-[1=NUMBER --lessthan 15]-]
 which could be used to give parameters to the replacers in case the user wanted
 somehow use that, but this isn't actually really used or builtout.
+
+This code was written before the newest model architecture, and could probably
+be rewritten better. Most importantly we should probably be able to make these
+with .yaml files or something.
 """
 import csv
 import re
-from typing import List
+from typing import List, Tuple, Dict, Set
 
 from ainix_kernel.util.sampling import WeightedRandomChooser
 
 
 class ReplacementError(ValueError):
     pass
+
+_IMPLICIT_REPLACER_ARG_NAME_PREFIX = "implicitargname"
 
 
 class Replacer:
@@ -38,91 +44,167 @@ class Replacer:
 
     def __init__(self, types: List['ReplacementGroup']):
         self.types = types
-        self.nameToTypes = {t.name: t for t in types}
+        self.name_to_types = {t.name: t for t in types}
 
-    def strings_replace(self, nl, cmd):
-        """The main method used to replace"""
-        nl_matches = Replacer.reg.findall(nl)
-        cmd_matches = Replacer.reg.findall(cmd)
+    def create_replace_sampling(self, x: str) -> 'ReplacementSampling':
+        no_brackets = self.get_bracketless_matches(x)
         # Go through and find variable assignments
         var_to_val_map = {}
-        for match in nl_matches + cmd_matches:
-            no_brackets = match[3:-3]
-            if "=" in no_brackets:
-                var_name, val = self._parse_assignment(no_brackets)
-                # an assignment
-                if not var_name.isalnum() or not var_name.lower() == var_name:
-                    raise ReplacementError(
-                        "Assignment name should be lowercase alphanumeric. Got", var_name)
-                if var_name in var_to_val_map:
-                    raise ReplacementError("Duplicate assignment in: ", nl, ", ", cmd)
-                var_to_val_map[var_name] = val
-        # replace
-        new_nl, new_cmd = nl, cmd
-        for match in nl_matches:
-            # A match will have be surrounded with dash-brackets
-            no_brackets = match[3:-3]
-            val = no_brackets
-            var_name = None
-            if "=" in no_brackets:
-                var_name, val = self._parse_assignment(no_brackets)
-            elif no_brackets[0] == "$":
-                var_name = no_brackets[1:]
-                if var_name not in var_to_val_map:
-                    raise ReplacementError("Use of unassigned value : ", no_brackets,
-                                           " cmd ", cmd, " nl ", nl)
-                val = var_to_val_map[var_name]
-
+        for match in no_brackets:
+            if "=" in match:
+                var_name, val = _split_replacement_assignment(match)
+            else:
+                # There isn't an explicit var_name given. So just use the lower
+                # case version of the type name. So for example its ok to do something
+                # like [-[FILE]-] as long as only one FILE replacer in there
+                if " " in match:
+                    raise ReplacementError("Replacements with args must be given an explicit name")
+                var_name = _IMPLICIT_REPLACER_ARG_NAME_PREFIX + match.lower()
+                val = match
+            if not var_name.isalnum() or not var_name.lower() == var_name or " " in var_name:
+                raise ReplacementError(
+                    "Assignment name should be lowercase alphanumeric. Got", var_name)
+            if var_name in var_to_val_map:
+                raise ReplacementError("Duplicate assignment in: ", x)
+            var_to_val_map[var_name] = val
+        # create actual replacements
+        var_to_x_y_vals: Dict[str, Tuple[str, str]] = {}
+        for var, val in var_to_val_map.items():
             val_words = val.split(" ")
             match_typename = val_words[0]
-
-            # sample
-            if match_typename not in self.nameToTypes:
+            if match_typename not in self.name_to_types:
                 raise ValueError("unrecognized replacement type", match_typename,
-                                 "accepted = ", self.nameToTypes)
-            nlreplace, cmdreplace = self.nameToTypes[match_typename].sample_replacement(val_words)
-            new_nl = new_nl.replace(match, nlreplace)
-            new_cmd = new_cmd.replace(match, cmdreplace)
-            if var_name:
-                new_nl = new_nl.replace("[-[$"+var_name+"]-]", nlreplace)
-                new_cmd = new_cmd.replace("[-[$"+var_name+"]-]", cmdreplace)
+                                 "accepted = ", self.name_to_types)
+            x_replace, y_replace = self.name_to_types[match_typename].sample_replacement(val_words)
+            var_to_x_y_vals[var] = (x_replace, y_replace)
+        return ReplacementSampling(var_to_x_y_vals)
 
-        return new_nl, new_cmd
+    def strings_replace(self, x: str, y: str) -> Tuple[str, str]:
+        """The main method used to replace"""
+        sampling = self.create_replace_sampling(x)
+        return sampling.replace_x(x), sampling.replace_y(y)
 
     @staticmethod
-    def _parse_assignment(no_brackets: str):
-        """Separates the name and the number of a replacement item"""
-        var_and_val = no_brackets.split("=")
-        if len(var_and_val) != 2:
-            raise ReplacementError(f"Only one equal sign expected. Got {no_brackets}")
-        var_name, val = var_and_val
-        var_name.strip()
-        val.strip()
-        return var_name, val
+    def get_bracketless_matches(in_str):
+        matches = Replacer.reg.findall(in_str)
+        # A match will have be surrounded with dash-brackets. Remove those.
+        no_brackets = [match[3:-3] for match in matches]
+        return no_brackets
 
+
+
+
+def _split_replacement_assignment(no_brackets: str):
+    """Separates the name and the value of a replacement item"""
+    var_and_val = no_brackets.split("=")
+    if len(var_and_val) != 2:
+        raise ReplacementError(f"Only one equal sign expected. Got {no_brackets}")
+    var_name, val = var_and_val
+    var_name.strip()
+    val.strip()
+    return var_name, val
+
+
+class ReplacementSampling:
+    """This thing is returned when you run a Replacer on only a "x" value. This
+    will pick concrete samplings for each replacer in that x value which can
+    reapplied repeatedly to multiple "x" or "y" values filling in the same values
+    in each."""
+    def __init__(self, var_to_x_y_vals: Dict[str, Tuple[str, str]]):
+        self.var_to_x_y_vals = var_to_x_y_vals
+
+    def replace_x(self, in_x_str: str) -> str:
+        if len(self.var_to_x_y_vals) == 0:
+            return in_x_str
+        vars_used = set()
+        new_str, latest_vars_used = self._fill_in_var_retrieves(in_x_str, True)
+        vars_used |= latest_vars_used
+        new_str, latest_vars_used = self._fill_in_var_defines(new_str)
+        vars_used |= latest_vars_used
+        # not sure if actually want to force that all vars be used or not
+        # self._verify_all_vars_used(vars_used, in_x_str)
+        self._verify_no_replacers_left(new_str)
+        return new_str
+
+    def replace_y(self, in_y_str: str) -> str:
+        if len(self.var_to_x_y_vals) == 0:
+            return in_y_str
+        vars_used = set()
+        new_str, latest_vars_used = self._fill_in_var_retrieves(in_y_str, False)
+        vars_used |= latest_vars_used
+        # not sure if actually want to force that all vars be used or not
+        # self._verify_all_vars_used(vars_used, in_y_str)
+        self._verify_no_replacers_left(new_str)
+        return new_str
+
+    def _fill_in_var_retrieves(self, in_str: str, is_x: bool) -> Tuple[str, Set[str]]:
+        """Fills in any usages of a var with the actual val. This includes both
+        dollar sign accesses and the just the left empty type name replacements"""
+        vars_used = set()
+        new_str = in_str
+        for var, (x, y) in self.var_to_x_y_vals.items():
+            val_to_use = x if is_x else y
+            is_a_implicit_arg_name = var.startswith(_IMPLICIT_REPLACER_ARG_NAME_PREFIX)
+            if is_a_implicit_arg_name:
+                actual_var = var[len(_IMPLICIT_REPLACER_ARG_NAME_PREFIX):].upper()
+                new_str = new_str.replace(f"[-[{actual_var}]-]", val_to_use)
+            else:
+                new_str = new_str.replace(f"[-[${var}]-]", val_to_use)
+            if in_str != new_str:
+                vars_used.add(var)
+        return new_str, vars_used
+
+    def _fill_in_var_defines(self, in_x_str: str) -> Tuple[str, Set[str]]:
+        no_brackets = Replacer.get_bracketless_matches(in_x_str)
+        vars_used = set()
+        new_str = in_x_str
+        for match in no_brackets:
+            if "=" in match:
+                var, val = _split_replacement_assignment(match)
+                fill_str, _ = self.var_to_x_y_vals[var]
+                new_str = new_str.replace(f"[-[{match}]-]", fill_str)
+                vars_used.add(var)
+        return new_str, vars_used
+
+    def _verify_all_vars_used(self, used_vars: Set[str], string: str):
+        if len(used_vars) != len(self.var_to_x_y_vals):
+            raise ValueError(f"Not all vars used in {string}. Used {used_vars}. But "
+                             f"options are {self.var_to_x_y_vals.keys()}")
+
+    def _verify_no_replacers_left(self, string):
+        if len(Replacer.get_bracketless_matches(string)) != 0:
+            raise ValueError(f"Still replacers remaining. {string}")
 
 
 class Replacement:
     """An individual x, y value replacement."""
-    def __init__(self, nl_value: str, cmd_value: str, weight: float):
-        self._nl_value = nl_value
-        self._cmd_value = cmd_value
+    def __init__(self, x: str, y: str, weight: float):
+        self._x = x
+        self._y = y
         self.weight = weight
 
     def get_replacement(self):
-        return self._nl_value, self._cmd_value
+        return self._x, self._y
 
     @classmethod
     def from_tsv(cls, file_name) -> List['Replacement']:
         """Returns a list a of replacements loaded from a tsv"""
         with open(file_name) as tsvfile:
             reader = csv.reader(tsvfile, delimiter='\t')
-            return [cls(nl, cmd, int(weight)) for nl, cmd, weight in reader]
+            return [cls(x, y, int(weight)) for x, y, weight in reader]
 
 
 class ReplacementGroup:
-    """A set of replacements of the same type to use"""
+    """A set of replacements of a certain type to use
+
+    Args:
+        name: the name of the replacement group. This is the value that goes in
+            the dash-brackets. So like in [-[FILE]-] the name is "FILE". This
+            should be all caps.
+    """
     def __init__(self, name: str, replacements: List[Replacement]):
+        if not name.isupper():
+            raise ValueError("names of replacer groups should be uppercase")
         self.name = name
         self.replacements = replacements
         weights = [r.weight for r in replacements]
