@@ -3,7 +3,7 @@ import collections
 from typing import Iterable, Type, List, Union
 from collections import defaultdict
 
-from ainix_common.parsing.typecontext import AInixType, AInixObject
+from ainix_common.parsing.typecontext import AInixType, AInixObject, TypeContext
 from ainix_common.parsing.model_specific import parse_constants
 import torch
 from ainix_common.parsing.ast_components import AstObjectChoiceSet
@@ -49,8 +49,9 @@ class Vocab(Generic[T]):
     ):
         pass
 
+    @abstractmethod
     def items(self):
-        raise NotImplemented
+        raise NotImplemented()
 
 
 class CounterVocab(Vocab):
@@ -162,6 +163,51 @@ class CounterVocabBuilder(VocabBuilder):
         raise NotImplemented()
 
 
+class TypeContextWrapperVocab(Vocab):
+    """A vocab that just wraps all the objects and the types in a TypeContext as
+    tokens. It allows for mapping of objects and types into indicies. This
+    functionallity is not just built into a type context because vocabs have
+    use some torch methods and we are trying to keep ainix_common non-dependent
+    on pytorch (I don't know this might be not really necessary though...)."""
+    def __init__(self, type_context: TypeContext):
+        ind = 0
+        type_context.get_all_objects()
+        self.itos = np.array(list(type_context.get_all_objects()) +
+                             list(type_context.get_all_types()))
+        # stoi is simply a reverse dict for itos
+        self.stoi = {tok: i for i, tok in enumerate(self.itos)}
+        self.vectorized_stoi = np.vectorize(self.token_to_index)
+
+    def token_to_index(self, token: Union[AInixObject, AInixType]) -> int:
+        return self.stoi[token]
+
+    def index_to_token(self, index: int) -> Union[AInixObject, AInixType]:
+        return self.itos[index]
+
+    def torch_indices_to_tokens(self, indices: torch.LongTensor) -> np.array:
+        """Converts arbitrary shape long tensor of indices into an array of vocab type"""
+        return self.itos[indices.numpy()]
+
+    def __len__(self):
+        return len(self.itos)
+
+    def items(self):
+        return enumerate(self.itos)
+
+    def extend(self, v, sort=False):
+        raise NotImplemented("I should be less lazy...")
+
+    def token_seq_to_indices(
+        self,
+        sequence: typing.Sequence[Union[AInixObject, AInixType]],
+        as_torch=True
+    ):
+        indices = self.vectorized_stoi(sequence)
+        if as_torch:
+            return torch.from_numpy(indices)
+        return indices
+
+
 def make_vocab_from_example_store(
     exampe_store: ExamplesStore,
     x_tokenizer: Tokenizer,
@@ -191,12 +237,37 @@ def make_vocab_from_example_store(
     parser = StringParser(exampe_store.type_context)
     for example in exampe_store.get_all_examples():
         x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.xquery)[0])
-        x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.ytext)[0])
         if example.ytext not in already_done_ys:
             ast = parser.create_parse_tree(example.ytext, example.ytype)
             y_tokens, _ = y_tokenizer.tokenize(ast)
             y_vocab_builder.add_sequence(y_tokens)
     return x_vocab_builder.produce_vocab(), y_vocab_builder.produce_vocab()
+
+
+def make_vocab_from_example_store_and_type_context(
+    example_store: ExamplesStore,
+    x_tokenizer: Tokenizer,
+    x_vocab_builder: VocabBuilder = None
+) -> typing.Tuple[Vocab, TypeContextWrapperVocab]:
+    """
+    Like the above method, except this one doesn't do special tokenizes to get
+    a y vocab and instead just grabs everything from the example_store's type
+    context.
+    Args:
+        example_store: The example store to generate x values from
+        x_tokenizer: The tokenizer to generate the tokens we will put in the x vocab
+        x_vocab_builder: A builder the x_tokenizer
+
+    Returns:
+        The x and y vocab
+    """
+    if x_vocab_builder is None:
+        x_vocab_builder = CounterVocabBuilder(min_freq=1)
+
+    for example in example_store.get_all_examples():
+        x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.xquery)[0])
+    y_vocab = TypeContextWrapperVocab(example_store.type_context)
+    return x_vocab_builder.produce_vocab(), y_vocab
 
 
 def are_indices_valid(

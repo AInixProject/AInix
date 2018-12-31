@@ -281,6 +281,12 @@ class TypeContext:
         type = self._resolve_type(type)
         return self._type_name_to_implementations[type.name]
 
+    def get_all_objects(self):
+        return self._name_to_object.values()
+
+    def get_all_types(self):
+        return self._name_to_type.values()
+
     def register_type(self, new_type: AInixType) -> None:
         """Registers a type to be tracked. This should be called automatically when
         instantiating new types. This method may also mutate the new_type if
@@ -393,7 +399,6 @@ class TypeContext:
         # TODO (DNGos): IMPLEMENT!
         # This method should check that all objects type's actually exist, and
         # notify the user if they have tried reference things they did not create.
-        # It would also be nifty if it checked builtins to see if they were reasonable
-        # (so for example, that things that use the SingleTypeImplParser actually
-        #  only have one implementation)
+        # Right now this stuff is just checked "at runtime" while doing parses,
+        # if it is even checked at all
         raise NotImplemented("Verify not implemented")

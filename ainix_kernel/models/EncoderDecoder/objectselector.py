@@ -10,7 +10,8 @@ from ainix_kernel.model_util.vocab import Vocab
 
 
 class TypeImplTensorMap:
-    """Maps objects to tensors"""
+    """Maps types to long tensors that contains the index ids for all the
+    implementations of that type"""
     def __init__(self, ast_vocab: Vocab):
         self.vocab_size = len(ast_vocab)
         self._type_to_impl_tensor = defaultdict(list)
@@ -29,6 +30,7 @@ class TypeImplTensorMap:
 class ObjectSelector(nn.Module, ABC):
     """Converts between a vector and scoring on a set of objects"""
     pass
+
 
 class VectorizedObjectSelector(nn.Module, ABC):
     def __init__(self, type_tensor_map: TypeImplTensorMap, ast_vectorizer: VectorizerBase):
