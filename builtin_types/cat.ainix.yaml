@@ -1,0 +1,15 @@
+---
+defines:
+    - define_new: object
+      name: cat
+      type: Program
+      type_data: {invoke_name: "cat"}
+      children:
+          - name: n
+            required: False
+            arg_data: {short_name: "n"}
+          - name: files_list
+            required: False
+            type: PathList
+            arg_data: {position: 0, multiword_pos_arg: True}
+...

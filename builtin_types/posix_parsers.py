@@ -207,6 +207,8 @@ def ProgramObjectParser(
             if not sorted_pos_args:
                 raise ValueError(f"Unexpected word '{word}' with no remaing positional args")
             arg_to_do = sorted_pos_args[0]
+            if arg_to_do.type is None:
+                raise ValueError(f"Positional arg {arg_to_do.name} can't have None type")
             if SHORT_NAME in arg_to_do.arg_data or LONG_NAME in arg_to_do.arg_data:
                 raise ValueError("Can't be both positional and a flag")
             is_multiword = arg_to_do.arg_data.get(MULTIWORD_POS_ARG, False) is True

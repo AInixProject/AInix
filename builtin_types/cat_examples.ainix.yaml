@@ -1,0 +1,38 @@
+defines:
+- define_new: example_set
+  examples:
+  - x:
+    - print the contents of [-[FILENAME]-]
+    - print whats in [-[FILENAME]-]
+    - print what's in [-[FILENAME]-]
+    - print out [-[FILENAME]-]
+    - print the content of [-[FILENAME]-]
+    - output the stuff in [-[FILENAME]-]
+    - output the content of [-[FILENAME]-]
+    y:
+    - cat [-[FILENAME]-]
+  - x:
+    - print the contents of [-[FILENAME]-] with line numbers
+    - write out the contents of [-[FILENAME]-] with line numbers
+    - cat [-[FILENAME]-] with line numbers
+    - cat the contents of [-[FILENAME]-] with line numbers
+    y:
+    - cat -n [-[FILENAME]-]
+  - x:
+    - concatenate * together
+    y:
+    - cat *
+  - x:
+    - concatenate all csv files here together
+    - concat all comma separated files here
+    y:
+    - cat *.csv
+  - x:
+    - concatenate [-[1=FILENAME]-] and [-[2=FILENAME]-] together
+    y:
+    - cat [-[$1]-] [-[$2]-]
+  - x:
+    - concatenate [-[1=FILENAME]-], [-[2=FILENAME]-], and [-[3=FILENAME]-] together
+    y:
+    - cat [-[$1]-] [-[$2]-] [-[$3]-]
+  y_type: Program

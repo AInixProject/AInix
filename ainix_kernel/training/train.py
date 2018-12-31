@@ -121,6 +121,7 @@ if __name__ == "__main__":
     loader.load_path("builtin_types/command.ainix.yaml", type_context, up_search_limit=4)
     loader.load_path("builtin_types/pwd.ainix.yaml", type_context, up_search_limit=4)
     loader.load_path("builtin_types/ls.ainix.yaml", type_context, up_search_limit=4)
+    loader.load_path("builtin_types/cat.ainix.yaml", type_context, up_search_limit=4)
     generic_strings.create_generic_strings(type_context)
     loader.load_path("builtin_types/paths.ainix.yaml", type_context, up_search_limit=4)
     type_context.fill_default_parsers()
@@ -130,6 +131,7 @@ if __name__ == "__main__":
     exampleloader.load_path("../../builtin_types/pwd_examples.ainix.yaml", index)
     print("ls")
     exampleloader.load_path("../../builtin_types/ls_examples.ainix.yaml", index)
+    exampleloader.load_path("../../builtin_types/cat_examples.ainix.yaml", index)
     print("num docs", index.backend.index.doc_count())
 
     from ainix_kernel.models.SeaCR.seacr import make_default_seacr, make_rulebased_seacr

@@ -57,7 +57,7 @@
       lang:
       [
         concatenate all csv files here together
-        concat all comma seperated files here
+        concat all comma separated files here
       ]
       cmd:
       [
