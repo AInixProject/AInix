@@ -1,0 +1,32 @@
+defines:
+- define_new: example_set
+  y_type: Program
+  examples:
+  - x:
+    - print the first 12 lines of [-[1=FILENAME]-]
+    y:
+    - head -n 12 [-[$1]-]
+  - x:
+    - get first 8 lines of [-[1=FILENAME]-]
+    y:
+    - head -n 8 [-[$1]-]
+  - x:
+    - what are the top 20 lines of [-[1=FILENAME]-]
+    y:
+    - head -n 20 [-[$1]-]
+  - x:
+    - prnt first one hundred lines of [-[1=FILENAME]-]
+    y:
+    - head -n 100 [-[$1]-]
+  - x:
+    - print first fifty bytes of [-[1=FILENAME]-]
+    y:
+    - head -c 50 [-[$1]-]
+  - x:
+    - print first 13 lines of [-[1=FILENAME]-]
+    y:
+    - head -c 13 [-[$1]-]
+  - x:
+    - first five lines of [-[1=FILENAME]-]
+    y:
+    - head -c 5 [-[$1]-]

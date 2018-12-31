@@ -116,22 +116,20 @@ if __name__ == "__main__":
 
     print("start time", datetime.datetime.now())
     type_context = TypeContext()
-    loader.load_path("builtin_types/numbers.ainix.yaml", type_context, up_search_limit=4)
     loader.load_path("builtin_types/generic_parsers.ainix.yaml", type_context, up_search_limit=4)
     loader.load_path("builtin_types/command.ainix.yaml", type_context, up_search_limit=4)
-    loader.load_path("builtin_types/pwd.ainix.yaml", type_context, up_search_limit=4)
-    loader.load_path("builtin_types/ls.ainix.yaml", type_context, up_search_limit=4)
-    loader.load_path("builtin_types/cat.ainix.yaml", type_context, up_search_limit=4)
-    generic_strings.create_generic_strings(type_context)
     loader.load_path("builtin_types/paths.ainix.yaml", type_context, up_search_limit=4)
+    generic_strings.create_generic_strings(type_context)
+
+    with_example_files = ("numbers", "pwd", "ls", "cat", "head", "cp")
+    for f in with_example_files:
+        loader.load_path(f"builtin_types/{f}.ainix.yaml", type_context, up_search_limit=4)
     type_context.fill_default_parsers()
 
     index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)
-    exampleloader.load_path("../../builtin_types/numbers_examples.ainix.yaml", index)
-    exampleloader.load_path("../../builtin_types/pwd_examples.ainix.yaml", index)
-    print("ls")
-    exampleloader.load_path("../../builtin_types/ls_examples.ainix.yaml", index)
-    exampleloader.load_path("../../builtin_types/cat_examples.ainix.yaml", index)
+    for f in with_example_files:
+        exampleloader.load_path(f"../../builtin_types/{f}_examples.ainix.yaml", index)
+
     print("num docs", index.backend.index.doc_count())
 
     from ainix_kernel.models.SeaCR.seacr import make_default_seacr, make_rulebased_seacr

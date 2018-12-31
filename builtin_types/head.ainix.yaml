@@ -1,0 +1,18 @@
+---
+defines:
+    - define_new: object
+      name: head
+      type: Program
+      type_data: {invoke_name: "head"}
+      children:
+          - name: n
+            required: False
+            arg_data: {short_name: "n"}
+          - name: c
+            required: False
+            arg_data: {short_name: "c"}
+          - name: file_list
+            required: True
+            type: PathList
+            arg_data: {position: 0, multiword_pos_arg: True}
+...

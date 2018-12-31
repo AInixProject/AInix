@@ -1,7 +1,7 @@
 defines:
 - define_new: example_set
-  examples:
   y_type: Program
+  examples:
   - x:
     - copy [-[1=FILENAME]-] to [-[2=FILENAME]-]
     - create a copy of [-[1=FILENAME]-] as [-[2=FILENAME]-]
