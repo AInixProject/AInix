@@ -34,8 +34,8 @@ class TypeTranslateCFTrainer:
         single_examples_iter = self.data_pair_iterate((DataSplits.TRAIN,))
         batches_iter = more_itertools.chunked(single_examples_iter, self.batch_size)
         for batch in batches_iter:
-            batch_as_query = [(example.xquery, y_ast_set, this_example_ast) for
-                              example, y_ast_set, this_example_ast in batch]
+            batch_as_query = [(replaced_x, y_ast_set, this_example_ast) for
+                              example, replaced_x, y_ast_set, this_example_ast in batch]
             self.model.train_batch(batch_as_query)
         self.model.end_train_epoch()
 
@@ -52,9 +52,10 @@ class TypeTranslateCFTrainer:
         splits: Tuple[DataSplits] = None
     ):
         self.model.end_train_session()
-        for example, y_ast_set, this_example_ast in self.data_pair_iterate(splits):
+        for example, replaced_x_query, y_ast_set, this_example_ast \
+                in self.data_pair_iterate(splits):
             try:
-                prediction = self.model.predict(example.xquery, example.ytype, True)
+                prediction = self.model.predict(replaced_x_query, example.ytype, True)
             except ModelCantPredictException:
                 prediction = None
             except ModelSafePredictError:
@@ -64,7 +65,7 @@ class TypeTranslateCFTrainer:
     def data_pair_iterate(
         self,
         splits: Tuple[DataSplits]
-    ) -> Generator[Tuple[Example, AstObjectChoiceSet, ObjectChoiceNode], None, None]:
+    ) -> Generator[Tuple[Example, str, AstObjectChoiceSet, ObjectChoiceNode], None, None]:
         """Will yield one epoch of examples as a tuple of the example and the
         Ast set that represents all valid y_values for that example"""
         # Temporary hack for shuffling
@@ -78,20 +79,29 @@ class TypeTranslateCFTrainer:
             y_ast_set = AstObjectChoiceSet(y_type, None)
             ast_for_this_example = None
             parsed_ast = None
+            replacement_sample = None
+            if self.replacer:
+                replacement_sample = self.replacer.create_replace_sampling(example.xquery)
             for y_example in all_y_examples:
-                # need code to create a single sampling
-                replaced_x, replaced_y = self.replacer.strings_replace(
-                    example.xquery, y_example.ytext)
+                if self.replacer:
+                    replaced_y = replacement_sample.replace_x(y_example.ytext)
+                else:
+                    replaced_y = y_example.ytext
                 parsed_ast = self.string_parser.create_parse_tree(
-                    y_example.ytext, y_type.name)
+                    replaced_y, y_type.name)
                 if y_example.ytext == example.ytext:
                     ast_for_this_example = parsed_ast
                 y_ast_set.add(parsed_ast, True, y_example.weight, 1.0)
-            tokens, metadata = self.str_tokenizer.tokenize(example.xquery)
+            # handle copies
+            if replacement_sample:
+                this_example_replaced_x = replacement_sample.replace_x(example.xquery)
+            else:
+                this_example_replaced_x = example.xquery
+            tokens, metadata = self.str_tokenizer.tokenize(this_example_replaced_x)
             add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
                                   metadata, example.weight)
             y_ast_set.freeze()
-            yield (example, y_ast_set, ast_for_this_example)
+            yield (example, this_example_replaced_x, y_ast_set, ast_for_this_example)
 
 
 if __name__ == "__main__":
