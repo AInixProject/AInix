@@ -1,0 +1,38 @@
+defines:
+- define_new: example_set
+  y_type: Program
+  examples:
+  - x:
+    - how many lines are in [-[1=FILENAME]-]?
+    - count the number of lines in [-[1=FILENAME]-]
+    - get the line count of [-[1=FILENAME]-]
+    - how many lines in [-[1=FILENAME]-]
+    y:
+    - wc -l [-[$1]-]
+  - x:
+    - how many words are in [-[1=FILENAME]-]?
+    - '[-[1=FILENAME]-] word count'
+    y:
+    - wc -w [-[$1]-]
+  - x:
+    - how many bytes are in [-[1=FILENAME]-]?
+    y:
+    - wc -c [-[$1]-]
+  - x:
+    - count the number of files and directories in current directory without recursion
+    - how many files or dirs are here?
+    - how many things are here
+    - ls count number of results
+    - ls -1 | count the number of lines
+    - ls but only one per line | wc -l
+    - print each file or directory here but only one per line | wc -l
+    y:
+    - ls -1 | wc -l
+  - x:
+    - how many letters are in "foolumboo"
+    y:
+    - echo foolumboo | wc -c
+  - x:
+    - count the number of letters in "loopdado"
+    y:
+    - echo loopdado | wc -c

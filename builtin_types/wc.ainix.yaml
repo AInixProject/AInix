@@ -1,0 +1,24 @@
+---
+defines:
+    - define_new: object
+      name: wc
+      type: Program
+      type_data: {invoke_name: "wc"}
+      children:
+          - name: l
+            required: False
+            arg_data: {short_name: "l"}
+          - name: c
+            required: False
+            arg_data: {short_name: "c"}
+          - name: m
+            required: False
+            arg_data: {short_name: "m"}
+          - name: w
+            required: False
+            arg_data: {short_name: "w"}
+          - name: files_list
+            required: False
+            type: PathList
+            arg_data: {position: 0, multiword_pos_arg: True}
+...
