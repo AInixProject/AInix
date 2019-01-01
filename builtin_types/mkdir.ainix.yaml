@@ -1,0 +1,18 @@
+---
+defines:
+    - define_new: object
+      name: mkdir
+      type: Program
+      type_data: {invoke_name: "mkdir"}
+      children:
+          - name: p
+            required: False
+            arg_data: {short_name: "p"}
+          - name: v
+            required: False
+            arg_data: {short_name: "v"}
+          - name: new_dirs
+            required: True
+            type: PathList
+            arg_data: {position: 0, multiword_pos_arg: True}
+...

@@ -9,7 +9,7 @@ from ruamel.yaml import YAML
 from collections import OrderedDict
 
 if __name__ == "__main__":
-    program = "wc"
+    program = "mkdir"
     with open(f"../../ai-nix-programs/{program}.progdesc.hjson", "rb") as f:
         v = hjson.load(f)
     out_examples = []

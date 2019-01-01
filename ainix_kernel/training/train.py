@@ -103,7 +103,8 @@ class TypeTranslateCFTrainer:
 def _get_all_replacers() -> Replacer:
     filename_repl = ReplacementGroup('FILENAME', Replacement.from_tsv("./data/FILENAME.tsv"))
     dirname_repl = ReplacementGroup('DIRNAME', Replacement.from_tsv("./data/DIRNAME.tsv"))
-    replacer = Replacer([filename_repl, dirname_repl])
+    eng_word_repl = ReplacementGroup('ENGWORD', Replacement.from_tsv("./data/ENGWORD.tsv"))
+    replacer = Replacer([filename_repl, dirname_repl, eng_word_repl])
     return replacer
 
 
@@ -121,7 +122,7 @@ if __name__ == "__main__":
     loader.load_path("builtin_types/paths.ainix.yaml", type_context, up_search_limit=4)
     generic_strings.create_generic_strings(type_context)
 
-    with_example_files = ("numbers", "pwd", "ls", "cat", "head", "cp")
+    with_example_files = ("numbers", "pwd", "ls", "cat", "head", "cp", "wc", "mkdir")
     for f in with_example_files:
         loader.load_path(f"builtin_types/{f}.ainix.yaml", type_context, up_search_limit=4)
     type_context.fill_default_parsers()

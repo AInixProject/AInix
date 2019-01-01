@@ -1,0 +1,30 @@
+defines:
+- define_new: example_set
+  y_type: Program
+  examples:
+  - x:
+    - make a directory named [-[ENGWORD]-]
+    - make a dir named "[-[ENGWORD]-]"
+    - make a "[-[ENGWORD]-]" directory
+    - make an empty "[-[ENGWORD]-]" directory
+    - make an empty directory named "[-[ENGWORD]-]"
+    y:
+    - mkdir [-[ENGWORD]-]
+  - x:
+    - make a hidden directory named cache
+    y:
+    - mkdir .cache
+  - x:
+    - make a directory named [-[ENGWORD]-] in ~
+    y:
+    - mkdir ~/[-[ENGWORD]-]
+  - x:
+      - create new directories named [-[1=ENGWORD]-]/[-[2=ENGWORD]-]
+      - make a directory named [-[1=ENGWORD]-]/[-[2=ENGWORD]-]
+    y:
+      - mkdir -p [-[$1]-]/[-[$2]-]
+  - x:
+    - make a directory named [-[ENGWORD]-] printing each directory created
+    - verbose mkdir [-[ENGWORD]-]
+    y:
+    - mkdir -v [-[ENGWORD]-]
