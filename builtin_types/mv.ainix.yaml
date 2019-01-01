@@ -1,0 +1,28 @@
+---
+defines:
+    - define_new: object
+      name: mv
+      type: Program
+      type_data: {invoke_name: "mv"}
+      children:
+          - name: f
+            required: False
+            arg_data: {short_name: "f"}
+          - name: i
+            required: False
+            arg_data: {short_name: "i"}
+          - name: n
+            required: False
+            arg_data: {short_name: "n"}
+          - name: v
+            required: False
+            arg_data: {short_name: "v"}
+          - name: srcs
+            required: True
+            type: PathList
+            arg_data: {position: 0, multiword_pos_arg: True}
+          - name: dest
+            required: True
+            type: Path
+            arg_data: {position: 1}
+...
