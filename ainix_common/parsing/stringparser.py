@@ -18,6 +18,7 @@ from ainix_common.parsing.parse_primitives import (TypeParser, ArgParseDelegatio
                                                    ArgIsPresentToString)
 from ainix_common.parsing.typecontext import OPTIONAL_ARGUMENT_NEXT_ARG_NAME
 from ainix_common.parsing.model_specific import tokenizers
+import functools
 import pprint
 
 
@@ -46,6 +47,7 @@ class StringParser:
     ):
         self._type_context = type_context
 
+    @functools.lru_cache(maxsize=500)
     def create_parse_tree(
         self,
         string: str,
@@ -61,6 +63,7 @@ class StringParser:
             root_parser_name: An optional TypeParser name which overrides the
                 default parser for the root_type_name.
         """
+        #print(f"stringparser PARSE {string}")
         root_parser = _get_root_parser(self._type_context, root_type_name, root_parser_name)
         if not root_parser:
             raise ValueError(f"Unable to get a parser type {root_type_name} and "

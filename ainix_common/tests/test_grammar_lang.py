@@ -277,3 +277,18 @@ def test_unparse_twoarg_fail(mobject):
     args = ObjectNodeArgMap(mobject, {"FooArg": True, "BarArg": False})
     with pytest.raises(UnparseError):
         instance.to_string(args)
+
+
+def test_inner_quote(mobject):
+    instance = create_object_parser_from_grammar(MagicMock(), "FooParser", "'\"' foo '\"'")
+    p_res = instance.parse_string('"bars"', mobject)
+    assert isinstance(p_res, GeneratorType)
+    delegation: ArgParseDelegation = next(p_res)
+    assert delegation.string_to_parse == 'bars"'
+    assert delegation.arg.name == "foo"
+    #delegation = p_res.send(delegation.next_from_substring("-20"))
+    #assert delegation.string_to_parse == "20"
+    #assert delegation.arg.name == "Bar"
+    #result = send_result(p_res, delegation.next_from_substring(""))
+    #bar_data = result.get_arg_present("Bar")
+    #assert bar_data.slice == (6, 8)

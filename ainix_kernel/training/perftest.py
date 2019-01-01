@@ -214,12 +214,29 @@ def fig_multiproc_vs_time():
               file_name="./figures/multi_time.png")
 
 
+def get_speed():
+    list_data = []
+    batch_size = 1
+    for rerun in range(3):
+        examples_per_sec = get_examples_per_sec(batch_size, 5000)
+        print(f"speed {examples_per_sec}")
+        list_data.append({
+            "batch_size": batch_size,
+            "examples_per_sec": examples_per_sec
+        })
+    data = pd.DataFrame(list_data)
+    sns.set()
+    sns.boxplot(data['examples_per_sec'])
+
+
+
 if __name__ == "__main__":
     import os
     script_path = os.path.dirname(os.path.abspath(__file__))
-    print(script_path)
+    #print(script_path)
     #fig_batchsize_vs_throughput()
-    fig_multiproc_vs_throughput()
+    #fig_multiproc_vs_throughput()
     #fig_batchsize_vs_converg()
     #print(get_multi_train_time(1, 2))
     #fig_multiproc_vs_time()
+    get_speed()

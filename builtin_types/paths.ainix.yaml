@@ -99,6 +99,12 @@ defines:
       preferred_object_parser:
           grammar: |
               "../../../.."
+    - define_new: object
+      name: directory_five_up
+      type: StartDirectoryModifier
+      preferred_object_parser:
+          grammar: |
+              "../../../../.."
     # PathList
     - define_new: type
       name: PathList

@@ -122,7 +122,7 @@ if __name__ == "__main__":
     loader.load_path("builtin_types/paths.ainix.yaml", type_context, up_search_limit=4)
     generic_strings.create_generic_strings(type_context)
 
-    with_example_files = ("numbers", "pwd", "ls", "cat", "head", "cp", "wc", "mkdir")
+    with_example_files = ("numbers", "pwd", "ls", "cat", "head", "cp", "wc", "mkdir", "echo")
     for f in with_example_files:
         loader.load_path(f"builtin_types/{f}.ainix.yaml", type_context, up_search_limit=4)
     type_context.fill_default_parsers()

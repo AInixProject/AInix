@@ -1,0 +1,63 @@
+---
+defines:
+    # Some hacks to handle quotes. Should maybe handled at the posix cmd level
+    # This really shouldn't even be in this file if it is going to exist at all
+    - define_new: type
+      name: SpaceSeperatedWords
+    - define_new: object
+      type: SpaceSeperatedWords
+      name: space_sperated_words_object
+      children:
+          - name: current
+            type: GenericWord
+            required: True
+          - name: next
+            type: GenericWord
+            required: False
+      preferred_object_parser:
+          grammar: |
+              current (" " next)?
+    - define_new: type
+      name: QuotedWords
+      default_type_parser: max_munch_type_parser
+    - define_new: object
+      type: QuotedWords
+      name: unquoted_quoted_words
+      children:
+          - name: value
+            type: SpaceSeperatedWords
+            required: True
+      preferred_object_parser:
+          grammar: |
+              value
+    - define_new: object
+      type: QuotedWords
+      name: double_quoted_words
+      children:
+          - name: value
+            type: SpaceSeperatedWords
+            required: True
+      preferred_object_parser:
+          grammar: |
+              '"' value '"'
+    - define_new: object
+      type: QuotedWords
+      name: single_quoted_words
+      children:
+          - name: value
+            type: SpaceSeperatedWords
+            required: True
+      preferred_object_parser:
+          grammar: |
+              "'" value "'"
+    # Actual program
+    - define_new: object
+      name: echo
+      type: Program
+      type_data: {invoke_name: "echo"}
+      children:
+          - name: echostuff
+            required: False
+            type: QuotedWords
+            arg_data: {position: 0, multiword_pos_arg: True}
+...

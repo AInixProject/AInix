@@ -1,0 +1,31 @@
+defines:
+- define_new: example_set
+  y_type: Program
+  examples:
+  - x:
+    - print an empty new line
+    - print an empty line
+    - output empty line
+    y:
+    - echo
+  - x:
+    - print out "hello world"
+    - print out hello world
+    y:
+    - echo hello world
+    - echo "hello world"
+  - x:
+    - print out "[-[1=ENGWORD]-] [-[2=ENGWORD]-] [-[3=ENGWORD]-]"
+    - write to stdout "[-[1=ENGWORD]-] [-[2=ENGWORD]-] [-[3=ENGWORD]-]"
+    y:
+    - echo "[-[$1]-] [-[$2]-] [-[$3]-]"
+    - echo [-[$1]-] [-[$2]-] [-[$3]-]
+  - x:
+    - say hello
+    y:
+    - echo hello
+  - x:
+    - print my home directory
+    - where is my home directory
+    y:
+    - echo ~
