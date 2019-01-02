@@ -506,7 +506,8 @@ class TreeRNNDecoder(TreeDecoder):
             "rnn_cell": self.rnn_cell,
             "object_selector": self.object_selector,
             "ast_vectorizer": self.ast_vectorizer.get_save_state_dict(),
-            "ast_vocab": self.ast_vocab.get_save_state_dict()
+            "ast_vocab": self.ast_vocab.get_save_state_dict(),
+            "my_model_state": self.state_dict()
         }
 
     @classmethod
@@ -516,13 +517,17 @@ class TreeRNNDecoder(TreeDecoder):
         new_type_context: TypeContext,
         new_example_store: ExamplesStore
     ):
-        return cls(
+        instance = cls(
             rnn_cell=state_dict['rnn_cell'],
             object_selector=state_dict['object_selector'],
             ast_vectorizer=vectorizer_from_save_dict(state_dict['ast_vectorizer']),
             ast_vocab=TypeContextWrapperVocab.create_from_save_state_dict(
                 state_dict['ast_vocab'], new_type_context)
         )
+        # Caution, this will probably overwrite any speciallness we do in
+        # the custom loading. Another reason to put the copying in its own module.
+        instance.load_state_dict(state_dict['my_model_state'])
+        return instance
 
 def get_default_decoder(
     ast_vocab: Vocab,

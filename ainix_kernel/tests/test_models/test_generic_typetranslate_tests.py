@@ -369,4 +369,5 @@ def test_copy(model_name, basic_string_tc):
     do_train(model, example_store, epochs=30, batch_size=1)
     assert_train_acc(model, example_store, required_accuracy=0.85)
     assert_val_acc(model, example_store, required_accuracy=0.8)
+    check_survives_serialization(model, example_store, basic_string_tc, acc=0.8)
 
