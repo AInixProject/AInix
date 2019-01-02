@@ -330,7 +330,7 @@ def test_string_gen(model_name, basic_string_tc):
     # Do training and expect it to work
     do_train(model, example_store, epochs=25, batch_size=1)
     assert_train_acc(model, example_store, required_accuracy=0.85)
-    assert_val_acc(model, example_store, required_accuracy=0.8)
+    assert_val_acc(model, example_store, required_accuracy=0.7)
 
 
 @pytest.mark.parametrize("model_name", FULL_MODELS)

@@ -1,4 +1,5 @@
 import random
+import torch
 from typing import Tuple, Generator
 
 from ainix_common.parsing.copy_tools import add_copies_to_ast_set
@@ -141,12 +142,14 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=_get_all_replacers())
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    trainer.train(30)
+    trainer.train(40)
 
     print("Lets eval")
     logger = EvaluateLogger()
     trainer.evaluate(logger)
     print_ast_eval_log(logger)
+    print("serialize model")
+    torch.save(model.get_save_state_dict(), "saved_model.pt")
     print("done.")
     print("done time", datetime.datetime.now())
     print(datetime.datetime.now() - train_time)

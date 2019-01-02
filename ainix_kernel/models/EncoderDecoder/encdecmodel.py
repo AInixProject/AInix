@@ -87,6 +87,7 @@ class EncDecModel(StringTypeTranslateCF):
         # Custom handling has advantages in better handling stuff changed values on only parts of
         # the type contexts and vocabs and proper quick pretraining.
         return {
+            "version": 0,
             "query_encoder": self.query_encoder.get_save_state_dict(),
             "decoder": self.decoder.get_save_state_dict()
         }
