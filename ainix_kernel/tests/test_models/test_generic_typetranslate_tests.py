@@ -225,6 +225,7 @@ def test_classify_seq(model_name, basic_string_tc):
     model = make_model(model_name, example_store)
     do_train(model, example_store, epochs=150)
     assert_train_acc(model, example_store)
+    check_survives_serialization(model, example_store, basic_string_tc, only_test_train=True)
 
 
 #@pytest.mark.parametrize("model_name", ["SeaCR-OracleCompare", "SeaCR"] + FULL_MODELS)
