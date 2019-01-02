@@ -5,8 +5,8 @@ from torch import nn
 from typing import Tuple, Type, Sequence, List
 
 from ainix_kernel.model_util import vectorizers
-from ainix_kernel.model_util.vectorizers import VectorizerBase
-from ainix_kernel.model_util.vocab import Vocab
+from ainix_kernel.model_util.vectorizers import VectorizerBase, vectorizer_from_save_dict
+from ainix_kernel.model_util.vocab import Vocab, CounterVocab
 from ainix_common.parsing.model_specific import tokenizers
 import numpy as np
 
@@ -39,7 +39,7 @@ class QueryEncoder(nn.Module, ABC):
     def create_from_save_state_dict(
         cls,
         state_dict: dict
-    ):
+    ) -> 'QueryEncoder':
         raise NotImplemented
 
 
@@ -49,7 +49,7 @@ class StringQueryEncoder(QueryEncoder):
         tokenizer: tokenizers.StringTokenizer,
         query_vocab: Vocab,
         query_vectorizer: VectorizerBase,
-        internal_encoder: nn.Module
+        internal_encoder: 'VectorSeqEncoder'
     ):
         super().__init__()
         self.tokenizer = tokenizer
@@ -74,14 +74,28 @@ class StringQueryEncoder(QueryEncoder):
         return self.tokenizer
 
     def get_save_state_dict(self):
-        raise NotImplemented
+        return {
+            "version": 0,
+            "tokenizer": self.tokenizer.get_save_state_dict(),
+            "query_vocab": self.query_vocab.get_save_state_dict(),
+            "query_vectorizer": self.query_vectorizer.get_save_state_dict(),
+            #"internal_encoder": self.internal_encoder.get_save_state_dict()
+            # feeling lazy right now so just going to pickle the internal encoder
+            # TODO (DNGros): Make custom handling of serialize deserialize
+            "internal_encoder": self.internal_encoder
+        }
 
     @classmethod
     def create_from_save_state_dict(
         cls,
         state_dict: dict
-    ):
-        raise NotImplemented
+    ) -> 'StringQueryEncoder':
+        return StringQueryEncoder(
+            tokenizer=tokenizers.tokenizer_from_save_dict(state_dict['tokenizer']),
+            query_vocab=CounterVocab.create_from_save_state_dict(state_dict['query_vocab']),
+            query_vectorizer=vectorizer_from_save_dict(state_dict['query_vectorizer']),
+            internal_encoder=state_dict['internal_encoder']
+        )
 
 
 class VectorSeqEncoder(nn.Module, ABC):
@@ -110,6 +124,16 @@ class VectorSeqEncoder(nn.Module, ABC):
             input (which could be used for something like an attention or copy
             mechanism in the decoder).
         """
+        raise NotImplemented()
+
+    def get_save_state_dict(self):
+        raise NotImplemented()
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        state_dict: dict
+    ) -> 'VectorSeqEncoder':
         raise NotImplemented()
 
 
@@ -207,7 +231,7 @@ def make_default_query_encoder(
     output_size=64
 ) -> QueryEncoder:
     """Factory for making a default QueryEncoder"""
-    x_vectorizer = vectorizers.TorchDeepEmbed(query_vocab, output_size)
+    x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
     internal_encoder = RNNSeqEncoder(
         input_dims=x_vectorizer.feature_len(),
         hidden_size=output_size,

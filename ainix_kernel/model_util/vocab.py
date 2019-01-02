@@ -56,10 +56,6 @@ class Vocab(Generic[T]):
     def get_save_state_dict(self):
         raise NotImplemented()
 
-    @classmethod
-    def create_from_save_state_dict(cls, save_state: dict) -> 'Vocab':
-        raise NotImplemented()
-
 
 class CounterVocab(Vocab):
     """A vocab that takes is constructed via counter with counts of tokens
@@ -145,16 +141,15 @@ class CounterVocab(Vocab):
         return indices
 
     def get_save_state_dict(self):
-        return {"itos": self.itos, 'unk_index': self.unk_index}
+        return {"itos": self.itos, 'unk_index': self.unk_index, "version": 0}
 
     @classmethod
     def create_from_save_state_dict(cls, save_state: dict) -> 'CounterVocab':
         instance = cls.__new__(cls)
         instance.itos = save_state['itos']
-        instance.unk_indexk = save_state['unk_index']
+        instance.unk_index = save_state['unk_index']
         instance._finish_init()
         return instance
-
 
 
 class VocabBuilder(ABC):
@@ -194,10 +189,11 @@ class TypeContextWrapperVocab(Vocab):
     use some torch methods and we are trying to keep ainix_common non-dependent
     on pytorch (I don't know this might be not really necessary though...)."""
     def __init__(self, type_context: TypeContext):
-        ind = 0
-        type_context.get_all_objects()
-        self.itos = np.array(list(type_context.get_all_objects()) +
-                             list(type_context.get_all_types()))
+        self.itos: typing.Sequence[Union[AInixType, AInixObject]] = \
+            np.array(list(type_context.get_all_objects()) + list(type_context.get_all_types()))
+        self._finish_init()
+
+    def _finish_init(self):
         # stoi is simply a reverse dict for itos
         self.stoi = {tok: i for i, tok in enumerate(self.itos)}
         self.vectorized_stoi = np.vectorize(self.token_to_index)
@@ -230,6 +226,29 @@ class TypeContextWrapperVocab(Vocab):
         if as_torch:
             return torch.from_numpy(indices)
         return indices
+
+    def get_save_state_dict(self) -> dict:
+        return {
+            "version": 0,
+            "name": "TypeContextWrapperVocab",
+            "itos": [(isinstance(item, AInixType), item.name)
+                     for item in self.itos]
+        }
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        save_state: dict,
+        new_type_context: TypeContext
+    ) -> 'TypeContextWrapperVocab':
+        instance = cls.__new__(cls)
+        instance.itos = np.array([
+            new_type_context.get_type_by_name(name) if is_type
+            else new_type_context.get_object_by_name(name)
+            for is_type, name in save_state['itos']
+        ])
+        instance._finish_init()
+        return instance
 
 
 def make_vocab_from_example_store(

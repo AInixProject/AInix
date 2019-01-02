@@ -4,7 +4,9 @@ and test specific aspects of the training.
 
 These tests can be somewhat flaky. Look into making this better perhaps with set
 seeds."""
+import os
 import sys
+import torch
 from typing import List
 
 import pytest
@@ -19,6 +21,7 @@ from ainix_common.parsing import loader
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 from ainix_kernel.training.evaluate import EvaluateLogger
 from ainix_kernel.training.train import TypeTranslateCFTrainer
+import tempfile
 
 # Here we define functions to generate each of the models we want to test
 # Full models are models which should pass every test
@@ -156,6 +159,22 @@ def assert_val_acc(model, example_store, required_accuracy = 0.98, expect_fail=F
                required_accuracy, expect_fail)
 
 
+def check_survives_serialization(
+        model: StringTypeTranslateCF, example_store, new_type_context: TypeContext,
+        acc=0.98, only_test_train=False):
+    save_state = model.get_save_state_dict()
+    _, f = tempfile.mkstemp()
+    try:
+        torch.save(save_state, f)
+        new_state = torch.load(f)
+        new_model = model.create_from_save_state_dict(new_state, new_type_context, example_store)
+        assert_train_acc(new_model, example_store, acc)
+        if not only_test_train:
+            assert_val_acc(new_model, example_store, acc)
+    finally:
+        os.remove(f)
+
+
 @pytest.mark.parametrize("model_name", ALL_MODELS)  #, indirect=['model'])
 def test_basic_classify(model_name, basic_classify_tc):
     basic_classify_tc.fill_default_parsers()
@@ -177,6 +196,7 @@ def test_basic_classify(model_name, basic_classify_tc):
     model = make_model(model_name, example_store)
     do_train(model, example_store, epochs=100)
     assert_train_acc(model, example_store)
+    check_survives_serialization(model, example_store, basic_classify_tc, only_test_train=True)
 
 
 @pytest.mark.parametrize("model_name", FULL_MODELS)
@@ -349,3 +369,4 @@ def test_copy(model_name, basic_string_tc):
     do_train(model, example_store, epochs=30, batch_size=1)
     assert_train_acc(model, example_store, required_accuracy=0.85)
     assert_val_acc(model, example_store, required_accuracy=0.8)
+

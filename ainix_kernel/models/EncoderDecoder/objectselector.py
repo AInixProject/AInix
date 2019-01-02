@@ -18,13 +18,13 @@ class TypeImplTensorMap:
         # Pick out all the objects
         for ind, el in ast_vocab.items():
             if isinstance(el, AInixObject):
-                self._type_to_impl_tensor[el.type].append(ind)
+                self._type_to_impl_tensor[el.type.name].append(ind)
         # convert to torch tensors
         self._type_to_impl_tensor = {type_: torch.LongTensor(v)
                                      for type_, v in self._type_to_impl_tensor.items()}
 
     def get_tensor_of_implementations(self, types: List[AInixType]):
-        return [self._type_to_impl_tensor[t] for t in types]
+        return [self._type_to_impl_tensor[t.name] for t in types]
 
 
 class ObjectSelector(nn.Module, ABC):

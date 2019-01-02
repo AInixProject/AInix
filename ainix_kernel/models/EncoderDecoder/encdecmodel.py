@@ -9,7 +9,7 @@ from ainix_kernel.model_util import vocab, vectorizers
 from ainix_common.parsing.model_specific import tokenizers
 from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer, AstValTokenizer
 from ainix_kernel.models.EncoderDecoder import encoders, decoders
-from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder
+from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder, TreeRNNDecoder
 from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder, StringQueryEncoder
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 
@@ -82,6 +82,32 @@ class EncDecModel(StringTypeTranslateCF):
     def get_string_tokenizer(self) -> tokenizers.StringTokenizer:
         return self.query_encoder.get_tokenizer()
 
+    def get_save_state_dict(self) -> dict:
+        # TODO (DNGros): actually handle serialization rather than just letting pickling handle it
+        # Custom handling has advantages in better handling stuff changed values on only parts of
+        # the type contexts and vocabs and proper quick pretraining.
+        return {
+            "query_encoder": self.query_encoder.get_save_state_dict(),
+            "decoder": self.decoder.get_save_state_dict()
+        }
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        state_dict: dict,
+        new_type_context: TypeContext,
+        new_example_store: ExamplesStore
+    ) -> 'EncDecModel':
+        # TODO (DNGros): acutally handle the new type context.
+        query_encoder = StringQueryEncoder.create_from_save_state_dict(state_dict['query_encoder'])
+        decoder = TreeRNNDecoder.create_from_save_state_dict(
+            state_dict['decoder'], new_type_context, new_example_store)
+        return cls(
+            type_context=new_type_context,
+            query_encoder=query_encoder,
+            tree_decoder=decoder
+        )
+
 
 # Factory methods for different versions
 def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenizer]:
@@ -93,7 +119,7 @@ def get_default_encdec_model(examples: ExamplesStore, standard_size=16):
     x_tokenizer, y_tokenizer = _get_default_tokenizers()
     x_vocab, y_vocab = vocab.make_vocab_from_example_store_and_type_context(examples, x_tokenizer)
     hidden_size = standard_size
-    y_vectorizer = vectorizers.TorchDeepEmbed(y_vocab, hidden_size)
+    y_vectorizer = vectorizers.TorchDeepEmbed(len(y_vocab), hidden_size)
     encoder = encoders.make_default_query_encoder(x_tokenizer, x_vocab, hidden_size)
     decoder = decoders.get_default_decoder(y_vocab, y_vectorizer, hidden_size)
     return EncDecModel(examples.type_context, encoder, decoder)

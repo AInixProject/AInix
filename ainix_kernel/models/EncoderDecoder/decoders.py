@@ -1,15 +1,16 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Tuple, Callable, List, Optional
+from typing import Tuple, Callable, List, Optional, Dict
 import torch
 from torch import nn
 import attr
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet, \
     ObjectNode, AstNode, ObjectNodeSet, CopyNode
-from ainix_common.parsing.typecontext import AInixType, AInixObject
+from ainix_common.parsing.typecontext import AInixType, AInixObject, TypeContext
+from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.model_util.attending import attend
-from ainix_kernel.model_util.vectorizers import VectorizerBase
-from ainix_kernel.model_util.vocab import Vocab, are_indices_valid
+from ainix_kernel.model_util.vectorizers import VectorizerBase, vectorizer_from_save_dict
+from ainix_kernel.model_util.vocab import Vocab, are_indices_valid, TypeContextWrapperVocab
 from ainix_kernel.models.EncoderDecoder import objectselector
 from ainix_kernel.models.EncoderDecoder.objectselector import ObjectSelector
 from ainix_kernel.models.model_types import ModelException, ModelSafePredictError
@@ -65,6 +66,18 @@ class TreeDecoder(nn.Module, ABC):
         """
         raise NotImplemented()
 
+    def get_save_state_dict(self) -> Dict:
+        raise NotImplemented()
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        state_dict: dict,
+        new_type_context: TypeContext,
+        new_example_store: ExamplesStore
+    ):
+        raise NotImplemented
+
 
 class TreeRNNCell(nn.Module):
     """An rnn cell in a tree RNN"""
@@ -72,7 +85,7 @@ class TreeRNNCell(nn.Module):
         super().__init__()
         self.input_size = ast_node_embed_size
         self.rnn = nn.LSTMCell(ast_node_embed_size, hidden_size)
-        #self.rnn = nn.GRUCell(ast_node_embed_size, hidden_size)
+        # self.rnn = nn.GRUCell(ast_node_embed_size, hidden_size)
         self.root_node_features = nn.Parameter(torch.rand(hidden_size))
 
     def forward(
@@ -486,6 +499,30 @@ class TreeRNNDecoder(TreeDecoder):
 
         return loss
 
+    def get_save_state_dict(self) -> Dict:
+        return {
+            "version": 0,
+            "name": "TreeRNNDecoder",
+            "rnn_cell": self.rnn_cell,
+            "object_selector": self.object_selector,
+            "ast_vectorizer": self.ast_vectorizer.get_save_state_dict(),
+            "ast_vocab": self.ast_vocab.get_save_state_dict()
+        }
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        state_dict: dict,
+        new_type_context: TypeContext,
+        new_example_store: ExamplesStore
+    ):
+        return cls(
+            rnn_cell=state_dict['rnn_cell'],
+            object_selector=state_dict['object_selector'],
+            ast_vectorizer=vectorizer_from_save_dict(state_dict['ast_vectorizer']),
+            ast_vocab=TypeContextWrapperVocab.create_from_save_state_dict(
+                state_dict['ast_vocab'], new_type_context)
+        )
 
 def get_default_decoder(
     ast_vocab: Vocab,

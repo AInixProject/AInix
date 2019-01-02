@@ -237,8 +237,8 @@ class TorchComparer(Comparer):
 
 
 def get_default_torch_comparer(x_vocab, y_vocab, x_tokenizer, y_tokenizer, out_dims=8):
-    x_embed = TorchDeepEmbed(x_vocab, out_dims)
-    y_embed = TorchDeepEmbed(x_vocab, out_dims)
+    x_embed = TorchDeepEmbed(len(x_vocab), out_dims)
+    y_embed = TorchDeepEmbed(len(x_vocab), out_dims)
     return TorchComparer(
         x_vocab=x_vocab,
         y_vocab=y_vocab,

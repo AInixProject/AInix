@@ -3,7 +3,7 @@ string parsers. Rather it can be useful for something like models which wish
 to tokenize the input string. It is used in string parsers in order to enable
 producing AST's with copying."""
 from abc import ABC, abstractmethod
-from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional
+from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional, Dict
 
 import attr
 from ainix_common.parsing.typecontext import AInixObject, AInixType
@@ -53,6 +53,9 @@ class Tokenizer(ABC):
             return [self.tokenize(s)[0] for s in batch]
         else:
             return [self.tokenize(s) for s in batch]
+
+    def get_save_state_dict(self) -> Dict:
+        raise NotImplemented()
 
 
 class StringTokenizer(Tokenizer):
@@ -124,6 +127,9 @@ class NonLetterTokenizer(StringTokenizer):
         metadata = StringTokensMetadata(replace_spaces)
         return out_tokens, metadata
 
+    def get_save_state_dict(self) -> Dict:
+        return {"tok_name": "NonLetterTokenizer"}
+
 
 class SpaceTokenizer(StringTokenizer):
     def tokenize(self, to_tokenize: str) -> Tuple[List[str], StringTokensMetadata]:
@@ -186,4 +192,12 @@ def add_str_pads(token_seqs: List[List[str]], pad_with=parse_constants.PAD):
     padded_seqs = [existing + pad_val_arr*(longest_len - length)
                    for existing, length in zip(token_seqs, lengths)]
     return padded_seqs, lengths
+
+
+def tokenizer_from_save_dict(save_dict: dict):
+    name = save_dict['tok_name']
+    if name == "NonLetterTokenizer":
+        return NonLetterTokenizer()
+    else:
+        raise ValueError(f"Bad name {name}")
 

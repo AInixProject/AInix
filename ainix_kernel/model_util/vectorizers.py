@@ -12,9 +12,14 @@ from ainix_kernel.model_util.vocab import Vocab
 import torch
 from ainix_kernel.models.model_types import Pretrainable, Pretrainer
 from typing import Callable
+import numpy as np
+
+SAVE_STATE_NAME_KEY = "vectorizer_name"
 
 
 class VectorizerBase(torch.nn.Module, Pretrainable):
+    SAVE_STATE_NAME_VALUE = None
+
     def __init__(self):
         super().__init__()
 
@@ -35,6 +40,9 @@ class VectorizerBase(torch.nn.Module, Pretrainable):
         """
         pass
 
+    def get_save_state_dict(self):
+        raise NotImplemented()
+
 
 class TorchDeepEmbed(VectorizerBase):
     """A Vectorizer that keeps track of pytorch vectors for embedding tokens
@@ -44,11 +52,13 @@ class TorchDeepEmbed(VectorizerBase):
             tokens in the embedding)
         embed_dim: The number of dimensions of the vectorspace
     """
-    def __init__(self, vocab: Vocab, embed_dim: int):
+    SAVE_STATE_NAME_VALUE = "TorchDeepEmbed"
+
+    def __init__(self, vocab_size: int, embed_dim: int):
         super().__init__()
-        self.vocab = vocab
         self.embed_dim = embed_dim
-        self.embed = torch.nn.Embedding(len(vocab), embed_dim)
+        self.embed = torch.nn.Embedding(vocab_size, embed_dim)
+        self.vocab_size = vocab_size
 
     def forward(self, indices: torch.Tensor) -> torch.Tensor:
         """Converts a tensor of indicies to vectors which are embeddings into
@@ -64,6 +74,40 @@ class TorchDeepEmbed(VectorizerBase):
 
     def feature_len(self):
         return self.embed_dim
+
+    def get_save_state_dict(self):
+        return {
+            SAVE_STATE_NAME_KEY: self.SAVE_STATE_NAME_VALUE,
+            "model_state": self.state_dict(),
+            "embed_dim": self.embed_dim,
+            "vocab_size": self.vocab_size,
+            "version": 0
+        }
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        save_dict: dict,
+        dirty_indices_mask: np.ndarray
+    ) -> 'TorchDeepEmbed':
+        """
+        Args:
+            dirty_indices_mask: A binary array of length of the new vocab size.
+                Should be True if the vocab index is "dirty" and False otherwise.
+                A dirty index happens for tokens which are different than they
+                were origionally when saved, or for new tokens which didn't used
+                to exist
+
+        Returns:
+
+        """
+        if dirty_indices_mask is not None:
+            # TODO (DNGros): actually do this
+            raise NotImplemented()
+        instance = TorchDeepEmbed(save_dict['vocab_size'], save_dict['embed_dim'])
+        instance.load_state_dict(save_dict['model_state'])
+        return instance
+
 
 ####
 # Pretraining Vectorizers
@@ -166,3 +210,15 @@ def make_xquery_avg_pretrain_func(
 
     return out_func
 
+
+def vectorizer_from_save_dict(save_dict: dict) -> VectorizerBase:
+    """Creates a vectorizer based of perviously seriallized save_state_dict.
+    These are creating using a method on each vectorizer. This method handles
+    detecting the kind of vectorizer that the save_dict came from and
+    instantiating the right one."""
+    name = save_dict[SAVE_STATE_NAME_KEY]
+    # TODO: figure out vocab dirty masks
+    if name == TorchDeepEmbed.SAVE_STATE_NAME_VALUE:
+        return TorchDeepEmbed.create_from_save_state_dict(save_dict, None)
+    else:
+        raise ValueError(f"Name {name} not recocognized")
