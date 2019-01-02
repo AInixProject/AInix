@@ -63,3 +63,13 @@ def test_ast_valid_thing(toy_vocab_and_context):
         [[f1, f2, f3]], True)
     result = are_indices_valid(to_test, toy_vocab, ast_set)
     assert torch.all(torch.Tensor([[1, 0, 1]]) == result)
+
+
+def test_counter_vocab_serialize(string_vocab):
+    save = string_vocab.get_save_state_dict()
+    new = CounterVocab.create_from_save_state_dict(save)
+    print(vars(string_vocab))
+    print(vars(new))
+    assert list(string_vocab.itos) == list(new.itos)
+    assert string_vocab.stoi == new.stoi
+

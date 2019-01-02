@@ -53,6 +53,13 @@ class Vocab(Generic[T]):
     def items(self):
         raise NotImplemented()
 
+    def get_save_state_dict(self):
+        raise NotImplemented()
+
+    @classmethod
+    def create_from_save_state_dict(cls, save_state: dict) -> 'Vocab':
+        raise NotImplemented()
+
 
 class CounterVocab(Vocab):
     """A vocab that takes is constructed via counter with counts of tokens
@@ -94,6 +101,11 @@ class CounterVocab(Vocab):
         self.itos = np.array([word
                               for word, freq in words_and_frequencies[:len_to_use]
                               if freq >= min_freq])
+        self._finish_init()
+
+    def _finish_init(self):
+        """Finishes initing an object. Used to calculate stuff that needs to happen
+        both for initing and when restoring from a saved_state"""
         # stoi is simply a reverse dict for itos
         self.stoi = defaultdict(lambda x: self.unk_index)
         self.stoi.update({tok: i for i, tok in enumerate(self.itos)})
@@ -131,6 +143,18 @@ class CounterVocab(Vocab):
         if as_torch:
             return torch.from_numpy(indices)
         return indices
+
+    def get_save_state_dict(self):
+        return {"itos": self.itos, 'unk_index': self.unk_index}
+
+    @classmethod
+    def create_from_save_state_dict(cls, save_state: dict) -> 'CounterVocab':
+        instance = cls.__new__(cls)
+        instance.itos = save_state['itos']
+        instance.unk_indexk = save_state['unk_index']
+        instance._finish_init()
+        return instance
+
 
 
 class VocabBuilder(ABC):

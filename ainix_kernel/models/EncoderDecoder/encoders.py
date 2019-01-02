@@ -32,6 +32,16 @@ class QueryEncoder(nn.Module, ABC):
     def get_tokenizer(self) -> tokenizers.Tokenizer:
         pass
 
+    def get_save_state_dict(self):
+        raise NotImplemented
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        state_dict: dict
+    ):
+        raise NotImplemented
+
 
 class StringQueryEncoder(QueryEncoder):
     def __init__(
@@ -62,6 +72,16 @@ class StringQueryEncoder(QueryEncoder):
 
     def get_tokenizer(self) -> tokenizers.StringTokenizer:
         return self.tokenizer
+
+    def get_save_state_dict(self):
+        raise NotImplemented
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        state_dict: dict
+    ):
+        raise NotImplemented
 
 
 class VectorSeqEncoder(nn.Module, ABC):

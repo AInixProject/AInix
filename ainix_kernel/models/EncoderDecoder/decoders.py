@@ -133,6 +133,10 @@ class TreeRNNDecoder(TreeDecoder):
         # Copy stuff. Should probably be moved to its own module, but for now
         # I'm being lazy because if switch to retrieval method this will change
         # anyways.
+
+        # copy_relevant_linear is a projection into a space which is shared for
+        # all of predicting whether to copy, the start, and the end.
+        # It assumed there is shared information about whether to copy or not.
         self.copy_relevant_linear = nn.Sequential(
             nn.Linear(rnn_cell.input_size, rnn_cell.input_size),
             nn.ReLU()

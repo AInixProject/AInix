@@ -1,0 +1,15 @@
+---
+defines:
+  - define_new: object
+    name: touch
+    type: Program
+    type_data: {invoke_name: "touch"}
+    children:
+      - name: r
+        required: False
+        arg_data: {short_name: "r"}
+      - name: file_list
+        required: True
+        type: PathList
+        arg_data: {position: 0, multiword_pos_arg: True}
+...

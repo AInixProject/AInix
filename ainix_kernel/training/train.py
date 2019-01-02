@@ -32,7 +32,6 @@ class TypeTranslateCFTrainer:
         if self.replacer is None:
             self.replacer = Replacer([])
 
-
     def _train_one_epoch(self, which_epoch_on: int):
         single_examples_iter = self.data_pair_iterate((DataSplits.TRAIN,))
         batches_iter = more_itertools.chunked(single_examples_iter, self.batch_size)
@@ -122,7 +121,8 @@ if __name__ == "__main__":
     loader.load_path("builtin_types/paths.ainix.yaml", type_context, up_search_limit=4)
     generic_strings.create_generic_strings(type_context)
 
-    with_example_files = ("numbers", "pwd", "ls", "cat", "head", "cp", "wc", "mkdir", "echo", "mv")
+    with_example_files = ("numbers", "pwd", "ls", "cat", "head", "cp", "wc",
+                          "mkdir", "echo", "mv", "touch")
     for f in with_example_files:
         loader.load_path(f"builtin_types/{f}.ainix.yaml", type_context, up_search_limit=4)
     type_context.fill_default_parsers()

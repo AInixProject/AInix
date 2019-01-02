@@ -74,7 +74,7 @@ class EncDecModel(StringTypeTranslateCF):
     def end_train_session(self):
         self.optimizer = None
         self.modules.eval()
-        self.is_in_training_session = True
+        self.is_in_training_session = False
 
     def set_shared_memory(self):
         self.modules.share_memory()

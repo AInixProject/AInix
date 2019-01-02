@@ -86,7 +86,6 @@ class RecusivePretrainer(Pretrainer):
 class StringTypeTranslateCF(Pretrainable):
     """Translates a string to another type without taking any prior context
     into account (what the user or the system has said previously)"""
-    # TODO (DNGros): add interface for batched training and prediction
 
     @abstractmethod
     def predict(
@@ -125,6 +124,7 @@ class StringTypeTranslateCF(Pretrainable):
         raise NotImplemented
 
     def set_shared_memory(self):
+        """Used for when doing multiprocess training to set to shared memory."""
         raise NotImplemented
 
     @abstractmethod
@@ -142,3 +142,19 @@ class StringTypeTranslateCF(Pretrainable):
 
     def end_train_epoch(self):
         pass
+
+    # Methods for handling serialization
+    def get_save_state_dict(self):
+        """Returns a dict which can be seriallized and later used to restore this
+        model"""
+        raise NotImplemented
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        state_dict: dict,
+        new_type_context: TypeContext,
+        new_example_store: ExamplesStore
+    ):
+        raise NotImplemented
+
