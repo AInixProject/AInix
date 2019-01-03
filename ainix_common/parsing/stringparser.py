@@ -396,6 +396,7 @@ class AstUnparser:
         for arg in node.implementation.children:
             chosen = node.get_choice_node_for_arg(arg.name)
             is_present_map[arg.name] = chosen.copy_was_chosen or \
+                                       arg.required or \
                                        chosen.get_chosen_impl_name() != arg.not_present_object.name
 
         return ObjectNodeArgMap(
