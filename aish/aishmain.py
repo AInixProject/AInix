@@ -33,7 +33,7 @@ def main_aish(args):
     env = builtins.__xonsh__.env
     shell = builtins.__xonsh__.shell
     try:
-        #if True or args.mode == XonshMode.interactive:  # forced to true
+        #if args.mode == XonshMode.interactive:  # forced to true
         # enter the shell
         env['XONSH_INTERACTIVE'] = True
         ignore_sigtstp()
