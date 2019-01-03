@@ -144,7 +144,7 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=_get_all_replacers())
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    trainer.train(1)
+    trainer.train(40)
 
     print("Lets eval")
     logger = EvaluateLogger()

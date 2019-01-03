@@ -231,7 +231,7 @@ class TreeRNNDecoder(TreeDecoder):
             to_logit: whether to apply a sigmoid before returning.
         """
         v = self.should_copy_predictor(selection_vector)
-        return F.sigmoid(v) if to_logit else v
+        return torch.sigmoid(v) if to_logit else v
 
     def _get_copy_span_weights(
         self,
