@@ -4,10 +4,10 @@ but the loaders in this module just ignores those. If you want to load
 examples use ainix_kenel.indexing.exampleloader"""
 import yaml
 try:
-    from yaml import CLoader as Loader, CDumper as Dumper
+    from yaml import CLoader as _YamlLoader, CDumper as Dumper
 except ImportError:
-    from yaml import Loader, Dumper
-from typing import Dict, List, Optional, Callable, IO
+    from yaml import Loader as _YamlLoader, Dumper
+from typing import Dict, List, Optional, Callable, IO, Tuple
 from ainix_common.parsing import typecontext
 from ainix_common.parsing import parse_primitives
 import importlib.util
@@ -15,8 +15,38 @@ from ainix_common.parsing import grammar_lang
 import os
 
 
+class TypeContextDataLoader:
+    """A class that can be used to load into a type context from files"""
+    def __init__(self, type_context: typecontext.TypeContext, up_search_limit=0):
+        self.type_context = type_context
+        self.up_search_limit = up_search_limit
+        self._load_history: List[str] = []
+
+    def load_path(self, path: str):
+        self._load_history.append(path)
+        load_path(path, self.type_context, self.up_search_limit)
+
+    def get_save_state_dict(self) -> dict:
+        return {
+            "version": 0,
+            "history": self._load_history
+        }
+
+    @classmethod
+    def restore_from_save_dict(
+        cls,
+        save_dict: Dict
+    ) -> Tuple[typecontext.TypeContext, 'TypeContextDataLoader']:
+        tc = typecontext.TypeContext()
+        loader = cls(tc, 2)  # It's a total hack to just a up directory. Should let the
+                             # user define a new load root
+        for f in save_dict['history']:
+            loader.load_path(f)
+        return tc, loader
+
+
 def load_path(
-    path : str,
+    path: str,
     type_context: typecontext.TypeContext,
     up_search_limit: int = 0
 ) -> None:
@@ -80,7 +110,8 @@ def _load(
 
 def _parse_argument(
     doc: Dict,
-    type_context: typecontext.TypeContext
+    type_context: typecontext.TypeContext,
+    obj_name: str
 ) -> Optional[typecontext.AInixArgument]:
     """Parses the a serialized form of an argument"""
     if doc is None:
@@ -91,18 +122,20 @@ def _parse_argument(
         type_name=doc.get('type', None),
         type_parser_name=doc.get("type_parser"),
         required=doc.get("required", False),
-        arg_data=doc.get("arg_data")
+        arg_data=doc.get("arg_data"),
+        parent_object_name=obj_name
     )
 
 
 def _parse_arguments(
     doc: List,
-    type_context: typecontext.TypeContext
+    type_context: typecontext.TypeContext,
+    obj_name: str
 ) -> List[typecontext.AInixArgument]:
     """Parses the serialized form of a list of arguments"""
     if doc is None:
         return []
-    return [_parse_argument(arg_doc, type_context) for arg_doc in doc]
+    return [_parse_argument(arg_doc, type_context, obj_name) for arg_doc in doc]
 
 
 def _load_type(define, type_context: typecontext.TypeContext) -> None:
@@ -138,11 +171,12 @@ def _load_object(define: dict, type_context: typecontext.TypeContext, load_root:
         _load_object_parser(preferred_object_parser, type_context, load_root,
                             preferred_object_parser_name)
 
+    name = define['name']
     typecontext.AInixObject(
         type_context,
-        name=define['name'],
+        name=name,
         type_name=define.get("type"),
-        children=_parse_arguments(define.get("children"), type_context),
+        children=_parse_arguments(define.get("children"), type_context, name),
         preferred_object_parser_name=preferred_object_parser_name,
         type_data=define.get("type_data")  # TODO: validate is a dict
     )

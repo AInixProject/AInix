@@ -12,7 +12,7 @@ def test_parse_set_optional():
     optional args correctly."""
     tc = TypeContext()
     foo_type = AInixType(tc, "FooType")
-    test_arg = AInixArgument(tc, "test_arg", "FooType")
+    test_arg = AInixArgument(tc, "test_arg", "FooType", parent_object_name="foo_ob")
     foo_ob = AInixObject(tc, "foo_ob", "FooType", [test_arg])
     ast_set = AstObjectChoiceSet(foo_type, None)
     ast = ObjectChoiceNode(foo_type)
@@ -150,7 +150,7 @@ def test_objectnode_copy_with_child():
     tc = TypeContext()
     AInixType(tc, "footype")
     bartype = AInixType(tc, "bartype")
-    arg1 = AInixArgument(tc, "arg1", "bartype")
+    arg1 = AInixArgument(tc, "arg1", "bartype", parent_object_name="foo_object")
     foo_object = AInixObject(tc, "foo_object", "footype", [arg1])
     bar_object = AInixObject(tc, "bar_object", "bartype")
     # Make an ast
@@ -204,8 +204,8 @@ def test_objectnode_copy_with_2children():
     tc = TypeContext()
     AInixType(tc, "footype")
     bartype = AInixType(tc, "bartype")
-    arg1 = AInixArgument(tc, "arg1", "bartype")
-    arg2 = AInixArgument(tc, "arg2", "bartype")
+    arg1 = AInixArgument(tc, "arg1", "bartype", parent_object_name="foo_obj")
+    arg2 = AInixArgument(tc, "arg2", "bartype", parent_object_name="bar_obj")
     foo_object = AInixObject(tc, "foo_object", "footype", [arg1, arg2])
     bar_object = AInixObject(tc, "bar_object", "bartype")
     # Make an ast

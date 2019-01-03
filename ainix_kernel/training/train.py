@@ -11,7 +11,8 @@ from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_kernel.training.augmenting.replacers import Replacer, ReplacementGroup, Replacement
 from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 import more_itertools
-from ainix_kernel.specialtypes import generic_strings
+from ainix_kernel.specialtypes import generic_strings, allspecials
+from ainix_kernel.util.serialization import serialize
 
 
 class TypeTranslateCFTrainer:
@@ -109,7 +110,7 @@ def _get_all_replacers() -> Replacer:
 
 
 if __name__ == "__main__":
-    from ainix_common.parsing import loader
+    from ainix_common.parsing.loader import TypeContextDataLoader
     from ainix_common.parsing.typecontext import TypeContext
     import ainix_kernel.indexing.exampleindex
     from ainix_kernel.indexing import exampleloader
@@ -117,15 +118,16 @@ if __name__ == "__main__":
 
     print("start time", datetime.datetime.now())
     type_context = TypeContext()
-    loader.load_path("builtin_types/generic_parsers.ainix.yaml", type_context, up_search_limit=4)
-    loader.load_path("builtin_types/command.ainix.yaml", type_context, up_search_limit=4)
-    loader.load_path("builtin_types/paths.ainix.yaml", type_context, up_search_limit=4)
-    generic_strings.create_generic_strings(type_context)
+    loader = TypeContextDataLoader(type_context, up_search_limit=4)
+    loader.load_path("builtin_types/generic_parsers.ainix.yaml")
+    loader.load_path("builtin_types/command.ainix.yaml")
+    loader.load_path("builtin_types/paths.ainix.yaml")
+    allspecials.load_all_special_types(type_context)
 
     with_example_files = ("numbers", "pwd", "ls", "cat", "head", "cp", "wc",
                           "mkdir", "echo", "mv", "touch")
     for f in with_example_files:
-        loader.load_path(f"builtin_types/{f}.ainix.yaml", type_context, up_search_limit=4)
+        loader.load_path(f"builtin_types/{f}.ainix.yaml")
     type_context.fill_default_parsers()
 
     index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)
@@ -142,14 +144,14 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=_get_all_replacers())
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    trainer.train(40)
+    trainer.train(1)
 
     print("Lets eval")
     logger = EvaluateLogger()
     trainer.evaluate(logger)
     print_ast_eval_log(logger)
     print("serialize model")
-    torch.save(model.get_save_state_dict(), "saved_model.pt")
+    serialize(model, loader, "saved_model.pt")
     print("done.")
     print("done time", datetime.datetime.now())
     print(datetime.datetime.now() - train_time)

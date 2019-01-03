@@ -1,22 +1,25 @@
 from xonsh import main as xmain
 from xonsh.main import XonshMode
-import builtins
-import pudb
 from xonsh.platform import HAS_PYGMENTS, ON_WINDOWS
 from xonsh.jobs import ignore_sigtstp
+from xonsh.events import events
 import os
 import signal
+import builtins
+import shell
 
 def main(argv=None):
-    args = None
-    try:
-        args = xmain.premain(argv)
-        realshell = builtins.__xonsh_shell__.shell 
-        import shell
-        builtins.__xonsh_shell__.shell = shell.AishShell2()
-        return main_aish(args)
-    except Exception as err:
-        _failback_to_other_shells(args, err)
+    #xmain.setup()
+    #print(builtins.__xonsh__.shell)
+    args = xmain.premain(argv)
+    builtins.__xonsh__.shell.shell = shell.AishShell2()
+    main_aish(args)
+    #realshell = builtins.__xonsh__.shell
+    #import aish.shell
+    #return main_aish(args)
+    ##except Exception as err:
+    ##    _failback_to_other_shells(args, err)
+
 
 def main_aish(args):
     """Main entry point for aish cli. replaces main_xonsh in main.py of xonsh"""
@@ -27,10 +30,10 @@ def main_aish(args):
         signal.signal(signal.SIGTTOU, func_sig_ttin_ttou)
 
     events.on_post_init.fire()
-    env = builtins.__xonsh_env__
-    shell = builtins.__xonsh_shell__
+    env = builtins.__xonsh__.env
+    shell = builtins.__xonsh__.shell
     try:
-        if args.mode == XonshMode.interactive:
+        if True or args.mode == XonshMode.interactive:  # forced to true
             # enter the shell
             env['XONSH_INTERACTIVE'] = True
             ignore_sigtstp()
@@ -40,6 +43,7 @@ def main_aish(args):
                 #print_welcome_screen()
             events.on_pre_cmdloop.fire()
             try:
+                #shell.shell.cmdloop()
                 shell.shell.cmdloop()
             finally:
                 events.on_post_cmdloop.fire()
@@ -65,6 +69,8 @@ def main_aish(args):
                                 mode='exec')
     finally:
         events.on_exit.fire()
-    postmain(args)
+    xmain.postmain(args)
 
-main()
+
+if __name__ == "__main__":
+    main()

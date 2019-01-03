@@ -37,6 +37,7 @@ class EncDecModel(StringTypeTranslateCF):
         query_summary, encoded_tokens = self.query_encoder([x_string])
         root_type = self.type_context.get_type_by_name(y_type_name)
         out_node = self.decoder.forward_predict(query_summary, encoded_tokens, root_type)
+        out_node.freeze()
         return out_node
 
     def train(

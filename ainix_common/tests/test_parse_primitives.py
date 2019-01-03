@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 def test_add_arg():
     mock_context = MagicMock()
     obj = AInixObject(mock_context, "FooObj", "footype",
-                      [AInixArgument(mock_context, "FooArg", None)])
+                      [AInixArgument(mock_context, "FooArg", None, parent_object_name="FooObj")])
     test_string = "test string"
     result = ObjectParserResult(obj, test_string)
 

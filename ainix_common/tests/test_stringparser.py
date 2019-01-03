@@ -31,15 +31,18 @@ def numbers_type_context():
 
 
 def test_end_to_end_parse1(type_context):
-    aArg = AInixArgument(type_context, "a", None, arg_data={"short_name": "a"})
-    bArg = AInixArgument(type_context, "b", None, arg_data={"short_name": "b"})
+    aArg = AInixArgument(type_context, "a", None, arg_data={"short_name": "a"},
+                         parent_object_name="FooProgram")
+    bArg = AInixArgument(type_context, "b", None, arg_data={"short_name": "b"},
+                         parent_object_name="BarProgram")
     foo = AInixObject(
         type_context, "FooProgram", "Program",
         [aArg, bArg],
         type_data={"invoke_name": "foo"})
     bar = AInixObject(
         type_context, "BarProgram", "Program",
-        [AInixArgument(type_context, "b", None, arg_data={"short_name": "b"})],
+        [AInixArgument(type_context, "b", None, arg_data={"short_name": "b"},
+                       parent_object_name="sdf")],
         type_data={"invoke_name": "bar"})
     cmdSeqType = type_context.get_type_by_name("CommandSequence")
     parser = StringParser(type_context)
@@ -99,8 +102,10 @@ def toy_string_context_optional() -> TypeContext:
     loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", tc)
     foo_string = AInixType(tc, "FooString")
     foo_string_obj = AInixObject(tc, "foo_string_obj", "FooString",
-                                 children=[AInixArgument(tc, "CurWord", "FooWord", required=True),
-                                           AInixArgument(tc, "Nstr", "FooString", required=False)],
+                                 children=[AInixArgument(tc, "CurWord", "FooWord",
+                                                         required=True, parent_object_name="sdf"),
+                                           AInixArgument(tc, "Nstr", "FooString", required=False,
+                                                         parent_object_name="sdfab")],
                                  preferred_object_parser_name="foo_string_parser")
     foo_string_parser = create_object_parser_from_grammar(
         tc, "foo_string_parser", r"CurWord Nstr?")
@@ -337,7 +342,7 @@ def simple_p_tc():
         type_context=tc,
         name="objOfFoo",
         type_name="FooType",
-        children=[AInixArgument(tc, "Arg1", "BarType")],
+        children=[AInixArgument(tc, "Arg1", "BarType", parent_object_name="objOfFoo")],
         preferred_object_parser_name="AParser"
     )
     create_object_parser_from_grammar(tc, "BParser", '"Bar"')
@@ -454,7 +459,7 @@ def test_unparse_copy_node():
 def test_unparse_optional_arg():
     tc = TypeContext()
     ft = AInixType(tc, "ft")
-    arg1 = AInixArgument(tc, "arg1", "ft", required=False)
+    arg1 = AInixArgument(tc, "arg1", "ft", required=False, parent_object_name="fo")
     fo = AInixObject(tc, "fo", "ft", [arg1],
                      preferred_object_parser_name=create_object_parser_from_grammar(
                         tc, "masfoo_parser", '"foo" arg1?'
@@ -475,7 +480,7 @@ def test_unparse_optional_arg():
 def test_unparse_optional_arg_cust_parser():
     tc = TypeContext()
     ft = AInixType(tc, "ft")
-    arg1 = AInixArgument(tc, "arg1", "ft", required=False)
+    arg1 = AInixArgument(tc, "arg1", "ft", required=False, parent_object_name="sdf")
     def cust_foo_func(
         run: parse_primitives.ObjectParserRun,
         string: str,

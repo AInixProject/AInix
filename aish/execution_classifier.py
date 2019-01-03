@@ -10,11 +10,11 @@ class ExecutionClassifier():
     def classify_string(self, parse : ParseResult): 
         firstWordValue = parse.get_first_word()
         try:
-            pathOfProgram = _which.which(firstWordValue, path=builtins.__xonsh_env__['PATH'])
+            pathOfProgram = _which.which(firstWordValue, path=builtins.__xonsh__.env['PATH'])
             programOnPath = True
         except _which.WhichError:
             programOnPath = False
-        return ExecutionType(run_through_model = not programOnPath)
+        return ExecutionType(run_through_model=not programOnPath)
 
 @attr.s(frozen = True)
 class ExecutionType():

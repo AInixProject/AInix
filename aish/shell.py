@@ -13,24 +13,22 @@ import subprocess
 import os
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
-from ainix_kernel import interface
-from execution_classifier import ExecutionClassifier
+from ainix_kernel.interfacing.shellinterface import Interface
+from aish.execution_classifier import ExecutionClassifier
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+import aish.execer
+from aish.parser import BashParser
 
-import pudb
+builtin_dict = {}
 
-import execer
-from parser import BashParser
-
-builtin_dict = { }
 
 class AishShell(BaseShell):
     def __init__(self):
         self.session = PromptSession()
         self.parser = BashParser()
-        self.kernel_interface = interface.Interface()
+        self.kernel_interface = Interface("../ainix_kernel/training/saved_model.pt")
         self.exec_classifier = ExecutionClassifier()
-        self.exec_function = execer.execute
+        self.exec_function = aish.execer.execute
 
     def singleline(self, store_in_history=True, auto_suggest=None,
                    enable_history_search=True, multiline=True, **kwargs):
@@ -66,21 +64,22 @@ class AishShell(BaseShell):
                 except Exception as e:
                     print(e)
 
+
 class AishShell2(PromptToolkit2Shell):
     def __init__(self, **kwargs):
-        super().__init__(execer = None, ctx = None, **kwargs)
+        super().__init__(execer=None, ctx=None, **kwargs)
 
         self.parser = BashParser()
-        self.kernel_interface = interface.Interface()
+        self.kernel_interface = Interface("../ainix_kernel/training/saved_model.pt")
         self.exec_classifier = ExecutionClassifier()
-        self.exec_function = execer.execute
+        self.exec_function = aish.execer.execute
 
     def cmdloop(self, intro=None):
         """Enters a loop that reads and execute input from user."""
         if intro:
             print(intro)
         auto_suggest = AutoSuggestFromHistory()
-        while not builtins.__xonsh_exit__:
+        while not builtins.__xonsh__.exit:
             try:
                 line = self.singleline(auto_suggest=auto_suggest)
                 parse = self.parser.parse(line)
@@ -89,12 +88,13 @@ class AishShell2(PromptToolkit2Shell):
                 exec_type = self.exec_classifier.classify_string(parse)
                 try:
                     if exec_type.run_through_model:
-                        prediction = self.kernel_interface.predict(line)
+                        prediction = self.kernel_interface.predict(line, "Program")
                         print("predict:", prediction)
                     else:
                         self.exec_function(parse)
                 except Exception as e:
                     print(e)
+                    raise e
                 #if not line:
                 #    self.emptyline()
                 #else:

@@ -17,7 +17,7 @@ def mobject():
     out = MagicMock()
 
     def magic_get_arg_by_name(name):
-        new_arg = AInixArgument(MagicMock(), name, None)
+        new_arg = AInixArgument(MagicMock(), name, None, parent_object_name="sdf")
         return new_arg
     out.get_arg_by_name = magic_get_arg_by_name
     return out

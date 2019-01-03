@@ -1,5 +1,8 @@
 from collections import defaultdict
 from typing import List, Optional, Dict
+
+from pyrsistent import pmap
+
 import ainix_common.parsing.parse_primitives
 from ainix_common.util.strings import id_generator
 SINGLE_TYPE_IMPL_BUILTIN = "SingleTypeImplParser"
@@ -103,7 +106,7 @@ class AInixObject:
         self.arg_name_to_index = {arg.name: i for i, arg in enumerate(self.children)}
         if len(self.arg_name_to_index) < len(self.children):
             raise ValueError(f"Children of {name} have same names")
-        self.type_data = type_data or {}
+        self.type_data = pmap(type_data or {})
         self.preferred_object_parser_name = preferred_object_parser_name
         self._type_context.register_object(self)
 
@@ -152,7 +155,8 @@ class AInixArgument:
         type_name: Optional[str],
         type_parser_name: Optional[str] = None,
         required: bool = False,
-        arg_data: dict = None
+        arg_data: dict = None,
+        parent_object_name=None
     ):
         self._type_context = type_context
         self.name = name
@@ -162,6 +166,7 @@ class AInixArgument:
         self.arg_data = arg_data if arg_data else {}
         if required and type_name is None:
             raise ValueError(f"Arg {name} is required but None type.")
+        self._parent_object_name = parent_object_name
         self._create_optional_args_types()
 
     def _create_optional_args_types(self):
@@ -191,7 +196,10 @@ class AInixArgument:
             self.not_present_object = None
 
     def _make_optional_arg_type_name(self) -> str:
-        return f"__arg_present_choice_type.{id_generator(5)}.{self.name}"
+        if self._parent_object_name is None:
+            raise ValueError("Optional arguments must be given their parent name in order to"
+                             "create a unique type choice name.")
+        return f"__arg_present_choice_type.{self._parent_object_name}.{self.name}"
 
     @property
     def type(self) -> Optional[AInixType]:
@@ -220,8 +228,8 @@ class AInixArgument:
         if self.type_parser_name is None:
             type_default_parser = self.type.default_type_parser
             if type_default_parser is None:
-                raise ValueError(f"Argument {self.name} of type {type} does"
-                                 f"not have prefered parser name or default"
+                raise ValueError(f"Argument {self.name} of type {self.type_name} does"
+                                 f"not have prefered parser name or default "
                                  f"type parser")
             return type_default_parser
         return self._type_context.get_type_parser_by_name(self.type_parser_name)
@@ -253,6 +261,7 @@ class TypeContext:
             Dict[str, ainix_common.parsing.parse_primitives.ObjectParser] = {}
         self._type_name_to_implementations: Dict[str, List[AInixObject]] = \
             defaultdict(list)
+        self._source_history: List[str] = []
 
     def _resolve_type(self, type):
         """Converts a string into a type object_name if needed"""
@@ -402,3 +411,4 @@ class TypeContext:
         # Right now this stuff is just checked "at runtime" while doing parses,
         # if it is even checked at all
         raise NotImplemented("Verify not implemented")
+
