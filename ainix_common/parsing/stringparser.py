@@ -372,6 +372,9 @@ class AstUnparser:
                 new_left_offset += len(part_of_out.string)
             elif isinstance(part_of_out, ArgToStringDelegation):
                 next_node = node.get_choice_node_for_arg(part_of_out.arg.name)
+                #if next_node.copy_was_chosen:
+                #    arg_string = result_builder.add_from_copy_node(
+                #        next_node.next_node_is_copy, new_left_offset)
                 if part_of_out.arg.required:
                     arg_string = self._unparse_object_choice_node(
                         next_node, part_of_out.arg.type_parser, result_builder, new_left_offset)
@@ -389,13 +392,15 @@ class AstUnparser:
         return out_string
 
     def _obj_node_to_arg_map(self, node: ObjectNode) -> ObjectNodeArgMap:
+        is_present_map = {}
+        for arg in node.implementation.children:
+            chosen = node.get_choice_node_for_arg(arg.name)
+            is_present_map[arg.name] = chosen.copy_was_chosen or \
+                                       chosen.get_chosen_impl_name() != arg.not_present_object.name
+
         return ObjectNodeArgMap(
             implenetation=node.implementation,
-            is_present_map={
-                arg.name: node.get_choice_node_for_arg(arg.name).next_node.implementation !=
-                          arg.not_present_object
-                for arg in node.implementation.children
-            }
+            is_present_map=is_present_map
         )
 
     def to_string(

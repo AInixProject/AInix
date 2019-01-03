@@ -456,6 +456,25 @@ def test_unparse_copy_node():
     assert result.total_string == "foo bar pop"
 
 
+def test_unparse_copy_node_in_grammar():
+    tc = get_toy_strings_context()
+    ast = ObjectChoiceNode(tc.get_type_by_name("ToySimpleStrs"))
+    ch1 = ObjectNode(tc.get_object_by_name("two_string"))
+    ast.set_choice(ch1)
+    toy_meta = tc.get_type_by_name("ToyMetasyntactic")
+    a1 = ObjectChoiceNode(toy_meta)
+    a1.set_choice(CopyNode(toy_meta, 2, 2))
+    ch1.set_arg_value("arg1", a1)
+    a2 = ObjectChoiceNode(toy_meta)
+    a2.set_choice(CopyNode(toy_meta, 3, 3))
+    ch1.set_arg_value("arg2", a2)
+    ast.freeze()
+    unparser = AstUnparser(tc, SpaceTokenizer())
+    in_str = "hello there foo bar pop wow"
+    result = unparser.to_string(ast, in_str)
+    assert result.total_string == "TWO foo bar"
+
+
 def test_unparse_optional_arg():
     tc = TypeContext()
     ft = AInixType(tc, "ft")

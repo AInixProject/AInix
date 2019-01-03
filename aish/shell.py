@@ -94,7 +94,7 @@ class AishShell2(PromptToolkit2Shell):
                         self.exec_function(parse)
                 except Exception as e:
                     print(e)
-                    #raise e
+                    raise e
                 #if not line:
                 #    self.emptyline()
                 #else:
