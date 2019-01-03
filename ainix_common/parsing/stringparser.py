@@ -340,7 +340,11 @@ class AstUnparser:
     ) -> str:
         """Unparses an ObjectChoiceNode for an arg present or not. Does not actually
         use a parser and passes through the value to the next parser"""
-        if is_obj_choice_a_present_node(node):
+        if node.copy_was_chosen:
+            out_string = result_builder.add_from_copy_node(node.next_node_is_copy, left_offset)
+            result_builder.add_subspan(node, out_string, left_offset)
+            return out_string
+        elif is_obj_choice_a_present_node(node):
             next_node = node.next_node_not_copy.get_choice_node_for_arg(
                 OPTIONAL_ARGUMENT_NEXT_ARG_NAME)
             arg_str = self._unparse_object_choice_node(next_node, parser_actual_type,

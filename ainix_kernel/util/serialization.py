@@ -11,6 +11,7 @@ from ainix_kernel.specialtypes import allspecials
 
 def serialize(model: StringTypeTranslateCF, loader: TypeContextDataLoader, save_path: str):
     ser = {
+        "version": 0,
         "model": model.get_save_state_dict(),
         "type_loader": loader.get_save_state_dict()
     }

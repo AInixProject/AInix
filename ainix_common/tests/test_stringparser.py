@@ -475,6 +475,29 @@ def test_unparse_copy_node_in_grammar():
     assert result.total_string == "TWO foo bar"
 
 
+def test_unparse_optional_arg_copy():
+    tc = TypeContext()
+    ft = AInixType(tc, "ft")
+    arg1 = AInixArgument(tc, "arg1", "ft", required=False, parent_object_name="fo")
+    fo = AInixObject(tc, "fo", "ft", [arg1],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         tc, "masfoo_parser", '"foo" arg1?'
+                     ).name)
+    tc.fill_default_parsers()
+    ast = ObjectChoiceNode(ft)
+    co = ObjectNode(fo)
+    ast.set_choice(co)
+    a1 = ObjectChoiceNode(ft)
+    a1.set_choice(CopyNode(ft, 2, 2))
+    co.set_arg_value("arg1", a1)
+    ast.freeze()
+
+    unparser = AstUnparser(tc, SpaceTokenizer())
+    in_str = "we like foo foo things"
+    result = unparser.to_string(ast, in_str)
+    assert result.total_string == "foofoo"
+
+
 def test_unparse_optional_arg():
     tc = TypeContext()
     ft = AInixType(tc, "ft")

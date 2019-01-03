@@ -88,7 +88,8 @@ class AishShell2(PromptToolkit2Shell):
                 exec_type = self.exec_classifier.classify_string(parse)
                 try:
                     if exec_type.run_through_model:
-                        prediction = self.kernel_interface.predict(line, "Program")
+                        print("running on", parse.model_input_str)
+                        prediction = self.kernel_interface.predict(parse.model_input_str, "Program")
                         print("predict:", prediction)
                     else:
                         self.exec_function(parse)

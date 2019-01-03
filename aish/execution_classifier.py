@@ -14,7 +14,9 @@ class ExecutionClassifier():
             programOnPath = True
         except _which.WhichError:
             programOnPath = False
-        return ExecutionType(run_through_model=not programOnPath)
+        return ExecutionType(
+            run_through_model=parse.has_force_modeling_escape or not programOnPath)
+
 
 @attr.s(frozen = True)
 class ExecutionType():

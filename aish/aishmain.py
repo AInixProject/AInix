@@ -33,40 +33,40 @@ def main_aish(args):
     env = builtins.__xonsh__.env
     shell = builtins.__xonsh__.shell
     try:
-        if True or args.mode == XonshMode.interactive:  # forced to true
-            # enter the shell
-            env['XONSH_INTERACTIVE'] = True
-            ignore_sigtstp()
-            if (env['XONSH_INTERACTIVE'] and
-                    not any(os.path.isfile(i) for i in env['XONSHRC'])):
-                pass
-                #print_welcome_screen()
-            events.on_pre_cmdloop.fire()
-            try:
-                #shell.shell.cmdloop()
-                shell.shell.cmdloop()
-            finally:
-                events.on_post_cmdloop.fire()
-        elif args.mode == XonshMode.single_command:
-            # run a single command and exit
-            run_code_with_cache(args.command.lstrip(), shell.execer, mode='single')
-        elif args.mode == XonshMode.script_from_file:
-            # run a script contained in a file
-            path = os.path.abspath(os.path.expanduser(args.file))
-            if os.path.isfile(path):
-                sys.argv = [args.file] + args.args
-                env['ARGS'] = sys.argv[:]  # $ARGS is not sys.argv
-                env['XONSH_SOURCE'] = path
-                shell.ctx.update({'__file__': args.file, '__name__': '__main__'})
-                run_script_with_cache(args.file, shell.execer, glb=shell.ctx,
-                                      loc=None, mode='exec')
-            else:
-                print('xonsh: {0}: No such file or directory.'.format(args.file))
-        elif args.mode == XonshMode.script_from_stdin:
-            # run a script given on stdin
-            code = sys.stdin.read()
-            run_code_with_cache(code, shell.execer, glb=shell.ctx, loc=None,
-                                mode='exec')
+        #if True or args.mode == XonshMode.interactive:  # forced to true
+        # enter the shell
+        env['XONSH_INTERACTIVE'] = True
+        ignore_sigtstp()
+        if (env['XONSH_INTERACTIVE'] and
+                not any(os.path.isfile(i) for i in env['XONSHRC'])):
+            pass
+            #print_welcome_screen()
+        events.on_pre_cmdloop.fire()
+        try:
+            #shell.shell.cmdloop()
+            shell.shell.cmdloop()
+        finally:
+            events.on_post_cmdloop.fire()
+        #elif args.mode == XonshMode.single_command:
+        #    # run a single command and exit
+        #    run_code_with_cache(args.command.lstrip(), shell.execer, mode='single')
+        #elif args.mode == XonshMode.script_from_file:
+        #    # run a script contained in a file
+        #    path = os.path.abspath(os.path.expanduser(args.file))
+        #    if os.path.isfile(path):
+        #        sys.argv = [args.file] + args.args
+        #        env['ARGS'] = sys.argv[:]  # $ARGS is not sys.argv
+        #        env['XONSH_SOURCE'] = path
+        #        shell.ctx.update({'__file__': args.file, '__name__': '__main__'})
+        #        run_script_with_cache(args.file, shell.execer, glb=shell.ctx,
+        #                              loc=None, mode='exec')
+        #    else:
+        #        print('xonsh: {0}: No such file or directory.'.format(args.file))
+        #elif args.mode == XonshMode.script_from_stdin:
+        #    # run a script given on stdin
+        #    code = sys.stdin.read()
+        #    run_code_with_cache(code, shell.execer, glb=shell.ctx, loc=None,
+        #                        mode='exec')
     finally:
         events.on_exit.fire()
     xmain.postmain(args)
