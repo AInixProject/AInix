@@ -17,6 +17,17 @@ class LatentStore:
         self.type_name_to_latents: Dict[str, SingleTypeLatentStore] = {}
         self.is_in_write_mode = True
 
+    def add_latent(
+        self,
+        type_name: str,
+        example_id: int,
+        latent: torch.Tensor,
+        ydepth: int,
+        chosen_id: int
+    ):
+        # TODO (DNGros): a vectorized form of this after converting to ids
+        self.type_name_to_latents[type_name].add_latent(latent, example_id, ydepth, chosen_id)
+
     def get_n_nearest_latents(
         self,
         query_latent: torch.Tensor,
@@ -31,6 +42,7 @@ class LatentStore:
         self.is_in_write_mode = False
         for s in self.type_name_to_latents.values():
             s.set_read()
+
 
 @attr.s(frozen=True, auto_attribs=True)
 class LatentMetadataWrapper:

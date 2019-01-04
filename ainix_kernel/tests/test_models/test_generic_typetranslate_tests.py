@@ -83,8 +83,8 @@ def basic_classify_tc(base_tc):
 def basic_string_tc(basic_classify_tc):
     tc = basic_classify_tc
     AInixType(tc, "FooStringType")
-    lhsArg = AInixArgument(tc, "lhs", "FooBarBazType", required=True)
-    rhsArg = AInixArgument(tc, "rhs", "FooStringType", required=False)
+    lhsArg = AInixArgument(tc, "lhs", "FooBarBazType", required=True, parent_object_name="wer")
+    rhsArg = AInixArgument(tc, "rhs", "FooStringType", required=False, parent_object_name="sdf")
     AInixObject(tc, "foo_string", "FooStringType", [lhsArg, rhsArg],
                 preferred_object_parser_name=create_object_parser_from_grammar(
                     tc, "itasdf", 'lhs (" " rhs)?'

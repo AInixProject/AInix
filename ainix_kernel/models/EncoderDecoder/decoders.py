@@ -17,13 +17,16 @@ from ainix_kernel.models.model_types import ModelException, ModelSafePredictErro
 import numpy as np
 import torch.nn.functional as F
 
+from ainix_kernel.models.multiforward import MultiforwardTorchModule, add_hooks
 
-class TreeDecoder(nn.Module, ABC):
+
+class TreeDecoder(MultiforwardTorchModule, ABC):
     """An interface for a nn.Module that takes in an query encoding and
     outputs a AST of a certain type."""
     def __init__(self):
         super().__init__()
 
+    @add_hooks
     def forward_predict(
         self,
         query_summary: torch.Tensor,
@@ -44,6 +47,7 @@ class TreeDecoder(nn.Module, ABC):
         """
         raise NotImplemented()
 
+    @add_hooks
     def forward_train(
         self,
         query_summary: torch.Tensor,
@@ -107,7 +111,7 @@ class TreeRNNCell(nn.Module):
             Tuple of tensor. First the the thing to predict on. Second is
             internal state to pass forward.
         """
-        # TODO (DNGros): Use parent data
+        # TODO (DNGros): Use parent hidden data
         if parent_node_features is None:
             num_of_batches = len(type_to_predict_features)
             parent_node_features = self.root_node_features.expand(num_of_batches, -1)
@@ -180,6 +184,7 @@ class TreeRNNDecoder(TreeDecoder):
 
     def _get_ast_node_vectors(self, node: AstNode) -> torch.Tensor:
         # TODO (DNGros): Cache during current train component
+        # TODO (DNGros): split ast_vocab into type vocab and object vocab
         indxs = self.ast_vocab.token_to_index(self._node_to_token_type(node))
         return self.ast_vectorizer(torch.LongTensor([[indxs]]))[:, 0]
 
@@ -367,28 +372,7 @@ class TreeRNNDecoder(TreeDecoder):
         best_obj_indxs = impls_indices[best_scores]
         return self.ast_vocab.torch_indices_to_tokens(torch.stack([best_obj_indxs]))
 
-    def forward(
-        self,
-        query_summary: torch.Tensor,
-        memory_tokens: torch.Tensor,
-        root_type: AInixType,
-        is_train: bool,
-        y_ast: Optional[AstObjectChoiceSet],
-        teacher_force_path: Optional[ObjectChoiceNode]
-    ) -> Tuple[Optional[ObjectChoiceNode], Optional[torch.Tensor]]:
-        if is_train:
-            if y_ast is None or teacher_force_path is None:
-                raise ValueError("If training expect path to be previded")
-            last_hidden, loss = self._train_objectchoice_step(
-                query_summary, memory_tokens, None, y_ast, teacher_force_path, 0)
-            return None, loss
-        else:
-            # TODO (DNGros): make steps this not mutate state and iterative
-            root_node = ObjectChoiceNode(root_type)
-            last_hidden = self._inference_objectchoice_step(
-                root_node, query_summary, None, memory_tokens, 0)
-            return root_node, None
-
+    @add_hooks
     def forward_predict(
         self,
         query_summary: torch.Tensor,
@@ -397,10 +381,13 @@ class TreeRNNDecoder(TreeDecoder):
     ) -> ObjectChoiceNode:
         if self.training:
             raise ValueError("Expect to not being in training mode during inference.")
-        prediction, loss = self.forward(
-            query_summary, memory_encoding, root_type, False, None, None)
-        return prediction
+        # TODO (DNGros): make steps this not mutate state and iterative
+        prediction_root_node = ObjectChoiceNode(root_type)
+        last_hidden = self._inference_objectchoice_step(
+            prediction_root_node, query_summary, None, memory_encoding, 0)
+        return prediction_root_node
 
+    @add_hooks
     def forward_train(
         self,
         query_summary: torch.Tensor,
@@ -414,10 +401,11 @@ class TreeRNNDecoder(TreeDecoder):
         # Temp hack while can't batch. Just loop through
         batch_loss = 0
         for i in range(len(y_asts)):
-            root_type = y_asts[i].type_to_choose
-            prediction, loss = self.forward(
-                query_summary[i:i+1], memory_encoding[i:i+1], root_type, True,
-                y_asts[i], teacher_force_paths[i]
+            if y_asts[i] is None or teacher_force_paths[i] is None:
+                raise ValueError("If training expect path to be previded")
+            last_hidden, loss = self._train_objectchoice_step(
+                query_summary[i:i+1], memory_encoding[i:i+1], None, y_asts[i],
+                teacher_force_paths[i], 0
             )
             batch_loss += loss
         return batch_loss
@@ -498,6 +486,37 @@ class TreeRNNDecoder(TreeDecoder):
         loss += copy_depth_discount * span_pred_loss
 
         return loss
+
+    def get_latent_select_states(
+        self,
+        query_summary: torch.Tensor,
+        memory_encoding: torch.Tensor,
+        force_path: ObjectChoiceNode
+    ) -> Tuple[List[torch.Tensor], List[int]]:
+        last_hidden = query_summary
+        parent_node_features = None
+        parent_node_hidden = None
+        #node_to_latent = {}
+        latents = []
+        y_inds = []
+        for y_ind, pointer in enumerate(force_path.depth_first_iter()):
+            if isinstance(pointer.cur_node, ObjectChoiceNode):
+                parent_features = None if pointer.parent is None \
+                    else self._get_ast_node_vectors(pointer.parent.curr_node)
+                out, last_hidden = self.rnn_cell(
+                    last_hidden=last_hidden,
+                    type_to_predict_features=self._get_ast_node_vectors(pointer.cur_node),
+                    parent_node_features=parent_features,
+                    parent_node_hidden=parent_node_hidden
+                )
+                latents.append(out)
+                y_inds.append(y_ind)
+            elif isinstance(pointer.cur_node, ObjectNode):
+                pass
+            else:
+                raise ValueError("Node not recognized.")
+        return latents, y_inds
+
 
     def get_save_state_dict(self) -> Dict:
         return {
