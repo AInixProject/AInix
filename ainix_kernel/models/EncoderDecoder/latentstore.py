@@ -61,6 +61,10 @@ class LatentMetadataWrapper:
         return self.data[:, 0]
 
     @property
+    def y_inds(self) -> torch.Tensor:
+        return self.data[:, 1]
+
+    @property
     def impl_choices(self) -> torch.Tensor:
         return self.data[:, 2]
 

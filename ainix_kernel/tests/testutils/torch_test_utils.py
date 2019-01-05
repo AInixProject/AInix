@@ -9,6 +9,10 @@ def torch_epsilon_eq(a, b, epsilon=1e-12):
     """Test if two float tensors are equal within some epsilon"""
     if isinstance(a, torch.LongTensor):
         epsilon = math.ceil(epsilon)
+    if isinstance(a, list):
+        a = torch.Tensor(a)
+    if isinstance(b, list):
+        b = torch.Tensor(b)
     return torch.all(torch.lt(torch.abs(torch.add(a, -b)), epsilon))
 
 
