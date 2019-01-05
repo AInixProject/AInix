@@ -13,7 +13,7 @@ from ainix_kernel.model_util.vectorizers import VectorizerBase, vectorizer_from_
 from ainix_kernel.model_util.vocab import Vocab, are_indices_valid, TypeContextWrapperVocab
 from ainix_kernel.models.EncoderDecoder import objectselector
 from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector, CopyAction, \
-    ProduceObjectAction
+    ProduceObjectAction, PathForceSpySelector
 from ainix_kernel.models.EncoderDecoder.nonretrieval import SimpleActionSelector
 from ainix_kernel.models.EncoderDecoder.objectselector import ObjectSelector
 from ainix_kernel.models.model_types import ModelException, ModelSafePredictError
@@ -170,7 +170,8 @@ class TreeRNNDecoder(TreeDecoder):
         last_hidden: torch.Tensor,
         parent_node_features: Optional[torch.Tensor],
         memory_tokens: torch.Tensor,
-        cur_depth
+        cur_depth: int,
+        override_action_selector: ActionSelector = None
     ) -> torch.Tensor:
         if cur_depth > self.MAX_DEPTH:
             raise ModelException()
@@ -178,12 +179,13 @@ class TreeRNNDecoder(TreeDecoder):
             last_hidden=last_hidden,
             type_to_predict_features=self._get_ast_node_vectors(current_leaf),
             parent_node_features=parent_node_features,
-            parent_node_hidden=None,
+            parent_node_hidden=None
         )
         if len(outs) != 1:
             raise NotImplemented("Batches not implemented")
 
-        predicted_action = self.action_selector.infer_predict(
+        use_selector = override_action_selector or self.action_selector
+        predicted_action = use_selector.infer_predict(
             outs, memory_tokens, current_leaf.type_to_choose)
         if isinstance(predicted_action, CopyAction):
             current_leaf.set_choice(CopyNode(
@@ -191,7 +193,8 @@ class TreeRNNDecoder(TreeDecoder):
         elif isinstance(predicted_action, ProduceObjectAction):
             new_node = ObjectNode(predicted_action.implementation)
             current_leaf.set_choice(new_node)
-            hiddens = self._inference_object_step(new_node, hiddens, memory_tokens, cur_depth + 1)
+            hiddens = self._inference_object_step(
+                new_node, hiddens, memory_tokens, cur_depth + 1, override_action_selector)
         else:
             raise ValueError()
         return hiddens
@@ -235,7 +238,8 @@ class TreeRNNDecoder(TreeDecoder):
         current_leaf: ObjectNode,
         last_hidden: Optional[torch.Tensor],
         memory_tokens: torch.Tensor,
-        cur_depth
+        cur_depth,
+        override_selector: ActionSelector = None
     ) -> torch.Tensor:
         """makes one step for ObjectNodes. Returns last hidden state"""
         if cur_depth > self.MAX_DEPTH:
@@ -249,7 +253,8 @@ class TreeRNNDecoder(TreeDecoder):
                 continue
             current_leaf.set_arg_value(arg.name, new_node)
             latest_hidden = self._inference_objectchoice_step(
-                new_node, latest_hidden, my_features, memory_tokens, cur_depth + 1)
+                new_node, latest_hidden, my_features, memory_tokens, cur_depth + 1,
+                override_selector)
         return latest_hidden
 
     def _train_objectnode_step(
@@ -280,13 +285,14 @@ class TreeRNNDecoder(TreeDecoder):
         query_summary: torch.Tensor,
         memory_encoding: torch.Tensor,
         root_type: AInixType,
+        override_action_selector: ActionSelector = None
     ) -> ObjectChoiceNode:
         if self.training:
             raise ValueError("Expect to not being in training mode during inference.")
         # TODO (DNGros): make steps this not mutate state and iterative
         prediction_root_node = ObjectChoiceNode(root_type)
         last_hidden = self._inference_objectchoice_step(
-            prediction_root_node, query_summary, None, memory_encoding, 0)
+            prediction_root_node, query_summary, None, memory_encoding, 0, override_action_selector)
         return prediction_root_node
 
     @add_hooks
@@ -318,29 +324,45 @@ class TreeRNNDecoder(TreeDecoder):
         memory_encoding: torch.Tensor,
         force_path: ObjectChoiceNode
     ) -> Tuple[List[torch.Tensor], List[int]]:
-        last_hidden = query_summary
-        parent_node_features = None
-        parent_node_hidden = None
-        #node_to_latent = {}
-        latents = []
-        y_inds = []
-        for y_ind, pointer in enumerate(force_path.depth_first_iter()):
-            if isinstance(pointer.cur_node, ObjectChoiceNode):
-                parent_features = None if pointer.parent is None \
-                    else self._get_ast_node_vectors(pointer.parent.curr_node)
-                out, last_hidden = self.rnn_cell(
-                    last_hidden=last_hidden,
-                    type_to_predict_features=self._get_ast_node_vectors(pointer.cur_node),
-                    parent_node_features=parent_features,
-                    parent_node_hidden=parent_node_hidden
-                )
-                latents.append(out)
-                y_inds.append(y_ind)
-            elif isinstance(pointer.cur_node, ObjectNode):
-                pass
-            else:
-                raise ValueError("Node not recognized.")
-        return latents, y_inds
+        was_in_traing = self.training
+        if was_in_traing:
+            self.eval()
+        try:
+            spy_selector = PathForceSpySelector(force_path)
+            self.forward_predict(
+                query_summary=query_summary,
+                memory_encoding=memory_encoding,
+                root_type=force_path.type_to_choose,
+                override_action_selector=spy_selector
+            )
+            return spy_selector.lattents_log, spy_selector.y_inds_log
+        finally:
+            if was_in_traing:
+                self.train()
+
+        #last_hidden = query_summary
+        #parent_node_features = None
+        #parent_node_hidden = None
+        ##node_to_latent = {}
+        #latents = []
+        #y_inds = []
+        #for y_ind, pointer in enumerate(force_path.depth_first_iter()):
+        #    if isinstance(pointer.cur_node, ObjectChoiceNode):
+        #        parent_features = None if pointer.parent is None \
+        #            else self._get_ast_node_vectors(pointer.parent.curr_node)
+        #        out, last_hidden = self.rnn_cell(
+        #            last_hidden=last_hidden,
+        #            type_to_predict_features=self._get_ast_node_vectors(pointer.cur_node),
+        #            parent_node_features=parent_features,
+        #            parent_node_hidden=parent_node_hidden
+        #        )
+        #        latents.append(out)
+        #        y_inds.append(y_ind)
+        #    elif isinstance(pointer.cur_node, ObjectNode):
+        #        pass
+        #    else:
+        #        raise ValueError("Node not recognized.")
+        #return latents, y_inds
 
 
     def get_save_state_dict(self) -> Dict:

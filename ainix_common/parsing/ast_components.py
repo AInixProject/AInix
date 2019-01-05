@@ -89,7 +89,7 @@ class AstNode(ABC):
         raise NotImplemented()
 
     def depth_first_iter(self) -> Generator['AstIterPointer', None, None]:
-        """Iterates through tree starting at this node in a depth-first manner"""
+        """Iterates through tree starting at this node in a depth-first preorder traversal"""
         cur = AstIterPointer(self, None, None)
         while cur:
             yield cur

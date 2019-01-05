@@ -196,6 +196,29 @@ def test_basic_classify(model_name, basic_classify_tc):
     model = make_model(model_name, example_store)
     do_train(model, example_store, epochs=100)
     assert_train_acc(model, example_store)
+
+
+@pytest.mark.parametrize("model_name", ALL_MODELS)  #, indirect=['model'])
+def test_basic_classify_serialize(model_name, basic_classify_tc):
+    # TODO don't require retraining each time.
+    basic_classify_tc.fill_default_parsers()
+    example_store = make_example_store(model_name, basic_classify_tc)
+    adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
+                             "FooBarBazType", ALL_TRAIN_SPLIT)
+    adder.add_examples(
+        x_strings=["woof", "bow wo", "bark"],
+        y_strings=["foo"]
+    )
+    adder.add_examples(
+        x_strings=["meow", "prrr"],
+        y_strings=["bar"],
+    )
+    adder.add_examples(
+        x_strings=["moo", "im a cow"],
+        y_strings=["baz"],
+    )
+    model = make_model(model_name, example_store)
+    do_train(model, example_store, epochs=100)
     check_survives_serialization(model, example_store, basic_classify_tc, only_test_train=True)
 
 
