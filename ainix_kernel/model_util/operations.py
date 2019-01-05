@@ -26,3 +26,19 @@ def sparse_groupby_sum(
     reduced_vals = torch.bincount(group_ind_for_each_val, values)
     return reduced_vals, group_keys
 
+
+class MultilabelKindaCategoricalCrossEntropy(torch.nn.Module):
+    """A somewhat funky loss function that sort of seems like a good idea.
+    It is designed to accommodate when you have multiple correct labels
+    but also a weighted preference between each label. It cares more about
+    the max being a one of the valid labels, over the weight ordering between
+    the labels.
+
+    The basic idea is for each of the valid labels l_i, calculate the
+    CatagoricalCrossEntropyLoss of l_i with all other valid labels zeroed out
+    then multiply that loss by the weight of l_i.
+
+    This means the valid labels are not
+    """
+    raise NotImplemented()
+

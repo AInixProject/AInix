@@ -44,6 +44,8 @@ class LatentStore:
             s.set_read()
 
 
+# TODO special value for copy
+# TODO multilabel.
 @attr.s(frozen=True, auto_attribs=True)
 class LatentMetadataWrapper:
     """

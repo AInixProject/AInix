@@ -33,28 +33,14 @@ class SimpleActionSelector(ActionSelector):
         # Copy stuff. Should probably be moved to its own module, but for now
         # I'm being lazy because if switch to retrieval method this will change
         # anyways.
-
-        # copy_relevant_linear is a projection into a space which is shared for
-        # all of predicting whether to copy, the start, and the end.
-        # It assumed there is shared information about whether to copy or not.
-        self.copy_relevant_linear = nn.Sequential(
-            nn.Linear(latent_size, latent_size),
-            nn.ReLU()
-        )
         self.should_copy_predictor = nn.Sequential(
-            self.copy_relevant_linear,
+            nn.Linear(latent_size, latent_size),
+            nn.ReLU(),
             nn.Linear(latent_size, int(latent_size / 4)),
             nn.ReLU(),
             nn.Linear(int(latent_size / 4), 1)
         )
-        self.copy_start_vec_predictor = nn.Sequential(
-            nn.Linear(latent_size, latent_size),
-            nn.ReLU()
-        )
-        self.copy_end_vec_predictor = nn.Sequential(
-            nn.Linear(latent_size, latent_size),
-            nn.ReLU()
-        )
+        self.span_predictor = CopySpanPredictor(latent_size)
         # TODO (DNGros): Figure this out. It changed in torch 1.0 and is weird now
         #self.bce_pos_weight = bce_pos_weight
 
@@ -68,7 +54,8 @@ class SimpleActionSelector(ActionSelector):
         copy_probs = self._predict_whether_copy(latent_vec)
         do_copy = copy_probs[0] > 0.5
         if do_copy:
-            pred_start, pred_end = self._predict_copy_span(latent_vec, memory_tokens)[0]
+            pred_start, pred_end = self.span_predictor.inference_predict_span(
+                latent_vec, memory_tokens)[0]
             return CopyAction(pred_start, pred_end)
         else:
             predicted_impl = self._predict_most_likely_implementation(
@@ -101,13 +88,9 @@ class SimpleActionSelector(ActionSelector):
         loss /= len(scores)
         loss += self._train_loss_from_choose_whether_copy(
             latent_vec, types_to_select, expected)
-        span_pred_loss = self._train_loss_from_choosing_copy_span(
+        span_pred_loss = self.span_predictor.train_predict_span(
             latent_vec, memory_tokens, types_to_select, expected)
-        # What we really care about is getting the top level span prediction correct
-        # as ideally we will predict copy at the highest level, and not need to predict
-        # the lower spans. Therefore we discount the lower span predictions
-        copy_depth_discount = 1 / (1 + 1*num_of_parents_with_copy_option)
-        loss += copy_depth_discount * span_pred_loss
+        loss += get_copy_depth_discount(num_of_parents_with_copy_option) * span_pred_loss
 
         return loss
 
@@ -128,36 +111,6 @@ class SimpleActionSelector(ActionSelector):
             should_be_true
         )
 
-    def _train_loss_from_choosing_copy_span(
-        self,
-        vectors_to_select_on: torch.Tensor,
-        memory_tokens: torch.Tensor,
-        types_to_select: List[AInixType],
-        current_gt_set: AstObjectChoiceSet
-    ) -> torch.Tensor:
-        if not current_gt_set.copy_is_known_choice():
-            return 0
-
-        si, ei = current_gt_set.earliest_known_copy()
-        correct_starts = torch.LongTensor([si])
-        correct_ends = torch.LongTensor([ei])
-        start_predictions, end_predictions = self._get_copy_span_weights(
-            vectors_to_select_on, memory_tokens)
-
-        #print(f"start pred {start_predictions} want {correct_starts}")
-        #print(f"end pred {end_predictions} want {correct_ends}")
-
-        start_loss = F.cross_entropy(
-            start_predictions,
-            correct_starts
-        )
-        end_loss = F.cross_entropy(
-            end_predictions,
-            correct_ends
-        )
-        # TODO Weight deeper copy predictions less to not saturate higher ones
-        return start_loss + end_loss
-
     def _predict_most_likely_implementation(
         self,
         vectors_to_select_on: torch.Tensor,
@@ -173,18 +126,6 @@ class SimpleActionSelector(ActionSelector):
         best_obj_indxs = impls_indices[best_scores]
         return self.ast_vocab.torch_indices_to_tokens(torch.stack([best_obj_indxs]))
 
-    def _predict_copy_span(
-        self,
-        select_on_vec: torch.Tensor,
-        memory_tokens: torch.Tensor
-    ) -> List[Tuple[int, int]]:
-        """Given a copy is valid, finds the most likely (start, end) span"""
-        start_preds, end_preds = self._get_copy_span_weights(select_on_vec, memory_tokens)
-        starts = torch.argmax(start_preds, dim=1)
-        ends = torch.argmax(end_preds, dim=1)
-        # TODO should eventually also probably return the log probability of this span
-        return [(int(s), int(e)) for s, e in zip(starts, ends)]
-
     def _predict_whether_copy(
         self,
         selection_vector: torch.Tensor,
@@ -198,6 +139,87 @@ class SimpleActionSelector(ActionSelector):
         """
         v = self.should_copy_predictor(selection_vector)
         return torch.sigmoid(v) if to_logit else v
+
+    def get_save_state_dict(self) -> dict:
+        return {
+            "name": "SimpleNonRetrieval",
+            "version": 0,
+            "latent_size": self.latent_size,
+            "object_selector": self.object_selector,
+            "state_dict": self.state_dict()
+        }
+
+    @classmethod
+    def create_from_save_state_dict(cls, save_dict: dict, ast_vocab: Vocab):
+        instance = cls(
+            latent_size=save_dict['latent_size'],
+            object_selector=save_dict['object_selector'],
+            ast_vocab=ast_vocab
+        )
+        instance.load_state_dict(save_dict['state_dict'])
+        return instance
+
+
+def get_copy_depth_discount(num_of_parents_with_copy_option: int):
+    """What we really care about is getting the top level span prediction correct
+    as ideally we will predict copy at the highest level, and not need to predict
+    the lower spans. Therefore we discount the lower span predictions"""
+    return 1 / (1 + 1*num_of_parents_with_copy_option)
+
+
+class CopySpanPredictor(MultiforwardTorchModule):
+    def __init__(self, latent_size: int):
+        super().__init__()
+        self.copy_relevant_linear = nn.Sequential(
+            nn.Linear(latent_size, latent_size),
+            nn.PReLU()
+        )
+        self.copy_start_vec_predictor = nn.Sequential(
+            nn.Linear(latent_size, latent_size),
+            nn.PReLU()
+        )
+        self.copy_end_vec_predictor = nn.Sequential(
+            nn.Linear(latent_size, latent_size),
+            nn.PReLU()
+        )
+
+    def inference_predict_span(
+        self,
+        select_on_vec: torch.Tensor,
+        memory_tokens: torch.Tensor
+    ) -> List[Tuple[int, int]]:
+        """Given a copy is valid, finds the most likely (start, end) span"""
+        start_preds, end_preds = self._get_copy_span_weights(select_on_vec, memory_tokens)
+        starts = torch.argmax(start_preds, dim=1)
+        ends = torch.argmax(end_preds, dim=1)
+        # TODO should eventually also probably return the log probability of this span
+        return [(int(s), int(e)) for s, e in zip(starts, ends)]
+
+    def train_predict_span(
+        self,
+        vectors_to_select_on: torch.Tensor,
+        memory_tokens: torch.Tensor,
+        types_to_select: List[AInixType],
+        current_gt_set: AstObjectChoiceSet
+    ) -> torch.Tensor:
+        if not current_gt_set.copy_is_known_choice():
+            return 0
+
+        si, ei = current_gt_set.earliest_known_copy()
+        correct_starts = torch.LongTensor([si])
+        correct_ends = torch.LongTensor([ei])
+        start_predictions, end_predictions = self._get_copy_span_weights(
+            vectors_to_select_on, memory_tokens)
+
+        start_loss = F.cross_entropy(
+            start_predictions,
+            correct_starts
+        )
+        end_loss = F.cross_entropy(
+            end_predictions,
+            correct_ends
+        )
+        return start_loss + end_loss
 
     def _get_copy_span_weights(
         self,
@@ -228,21 +250,6 @@ class SimpleActionSelector(ActionSelector):
             end_vec.unsqueeze(0), memory_tokens, normalize='identity').squeeze(0)
         return start_predictions, end_predictions
 
-    def get_save_state_dict(self) -> dict:
-        return {
-            "name": "SimpleNonRetrieval",
-            "version": 0,
-            "latent_size": self.latent_size,
-            "object_selector": self.object_selector
-        }
-
-    @classmethod
-    def create_from_save_state_dict(cls, save_dict: dict, ast_vocab: Vocab):
-        return cls(
-            latent_size=save_dict['latent_size'],
-            object_selector=save_dict['object_selector'],
-            ast_vocab=ast_vocab
-        )
 
 #object_chooser: 'ObjectnodeChooser',
 #copy_chooser: 'CopySelector',
@@ -299,4 +306,5 @@ class SimpleActionSelector(ActionSelector):
 #    def forward(self, latent_vec: torch.Tensor) -> Tuple[torch.Tensor, List[Type[ActionSelector]]]:
 #        projection = self.action_projector(latent_vec)
 #        alignments = torch.sum(projection*self.action_kind_embedding, dim=1)
+
 #        F.softmax(alignments, dim=0)
