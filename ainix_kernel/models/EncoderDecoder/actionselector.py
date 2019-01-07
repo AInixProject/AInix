@@ -60,6 +60,9 @@ class CopyAction(ActionResult):
 class ProduceObjectAction(ActionResult):
     implementation: AInixObject
 
+    def __attrs_post_init__(self):
+        assert isinstance(self.implementation, AInixObject)
+
 
 class SubprocAction(ActionResult):
     def __init__(self):

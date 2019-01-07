@@ -8,5 +8,5 @@ def get_toy_strings_context() -> TypeContext:
     context = TypeContext()
     loader.load_path(f"builtin_types/generic_parsers.ainix.yaml", context, up_search_limit=4)
     loader.load_path(f"{LOAD_PATH_ROOT}/twostr.ainix.yaml", context, up_search_limit=4)
-    context.fill_default_parsers()
+    context.finalize_data()
     return context

@@ -13,7 +13,7 @@ def tc():
     loader.load_path("builtin_types/paths.ainix.yaml", context, up_search_limit=2)
     loader.load_path("builtin_types/generic_parsers.ainix.yaml", context, up_search_limit=2)
     generic_strings.create_generic_strings(context)
-    context.fill_default_parsers()
+    context.finalize_data()
     return context
 
 

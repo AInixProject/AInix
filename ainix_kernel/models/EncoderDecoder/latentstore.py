@@ -1,32 +1,35 @@
 """Used to store the latent states of a model decoding for use in a latent
 retrieval-based decoder."""
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 import torch
 import attr
 import numpy as np
 
-from ainix_common.parsing.typecontext import TypeContext
+from ainix_common.parsing.ast_components import ObjectChoiceNode
+from ainix_common.parsing.typecontext import TypeContext, AInixObject, AInixType
 from ainix_kernel.indexing.examplestore import ExamplesStore
 import torch.nn.functional as F
 
-
 class LatentStore:
+    COPY_IND = 10000
+
     def __init__(self, type_context: TypeContext, latent_size: int):
         self.latent_size = latent_size
         # TODO (DNGros): Convert this to using vocab indexes rather than strings
-        self.type_name_to_latents: Dict[str, SingleTypeLatentStore] = {}
+        self.type_ind_to_latents: List[SingleTypeLatentStore] = \
+            [SingleTypeLatentStore(latent_size) for type in type_context.get_all_types()]
         self.is_in_write_mode = True
 
     def add_latent(
         self,
-        type_name: str,
-        example_id: int,
+        node: ObjectChoiceNode,
         latent: torch.Tensor,
+        example_id: int,
         ydepth: int,
-        chosen_id: int
     ):
-        # TODO (DNGros): a vectorized form of this after converting to ids
-        self.type_name_to_latents[type_name].add_latent(latent, example_id, ydepth, chosen_id)
+        ind = self.COPY_IND if node.copy_was_chosen else node.next_node_not_copy.implementation.ind
+        self.type_ind_to_latents[node.type_to_choose.ind].add_latent(
+            latent, example_id, ydepth, ind)
 
     def get_n_nearest_latents(
         self,
@@ -40,7 +43,7 @@ class LatentStore:
 
     def set_read(self):
         self.is_in_write_mode = False
-        for s in self.type_name_to_latents.values():
+        for s in self.type_ind_to_latents:
             s.set_read()
 
 
@@ -88,6 +91,8 @@ class SingleTypeLatentStore:
         y_depth_idx: int,
         chosen_impl_idx: int
     ) -> None:
+        if len(self.latent_metadatas) >= COPY_IND:
+            raise ValueError("looks like yah need to think through scaleing")
         self.latents.append(value)
         self.latent_metadatas.append((example_index, y_depth_idx, chosen_impl_idx))
 

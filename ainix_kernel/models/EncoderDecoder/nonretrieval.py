@@ -9,7 +9,8 @@ from torch import nn
 
 from ainix_common.parsing.ast_components import ObjectNodeLike, ObjectNode, CopyNode, \
     AstObjectChoiceSet
-from ainix_common.parsing.typecontext import AInixType
+from ainix_common.parsing.typecontext import AInixType, TypeContext
+from ainix_kernel.model_util import vocab
 from ainix_kernel.model_util.attending import attend
 from ainix_kernel.model_util.vocab import are_indices_valid, Vocab
 from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector, CopyAction, \
@@ -24,11 +25,11 @@ class SimpleActionSelector(ActionSelector):
         self,
         latent_size: int,
         object_selector: ObjectSelector,
-        ast_vocab: Vocab
+        type_context: TypeContext
     ):
         super().__init__()
         self.object_selector = object_selector
-        self.ast_vocab = ast_vocab
+        self.type_context = type_context
         self.latent_size = latent_size
         # Copy stuff. Should probably be moved to its own module, but for now
         # I'm being lazy because if switch to retrieval method this will change
@@ -78,7 +79,7 @@ class SimpleActionSelector(ActionSelector):
         assert types_to_select[0] == expected.type_to_choose
         impls_indices, scores = self.object_selector(latent_vec, types_to_select)
         assert len(impls_indices) == 1 and len(scores) == 1, "no batch yet"
-        impls_indices_correct = are_indices_valid(impls_indices[0], self.ast_vocab, expected)
+        impls_indices_correct = are_indices_valid(impls_indices[0], self.type_context, expected)
         loss = 0
         for correct_indicies, predicted_score in zip(impls_indices_correct, scores[0]):
             loss += F.binary_cross_entropy_with_logits(
@@ -124,7 +125,7 @@ class SimpleActionSelector(ActionSelector):
         ####
         best_scores = torch.argmax(scores)
         best_obj_indxs = impls_indices[best_scores]
-        return self.ast_vocab.torch_indices_to_tokens(torch.stack([best_obj_indxs]))
+        return vocab.torch_inds_to_objects(torch.stack([best_obj_indxs]), self.type_context)
 
     def _predict_whether_copy(
         self,

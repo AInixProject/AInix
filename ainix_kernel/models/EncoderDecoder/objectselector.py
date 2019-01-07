@@ -1,10 +1,11 @@
+# TODO (DNGros): after refactoring to ActionSelectors the name of this is confusing.
 from collections import defaultdict
 from typing import List
 
 import torch
 from torch import nn
 from abc import ABC
-from ainix_common.parsing.typecontext import AInixType, AInixObject
+from ainix_common.parsing.typecontext import AInixType, AInixObject, TypeContext
 from ainix_kernel.model_util.vectorizers import VectorizerBase
 from ainix_kernel.model_util.vocab import Vocab
 
@@ -12,19 +13,14 @@ from ainix_kernel.model_util.vocab import Vocab
 class TypeImplTensorMap:
     """Maps types to long tensors that contains the index ids for all the
     implementations of that type"""
-    def __init__(self, ast_vocab: Vocab):
-        self.vocab_size = len(ast_vocab)
-        self._type_to_impl_tensor = defaultdict(list)
-        # Pick out all the objects
-        for ind, el in ast_vocab.items():
-            if isinstance(el, AInixObject):
-                self._type_to_impl_tensor[el.type.name].append(ind)
-        # convert to torch tensors
-        self._type_to_impl_tensor = {type_: torch.LongTensor(v)
-                                     for type_, v in self._type_to_impl_tensor.items()}
+    def __init__(self, type_context: TypeContext):
+        self._type_to_impl_tensor = [None] * type_context.get_type_count()
+        for typ in type_context.get_all_types():
+            self._type_to_impl_tensor[typ.ind] = \
+                torch.LongTensor([impl.ind for impl in type_context.get_implementations(typ)])
 
     def get_tensor_of_implementations(self, types: List[AInixType]):
-        return [self._type_to_impl_tensor[t.name] for t in types]
+        return [self._type_to_impl_tensor[t.ind] for t in types]
 
 
 class ObjectSelector(nn.Module, ABC):
@@ -33,10 +29,10 @@ class ObjectSelector(nn.Module, ABC):
 
 
 class VectorizedObjectSelector(nn.Module, ABC):
-    def __init__(self, type_tensor_map: TypeImplTensorMap, ast_vectorizer: VectorizerBase):
+    def __init__(self, type_tensor_map: TypeImplTensorMap, object_vectorizer: VectorizerBase):
         super().__init__()
         self.type_tensor_map = type_tensor_map
-        self.ast_vectorizer = ast_vectorizer
+        self.object_vectorizer = object_vectorizer
 
     def forward(self, vectors: torch.Tensor, types_to_choose: List[AInixType]):
         """
@@ -52,7 +48,7 @@ class VectorizedObjectSelector(nn.Module, ABC):
         out_scores = []
         # TODO (DNGros): figure out how to batch. Maybe use the pack_pad magic. Or group on type
         for impl_set, q_vector in zip(impls, vectors):
-            impl_vectors = self.ast_vectorizer(impl_set)
+            impl_vectors = self.object_vectorizer(impl_set)
             # Here we use dot product as similarity. Not sure if this is a
             # good idea or not. Cosine dist might make more sense.
             similarity = torch.sum(q_vector*impl_vectors, dim=1)
@@ -60,6 +56,6 @@ class VectorizedObjectSelector(nn.Module, ABC):
         return impls, out_scores
 
 
-def get_default_object_selector(ast_vocab: Vocab, ast_vectorizer: VectorizerBase):
-    type_tensor_map = TypeImplTensorMap(ast_vocab)
-    return VectorizedObjectSelector(type_tensor_map, ast_vectorizer)
+def get_default_object_selector(type_context: TypeContext, object_vectorizer: VectorizerBase):
+    type_tensor_map = TypeImplTensorMap(type_context)
+    return VectorizedObjectSelector(type_tensor_map, object_vectorizer)

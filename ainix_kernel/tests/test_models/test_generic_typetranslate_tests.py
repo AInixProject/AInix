@@ -177,7 +177,7 @@ def check_survives_serialization(
 
 @pytest.mark.parametrize("model_name", ALL_MODELS)  #, indirect=['model'])
 def test_basic_classify(model_name, basic_classify_tc):
-    basic_classify_tc.fill_default_parsers()
+    basic_classify_tc.finalize_data()
     example_store = make_example_store(model_name, basic_classify_tc)
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
                              "FooBarBazType", ALL_TRAIN_SPLIT)
@@ -201,7 +201,7 @@ def test_basic_classify(model_name, basic_classify_tc):
 @pytest.mark.parametrize("model_name", ALL_MODELS)  #, indirect=['model'])
 def test_basic_classify_serialize(model_name, basic_classify_tc):
     # TODO don't require retraining each time.
-    basic_classify_tc.fill_default_parsers()
+    basic_classify_tc.finalize_data()
     example_store = make_example_store(model_name, basic_classify_tc)
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
                              "FooBarBazType", ALL_TRAIN_SPLIT)
@@ -225,7 +225,7 @@ def test_basic_classify_serialize(model_name, basic_classify_tc):
 @pytest.mark.parametrize("model_name", FULL_MODELS)
 def test_classify_seq(model_name, basic_string_tc):
     """Tests to see if model can learn to generate string of varying length"""
-    basic_string_tc.fill_default_parsers()
+    basic_string_tc.finalize_data()
     example_store = make_example_store(model_name, basic_string_tc)
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
                              "FooStringType", ALL_TRAIN_SPLIT)
@@ -256,7 +256,7 @@ def test_classify_seq(model_name, basic_string_tc):
 def test_non_bow(model_name, basic_classify_tc):
     """Tests to see if model can classify on tasks that require expressive power
     beyond a bag-of-words assumption"""
-    basic_classify_tc.fill_default_parsers()
+    basic_classify_tc.finalize_data()
     example_store = make_example_store(model_name, basic_classify_tc)
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
                              "FooBarBazType", ALL_TRAIN_SPLIT)
@@ -293,7 +293,7 @@ def test_non_bow(model_name, basic_classify_tc):
 @pytest.mark.parametrize("model_name", FULL_MODELS)
 def test_string_gen(model_name, basic_string_tc):
     """Tests to see if model can learn to generate string of varying length"""
-    basic_string_tc.fill_default_parsers()
+    basic_string_tc.finalize_data()
     example_store = make_example_store(model_name, basic_string_tc)
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
                              "FooStringType",
@@ -358,7 +358,7 @@ def test_string_gen(model_name, basic_string_tc):
 
 @pytest.mark.parametrize("model_name", FULL_MODELS)
 def test_copy(model_name, basic_string_tc):
-    basic_string_tc.fill_default_parsers()
+    basic_string_tc.finalize_data()
     example_store = make_example_store(model_name, basic_string_tc)
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
                              "FooStringType", ALL_TRAIN_SPLIT)
@@ -393,5 +393,6 @@ def test_copy(model_name, basic_string_tc):
     do_train(model, example_store, epochs=30, batch_size=1)
     assert_train_acc(model, example_store, required_accuracy=0.85)
     assert_val_acc(model, example_store, required_accuracy=0.8)
+    print("PASS NON-SERIALIZED")
     check_survives_serialization(model, example_store, basic_string_tc, acc=0.8)
 

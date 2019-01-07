@@ -119,9 +119,9 @@ def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenize
 
 def get_default_encdec_model(examples: ExamplesStore, standard_size=16):
     x_tokenizer, y_tokenizer = _get_default_tokenizers()
-    x_vocab, y_vocab = vocab.make_vocab_from_example_store_and_type_context(examples, x_tokenizer)
+    x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer)
     hidden_size = standard_size
-    y_vectorizer = vectorizers.TorchDeepEmbed(len(y_vocab), hidden_size)
+    tc = examples.type_context
     encoder = encoders.make_default_query_encoder(x_tokenizer, x_vocab, hidden_size)
-    decoder = decoders.get_default_decoder(y_vocab, y_vectorizer, hidden_size)
+    decoder = decoders.get_default_nonretrieval_decoder(tc, hidden_size)
     return EncDecModel(examples.type_context, encoder, decoder)

@@ -8,6 +8,7 @@ from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoic
     ObjectNode, AstNode, ObjectNodeSet, CopyNode
 from ainix_common.parsing.typecontext import AInixType, AInixObject, TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
+from ainix_kernel.model_util import vectorizers
 from ainix_kernel.model_util.attending import attend
 from ainix_kernel.model_util.vectorizers import VectorizerBase, vectorizer_from_save_dict
 from ainix_kernel.model_util.vocab import Vocab, are_indices_valid, TypeContextWrapperVocab
@@ -141,15 +142,15 @@ class TreeRNNDecoder(TreeDecoder):
         self,
         rnn_cell: TreeRNNCell,
         action_selector: ActionSelector,
-        ast_vectorizer: VectorizerBase,
-        ast_vocab: Vocab#,
+        type_vectorizer: VectorizerBase,
+        type_context: TypeContext#,
         #bce_pos_weight=1.0
     ):
         super().__init__()
         self.rnn_cell = rnn_cell
         self.action_selector = action_selector
-        self.ast_vectorizer = ast_vectorizer
-        self.ast_vocab = ast_vocab
+        self.type_vectorizer = type_vectorizer
+        self.type_context = type_context
 
     def _node_to_token_type(self, node: AstNode):
         if isinstance(node, ObjectNode):
@@ -158,11 +159,10 @@ class TreeRNNDecoder(TreeDecoder):
             return node.type_to_choose
         raise ValueError("Unrecognized node")
 
-    def _get_ast_node_vectors(self, node: AstNode) -> torch.Tensor:
+    def _get_obj_choice_features(self, node: ObjectChoiceNode) -> torch.Tensor:
         # TODO (DNGros): Cache during current train component
-        # TODO (DNGros): split ast_vocab into type vocab and object vocab
-        indxs = self.ast_vocab.token_to_index(self._node_to_token_type(node))
-        return self.ast_vectorizer(torch.LongTensor([[indxs]]))[:, 0]
+        indxs = node.type_to_choose.ind
+        return self.type_vectorizer(torch.LongTensor([[indxs]]))[:, 0]
 
     def _inference_objectchoice_step(
         self,
@@ -177,7 +177,7 @@ class TreeRNNDecoder(TreeDecoder):
             raise ModelException()
         outs, hiddens = self.rnn_cell(
             last_hidden=last_hidden,
-            type_to_predict_features=self._get_ast_node_vectors(current_leaf),
+            type_to_predict_features=self._get_obj_choice_features(current_leaf),
             parent_node_features=parent_node_features,
             parent_node_hidden=None
         )
@@ -194,7 +194,7 @@ class TreeRNNDecoder(TreeDecoder):
             new_node = ObjectNode(predicted_action.implementation)
             current_leaf.set_choice(new_node)
             hiddens = self._inference_object_step(
-                new_node, hiddens, memory_tokens, cur_depth + 1, override_action_selector)
+                new_node, outs, hiddens, memory_tokens, cur_depth + 1, override_action_selector)
         else:
             raise ValueError()
         return hiddens
@@ -210,7 +210,7 @@ class TreeRNNDecoder(TreeDecoder):
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         outs, hiddens = self.rnn_cell(
             last_hidden=last_hidden,
-            type_to_predict_features=self._get_ast_node_vectors(teacher_force_path),
+            type_to_predict_features=self._get_obj_choice_features(teacher_force_path),
             parent_node_features=parent_node_features,
             parent_node_hidden=None,
         )
@@ -229,13 +229,14 @@ class TreeRNNDecoder(TreeDecoder):
         assert next_expected_set is not None, "Teacher force path not in expected ast set!"
         next_object_node = teacher_force_path.next_node_not_copy
         hiddens, child_loss = self._train_objectnode_step(
-            hiddens, memory_tokens, next_expected_set, next_object_node,
+            outs, hiddens, memory_tokens, next_expected_set, next_object_node,
             num_parents_with_a_copy_option + (1 if expected.copy_is_known_choice() else 0))
         return hiddens, loss + child_loss
 
     def _inference_object_step(
         self,
         current_leaf: ObjectNode,
+        my_features: torch.Tensor,
         last_hidden: Optional[torch.Tensor],
         memory_tokens: torch.Tensor,
         cur_depth,
@@ -245,7 +246,6 @@ class TreeRNNDecoder(TreeDecoder):
         if cur_depth > self.MAX_DEPTH:
             raise ModelSafePredictError("Max length exceeded")
         latest_hidden = last_hidden
-        my_features = self._get_ast_node_vectors(current_leaf)
         for arg in current_leaf.implementation.children:
             if arg.next_choice_type is not None:
                 new_node = ObjectChoiceNode(arg.next_choice_type)
@@ -259,6 +259,7 @@ class TreeRNNDecoder(TreeDecoder):
 
     def _train_objectnode_step(
         self,
+        my_features: torch.Tensor,
         last_hidden: torch.Tensor,
         memory_tokens: torch.Tensor,
         expected: ObjectNodeSet,
@@ -269,7 +270,6 @@ class TreeRNNDecoder(TreeDecoder):
         assert arg_set_data is not None, "Teacher force path not in expected ast set!"
         latest_hidden = last_hidden
         child_loss = 0
-        my_features = self._get_ast_node_vectors(teacher_force_path)
         for arg in teacher_force_path.implementation.children:
             next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
             next_force_path = teacher_force_path.get_choice_node_for_arg(arg.name)
@@ -383,26 +383,28 @@ class TreeRNNDecoder(TreeDecoder):
         new_type_context: TypeContext,
         new_example_store: ExamplesStore
     ):
-        ast_vocab = TypeContextWrapperVocab.create_from_save_state_dict(
-            state_dict['ast_vocab'], new_type_context)
         instance = cls(
             rnn_cell=state_dict['rnn_cell'],
             action_selector=SimpleActionSelector.create_from_save_state_dict(
                 state_dict['action_selector'], ast_vocab),
             ast_vectorizer=vectorizer_from_save_dict(state_dict['ast_vectorizer']),
-            ast_vocab=ast_vocab
+            type_context=new_type_context
         )
         # Caution, this will probably overwrite any speciallness we do in
         # the custom loading. Another reason to put the copying in its own module.
         instance.load_state_dict(state_dict['my_model_state'])
         return instance
 
-def get_default_decoder(
-    ast_vocab: Vocab,
-    ast_vectorizer: VectorizerBase,
+
+def get_default_nonretrieval_decoder(
+    type_context: TypeContext,
     rnn_hidden_size: int
 ) -> TreeDecoder:
-    rnn_cell = TreeRNNCell(ast_vectorizer.feature_len(), rnn_hidden_size)
+    object_vectorizer = vectorizers.TorchDeepEmbed(type_context.get_object_count(), rnn_hidden_size)
+    type_vectorizer = vectorizers.TorchDeepEmbed(type_context.get_type_count(), rnn_hidden_size)
+    rnn_cell = TreeRNNCell(rnn_hidden_size, rnn_hidden_size)
     action_selector = SimpleActionSelector(rnn_cell.input_size,
-        objectselector.get_default_object_selector(ast_vocab, ast_vectorizer), ast_vocab)
-    return TreeRNNDecoder(rnn_cell, action_selector, ast_vectorizer, ast_vocab)
+                                           objectselector.get_default_object_selector(
+                                               type_context, object_vectorizer), type_context)
+    return TreeRNNDecoder(rnn_cell, action_selector, type_vectorizer, type_context)
+

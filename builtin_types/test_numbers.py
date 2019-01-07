@@ -10,7 +10,7 @@ def type_context():
     context = TypeContext()
     loader.load_path("numbers.ainix.yaml", context)
     loader.load_path("generic_parsers.ainix.yaml", context)
-    context.fill_default_parsers()
+    context.finalize_data()
     return context
 
 

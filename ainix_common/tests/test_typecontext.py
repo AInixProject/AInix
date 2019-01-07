@@ -13,7 +13,7 @@ def test_default_fill():
     single_impl = AInixObject(type_context, "object", "fooType")
     assert new_type.default_type_parser_name is None
     assert single_impl.preferred_object_parser_name is None
-    type_context.fill_default_parsers()
+    type_context.finalize_data()
     assert new_type.default_type_parser._parse_function.__name__ == \
         ainix_common.parsing.parse_primitives.SingleTypeImplParserFunc.__name__
     assert single_impl.preferred_object_parser._parse_function.__name__ == \

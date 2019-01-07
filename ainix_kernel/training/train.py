@@ -128,7 +128,7 @@ if __name__ == "__main__":
                           "mkdir", "echo", "mv", "touch")
     for f in with_example_files:
         loader.load_path(f"builtin_types/{f}.ainix.yaml")
-    type_context.fill_default_parsers()
+    type_context.finalize_data()
 
     index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)
     for f in with_example_files:

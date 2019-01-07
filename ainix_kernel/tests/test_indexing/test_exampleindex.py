@@ -96,7 +96,7 @@ def base_type_context():
 @pytest.fixture(scope="function")
 def numbers_context(base_type_context):
     loader.load_path(f"{BUILTIN_TYPES_PATH}/numbers.ainix.yaml", base_type_context)
-    base_type_context.fill_default_parsers()
+    base_type_context.finalize_data()
     return base_type_context
 
 

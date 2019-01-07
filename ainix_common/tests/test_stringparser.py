@@ -17,7 +17,7 @@ BUILTIN_TYPES_PATH = "../../builtin_types"
 def type_context():
     context = TypeContext()
     loader.load_path(f"{BUILTIN_TYPES_PATH}/command.ainix.yaml", context)
-    context.fill_default_parsers()
+    context.finalize_data()
     return context
 
 
@@ -26,7 +26,7 @@ def numbers_type_context():
     type_context = TypeContext()
     loader.load_path(f"builtin_types/generic_parsers.ainix.yaml", type_context, up_search_limit=3)
     loader.load_path(f"builtin_types/numbers.ainix.yaml", type_context, up_search_limit=3)
-    type_context.fill_default_parsers()
+    type_context.finalize_data()
     return type_context
 
 
@@ -64,7 +64,7 @@ def test_no_arg():
     tc = TypeContext()
     AInixType(tc, "FooType")
     AInixObject(tc, "FooO", "FooType")
-    tc.fill_default_parsers()
+    tc.finalize_data()
     parser = StringParser(tc)
     ast = parser.create_parse_tree("a", "FooType")
 
@@ -79,7 +79,7 @@ def test_no_arg_delegate():
     p = TypeParser(tc, "del_parser", del_parse)
     AInixType(tc, "FooType", "del_parser")
     o = AInixObject(tc, "FooO", "FooType")
-    tc.fill_default_parsers()
+    tc.finalize_data()
     parser = StringParser(tc)
     ast = parser.create_parse_tree("a", "FooType")
     assert ast.next_node_not_copy.implementation == o
@@ -90,7 +90,7 @@ def test_no_arg_max_munch():
     loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", tc)
     AInixType(tc, "FooType", "max_munch_type_parser")
     o = AInixObject(tc, "FooO", "FooType")
-    tc.fill_default_parsers()
+    tc.finalize_data()
     parser = StringParser(tc)
     ast = parser.create_parse_tree("a", "FooType")
     assert ast.next_node_not_copy.implementation == o
@@ -115,7 +115,7 @@ def toy_string_context_optional() -> TypeContext:
                                 tc, f"ParserOf{name}", f'"{name}"'
                            ).name)
                for name in ("a", "bee", "c")]
-    tc.fill_default_parsers()
+    tc.finalize_data()
     return tc
 
 
@@ -353,7 +353,7 @@ def simple_p_tc():
         children=[],
         preferred_object_parser_name="BParser"
     )
-    tc.fill_default_parsers()
+    tc.finalize_data()
     return tc
 
 
@@ -408,7 +408,7 @@ def test_unparse_no_arg():
                      preferred_object_parser_name=create_object_parser_from_grammar(
                          tc, "bar_par", '"here"'
                      ).name)
-    tc.fill_default_parsers()
+    tc.finalize_data()
     parser = StringParser(tc)
     ast = parser.create_parse_tree("foo here", "ft")
     unparser = AstUnparser(tc)
@@ -430,7 +430,7 @@ def test_unparse_no_arg_no_str():
                          tc, "foo_par", '"foo" arg1?'
                      ).name)
     bo = AInixObject(tc, "bo", "bt", [])
-    tc.fill_default_parsers()
+    tc.finalize_data()
     parser = StringParser(tc)
     ast = parser.create_parse_tree("fooasdf", "ft")
     unparser = AstUnparser(tc)
@@ -446,7 +446,7 @@ def test_unparse_copy_node():
     tc = TypeContext()
     ft = AInixType(tc, "ft")
     fo = AInixObject(tc, "fo", "ft")
-    tc.fill_default_parsers()
+    tc.finalize_data()
     ast = ObjectChoiceNode(ft)
     ast.set_choice(CopyNode(ft, 2, 4))
     ast.freeze()
@@ -483,7 +483,7 @@ def test_unparse_optional_arg_copy():
                      preferred_object_parser_name=create_object_parser_from_grammar(
                          tc, "masfoo_parser", '"foo" arg1?'
                      ).name)
-    tc.fill_default_parsers()
+    tc.finalize_data()
     ast = ObjectChoiceNode(ft)
     co = ObjectNode(fo)
     ast.set_choice(co)
@@ -506,7 +506,7 @@ def test_unparse_optional_arg():
                      preferred_object_parser_name=create_object_parser_from_grammar(
                         tc, "masfoo_parser", '"foo" arg1?'
                      ).name)
-    tc.fill_default_parsers()
+    tc.finalize_data()
     parser = StringParser(tc)
     ast = parser.create_parse_tree("foo", "ft")
     unparser = AstUnparser(tc)
@@ -542,7 +542,7 @@ def test_unparse_optional_arg_cust_parser():
 
     fo = AInixObject(tc, "fo", "ft", [arg1],
                      ObjectParser(tc, 'pname', cust_foo_func, unparser).name)
-    tc.fill_default_parsers()
+    tc.finalize_data()
     parser = StringParser(tc)
     ast = parser.create_parse_tree("foo", "ft")
     unparser = AstUnparser(tc)

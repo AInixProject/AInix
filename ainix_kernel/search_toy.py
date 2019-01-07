@@ -6,7 +6,7 @@ from ainix_common.parsing import loader
 type_context = TypeContext()
 loader.load_path("../builtin_types/numbers.ainix.yaml", type_context)
 loader.load_path("../builtin_types/generic_parsers.ainix.yaml", type_context)
-type_context.fill_default_parsers()
+type_context.finalize_data()
 
 index = indexing.exampleindex.ExamplesIndex(type_context)
 exampleloader.load_path("../builtin_types/numbers_examples.ainix.yaml", index)

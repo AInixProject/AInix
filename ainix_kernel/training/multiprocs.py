@@ -28,7 +28,7 @@ def example_store_fac(
         type_context = TypeContext()
         for tf in type_files:
             loader.load_path(tf, type_context)
-        type_context.fill_default_parsers()
+        type_context.finalize_data()
         index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)
         for ef in example_files:
             exampleloader.load_path(ef, index)

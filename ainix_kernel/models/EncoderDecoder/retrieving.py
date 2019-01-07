@@ -4,17 +4,22 @@ import torch
 from torch.distributions import Bernoulli
 
 from ainix_common.parsing.ast_components import AstObjectChoiceSet
-from ainix_common.parsing.typecontext import AInixType
+from ainix_common.parsing.typecontext import AInixType, TypeContext
 from ainix_kernel.model_util.operations import sparse_groupby_sum
 from ainix_kernel.model_util.vocab import are_indices_valid
-from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector
+from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector, ProduceObjectAction
 from ainix_kernel.models.EncoderDecoder.latentstore import LatentStore
 from ainix_kernel.models.EncoderDecoder.nonretrieval import CopySpanPredictor, \
     get_copy_depth_discount
+import torch.nn.functional as F
 
 
 class RetrievalActionSelector(ActionSelector):
-    def __init__(self, latent_store: LatentStore):
+    def __init__(
+        self,
+        latent_store: LatentStore,
+        type_context: TypeContext
+    ):
         super().__init__()
         self.latent_store = latent_store
         self.retrieve_dropout_p = 0.5
@@ -22,6 +27,7 @@ class RetrievalActionSelector(ActionSelector):
         self.max_query_retrieve_count_infer = 10
         self.loss_func = torch.nn.MultiLabelSoftMarginLoss()
         self.span_predictor = CopySpanPredictor(latent_store.latent_size)
+        self.type_context = type_context
 
     def infer_predict(
         self,
@@ -31,7 +37,19 @@ class RetrievalActionSelector(ActionSelector):
     ) -> 'ActionResult':
         nearest_metadata, similarities, nearest_vals = self.latent_store.get_n_nearest_latents(
             latent_vec, type_to_select.name, max_results=self.max_query_retrieve_count_infer)
-        # scale by (train_retrieve * dropout)/infer_retirev_count
+        # TODO think about whether need to scale for dropout???
+
+        # TODO ahh this is way diffferent than the loss function
+        # TODO is softmax best way to do?
+        impl_scores, impl_keys = sparse_groupby_sum(
+            F.softmax(similarities), nearest_metadata.impl_choices)
+        choice_ind = int(impl_keys[impl_scores.argmax()])
+        choose_copy = choice_ind == self.latent_store.COPY_IND
+        if choose_copy:
+            raise NotImplemented()
+        else:
+            impl = self.type_context.get_object_by_ind(choice_ind)
+            return ProduceObjectAction(impl)
 
     def forward_train(
         self,
@@ -49,7 +67,7 @@ class RetrievalActionSelector(ActionSelector):
         similarities = similarities[keep_mask]
         impls_chosen = nearest_metadata.impl_choices[keep_mask]
 
-        impl_scores, impl_keys = sparse_groupby_sum(similarities, impls_chosen)
+        impl_scores, impl_keys = sparse_groupby_sum(F.softmax(similarities), impls_chosen)
         impls_indices_correct = are_indices_valid(impl_keys, self.ast_vocab, expected)
         # TODO weights
         loss = self.loss_func(impl_scores.unsqueeze(), impls_indices_correct.unsqueeze())

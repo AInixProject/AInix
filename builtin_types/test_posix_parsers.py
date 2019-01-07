@@ -272,7 +272,7 @@ def test_string_parse_e2e_multiword(type_context):
          AInixArgument(type_context, "p1", "FooType", arg_data={"position": 0})],
         type_data={"invoke_name": "hello"}
     )
-    type_context.fill_default_parsers()
+    type_context.finalize_data()
     parser = StringParser(type_context)
     ast = parser.create_parse_tree("hello -a foo", "CommandSequence")
     unparser = AstUnparser(type_context)

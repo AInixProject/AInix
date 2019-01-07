@@ -1,3 +1,4 @@
+import numpy as np
 from collections import defaultdict
 from typing import List, Optional, Dict
 
@@ -46,6 +47,7 @@ class AInixType:
         self.default_type_parser_name = default_type_parser_name
         self.default_object_parser_name = default_object_parser_name
         self.allowed_attributes = allowed_attributes if allowed_attributes else []
+        self.ind: Optional[int] = None
         type_context.register_type(self)
 
     @property
@@ -109,6 +111,7 @@ class AInixObject:
         self.type_data = pmap(type_data or {})
         self.preferred_object_parser_name = preferred_object_parser_name
         self._type_context.register_object(self)
+        self.ind: Optional[int] = None
 
     @property
     def type(self) -> AInixType:
@@ -261,7 +264,9 @@ class TypeContext:
             Dict[str, ainix_common.parsing.parse_primitives.ObjectParser] = {}
         self._type_name_to_implementations: Dict[str, List[AInixObject]] = \
             defaultdict(list)
-        self._source_history: List[str] = []
+        self.ind_to_type = []
+        self.ind_to_object = []
+        self._copy_ind = None
 
     def _resolve_type(self, type):
         """Converts a string into a type object_name if needed"""
@@ -286,7 +291,10 @@ class TypeContext:
             'ainix_common.parsing.parse_primitives.ObjectParser':
         return self._name_to_object_parser.get(name, None)
 
-    def get_implementations(self, type):
+    def get_object_by_ind(self, ind: int):
+        return self.ind_to_type[ind]
+
+    def get_implementations(self, type) -> List[AInixObject]:
         type = self._resolve_type(type)
         return self._type_name_to_implementations[type.name]
 
@@ -295,6 +303,12 @@ class TypeContext:
 
     def get_all_types(self):
         return self._name_to_type.values()
+
+    def get_type_count(self) -> int:
+        return len(self._name_to_type)
+
+    def get_object_count(self) -> int:
+        return len(self._name_to_object)
 
     def register_type(self, new_type: AInixType) -> None:
         """Registers a type to be tracked. This should be called automatically when
@@ -384,7 +398,7 @@ class TypeContext:
             raise ValueError("Object parser", new_parser.parser_name, "already exists")
         self._name_to_object_parser[new_parser.parser_name] = new_parser
 
-    def fill_default_parsers(self):
+    def _fill_default_types(self):
         """Tries to fill defaults for any types that have None as a default parser
         and there is a valid default available. This includes the SingleTypeImplParser
         for types with only one implementation."""
@@ -397,9 +411,30 @@ class TypeContext:
                 continue
             no_children = len(object_.children) == 0
             no_default = object_.preferred_object_parser_name is None and \
-                object_.type.default_object_parser_name is None
+                         object_.type.default_object_parser_name is None
             if no_children and no_default:
                 self._link_no_args_obj_parser(object_)
+
+    def _fill_indicies_fresh(self):
+        """Iterates through the types and objects, and gives each a integer index."""
+        i = 0
+        self.ind_to_object = np.array([None] * len(self._name_to_object))
+        for object_ in sorted(self._name_to_object.values()):
+            object_.ind = i
+            self.ind_to_object[i] = object_
+            i += 1
+        i = 0
+        self.ind_to_type = np.array([None] * len(self._name_to_type))
+        for type_ in sorted(self._name_to_type.values()):
+            type_.ind = i
+            self.ind_to_type[i] = type_
+            i += 1
+
+    def finalize_data(self):
+        """Called once all desired data has been registered to postprocessing"""
+        self._fill_default_types()
+        self._fill_indicies_fresh()
+        # TODO nonfresh load
 
     def verify(self):
         """After you have instantiated all the types and objects you need in this

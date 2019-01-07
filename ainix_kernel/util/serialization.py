@@ -22,7 +22,7 @@ def restore(file_name) -> Tuple[TypeContext, StringTypeTranslateCF]:
     save_dict = torch.load(file_name)
     type_context, loader = TypeContextDataLoader.restore_from_save_dict(save_dict['type_loader'])
     allspecials.load_all_special_types(type_context)
-    type_context.fill_default_parsers()
+    type_context.finalize_data()
     # Hard code model type. Should not do this...
     model = EncDecModel.create_from_save_state_dict(save_dict['model'], type_context, None)
     model.end_train_session()

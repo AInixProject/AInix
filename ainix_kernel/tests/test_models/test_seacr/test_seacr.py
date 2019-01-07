@@ -24,7 +24,7 @@ def base_type_context():
 @pytest.fixture(scope="function")
 def numbers_type_context(base_type_context):
     loader.load_path(f"{BUILTIN_TYPES_PATH}/numbers.ainix.yaml", base_type_context)
-    base_type_context.fill_default_parsers()
+    base_type_context.finalize_data()
     return base_type_context
 
 
@@ -32,7 +32,7 @@ def test_only_one_option(base_type_context):
     # Create some types
     foo_type = AInixType(base_type_context, "FooType")
     AInixObject(base_type_context, "FooObj", "FooType")
-    base_type_context.fill_default_parsers()
+    base_type_context.finalize_data()
     # Create an index
     index = ExamplesIndex(base_type_context, ExamplesIndex.get_default_ram_backend())
     index.add_many_to_many_default_weight(["example"], ["y"], index.DEFAULT_X_TYPE, "FooType")

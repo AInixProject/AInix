@@ -41,7 +41,7 @@ def test_word_parts():
     _create_root_types(tc)
     _create_all_word_parts(
         tc, [('foo', True), ("bar", True), ("fo", True), ("!", False)])
-    tc.fill_default_parsers()
+    tc.finalize_data()
     parser = StringParser(tc)
     ast = parser.create_parse_tree("foo", WORD_PART_TYPE_NAME)
     word_part_o = ast.next_node_not_copy
@@ -66,7 +66,7 @@ def test_word_parts_upper():
     _create_root_types(tc)
     _create_all_word_parts(
         tc, [('foo', True), ("bar", True), ("fo", True), ("!", False)])
-    tc.fill_default_parsers()
+    tc.finalize_data()
     parser = StringParser(tc)
     ast = parser.create_parse_tree("FOO", WORD_PART_TYPE_NAME)
     word_part_o = ast.next_node_not_copy
@@ -91,7 +91,7 @@ def test_word_parts_2():
     _create_root_types(tc)
     _create_all_word_parts(
         tc, [('foo', True), ("bar", True), ("fo", True), ("!", False)])
-    tc.fill_default_parsers()
+    tc.finalize_data()
     parser = StringParser(tc)
     ast = parser.create_parse_tree("fooBarBaz", WORD_PART_TYPE_NAME)
     word_part_o = ast.next_node_not_copy
@@ -119,7 +119,7 @@ def test_word_parts_3():
     _create_root_types(tc)
     _create_all_word_parts(
         tc, [('f', True), ('ooo', True), ("bar", True), ("!", False)])
-    tc.fill_default_parsers()
+    tc.finalize_data()
     word_part_type = tc.get_type_by_name(WORD_PART_TYPE_NAME)
     parser = StringParser(tc)
     node, data = parser._parse_object_choice_node("fooo.bar", word_part_type.default_type_parser,

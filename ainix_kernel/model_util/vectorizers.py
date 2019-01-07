@@ -54,7 +54,7 @@ class TorchDeepEmbed(VectorizerBase):
     """
     SAVE_STATE_NAME_VALUE = "TorchDeepEmbed"
 
-    def __init__(self, vocab_size: int, embed_dim: int):
+    def __init__(self, vocab_size: object, embed_dim: object) -> object:
         super().__init__()
         self.embed_dim = embed_dim
         self.embed = torch.nn.Embedding(vocab_size, embed_dim)

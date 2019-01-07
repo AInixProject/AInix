@@ -183,11 +183,6 @@ class CounterVocabBuilder(VocabBuilder):
 
 
 class TypeContextWrapperVocab(Vocab):
-    """A vocab that just wraps all the objects and the types in a TypeContext as
-    tokens. It allows for mapping of objects and types into indicies. This
-    functionallity is not just built into a type context because vocabs have
-    use some torch methods and we are trying to keep ainix_common non-dependent
-    on pytorch (I don't know this might be not really necessary though...)."""
     def __init__(self, type_context: TypeContext):
         self.itos: typing.Sequence[Union[AInixType, AInixObject]] = \
             np.array(list(type_context.get_all_objects()) + list(type_context.get_all_types()))
@@ -313,14 +308,41 @@ def make_vocab_from_example_store_and_type_context(
     return x_vocab_builder.produce_vocab(), y_vocab
 
 
+def make_x_vocab_from_examples(
+    example_store: ExamplesStore,
+    x_tokenizer: Tokenizer,
+    x_vocab_builder: VocabBuilder = None
+) -> Vocab:
+    """
+    Args:
+        example_store: The example store to generate x values from
+        x_tokenizer: The tokenizer to generate the tokens we will put in the x vocab
+        x_vocab_builder: A builder the x_tokenizer
+
+    Returns:
+        The x vocab
+    """
+    if x_vocab_builder is None:
+        x_vocab_builder = CounterVocabBuilder(min_freq=1)
+
+    for example in example_store.get_all_examples():
+        x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.xquery)[0])
+    return x_vocab_builder.produce_vocab()
+
+
+def torch_inds_to_objects(indicies: torch.Tensor, type_context: TypeContext) -> np.ndarray:
+    # TODO vectorize
+    return type_context.ind_to_object[indicies.numpy()]
+
+
 def are_indices_valid(
     indices: torch.Tensor,
-    vocab: Vocab[Union[AInixType, AInixObject]],
+    tc: TypeContext,
     valid_set: AstObjectChoiceSet
 ):
     """Checks some set of indices into a vocab against a AstSet. Returns a tensor
     with value of 1 where known valid and 0 otherwise"""
-    objects = vocab.torch_indices_to_tokens(indices)
+    objects = torch_inds_to_objects(indices, tc)
     valid_func = np.vectorize(
         lambda n: 1 if valid_set.is_known_choice(n.name) else 0,
         otypes='f')

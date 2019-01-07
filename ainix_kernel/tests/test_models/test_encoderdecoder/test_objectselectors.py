@@ -9,31 +9,31 @@ from ainix_kernel.models.EncoderDecoder.objectselector import *
 
 SELECTORS = ["VectorizedSelector"]
 
-def build_types() -> Tuple[TypeImplTensorMap, Vocab, TypeContext]:
+def build_types() -> Tuple[TypeImplTensorMap, TypeContext]:
     tc = TypeContext()
-    counter = Counter()
-    counter[AInixType(tc, "Foo")] += 1
-    counter[AInixObject(tc, "oFoo1", "Foo")] += 1
-    counter[AInixObject(tc, "oFoo2", "Foo")] += 1
-    counter[AInixObject(tc, "oFoo3", "Foo")] += 1
-    counter[AInixObject(tc, "oFoo4", "Foo")] += 1
-    counter[AInixType(tc, "Bar")] += 1
-    counter[AInixObject(tc, "oBar1", "Bar")] += 1
-    counter[AInixObject(tc, "oBar2", "Bar")] += 1
-    counter[AInixType(tc, "Baz")] += 1
-    counter[AInixObject(tc, "oBaz1", "Baz")] += 1
-    ast_vocab = CounterVocab(counter, specials=[])
-    return TypeImplTensorMap(ast_vocab), ast_vocab, tc
+    AInixType(tc, "Foo")
+    AInixObject(tc, "oFoo1", "Foo")
+    AInixObject(tc, "oFoo2", "Foo")
+    AInixObject(tc, "oFoo3", "Foo")
+    AInixObject(tc, "oFoo4", "Foo")
+    AInixType(tc, "Zar")
+    AInixObject(tc, "oZar1", "Zar")
+    AInixObject(tc, "oZar2", "Zar")
+    AInixType(tc, "Zaz")
+    AInixObject(tc, "oZaz1", "Zaz")
+    tc.finalize_data()
+    return TypeImplTensorMap(tc), tc
 
 
 class ToyVectorizer(VectorizerBase):
-    def __init__(self, vocab):
+    def __init__(self, type_context: TypeContext):
         super().__init__()
-        self.lookup = torch.zeros(len(vocab), 3)
-        self.lookup[6] = torch.Tensor([1, 1, 1])
-        self.lookup[7] = torch.Tensor([-1, -1, -1])
-        self.lookup[8] = torch.Tensor([3, 3, 3])
-        self.lookup[5] = torch.Tensor([10, 0, 1])
+        self.lookup = torch.zeros(type_context.get_object_count(), 3)
+        self.lookup[0] = torch.Tensor([1, 1, 1])
+        self.lookup[1] = torch.Tensor([-1, -1, -1])
+        self.lookup[2] = torch.Tensor([3, 3, 3])
+        self.lookup[3] = torch.Tensor([10, 0, 1])
+        self.lookup[6] = torch.Tensor([3, 5, 1])
 
     def feature_len(self) -> int:
         return 3
@@ -44,8 +44,8 @@ class ToyVectorizer(VectorizerBase):
 
 def build_selector(selector_name) -> Tuple[ObjectSelector, TypeContext]:
     if selector_name == "VectorizedSelector":
-        type_m, vocab, tc = build_types()
-        vectorizer = ToyVectorizer(vocab)
+        type_m, tc = build_types()
+        vectorizer = ToyVectorizer(tc)
         return VectorizedObjectSelector(type_m, vectorizer), tc
 
 
@@ -56,11 +56,11 @@ def test_query(selector_name):
     # This is sort of fragile test as it explodes if change the toy inputs, but it works
     assert len(impls) == 1
     assert len(scores) == 1
-    assert torch.all(scores[0] == torch.Tensor([3, -3, 9, 0]))
+    assert torch.all(scores[0] == torch.Tensor([3, -3, 9, 11]))
     impls, scores = instance(torch.Tensor([[1, 1, 1], [1, 0, -1]]),
                              [type_context.get_type_by_name("Foo"),
-                              type_context.get_type_by_name("Baz")])
+                              type_context.get_type_by_name("Zaz")])
     assert len(impls) == 2
     assert len(scores) == 2
-    assert torch.all(scores[0] == torch.Tensor([3, -3, 9, 0]))
-    assert torch.all(scores[1] == torch.Tensor([9]))
+    assert torch.all(scores[0] == torch.Tensor([3, -3, 9, 11]))
+    assert torch.all(scores[1] == torch.Tensor([2]))

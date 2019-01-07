@@ -70,7 +70,7 @@ def numbers_type_context():
     type_context = TypeContext()
     loader.load_path(f"builtin_types/generic_parsers.ainix.yaml", type_context, up_search_limit=3)
     loader.load_path(f"builtin_types/numbers.ainix.yaml", type_context, up_search_limit=3)
-    type_context.fill_default_parsers()
+    type_context.finalize_data()
     return type_context
 
 
