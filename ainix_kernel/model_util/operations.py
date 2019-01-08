@@ -40,5 +40,5 @@ class MultilabelKindaCategoricalCrossEntropy(torch.nn.Module):
 
     This means the valid labels are not
     """
-    raise NotImplemented()
+    pass  # not implemented
 

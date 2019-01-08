@@ -10,9 +10,10 @@ from ainix_common.parsing.typecontext import TypeContext, AInixObject, AInixType
 from ainix_kernel.indexing.examplestore import ExamplesStore
 import torch.nn.functional as F
 
-class LatentStore:
-    COPY_IND = 10000
+COPY_IND = 10000
 
+
+class LatentStore:
     def __init__(self, type_context: TypeContext, latent_size: int):
         self.latent_size = latent_size
         # TODO (DNGros): Convert this to using vocab indexes rather than strings
@@ -27,17 +28,17 @@ class LatentStore:
         example_id: int,
         ydepth: int,
     ):
-        ind = self.COPY_IND if node.copy_was_chosen else node.next_node_not_copy.implementation.ind
+        ind = COPY_IND if node.copy_was_chosen else node.next_node_not_copy.implementation.ind
         self.type_ind_to_latents[node.type_to_choose.ind].add_latent(
             latent, example_id, ydepth, ind)
 
     def get_n_nearest_latents(
         self,
         query_latent: torch.Tensor,
-        type_name: str,
+        typ: AInixType,
         max_results=50
     ) -> Tuple['LatentMetadataWrapper', torch.Tensor, torch.Tensor]:
-        return self.type_name_to_latents[type_name].get_n_nearest_latents(
+        return self.type_ind_to_latents[typ.ind].get_n_nearest_latents(
             query_latent, max_results
         )
 
