@@ -104,8 +104,17 @@ class TorchLatentStore(LatentStore):
 
 
 class LatentStoreBuilder(ABC):
-    pass
+    @abstractmethod
+    def add_example(
+        self,
+        example_id: int,
+        ast: ObjectChoiceNode
+    ):
+        pass
 
+    @abstractmethod
+    def produce_result(self) -> LatentStore:
+        pass
 
 class TorchLatentStoreBuilder(LatentStoreBuilder):
     def __init__(self, num_types: int, latent_size: int):
