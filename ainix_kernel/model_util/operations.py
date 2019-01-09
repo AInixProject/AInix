@@ -4,6 +4,20 @@ from typing import Tuple
 import torch
 
 
+def manual_bincount(groups: torch.Tensor, weights: torch.Tensor = None):
+    """A manual version of torch.bincount since as of torch 1.0.0 backprop isn't
+    supported on bincount"""
+    max_group = int(torch.max(groups))
+    counts = torch.zeros((max_group + 1,))
+    for g in range(max_group + 1):
+        matching = groups == g
+        if weights is None:
+            counts[g] = torch.sum(matching)
+        else:
+            counts[g] = torch.sum(weights[matching])
+    return counts
+
+
 def sparse_groupby_sum(
     values: torch.Tensor,
     value_keys: torch.Tensor,
@@ -23,7 +37,9 @@ def sparse_groupby_sum(
     """
     # TODO (figure out dims / batching). Right now it flattens it
     group_keys, group_ind_for_each_val = torch.unique(value_keys, sort_out_keys, True)
-    reduced_vals = torch.bincount(group_ind_for_each_val, values)
+    # Actual torch bincount apparently doesn't support backprop
+    #reduced_vals = torch.bincount(group_ind_for_each_val, values)
+    reduced_vals = manual_bincount(group_ind_for_each_val, values)
     return reduced_vals, group_keys
 
 

@@ -4,10 +4,10 @@ from ainix_kernel.tests.testutils.torch_test_utils import eps_eq_at, torch_epsil
 
 def test_single_store():
     instance = SingleTypeLatentStore(2)
-    instance.add_latent(torch.Tensor([1,2]), 0, 2, 3)
-    instance.add_latent(torch.Tensor([3,1]), 1, 2, 1)
-    instance.add_latent(torch.Tensor([-3,1]), 2, 2, 9)
-    instance.add_latent(torch.Tensor([2,-1]), 3, 2, 1)
+    instance.add_latent(torch.Tensor([1, 2]), 0, 2, 3)
+    instance.add_latent(torch.Tensor([3, 1]), 1, 2, 1)
+    instance.add_latent(torch.Tensor([-3, 1]), 2, 2, 9)
+    instance.add_latent(torch.Tensor([2, -1]), 3, 2, 1)
     instance.set_read()
 
     metadata, similarities, v = instance.get_n_nearest_latents(torch.Tensor([1, 1]), 10)

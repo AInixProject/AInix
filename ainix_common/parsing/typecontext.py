@@ -292,7 +292,7 @@ class TypeContext:
         return self._name_to_object_parser.get(name, None)
 
     def get_object_by_ind(self, ind: int):
-        return self.ind_to_type[ind]
+        return self.ind_to_object[ind]
 
     def get_implementations(self, type) -> List[AInixObject]:
         type = self._resolve_type(type)

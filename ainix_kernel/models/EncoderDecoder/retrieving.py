@@ -1,3 +1,4 @@
+import random
 from typing import List
 
 import torch
@@ -18,16 +19,23 @@ class RetrievalActionSelector(ActionSelector):
     def __init__(
         self,
         latent_store: LatentStore,
-        type_context: TypeContext
+        type_context: TypeContext,
+        retrieve_dropout_p: int = 0.5
     ):
         super().__init__()
         self.latent_store = latent_store
-        self.retrieve_dropout_p = 0.5
+        self.retrieve_dropout_p = retrieve_dropout_p
         self.max_query_retrieve_count_train = 50
         self.max_query_retrieve_count_infer = 10
-        self.loss_func = torch.nn.MultiLabelSoftMarginLoss()
+        #self.loss_func = torch.nn.MultiLabelSoftMarginLoss()
+        self.loss_func = torch.nn.BCELoss()
         self.span_predictor = CopySpanPredictor(latent_store.latent_size)
         self.type_context = type_context
+        if self.latent_store.allow_gradients:
+            print("LATENTSTORE PARAMETERS", list(self.latent_store.parameters()))
+            for i, p in enumerate(self.latent_store.parameters()):
+                param = torch.nn.Parameter(p.data)
+                self.register_parameter(f"latent_store_values_{i}", param)
 
     def infer_predict(
         self,
@@ -36,7 +44,7 @@ class RetrievalActionSelector(ActionSelector):
         type_to_select: AInixType
     ) -> 'ActionResult':
         nearest_metadata, similarities, nearest_vals = self.latent_store.get_n_nearest_latents(
-            latent_vec, type_to_select.name, max_results=self.max_query_retrieve_count_infer)
+            latent_vec, type_to_select, max_results=self.max_query_retrieve_count_infer)
         # TODO think about whether need to scale for dropout???
 
         # TODO ahh this is way diffferent than the loss function
@@ -64,6 +72,8 @@ class RetrievalActionSelector(ActionSelector):
             latent_vec[0], types_to_select[0],
             max_results=self.max_query_retrieve_count_train)
         keep_mask = torch.rand(*nearest_metadata.impl_choices.shape) > self.retrieve_dropout_p
+        if float(torch.sum(keep_mask)) == 0:
+            keep_mask[random.randint(0, len(keep_mask) - 1)] = 1
         similarities = similarities[keep_mask]
         impls_chosen = nearest_metadata.impl_choices[keep_mask]
 

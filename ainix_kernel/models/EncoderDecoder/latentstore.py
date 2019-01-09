@@ -13,13 +13,16 @@ import torch.nn.functional as F
 COPY_IND = 10000
 
 
-class LatentStore:
-    def __init__(self, type_context: TypeContext, latent_size: int):
+class LatentStore(torch.nn.Module):
+    def __init__(self, type_context: TypeContext, latent_size: int, trainable_vals: bool = False):
+        super().__init__()
         self.latent_size = latent_size
         # TODO (DNGros): Convert this to using vocab indexes rather than strings
         self.type_ind_to_latents: List[SingleTypeLatentStore] = \
-            [SingleTypeLatentStore(latent_size) for type in type_context.get_all_types()]
+            [SingleTypeLatentStore(latent_size, trainable_vals)
+             for type in type_context.get_all_types()]
         self.is_in_write_mode = True
+        self.allow_gradients = trainable_vals
 
     def add_latent(
         self,
@@ -29,8 +32,10 @@ class LatentStore:
         ydepth: int,
     ):
         ind = COPY_IND if node.copy_was_chosen else node.next_node_not_copy.implementation.ind
+        latent_copy = latent.detach()
+        latent_copy.requires_grad = self.allow_gradients
         self.type_ind_to_latents[node.type_to_choose.ind].add_latent(
-            latent, example_id, ydepth, ind)
+            latent_copy, example_id, ydepth, ind)
 
     def get_n_nearest_latents(
         self,
@@ -46,6 +51,13 @@ class LatentStore:
         self.is_in_write_mode = False
         for s in self.type_ind_to_latents:
             s.set_read()
+        if self.allow_gradients:
+            self.type_ind_to_latents = torch.nn.ModuleList(self.type_ind_to_latents)
+
+    #def parameters(self):
+    #    if not self.allow_gradients:
+    #        return []
+    #    return (v.parameters() for v in self.type_ind_to_latents)
 
 
 # TODO special value for copy
@@ -75,14 +87,17 @@ class LatentMetadataWrapper:
         return self.data[:, 2]
 
 
-class SingleTypeLatentStore:
-    def __init__(self, latent_size: int):
+class SingleTypeLatentStore(torch.nn.Module):
+    def __init__(self, latent_size: int, trainable_vals: bool = False):
+        super().__init__()
         self.is_in_write_mode = True
         self.latents = []
         self.latent_metadatas = []  # For data format see LatentMetadataWrapper
+        self.trainable_vals = trainable_vals
 
     def _get_similarities(self, query_latent: torch.Tensor) -> torch.Tensor:
         # Use dot product. Maybe should use cosine similarity?
+        #print(f"LATENTSTORE {self.latents}")
         return torch.sum(query_latent*self.latents, dim=1)
 
     def add_latent(
@@ -122,6 +137,13 @@ class SingleTypeLatentStore:
     def set_read(self):
         self.is_in_write_mode = False
         self.latents = torch.stack(self.latents)
+        if self.trainable_vals:
+            self.latents = torch.nn.Parameter(self.latents)
         self.latent_metadatas = torch.LongTensor(self.latent_metadatas)
+
+    #def parameters(self):
+    #    if not self.trainable_vals:
+    #        return None
+    #    return self.latents
 
 
