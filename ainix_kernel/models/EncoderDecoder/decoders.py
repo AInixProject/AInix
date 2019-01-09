@@ -17,6 +17,7 @@ from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector, Co
     ProduceObjectAction, PathForceSpySelector
 from ainix_kernel.models.EncoderDecoder.nonretrieval import SimpleActionSelector
 from ainix_kernel.models.EncoderDecoder.objectselector import ObjectSelector
+from ainix_kernel.models.EncoderDecoder.retrieving import RetrievalActionSelector
 from ainix_kernel.models.model_types import ModelException, ModelSafePredictError
 import numpy as np
 import torch.nn.functional as F
@@ -86,6 +87,13 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
     ):
         raise NotImplemented
 
+    def get_latent_select_states(
+        self,
+        query_summary: torch.Tensor,
+        memory_encoding: torch.Tensor,
+        force_path: ObjectChoiceNode
+    ) -> Tuple[List[torch.Tensor], List[int]]:
+        raise NotImplemented()
 
 class TreeRNNCell(nn.Module):
     """An rnn cell in a tree RNN"""
@@ -323,7 +331,7 @@ class TreeRNNDecoder(TreeDecoder):
         query_summary: torch.Tensor,
         memory_encoding: torch.Tensor,
         force_path: ObjectChoiceNode
-    ) -> Tuple[List[torch.Tensor], List[int]]:
+    ) -> List[torch.Tensor]:
         was_in_traing = self.training
         if was_in_traing:
             self.eval()
@@ -335,7 +343,10 @@ class TreeRNNDecoder(TreeDecoder):
                 root_type=force_path.type_to_choose,
                 override_action_selector=spy_selector
             )
-            return spy_selector.lattents_log, spy_selector.y_inds_log
+            lattents_log = spy_selector.lattents_log
+            assert spy_selector.y_inds_log == list(range(0, len(lattents_log)*2, 2)), \
+                f"what {spy_selector.y_inds_log}"
+            return lattents_log
         finally:
             if was_in_traing:
                 self.train()
@@ -408,3 +419,14 @@ def get_default_nonretrieval_decoder(
                                                type_context, object_vectorizer), type_context)
     return TreeRNNDecoder(rnn_cell, action_selector, type_vectorizer, type_context)
 
+
+def get_default_retrieval_decoder(
+    type_context: TypeContext,
+    rnn_hidden_size: int,
+    examples: ExamplesStore
+) -> TreeDecoder:
+    type_vectorizer = vectorizers.TorchDeepEmbed(type_context.get_type_count(), rnn_hidden_size)
+    rnn_cell = TreeRNNCell(rnn_hidden_size, rnn_hidden_size)
+    raise NotImplemented()
+    #action_selector = RetrievalActionSelector(, type_context, 0.5)
+    #return TreeRNNDecoder(rnn_cell, action_selector, type_vectorizer, type_context)

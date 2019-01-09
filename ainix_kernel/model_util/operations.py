@@ -58,3 +58,14 @@ class MultilabelKindaCategoricalCrossEntropy(torch.nn.Module):
     """
     pass  # not implemented
 
+
+#class BackwardsMask(torch.autograd.Function):
+#    """An identity function, but lets only certain functions be non-zero"""
+#    @staticmethod
+#    def forward(ctx, input, select_mask):
+#        pass
+#
+#    @staticmethod
+#    def forward(ctx, input, select_mask):
+#        pass
+

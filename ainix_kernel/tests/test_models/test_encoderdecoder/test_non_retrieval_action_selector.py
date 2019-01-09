@@ -72,6 +72,7 @@ def test_train_retriever_selector_no_train(latent_store_stuff):
 def test_train_retriever_selector(latent_store_stuff):
     latent_store, tc, valid_choices = latent_store_stuff
     inputs = [(torch.LongTensor([i]), c) for i, c in enumerate(valid_choices)]
+    torch.manual_seed(1)
     embed = torch.nn.Embedding(len(valid_choices), 3)
     instance = RetrievalActionSelector(latent_store, tc, retrieve_dropout_p=0)
     params = itertools.chain(instance.parameters(), embed.parameters())
@@ -87,14 +88,15 @@ def test_train_retriever_selector(latent_store_stuff):
         optim.step()
         return loss
 
-    for e in range(3000):
-        print("LOSS", do_train())
-        print("EMBED", embed.weight)
+    for e in range(800):
+        do_train()
+        #print("LOSS", do_train())
+        #print("EMBED", embed.weight)
 
     for x, y in inputs:
         x_v = embed(x)
         pred = instance.infer_predict(x_v, None, tc.get_type_by_name("FT"))
-        print("X_V", x_v)
-        print("pred", pred)
+        #print("X_V", x_v)
+        #print("pred", pred)
         assert isinstance(pred, ProduceObjectAction)
         assert y.is_known_choice(pred.implementation.name)

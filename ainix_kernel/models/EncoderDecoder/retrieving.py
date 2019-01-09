@@ -28,6 +28,7 @@ class RetrievalActionSelector(ActionSelector):
         self.max_query_retrieve_count_train = 50
         self.max_query_retrieve_count_infer = 10
         #self.loss_func = torch.nn.MultiLabelSoftMarginLoss()
+        # TODO figure out a better loss
         self.loss_func = torch.nn.BCELoss()
         self.span_predictor = CopySpanPredictor(latent_store.latent_size)
         self.type_context = type_context

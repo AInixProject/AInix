@@ -83,6 +83,14 @@ class EncDecModel(StringTypeTranslateCF):
     def get_string_tokenizer(self) -> tokenizers.StringTokenizer:
         return self.query_encoder.get_tokenizer()
 
+    def get_latent_select_states(
+        self,
+        x_string: str,
+        force_path: ObjectChoiceNode
+    ) -> Tuple[List[torch.Tensor], List[int]]:
+        query_summary, encoded_tokens = self.query_encoder([x_string])
+        return self.decoder.get_latent_select_states(query_summary, encoded_tokens, force_path)
+
     def get_save_state_dict(self) -> dict:
         # TODO (DNGros): actually handle serialization rather than just letting pickling handle it
         # Custom handling has advantages in better handling stuff changed values on only parts of
@@ -117,11 +125,15 @@ def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenize
     return NonLetterTokenizer(), AstValTokenizer()
 
 
-def get_default_encdec_model(examples: ExamplesStore, standard_size=16):
+def get_default_encdec_model(examples: ExamplesStore, standard_size=16,
+                             use_retrieval_decoder: bool = False):
     x_tokenizer, y_tokenizer = _get_default_tokenizers()
     x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer)
     hidden_size = standard_size
     tc = examples.type_context
     encoder = encoders.make_default_query_encoder(x_tokenizer, x_vocab, hidden_size)
-    decoder = decoders.get_default_nonretrieval_decoder(tc, hidden_size)
+    if not use_retrieval_decoder:
+        decoder = decoders.get_default_nonretrieval_decoder(tc, hidden_size)
+    else:
+        decoder = decoders.get_default_retrieval_decoder(tc, hidden_size, examples)
     return EncDecModel(examples.type_context, encoder, decoder)
