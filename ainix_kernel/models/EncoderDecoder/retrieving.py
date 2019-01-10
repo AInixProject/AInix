@@ -75,8 +75,8 @@ class RetrievalActionSelector(ActionSelector):
         if not self.is_in_training_session:
             raise ValueError("must be in training session to train")
         assert len(types_to_select) == len(example_inds) == len(dfs_depths) == 1
-        self.latent_store_trainer.update_value(
-            types_to_select[0].ind, example_inds[0], dfs_depths[0], latent_vec[0])
+        #self.latent_store_trainer.update_value(
+        #    types_to_select[0].ind, example_inds[0], dfs_depths[0], latent_vec[0])
         nearest_datas, similarities = self.latent_store.get_n_nearest_latents(
             latent_vec[0], types_to_select[0].ind,
             max_results=self.max_query_retrieve_count_train)
@@ -88,6 +88,7 @@ class RetrievalActionSelector(ActionSelector):
 
         impl_scores, impl_keys = sparse_groupby_sum(F.softmax(similarities), impls_chosen)
         impls_indices_correct = are_indices_valid(impl_keys, self.type_context, expected)
+        impls_indices_correct.clamp(0, 1.0)
         # TODO weights
         loss = self.loss_func(impl_scores.unsqueeze(0), impls_indices_correct.unsqueeze(0))
         if expected.copy_is_known_choice():
@@ -98,7 +99,7 @@ class RetrievalActionSelector(ActionSelector):
 
     def start_train_session(self):
         self.is_in_training_session = True
-        self.latent_store_trainer = self.latent_store.get_default_trainer()
+        #self.latent_store_trainer = self.latent_store.get_default_trainer()
 
     def end_train_session(self):
         self.is_in_training_session = False

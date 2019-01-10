@@ -50,6 +50,15 @@ class TypeTranslateCFTrainer:
         for epoch in range(epochs):
             print(f"Epoch {epoch}")
             self._train_one_epoch(epoch)
+            if hasattr(self.model, "plz_train_this_latent_store_thanks"):
+                # TODO wasdfahwerdfgv I should sleep
+                print("updatedin the thing 🦔🦔")
+                latent_store = self.model.plz_train_this_latent_store_thanks("SDf")
+                if False and latent_store:
+                    update_latent_store_from_examples(self.model, latent_store, self.example_store,
+                                                      self.replacer, self.string_parser,
+                                                      (DataSplits.TRAIN,))
+
         self.model.end_train_session()
 
     def evaluate(
@@ -113,6 +122,7 @@ def update_latent_store_from_examples(
     parser: StringParser,
     splits: Tuple[DataSplits]
 ):
+    model.set_in_eval_mode()
     for example in examples.get_all_examples(splits):
         # TODO multi sampling replacers
         x, y = replacer.strings_replace(example.xquery, example.ytext)
@@ -128,6 +138,7 @@ def update_latent_store_from_examples(
             assert isinstance(n, ObjectChoiceNode)
             latent_store.set_latent_for_example(l, n.type_to_choose.ind,
                                                 example.example_id, dfs_depth)
+    model.set_in_train_mode()
 
 
 # A bunch of code for running the thing which really shouldn't be here.

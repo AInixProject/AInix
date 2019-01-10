@@ -65,6 +65,7 @@ class EncDecModel(StringTypeTranslateCF):
         query_summary, encoded_tokens = self.query_encoder(xs)
         loss = self.decoder.forward_train(
             query_summary, encoded_tokens, ys, teacher_force_paths, example_ids)
+        print("SDFSDFSDF LOSS 🦔", loss)
         loss.backward()
         self.optimizer.step(None)
         return loss
@@ -132,6 +133,12 @@ class EncDecModel(StringTypeTranslateCF):
             tree_decoder=decoder
         )
 
+    def plz_train_this_latent_store_thanks(self):
+        """Really crappy interface for getting the trainer to update the latent store at
+        the end of an epoch because I want to sleep and annoyed and just want this to work
+        and don't feel like designing a good interface."""
+        return None
+
 
 # Factory methods for different versions
 def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenizer]:
@@ -150,5 +157,9 @@ def get_default_encdec_model(examples: ExamplesStore, standard_size=16, replacer
         decoder = decoders.get_default_nonretrieval_decoder(tc, hidden_size)
     else:
         decoder = decoders.get_default_retrieval_decoder(tc, hidden_size, examples, replacer)
-    return EncDecModel(examples.type_context, encoder, decoder)
+    model = EncDecModel(examples.type_context, encoder, decoder)
+    if use_retrieval_decoder:
+        # TODO lolz, this is such a crappy interface
+        model.plz_train_this_latent_store_thanks = lambda s: decoder.action_selector.latent_store
+    return model
 
