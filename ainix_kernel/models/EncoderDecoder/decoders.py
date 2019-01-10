@@ -58,7 +58,8 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
         query_summary: torch.Tensor,
         query_encoded_tokens: torch.Tensor,
         y_asts: List[AstObjectChoiceSet],
-        teacher_force_paths: List[ObjectChoiceNode]
+        teacher_force_paths: List[ObjectChoiceNode],
+        example_ids: List[int]
     ) -> torch.Tensor:
         """
         A forward function to call during training.
@@ -70,6 +71,8 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
                 which is an contextual embedding of all tokens in the query.
             y_asts: the ground truth set
             teacher_force_paths: The path to take down this the ground truth set
+            example_ids: The ids we are training on. Needed for stuff like
+                training a latent store during training.
 
         Returns: loss
         """
@@ -94,6 +97,13 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
         force_path: ObjectChoiceNode
     ) -> Tuple[List[torch.Tensor], List[int]]:
         raise NotImplemented()
+
+    def start_train_session(self):
+        pass
+
+    def end_train_session(self):
+        pass
+
 
 class TreeRNNCell(nn.Module):
     """An rnn cell in a tree RNN"""
@@ -160,6 +170,9 @@ class TreeRNNDecoder(TreeDecoder):
         self.type_vectorizer = type_vectorizer
         self.type_context = type_context
 
+        # TODO this is disgusting and should be removed!
+        self.non_copy_step_num = 0
+
     def _node_to_token_type(self, node: AstNode):
         if isinstance(node, ObjectNode):
             return node.implementation
@@ -214,7 +227,8 @@ class TreeRNNDecoder(TreeDecoder):
         parent_node_features: Optional[torch.Tensor],
         expected: AstObjectChoiceSet,
         teacher_force_path: ObjectChoiceNode,
-        num_parents_with_a_copy_option: int
+        num_parents_with_a_copy_option: int,
+        example_id: int
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         outs, hiddens = self.rnn_cell(
             last_hidden=last_hidden,
@@ -228,7 +242,9 @@ class TreeRNNDecoder(TreeDecoder):
             memory_tokens=memory_tokens,
             types_to_select=[teacher_force_path.type_to_choose],
             expected=expected,
-            num_of_parents_with_copy_option=num_parents_with_a_copy_option
+            num_of_parents_with_copy_option=num_parents_with_a_copy_option,
+            example_inds=[example_id],
+            dfs_depths=[self.non_copy_step_num]  # TODO plz no
         )
 
         next_expected_set = expected.get_next_node_for_choice(
@@ -236,9 +252,18 @@ class TreeRNNDecoder(TreeDecoder):
         ).next_node
         assert next_expected_set is not None, "Teacher force path not in expected ast set!"
         next_object_node = teacher_force_path.next_node_not_copy
+
+        if num_parents_with_a_copy_option == 0:
+            # TODO KILL AHHHH
+            self.non_copy_step_num += 1
+        if expected.copy_is_known_choice():
+            # TODO wtf is this
+            self.non_copy_step_num += 1
+
         hiddens, child_loss = self._train_objectnode_step(
             outs, hiddens, memory_tokens, next_expected_set, next_object_node,
-            num_parents_with_a_copy_option + (1 if expected.copy_is_known_choice() else 0))
+            num_parents_with_a_copy_option + (1 if expected.copy_is_known_choice() else 0),
+            example_id)
         return hiddens, loss + child_loss
 
     def _inference_object_step(
@@ -272,18 +297,21 @@ class TreeRNNDecoder(TreeDecoder):
         memory_tokens: torch.Tensor,
         expected: ObjectNodeSet,
         teacher_force_path: ObjectNode,
-        num_of_parents_with_a_copy_option: int
+        num_of_parents_with_a_copy_option: int,
+        example_id: int,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         arg_set_data = expected.get_arg_set_data(teacher_force_path.as_childless_node())
         assert arg_set_data is not None, "Teacher force path not in expected ast set!"
         latest_hidden = last_hidden
         child_loss = 0
+        if num_of_parents_with_a_copy_option == 0:
+            self.non_copy_step_num += 1
         for arg in teacher_force_path.implementation.children:
             next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
             next_force_path = teacher_force_path.get_choice_node_for_arg(arg.name)
             latest_hidden, arg_loss = self._train_objectchoice_step(
                 latest_hidden, memory_tokens, my_features, next_choice_set,
-                next_force_path, num_of_parents_with_a_copy_option)
+                next_force_path, num_of_parents_with_a_copy_option, example_id)
             child_loss += arg_loss
         return latest_hidden, child_loss
 
@@ -309,7 +337,8 @@ class TreeRNNDecoder(TreeDecoder):
         query_summary: torch.Tensor,
         memory_encoding: torch.Tensor,
         y_asts: List[AstObjectChoiceSet],
-        teacher_force_paths: List[ObjectChoiceNode]
+        teacher_force_paths: List[ObjectChoiceNode],
+        example_ids: List[int]
     ) -> torch.Tensor:
         if not self.training:
             raise ValueError("Expect to be in training mode")
@@ -319,9 +348,10 @@ class TreeRNNDecoder(TreeDecoder):
         for i in range(len(y_asts)):
             if y_asts[i] is None or teacher_force_paths[i] is None:
                 raise ValueError("If training expect path to be previded")
+            self.non_copy_step_num = 0  # TODO This hurts me inside
             last_hidden, loss = self._train_objectchoice_step(
                 query_summary[i:i+1], memory_encoding[i:i+1], None, y_asts[i],
-                teacher_force_paths[i], 0
+                teacher_force_paths[i], 0, example_ids[i]
             )
             batch_loss += loss
         return batch_loss
@@ -351,30 +381,11 @@ class TreeRNNDecoder(TreeDecoder):
             if was_in_traing:
                 self.train()
 
-        #last_hidden = query_summary
-        #parent_node_features = None
-        #parent_node_hidden = None
-        ##node_to_latent = {}
-        #latents = []
-        #y_inds = []
-        #for y_ind, pointer in enumerate(force_path.depth_first_iter()):
-        #    if isinstance(pointer.cur_node, ObjectChoiceNode):
-        #        parent_features = None if pointer.parent is None \
-        #            else self._get_ast_node_vectors(pointer.parent.curr_node)
-        #        out, last_hidden = self.rnn_cell(
-        #            last_hidden=last_hidden,
-        #            type_to_predict_features=self._get_ast_node_vectors(pointer.cur_node),
-        #            parent_node_features=parent_features,
-        #            parent_node_hidden=parent_node_hidden
-        #        )
-        #        latents.append(out)
-        #        y_inds.append(y_ind)
-        #    elif isinstance(pointer.cur_node, ObjectNode):
-        #        pass
-        #    else:
-        #        raise ValueError("Node not recognized.")
-        #return latents, y_inds
+    def start_train_session(self):
+        self.action_selector.start_train_session()
 
+    def end_train_session(self):
+        self.action_selector.end_train_session()
 
     def get_save_state_dict(self) -> Dict:
         return {

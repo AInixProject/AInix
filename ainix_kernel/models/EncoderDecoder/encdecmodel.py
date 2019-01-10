@@ -34,6 +34,8 @@ class EncDecModel(StringTypeTranslateCF):
         y_type_name: str,
         use_only_train_data: bool
     ) -> ObjectChoiceNode:
+        if self.modules.training:
+            raise ValueError("Should be in eval mode to predict")
         query_summary, encoded_tokens = self.query_encoder([x_string])
         root_type = self.type_context.get_type_by_name(y_type_name)
         out_node = self.decoder.forward_predict(query_summary, encoded_tokens, root_type)
@@ -44,21 +46,24 @@ class EncDecModel(StringTypeTranslateCF):
         self,
         x_string: str,
         y_ast: AstObjectChoiceSet,
-        teacher_force_path: ObjectChoiceNode
+        teacher_force_path: ObjectChoiceNode,
+        example_id: int
     ) -> torch.Tensor:
-        return self.train_batch([(x_string, y_ast, teacher_force_path)])
+        return self.train_batch([(x_string, y_ast, teacher_force_path, example_id)])
 
     def train_batch(
         self,
-        batch: List[Tuple[str, AstObjectChoiceSet, ObjectChoiceNode]]
+        batch: List[Tuple[str, AstObjectChoiceSet, ObjectChoiceNode, int]]
     ):
         if not self.is_in_training_session:
             raise ValueError("Call start_training_session before calling this.")
+        if not self.modules.training:
+            raise ValueError("Not in train mode. Call set_in_eval_mode")
         self.optimizer.zero_grad()
-        xs, ys, teacher_force_paths = zip(*batch)
+        xs, ys, teacher_force_paths, example_ids = zip(*batch)
         query_summary, encoded_tokens = self.query_encoder(xs)
         loss = self.decoder.forward_train(
-            query_summary, encoded_tokens, ys, teacher_force_paths)
+            query_summary, encoded_tokens, ys, teacher_force_paths, example_ids)
         loss.backward()
         self.optimizer.step(None)
         return loss
@@ -68,14 +73,20 @@ class EncDecModel(StringTypeTranslateCF):
         raise NotImplemented
 
     def start_train_session(self):
-        self.modules.train()
         self.optimizer = torch.optim.Adam(self.modules.parameters())
+        self.set_in_train_mode()
         self.is_in_training_session = True
 
     def end_train_session(self):
         self.optimizer = None
-        self.modules.eval()
+        self.set_in_eval_mode()
         self.is_in_training_session = False
+
+    def set_in_eval_mode(self):
+        self.modules.eval()
+
+    def set_in_train_mode(self):
+        self.modules.train()
 
     def set_shared_memory(self):
         self.modules.share_memory()

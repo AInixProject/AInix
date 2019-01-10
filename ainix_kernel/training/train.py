@@ -38,7 +38,7 @@ class TypeTranslateCFTrainer:
         single_examples_iter = self.data_pair_iterate((DataSplits.TRAIN,))
         batches_iter = more_itertools.chunked(single_examples_iter, self.batch_size)
         for batch in batches_iter:
-            batch_as_query = [(replaced_x, y_ast_set, this_example_ast) for
+            batch_as_query = [(replaced_x, y_ast_set, this_example_ast, example.example_id) for
                               example, replaced_x, y_ast_set, this_example_ast in batch]
             self.model.train_batch(batch_as_query)
         self.model.end_train_epoch()
@@ -55,7 +55,7 @@ class TypeTranslateCFTrainer:
         logger: EvaluateLogger,
         splits: Tuple[DataSplits] = None
     ):
-        self.model.end_train_session()
+        self.model.set_in_eval_mode()
         for example, replaced_x_query, y_ast_set, this_example_ast \
                 in self.data_pair_iterate(splits):
             try:
@@ -65,6 +65,7 @@ class TypeTranslateCFTrainer:
             except ModelSafePredictError:
                 prediction = None
             logger.add_evaluation(AstEvaluation(prediction, y_ast_set))
+        self.model.set_in_train_mode()
 
     def data_pair_iterate(
         self,

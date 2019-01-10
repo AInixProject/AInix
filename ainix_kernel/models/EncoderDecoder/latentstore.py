@@ -270,7 +270,6 @@ class TorchStoreTrainerAdam(LatentStoreTrainer):
         d.latents[ind_in_type].addcdiv_(
             step_size, self.type_ind_to_moments[type_ind][ind_in_type, 0], denom)
         return d.latents[ind_in_type]
-    pass
 
 
 def make_latent_store_from_examples(

@@ -97,13 +97,18 @@ class StringTypeTranslateCF(Pretrainable):
         raise NotImplemented
 
     @abstractmethod
-    def train(self, x_string: str, y_ast: AstObjectChoiceSet,
-              teacher_force_path: ObjectChoiceNode):
+    def train(
+        self,
+        x_string: str,
+        y_ast: AstObjectChoiceSet,
+        teacher_force_path: ObjectChoiceNode,
+        example_id: int
+    ):
         raise NotImplemented
 
     def train_batch(
         self,
-        batch: List[Tuple[str, AstObjectChoiceSet, ObjectChoiceNode]]
+        batch: List[Tuple[str, AstObjectChoiceSet, ObjectChoiceNode, int]]
     ):
         """Used for batch training. Will by default call train on each element
         in batch, but expected to be overridden.
@@ -113,9 +118,10 @@ class StringTypeTranslateCF(Pretrainable):
                 x: the string x value
                 y: the ast set we are trying to generate to
                 teacher_force_paths: the path to follow while decide
+                example_id: the example id this came from
         """
-        for x, y, path in zip(batch):
-            self.train(x, y, path)
+        for x, y, path, example_id in zip(batch):
+            self.train(x, y, path, example_id)
 
     @classmethod
     @abstractmethod
@@ -135,12 +141,25 @@ class StringTypeTranslateCF(Pretrainable):
     # a bad interface. Should maybe abstract out into a seperate trainer class.
 
     def start_train_session(self):
+        """Create optimizers and such to be able to train"""
         pass
 
     def end_train_session(self):
+        """Free any optimizers and stuff from training"""
         pass
 
     def end_train_epoch(self):
+        pass
+
+    def set_in_train_mode(self):
+        """This sets the parameters to act like training. This is different from
+        a session as a model might go in and out of training mode during one session
+        (for example if when evaling at the end of an epoch)"""
+        pass
+
+    def set_in_eval_mode(self):
+        """Sets the parameters to act like eval (for example disabling dropout.)
+        This may happen during a training session."""
         pass
 
     # Methods for handling serialization
