@@ -442,5 +442,6 @@ def get_default_retrieval_decoder(
     type_vectorizer = vectorizers.TorchDeepEmbed(type_context.get_type_count(), rnn_hidden_size)
     rnn_cell = TreeRNNCell(rnn_hidden_size, rnn_hidden_size)
     latent_store = make_latent_store_from_examples(examples, rnn_hidden_size, replacer)
-    action_selector = RetrievalActionSelector(latent_store, type_context, 0.5)
+    # TODO rework dropout so this will work
+    action_selector = RetrievalActionSelector(latent_store, type_context, 0)
     return TreeRNNDecoder(rnn_cell, action_selector, type_vectorizer, type_context)

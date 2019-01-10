@@ -53,8 +53,8 @@ class TypeTranslateCFTrainer:
             if hasattr(self.model, "plz_train_this_latent_store_thanks"):
                 # TODO wasdfahwerdfgv I should sleep
                 print("updatedin the thing 🦔🦔")
-                latent_store = self.model.plz_train_this_latent_store_thanks("SDf")
-                if False and latent_store:
+                latent_store = self.model.plz_train_this_latent_store_thanks()
+                if latent_store:
                     update_latent_store_from_examples(self.model, latent_store, self.example_store,
                                                       self.replacer, self.string_parser,
                                                       (DataSplits.TRAIN,))
@@ -132,11 +132,14 @@ def update_latent_store_from_examples(
         # TODO: add copies
         latents = model.get_latent_select_states(x, ast)
         nodes = list(ast.depth_first_iter())
+        #print("LATENTS", latents)
         for i, l in enumerate(latents):
             dfs_depth = i*2
             n = nodes[dfs_depth].cur_node
             assert isinstance(n, ObjectChoiceNode)
-            latent_store.set_latent_for_example(l, n.type_to_choose.ind,
+            c = l.detach()
+            assert not c.requires_grad
+            latent_store.set_latent_for_example(c, n.type_to_choose.ind,
                                                 example.example_id, dfs_depth)
     model.set_in_train_mode()
 

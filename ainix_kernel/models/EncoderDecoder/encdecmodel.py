@@ -65,7 +65,6 @@ class EncDecModel(StringTypeTranslateCF):
         query_summary, encoded_tokens = self.query_encoder(xs)
         loss = self.decoder.forward_train(
             query_summary, encoded_tokens, ys, teacher_force_paths, example_ids)
-        print("SDFSDFSDF LOSS 🦔", loss)
         loss.backward()
         self.optimizer.step(None)
         return loss
@@ -160,6 +159,6 @@ def get_default_encdec_model(examples: ExamplesStore, standard_size=16, replacer
     model = EncDecModel(examples.type_context, encoder, decoder)
     if use_retrieval_decoder:
         # TODO lolz, this is such a crappy interface
-        model.plz_train_this_latent_store_thanks = lambda s: decoder.action_selector.latent_store
+        model.plz_train_this_latent_store_thanks = lambda: decoder.action_selector.latent_store
     return model
 

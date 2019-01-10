@@ -88,9 +88,10 @@ class RetrievalActionSelector(ActionSelector):
 
         impl_scores, impl_keys = sparse_groupby_sum(F.softmax(similarities), impls_chosen)
         impls_indices_correct = are_indices_valid(impl_keys, self.type_context, expected)
-        impls_indices_correct.clamp(0, 1.0)
         # TODO weights
-        loss = self.loss_func(impl_scores.unsqueeze(0), impls_indices_correct.unsqueeze(0))
+        loss = torch.Tensor([0])[0]
+        if len(impl_scores) > 1:
+            loss = self.loss_func(impl_scores.unsqueeze(0), impls_indices_correct.unsqueeze(0))
         if expected.copy_is_known_choice():
             span_pred_loss = self.span_predictor.train_predict_span(
                 latent_vec, memory_tokens, types_to_select, expected)

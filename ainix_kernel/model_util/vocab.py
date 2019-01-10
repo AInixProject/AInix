@@ -344,6 +344,6 @@ def are_indices_valid(
     with value of 1 where known valid and 0 otherwise"""
     objects = torch_inds_to_objects(indices, tc)
     valid_func = np.vectorize(
-        lambda n: 1 if valid_set.is_known_choice(n.name) else 0,
+        lambda n: 1.0 if valid_set.is_known_choice(n.name) else 0.0,
         otypes='f')
     return torch.from_numpy(valid_func(objects))
