@@ -1,5 +1,6 @@
 """Used to store the latent states of a model decoding for use in a latent
 retrieval-based decoder."""
+import math
 from abc import abstractmethod, ABC
 from typing import Dict, Tuple, List, Optional
 import torch
@@ -69,6 +70,9 @@ class LatentStore(ABC):
     def get_builder(cls, num_types: int, latent_size: int) -> 'LatentStoreBuilder':
         pass
 
+    def get_default_trainer(self) -> 'LatentStoreTrainer':
+        raise ValueError("This latent store does not support training")
+
 
 class TorchLatentStore(LatentStore):
     def __init__(
@@ -102,6 +106,22 @@ class TorchLatentStore(LatentStore):
     def get_builder(cls, num_types: int, latent_size: int) -> 'LatentStoreBuilder':
         return TorchLatentStoreBuilder(num_types, latent_size)
 
+    def get_default_trainer(self) -> 'LatentStoreTrainer':
+        return TorchStoreTrainerAdam(self)
+
+    def get_latent_for_example(
+        self,
+        type_id: int,
+        example_id: int,
+        dfs_depth: int
+    ) -> Optional[torch.Tensor]:
+        if example_id not in self.example_to_depths_to_ind_to_types:
+            return None
+        depth_to_inds_in_type = self.example_to_depths_to_ind_to_types[example_id]
+        if int(dfs_depth / 2) >= len(depth_to_inds_in_type):
+            return None
+        return self.type_ind_to_latents[type_id].latents[depth_to_inds_in_type[int(dfs_depth / 2)]]
+
 
 class LatentStoreBuilder(ABC):
     @abstractmethod
@@ -115,6 +135,7 @@ class LatentStoreBuilder(ABC):
     @abstractmethod
     def produce_result(self) -> LatentStore:
         pass
+
 
 class TorchLatentStoreBuilder(LatentStoreBuilder):
     def __init__(self, num_types: int, latent_size: int):
@@ -164,6 +185,92 @@ class TorchLatentStoreBuilder(LatentStoreBuilder):
         )
 
 
+
+class LatentStoreTrainer(ABC):
+    """A wrapper around a latent store trainer which sorta acts equivolently
+    to torch.nn.optim. When you make queries on the trainer, it will update the
+    stored value for the example you are now retrieving for."""
+    @abstractmethod
+    def update_value(
+        self,
+        type_ind: int,
+        example_ind: int,
+        dfs_depth: int,
+        new_latent: torch.Tensor
+    ) -> torch.Tensor:
+        """Update a stored latent. Return the actual new value"""
+        pass
+
+
+class TorchStoreTrainerAdam(LatentStoreTrainer):
+    def __init__(
+        self,
+        store_to_train: TorchLatentStore,
+        lr=0.2e-3,
+        beta1=0.87,
+        beta2=0.9992,
+        eps=1e-8
+    ):
+        self.store = store_to_train
+        # We currently use Adam optimization to update values
+        self.lr = lr
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.eps = eps
+        self.step = 0
+        # Moments are stored as dims (T, I, 2, V)
+        # T = number of types.
+        # I = the number of examples of that type
+        # [t, i, 0, V] = first moment. So exp avg of gradient
+        # [t, i, 1, V] = second moment. So exp avg of square gradient
+        # V = the size of latents. So like latents might be 64 len vectors
+        self.type_ind_to_moments = [
+            torch.zeros((data.latents.shape[0], 2, data.latents.shape[1]))
+            for data in self.store.type_ind_to_latents
+        ]
+        self.step_counts = [
+            torch.zeros(data.latents.shape[0])
+            for data in self.store.type_ind_to_latents
+        ]
+        # There may be a way to just make the LatentStore a nn.Module which can
+        # then return its parameters to be optimized in the normal optim step.
+        # However, this has several issues. We need to mask out the gradients
+        # for non-queried latents. Also we can't mask with 0, because that will
+        # mess up the moment estimates. There could be a way to solve this, but
+        # for now we'll just reimplement our own optimzer. This has advantages
+        # anyways in being more flexible if we eventually move to a on-disk
+        # latentstore, plus it potenitally stores less gradient vals.
+
+    def update_value(
+        self,
+        type_ind: int,
+        example_ind: int,
+        dfs_depth: int,
+        new_latent: torch.Tensor
+    ) -> torch.Tensor:
+        """Do an Adam update of a value in the latent store"""
+        ind_in_type = self.store.example_to_depths_to_ind_to_types[example_ind][int(dfs_depth / 2)]
+        d = self.store.type_ind_to_latents[type_ind]
+        assert d.example_indxs[ind_in_type] == example_ind
+        assert d.y_inds[ind_in_type] == dfs_depth
+        current_latent = d.latents[ind_in_type]
+        error = new_latent - current_latent
+        # Code ref https://pytorch.org/docs/stable/_modules/torch/optim/adam.html
+        self.type_ind_to_moments[type_ind][ind_in_type, 0].mul_(
+            self.beta1).add_(1 - self.beta1, error)
+        self.type_ind_to_moments[type_ind][ind_in_type, 1].mul_(self.beta2).addcmul_(
+            1 - self.beta2, error, error)
+        denom = self.type_ind_to_moments[type_ind][ind_in_type, 1].sqrt().add_(self.eps)
+        self.step_counts[type_ind][ind_in_type] += 1
+        step = int(self.step_counts[type_ind][ind_in_type])
+        bias_correction1 = 1 - self.beta1 ** step
+        bias_correction2 = 1 - self.beta2 ** step
+        step_size = self.lr * math.sqrt(bias_correction1) / bias_correction2
+        # not this is equivolent so far to pytorch code, except here we use postive step size
+        d.latents[ind_in_type].addcdiv_(
+            step_size, self.type_ind_to_moments[type_ind][ind_in_type, 0], denom)
+        return d.latents[ind_in_type]
+    pass
 #class LatentStore:#torch.nn.Module):
 #    def __init__(self, type_context: TypeContext, latent_size: int, trainable_vals: bool = False):
 #        super().__init__()

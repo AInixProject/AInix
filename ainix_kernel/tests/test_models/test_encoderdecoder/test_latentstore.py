@@ -1,9 +1,10 @@
+import pytest
+
 from ainix_common.parsing.ast_components import ObjectNode
 from ainix_common.parsing.typecontext import AInixArgument
 from ainix_kernel.models.EncoderDecoder.latentstore import *
 from ainix_kernel.tests.testutils.torch_test_utils import eps_eq_at, torch_epsilon_eq
 from pyrsistent import pmap
-
 
 def test_latent_store():
     instance = TorchLatentStore(
@@ -24,7 +25,8 @@ def test_latent_store():
     torch_epsilon_eq(similarities, torch.Tensor([4, 3, 1, -2]))
 
 
-def test_latent_store_builder():
+@pytest.fixture()
+def builder_store() -> TorchLatentStore:
     tc = TypeContext()
     ft = AInixType(tc, "FT")
     fo1 = AInixObject(tc, "FO1", "FT")
@@ -38,6 +40,8 @@ def test_latent_store_builder():
         0,
         ObjectChoiceNode(ft, ObjectNode(fo1, pmap()))
     )
+    res: TorchLatentStore = builder.produce_result()
+    assert res.example_to_depths_to_ind_to_types[0][0] == 0
     builder.add_example(
         1,
         ObjectChoiceNode(ft, ObjectNode(fo1, pmap()))
@@ -51,5 +55,29 @@ def test_latent_store_builder():
                          )
     )
     store: TorchLatentStore = builder.produce_result()
-    assert len(store.type_ind_to_latents) == 2
-    assert torch_epsilon_eq(store.type_ind_to_latents[1].example_indxs, [0, 1, 2])
+    return store
+
+
+def test_latent_store_builder(builder_store):
+    assert len(builder_store.type_ind_to_latents) == 2
+    assert torch_epsilon_eq(builder_store.type_ind_to_latents[1].example_indxs, [0, 1, 2])
+    assert list(builder_store.example_to_depths_to_ind_to_types[1]) == [1]
+
+
+def test_training(builder_store):
+    trainer = builder_store.get_default_trainer()
+    target = torch.Tensor([-0.4, 1, 2])
+    type_ind = 1  # FT is type_ind 1
+    example_id = 1
+    dfs_depth = 0
+    assert not torch_epsilon_eq(
+        builder_store.get_latent_for_example(type_ind, example_id, dfs_depth),
+        target, epsilon=1e-3
+    )
+    for i in range(100):
+        print(builder_store.get_latent_for_example(type_ind, example_id, dfs_depth))
+        trainer.update_value(1, 1, 0, target)
+    assert torch_epsilon_eq(
+        builder_store.get_latent_for_example(type_ind, example_id, dfs_depth),
+        target, epsilon=1e-2
+    )
