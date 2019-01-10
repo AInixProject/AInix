@@ -102,7 +102,8 @@ class TypeTranslateCFTrainer:
 
 # A bunch of code for running the thing which really shouldn't be here.
 
-def _get_all_replacers() -> Replacer:
+
+def get_all_replacers() -> Replacer:
     filename_repl = ReplacementGroup('FILENAME', Replacement.from_tsv("./data/FILENAME.tsv"))
     dirname_repl = ReplacementGroup('DIRNAME', Replacement.from_tsv("./data/DIRNAME.tsv"))
     eng_word_repl = ReplacementGroup('ENGWORD', Replacement.from_tsv("./data/ENGWORD.tsv"))
@@ -142,7 +143,7 @@ if __name__ == "__main__":
     model = get_default_encdec_model(index, standard_size=64)
     #model = make_rulebased_seacr(index)
 
-    trainer = TypeTranslateCFTrainer(model, index, replacer=_get_all_replacers())
+    trainer = TypeTranslateCFTrainer(model, index, replacer=get_all_replacers())
     train_time = datetime.datetime.now()
     print("train time", train_time)
     trainer.train(40)

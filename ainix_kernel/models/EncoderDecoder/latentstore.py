@@ -8,9 +8,12 @@ import attr
 import numpy as np
 
 from ainix_common.parsing.ast_components import ObjectChoiceNode
+from ainix_common.parsing.stringparser import StringParser
 from ainix_common.parsing.typecontext import TypeContext, AInixObject, AInixType
 from ainix_kernel.indexing.examplestore import ExamplesStore
 import torch.nn.functional as F
+
+from ainix_kernel.training.augmenting.replacers import Replacer
 
 COPY_IND = 10000
 
@@ -52,10 +55,13 @@ class LatentDataWrapper:
         y_inds: torch.LongTensor,
         impl_choices: torch.LongTensor
     ) -> 'LatentDataWrapper':
-        return cls(latents, torch.stack([example_indxs, y_inds, impl_choices]))
+        return cls(latents.detach(), torch.stack([example_indxs, y_inds, impl_choices]).detach())
 
 
 class LatentStore(ABC):
+    def __init__(self, latent_size):
+        self.latent_size = latent_size
+
     @abstractmethod
     def get_n_nearest_latents(
         self,
@@ -77,11 +83,14 @@ class LatentStore(ABC):
 class TorchLatentStore(LatentStore):
     def __init__(
         self,
+        latent_size: int,
         type_ind_to_latents: List[LatentDataWrapper],
         example_to_depths_to_ind_in_types: Optional[Dict[int, List[torch.LongTensor]]]
     ):
+        super().__init__(latent_size)
         self.type_ind_to_latents = type_ind_to_latents
         self.example_to_depths_to_ind_to_types = example_to_depths_to_ind_in_types
+        self.latent_size = latent_size
 
     def get_n_nearest_latents(
         self,
@@ -166,6 +175,7 @@ class TorchLatentStoreBuilder(LatentStoreBuilder):
 
     def produce_result(self) -> TorchLatentStore:
         return TorchLatentStore(
+            latent_size=self.latent_size,
             type_ind_to_latents=[
                 LatentDataWrapper.construct(
                     latents=torch.randn(len(tex), self.latent_size),
@@ -201,6 +211,11 @@ class LatentStoreTrainer(ABC):
         """Update a stored latent. Return the actual new value"""
         pass
 
+
+# A bunch of code that doesn't work. The idea was that we could avoid the step
+# of a separate calculate step of the latents by updating them during training.
+# However, didn't realize that torch won't let you change values with graident
+# on them...
 
 class TorchStoreTrainerAdam(LatentStoreTrainer):
     def __init__(
@@ -266,14 +281,33 @@ class TorchStoreTrainerAdam(LatentStoreTrainer):
         bias_correction1 = 1 - self.beta1 ** step
         bias_correction2 = 1 - self.beta2 ** step
         step_size = self.lr * math.sqrt(bias_correction1) / bias_correction2
-        # not this is equivolent so far to pytorch code, except here we use postive step size
+        # not this is equivalent so far to pytorch code, except here we use postive step size
+        # attempts at making a copy did not work
+        #c = torch.zeros(d.latents.shape)
+        #d.latents.copy_(c)
+        #c[ind_in_type].addcdiv_(
+        #    step_size, self.type_ind_to_moments[type_ind][ind_in_type, 0], denom)
+        #d.latents = c
         d.latents[ind_in_type].addcdiv_(
             step_size, self.type_ind_to_moments[type_ind][ind_in_type, 0], denom)
         return d.latents[ind_in_type]
 
 
 def make_latent_store_from_examples(
-    examples: ExamplesStore
+    examples: ExamplesStore,
+    latent_size: int,
+    replacer: Replacer
 ) -> LatentStore:
+    parser = StringParser(type_context=examples.type_context)
+    builder = TorchLatentStoreBuilder(examples.type_context.get_type_count(), latent_size)
     for example in examples.get_all_examples():
-        pass
+        if replacer is not None:
+            x, y = replacer.strings_replace(example.xquery, example.ytext)
+        else:
+            x, y = example.xquery, example.ytext
+        if x != example.xquery or y != example.ytext:
+            raise NotImplemented("need to implement copying")
+        ast = parser.create_parse_tree(y, example.ytype)
+        # TODO: add copies
+        builder.add_example(example.example_id, ast)
+    return builder.produce_result()

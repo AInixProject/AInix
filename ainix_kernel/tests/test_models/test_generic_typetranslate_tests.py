@@ -20,13 +20,13 @@ from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixObject
 from ainix_common.parsing import loader
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 from ainix_kernel.training.evaluate import EvaluateLogger
-from ainix_kernel.training.train import TypeTranslateCFTrainer
+from ainix_kernel.training.train import TypeTranslateCFTrainer, get_all_replacers
 import tempfile
 
 # Here we define functions to generate each of the models we want to test
 # Full models are models which should pass every test
 #FULL_MODELS = ["SeaCR"]
-FULL_MODELS = ["EncDec"]
+FULL_MODELS = ["EncDec", "EncDecRetrieval"]
 # All Models are just all available models. Some might not be expect to pass
 # every test
 #ALL_MODELS = ["SeaCR-Rulebased", "SeaCR-NoSearch", "SeaCR-OracleCompare"] + FULL_MODELS
@@ -36,7 +36,7 @@ ALL_MODELS = FULL_MODELS
 def make_example_store(model_name, type_context):
     if model_name in ("SeaCR-Rulebased", "SeaCR", "SeaCR-OracleCompare", "SeaCR-NoSearch"):
         return ExamplesIndex(type_context, ExamplesIndex.get_default_ram_backend())
-    if model_name in ("EncDec",):
+    if model_name in ("EncDec", "EncDecRetrieval"):
         # TODO (DNGros): avoid the whoosh stuff
         return ExamplesIndex(type_context, ExamplesIndex.get_default_ram_backend())
     else:
@@ -54,6 +54,9 @@ def make_model(model_name, example_store):
         return seacr.make_default_seacr_with_oracle_comparer(example_store)
     elif model_name == "EncDec":
         return encdecmodel.get_default_encdec_model(example_store)
+    elif model_name == "EncDecRetrieval":
+        return encdecmodel.get_default_encdec_model(
+            example_store, replacer=None, use_retrieval_decoder=True)
     else:
         raise ValueError("Unrecognized model type ", type)
 

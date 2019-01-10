@@ -89,6 +89,7 @@ class ExamplesIndex(ExamplesStore):
         # mutating the input dict (this might be overkill....)
         doc_copy = copy.deepcopy(doc)
         doc_copy['weight'] = float(doc_copy['weight'])
+        doc_copy['example_id'] = int(doc_copy['example_id'])
         return Example(**doc_copy)
 
     def get_nearest_examples(

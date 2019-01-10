@@ -12,6 +12,7 @@ from ainix_kernel.tests.testutils.torch_test_utils import torch_epsilon_eq
 
 @pytest.fixture()
 def latent_store_stuff() -> Tuple[LatentStore, TypeContext, List[AstObjectChoiceSet]]:
+    torch.manual_seed(1)
     tc = TypeContext()
     ft = AInixType(tc, "FT")
     fo1 = AInixObject(tc, "FO1", "FT")
@@ -28,13 +29,13 @@ def latent_store_stuff() -> Tuple[LatentStore, TypeContext, List[AstObjectChoice
     builder.add_example(0, oc)
     s1 = AstObjectChoiceSet(ft)
     s1.add(oc, True, 1, 1)
-    valid_choices.append(s1)
+    valid_choices.append((0, 0, s1))
 
     oc = ObjectChoiceNode(ft, ObjectNode(fo2))
     builder.add_example(1, oc)
     s1 = AstObjectChoiceSet(ft)
     s1.add(oc, True, 1, 1)
-    valid_choices.append(s1)
+    valid_choices.append((1, 0, s1))
 
     builder.add_example(2, ObjectChoiceNode(ft, ObjectNode(fo3)))
     return builder.produce_result(), tc, valid_choices
@@ -56,26 +57,36 @@ def latent_store_stuff() -> Tuple[LatentStore, TypeContext, List[AstObjectChoice
 
 def test_train_retriever_selector(latent_store_stuff):
     latent_store, tc, valid_choices = latent_store_stuff
-    torch.manual_seed(1)
-    inputs = [(torch.randn(3), c) for i, c in enumerate(valid_choices)]
+    latent_size = 3
+    inputs = [(torch.randn(latent_size), c) for i, c in enumerate(valid_choices)]
     instance = RetrievalActionSelector(latent_store, tc, retrieve_dropout_p=0)
+    instance.start_train_session()
     optim = torch.optim.Adam(instance.parameters(), lr=1e-2)
+    print(inputs)
 
     def do_train():
         optim.zero_grad()
         loss = 0
-        for x, y in inputs:
-            loss += instance.forward_train(x, None, [tc.get_type_by_name("FT")], y, 0)
-        loss.backward()
+        for x, (example_id, step, astset) in inputs:
+            loss += instance.forward_train(x.unsqueeze(0), None, [tc.get_type_by_name("FT")],
+                                           astset, 0, [example_id], [step])
+        try:
+            loss.backward()
+        except RuntimeError as e:
+            if "element 0 of tensors does not require" not in str(e):
+                raise e
         optim.step()
         return loss
 
-    for e in range(800):
-        do_train()
+    for e in range(50):
+        loss = do_train()
+        #print("LOSS", loss)
+        #s: TorchLatentStore = instance.latent_store
+        #print("LATENTS", s.type_ind_to_latents)
 
-    for x, y in inputs:
+    for x, (example_id, step, astset) in inputs:
         pred = instance.infer_predict(x, None, tc.get_type_by_name("FT"))
-        #print("X_V", x_v)
+        #print("x", x)
         #print("pred", pred)
         assert isinstance(pred, ProduceObjectAction)
-        assert y.is_known_choice(pred.implementation.name)
+        assert astset.is_known_choice(pred.implementation.name)

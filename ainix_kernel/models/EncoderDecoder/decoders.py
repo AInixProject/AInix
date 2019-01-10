@@ -15,6 +15,7 @@ from ainix_kernel.model_util.vocab import Vocab, are_indices_valid, TypeContextW
 from ainix_kernel.models.EncoderDecoder import objectselector
 from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector, CopyAction, \
     ProduceObjectAction, PathForceSpySelector
+from ainix_kernel.models.EncoderDecoder.latentstore import make_latent_store_from_examples
 from ainix_kernel.models.EncoderDecoder.nonretrieval import SimpleActionSelector
 from ainix_kernel.models.EncoderDecoder.objectselector import ObjectSelector
 from ainix_kernel.models.EncoderDecoder.retrieving import RetrievalActionSelector
@@ -23,6 +24,7 @@ import numpy as np
 import torch.nn.functional as F
 
 from ainix_kernel.models.multiforward import MultiforwardTorchModule, add_hooks
+from ainix_kernel.training.augmenting.replacers import Replacer
 
 
 class TreeDecoder(MultiforwardTorchModule, ABC):
@@ -434,10 +436,11 @@ def get_default_nonretrieval_decoder(
 def get_default_retrieval_decoder(
     type_context: TypeContext,
     rnn_hidden_size: int,
-    examples: ExamplesStore
+    examples: ExamplesStore,
+    replacer: Replacer
 ) -> TreeDecoder:
     type_vectorizer = vectorizers.TorchDeepEmbed(type_context.get_type_count(), rnn_hidden_size)
     rnn_cell = TreeRNNCell(rnn_hidden_size, rnn_hidden_size)
-    raise NotImplemented()
-    #action_selector = RetrievalActionSelector(, type_context, 0.5)
-    #return TreeRNNDecoder(rnn_cell, action_selector, type_vectorizer, type_context)
+    latent_store = make_latent_store_from_examples(examples, rnn_hidden_size, replacer)
+    action_selector = RetrievalActionSelector(latent_store, type_context, 0.5)
+    return TreeRNNDecoder(rnn_cell, action_selector, type_vectorizer, type_context)

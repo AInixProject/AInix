@@ -12,6 +12,7 @@ from ainix_kernel.models.EncoderDecoder import encoders, decoders
 from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder, TreeRNNDecoder
 from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder, StringQueryEncoder
 from ainix_kernel.models.model_types import StringTypeTranslateCF
+from ainix_kernel.training.augmenting.replacers import Replacer
 
 
 class EncDecModel(StringTypeTranslateCF):
@@ -74,11 +75,13 @@ class EncDecModel(StringTypeTranslateCF):
 
     def start_train_session(self):
         self.optimizer = torch.optim.Adam(self.modules.parameters())
+        self.decoder.start_train_session()
         self.set_in_train_mode()
         self.is_in_training_session = True
 
     def end_train_session(self):
         self.optimizer = None
+        self.decoder.end_train_session()
         self.set_in_eval_mode()
         self.is_in_training_session = False
 
@@ -136,7 +139,7 @@ def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenize
     return NonLetterTokenizer(), AstValTokenizer()
 
 
-def get_default_encdec_model(examples: ExamplesStore, standard_size=16,
+def get_default_encdec_model(examples: ExamplesStore, standard_size=16, replacer: Replacer = None,
                              use_retrieval_decoder: bool = False):
     x_tokenizer, y_tokenizer = _get_default_tokenizers()
     x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer)
@@ -146,5 +149,6 @@ def get_default_encdec_model(examples: ExamplesStore, standard_size=16,
     if not use_retrieval_decoder:
         decoder = decoders.get_default_nonretrieval_decoder(tc, hidden_size)
     else:
-        decoder = decoders.get_default_retrieval_decoder(tc, hidden_size, examples)
+        decoder = decoders.get_default_retrieval_decoder(tc, hidden_size, examples, replacer)
     return EncDecModel(examples.type_context, encoder, decoder)
+

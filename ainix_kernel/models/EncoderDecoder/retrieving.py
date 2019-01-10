@@ -20,7 +20,7 @@ class RetrievalActionSelector(ActionSelector):
         self,
         latent_store: LatentStore,
         type_context: TypeContext,
-        retrieve_dropout_p: int = 0.5
+        retrieve_dropout_p: float = 0.5
     ):
         super().__init__()
         self.latent_store = latent_store
