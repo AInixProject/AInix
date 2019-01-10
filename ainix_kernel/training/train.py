@@ -4,6 +4,7 @@ from typing import Tuple, Generator
 
 from ainix_common.parsing.copy_tools import add_copies_to_ast_set
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
+from ainix_kernel.models.EncoderDecoder.latentstore import LatentStore
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException, \
     ModelSafePredictError
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
@@ -13,6 +14,7 @@ from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_
 import more_itertools
 from ainix_kernel.specialtypes import generic_strings, allspecials
 from ainix_kernel.util.serialization import serialize
+from ainix_kernel.models.EncoderDecoder.encdecmodel import EncDecModel
 
 
 class TypeTranslateCFTrainer:
@@ -100,8 +102,35 @@ class TypeTranslateCFTrainer:
             y_ast_set.freeze()
             yield (example, this_example_replaced_x, y_ast_set, ast_for_this_example)
 
-# A bunch of code for running the thing which really shouldn't be here.
 
+# Latent store update code because I don't know where else to put it
+
+def update_latent_store_from_examples(
+    model: EncDecModel,
+    latent_store: LatentStore,
+    examples: ExamplesStore,
+    replacer: Replacer,
+    parser: StringParser,
+    splits: Tuple[DataSplits]
+):
+    for example in examples.get_all_examples(splits):
+        # TODO multi sampling replacers
+        x, y = replacer.strings_replace(example.xquery, example.ytext)
+        if x != example.xquery or y != example.ytext:
+            raise NotImplemented("need to implement copying")
+        ast = parser.create_parse_tree(y, example.ytype)
+        # TODO: add copies
+        latents = model.get_latent_select_states(x, ast)
+        nodes = list(ast.depth_first_iter())
+        for i, l in enumerate(latents):
+            dfs_depth = i*2
+            n = nodes[dfs_depth].cur_node
+            assert isinstance(n, ObjectChoiceNode)
+            latent_store.set_latent_for_example(l, n.type_to_choose.ind,
+                                                example.example_id, dfs_depth)
+
+
+# A bunch of code for running the thing which really shouldn't be here.
 
 def get_all_replacers() -> Replacer:
     filename_repl = ReplacementGroup('FILENAME', Replacement.from_tsv("./data/FILENAME.tsv"))
@@ -139,7 +168,9 @@ if __name__ == "__main__":
     print("num docs", index.backend.index.doc_count())
 
     from ainix_kernel.models.SeaCR.seacr import make_default_seacr, make_rulebased_seacr
-    from ainix_kernel.models.EncoderDecoder.encdecmodel import get_default_encdec_model
+    from ainix_kernel.models.EncoderDecoder.encdecmodel import get_default_encdec_model, EncDecModel, \
+    EncDecModel, EncDecModel, EncDecModel
+
     model = get_default_encdec_model(index, standard_size=64)
     #model = make_rulebased_seacr(index)
 

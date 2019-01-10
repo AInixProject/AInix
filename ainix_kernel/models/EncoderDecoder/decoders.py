@@ -97,7 +97,7 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
         query_summary: torch.Tensor,
         memory_encoding: torch.Tensor,
         force_path: ObjectChoiceNode
-    ) -> Tuple[List[torch.Tensor], List[int]]:
+    ) -> List[torch.Tensor]:
         raise NotImplemented()
 
     def start_train_session(self):

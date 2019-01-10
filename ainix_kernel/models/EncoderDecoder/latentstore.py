@@ -10,7 +10,7 @@ import numpy as np
 from ainix_common.parsing.ast_components import ObjectChoiceNode
 from ainix_common.parsing.stringparser import StringParser
 from ainix_common.parsing.typecontext import TypeContext, AInixObject, AInixType
-from ainix_kernel.indexing.examplestore import ExamplesStore
+from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits
 import torch.nn.functional as F
 
 from ainix_kernel.training.augmenting.replacers import Replacer
@@ -79,6 +79,23 @@ class LatentStore(ABC):
     def get_default_trainer(self) -> 'LatentStoreTrainer':
         raise ValueError("This latent store does not support training")
 
+    def get_latent_for_example(
+        self,
+        type_id: int,
+        example_id: int,
+        dfs_depth: int
+    ) -> Optional[torch.Tensor]:
+        raise NotImplemented()
+
+    def set_latent_for_example(
+        self,
+        new_latent: torch.Tensor,
+        type_id: int,
+        example_id: int,
+        dfs_depth: int
+    ):
+        raise NotImplemented()
+
 
 class TorchLatentStore(LatentStore):
     def __init__(
@@ -130,6 +147,21 @@ class TorchLatentStore(LatentStore):
         if int(dfs_depth / 2) >= len(depth_to_inds_in_type):
             return None
         return self.type_ind_to_latents[type_id].latents[depth_to_inds_in_type[int(dfs_depth / 2)]]
+
+    def set_latent_for_example(
+        self,
+        new_latent: torch.Tensor,
+        type_id: int,
+        example_id: int,
+        dfs_depth: int
+    ):
+        if example_id not in self.example_to_depths_to_ind_to_types:
+            raise ValueError()
+        depth_to_inds_in_type = self.example_to_depths_to_ind_to_types[example_id]
+        if int(dfs_depth / 2) >= len(depth_to_inds_in_type):
+            raise ValueError()
+        self.type_ind_to_latents[type_id].latents[depth_to_inds_in_type[int(dfs_depth / 2)]] = \
+            new_latent
 
 
 class LatentStoreBuilder(ABC):
@@ -296,11 +328,12 @@ class TorchStoreTrainerAdam(LatentStoreTrainer):
 def make_latent_store_from_examples(
     examples: ExamplesStore,
     latent_size: int,
-    replacer: Replacer
+    replacer: Replacer,
+    splits=(DataSplits.TRAIN,)
 ) -> LatentStore:
     parser = StringParser(type_context=examples.type_context)
     builder = TorchLatentStoreBuilder(examples.type_context.get_type_count(), latent_size)
-    for example in examples.get_all_examples():
+    for example in examples.get_all_examples(splits):
         if replacer is not None:
             x, y = replacer.strings_replace(example.xquery, example.ytext)
         else:

@@ -101,7 +101,7 @@ class EncDecModel(StringTypeTranslateCF):
         self,
         x_string: str,
         force_path: ObjectChoiceNode
-    ) -> Tuple[List[torch.Tensor], List[int]]:
+    ) -> List[torch.Tensor]:
         query_summary, encoded_tokens = self.query_encoder([x_string])
         return self.decoder.get_latent_select_states(query_summary, encoded_tokens, force_path)
 
