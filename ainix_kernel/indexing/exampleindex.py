@@ -29,10 +29,12 @@ class ExamplesIndex(ExamplesStore):
         scheme = self.get_scheme()
         self.parser = StringParser(type_context)
         self.backend = backend or WhooshIndexBackend(scheme)
+        self.example_count = 0
 
     @staticmethod
     def get_scheme() -> 'IndexBackendScheme':
         return IndexBackendScheme(
+            example_id=IndexBackendFields.NUMBER,
             xquery=IndexBackendFields.TEXT,
             ytext=IndexBackendFields.TEXT,
             xtype=IndexBackendFields.ID,
@@ -61,6 +63,7 @@ class ExamplesIndex(ExamplesStore):
 
     def add_example(self, example: Example) -> None:
         self.backend.add_documents([attr.asdict(example)])
+        self.example_count += 1
 
     def add_many_to_many_with_weighted(
         self,
@@ -75,7 +78,7 @@ class ExamplesIndex(ExamplesStore):
         for x in x_values:
             split = get_split_from_example(x, y_type, splits)
             for y, weight in zip(y_values, weights):
-                new_example = Example(x, y, x_type, y_type, weight, y_group,
+                new_example = Example(self.example_count, x, y, x_type, y_type, weight, y_group,
                                       split=split.value,
                                       yindexable=self._get_yparsed_rep(y, y_type))
                 self.add_example(new_example)

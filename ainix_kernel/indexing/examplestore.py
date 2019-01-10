@@ -43,6 +43,7 @@ def get_split_from_example(x_string: str, y_type: str, splits: SPLIT_TYPE) -> Da
 
 @attr.s(auto_attribs=True, frozen=True)
 class Example:
+    example_id: int
     xquery: str
     ytext: str
     xtype: str
