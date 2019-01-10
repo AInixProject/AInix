@@ -172,9 +172,6 @@ class TreeRNNDecoder(TreeDecoder):
         self.type_vectorizer = type_vectorizer
         self.type_context = type_context
 
-        # TODO this is disgusting and should be removed!
-        self.non_copy_step_num = 0
-
     def _node_to_token_type(self, node: AstNode):
         if isinstance(node, ObjectNode):
             return node.implementation
@@ -245,8 +242,7 @@ class TreeRNNDecoder(TreeDecoder):
             types_to_select=[teacher_force_path.type_to_choose],
             expected=expected,
             num_of_parents_with_copy_option=num_parents_with_a_copy_option,
-            example_inds=[example_id],
-            dfs_depths=[self.non_copy_step_num]  # TODO plz no
+            example_inds=[example_id]
         )
 
         next_expected_set = expected.get_next_node_for_choice(
@@ -254,14 +250,6 @@ class TreeRNNDecoder(TreeDecoder):
         ).next_node
         assert next_expected_set is not None, "Teacher force path not in expected ast set!"
         next_object_node = teacher_force_path.next_node_not_copy
-
-        if num_parents_with_a_copy_option == 0:
-            # TODO KILL AHHHH
-            self.non_copy_step_num += 1
-        if expected.copy_is_known_choice():
-            # TODO wtf is this
-            self.non_copy_step_num += 1
-
         hiddens, child_loss = self._train_objectnode_step(
             outs, hiddens, memory_tokens, next_expected_set, next_object_node,
             num_parents_with_a_copy_option + (1 if expected.copy_is_known_choice() else 0),
@@ -306,8 +294,6 @@ class TreeRNNDecoder(TreeDecoder):
         assert arg_set_data is not None, "Teacher force path not in expected ast set!"
         latest_hidden = last_hidden
         child_loss = 0
-        if num_of_parents_with_a_copy_option == 0:
-            self.non_copy_step_num += 1
         for arg in teacher_force_path.implementation.children:
             next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
             next_force_path = teacher_force_path.get_choice_node_for_arg(arg.name)
@@ -350,7 +336,6 @@ class TreeRNNDecoder(TreeDecoder):
         for i in range(len(y_asts)):
             if y_asts[i] is None or teacher_force_paths[i] is None:
                 raise ValueError("If training expect path to be previded")
-            self.non_copy_step_num = 0  # TODO This hurts me inside
             last_hidden, loss = self._train_objectchoice_step(
                 query_summary[i:i+1], memory_encoding[i:i+1], None, y_asts[i],
                 teacher_force_paths[i], 0, example_ids[i]
@@ -395,8 +380,7 @@ class TreeRNNDecoder(TreeDecoder):
             "name": "TreeRNNDecoder",
             "rnn_cell": self.rnn_cell,
             "action_selector": self.action_selector.get_save_state_dict(),
-            "ast_vectorizer": self.ast_vectorizer.get_save_state_dict(),
-            "ast_vocab": self.ast_vocab.get_save_state_dict(),
+            "type_vectorizer": self.type_vectorizer.get_save_state_dict(),
             "my_model_state": self.state_dict()
         }
 
@@ -410,8 +394,8 @@ class TreeRNNDecoder(TreeDecoder):
         instance = cls(
             rnn_cell=state_dict['rnn_cell'],
             action_selector=SimpleActionSelector.create_from_save_state_dict(
-                state_dict['action_selector'], ast_vocab),
-            ast_vectorizer=vectorizer_from_save_dict(state_dict['ast_vectorizer']),
+                state_dict['action_selector'], new_type_context),
+            type_vectorizer=vectorizer_from_save_dict(state_dict['type_vectorizer']),
             type_context=new_type_context
         )
         # Caution, this will probably overwrite any speciallness we do in

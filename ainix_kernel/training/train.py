@@ -52,9 +52,9 @@ class TypeTranslateCFTrainer:
             self._train_one_epoch(epoch)
             if hasattr(self.model, "plz_train_this_latent_store_thanks"):
                 # TODO wasdfahwerdfgv I should sleep
-                print("updatedin the thing 🦔🦔")
                 latent_store = self.model.plz_train_this_latent_store_thanks()
                 if latent_store:
+                    print("updatedin the thing 🦔🦔")
                     update_latent_store_from_examples(self.model, latent_store, self.example_store,
                                                       self.replacer, self.string_parser,
                                                       (DataSplits.TRAIN,))

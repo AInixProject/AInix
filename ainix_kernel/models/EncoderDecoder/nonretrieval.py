@@ -74,14 +74,12 @@ class SimpleActionSelector(ActionSelector):
         types_to_select: List[AInixType],
         expected: AstObjectChoiceSet,
         num_of_parents_with_copy_option: int,
-        example_inds: List[int],
-        dfs_depths: List[int]
+        example_inds: List[int]
     ) -> torch.Tensor:
         assert len(types_to_select) == 1, "No batch yet"
         assert types_to_select[0] == expected.type_to_choose
         impls_indices, scores = self.object_selector(latent_vec, types_to_select)
         assert len(impls_indices) == 1 and len(scores) == 1, "no batch yet"
-        assert dfs_depths[0] % 2 == 0
         impls_indices_correct = are_indices_valid(impls_indices[0], self.type_context, expected)
         loss = 0
         for correct_indicies, predicted_score in zip(impls_indices_correct, scores[0]):
@@ -154,11 +152,11 @@ class SimpleActionSelector(ActionSelector):
         }
 
     @classmethod
-    def create_from_save_state_dict(cls, save_dict: dict, ast_vocab: Vocab):
+    def create_from_save_state_dict(cls, save_dict: dict, type_context: TypeContext):
         instance = cls(
             latent_size=save_dict['latent_size'],
             object_selector=save_dict['object_selector'],
-            ast_vocab=ast_vocab
+            type_context=type_context
         )
         instance.load_state_dict(save_dict['state_dict'])
         return instance

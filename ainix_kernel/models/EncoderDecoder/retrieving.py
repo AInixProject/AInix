@@ -69,12 +69,11 @@ class RetrievalActionSelector(ActionSelector):
         types_to_select: List[AInixType],
         expected: AstObjectChoiceSet,
         num_of_parents_with_copy_option: int,
-        example_inds: List[int],
-        dfs_depths: List[int]
+        example_inds: List[int]
     ) -> torch.Tensor:
         if not self.is_in_training_session:
             raise ValueError("must be in training session to train")
-        assert len(types_to_select) == len(example_inds) == len(dfs_depths) == 1
+        assert len(types_to_select) == len(example_inds) == 1
         #self.latent_store_trainer.update_value(
         #    types_to_select[0].ind, example_inds[0], dfs_depths[0], latent_vec[0])
         nearest_datas, similarities = self.latent_store.get_n_nearest_latents(

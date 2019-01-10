@@ -38,8 +38,7 @@ class ActionSelector(MultiforwardTorchModule, ABC):
         types_to_select: List[AInixType],
         expected: AstObjectChoiceSet,
         num_of_parents_with_copy_option: int,
-        example_inds: List[int],
-        dfs_depths: List[int]
+        example_inds: List[int]
     ) -> torch.Tensor:
         pass
 
