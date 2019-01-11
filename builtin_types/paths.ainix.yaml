@@ -132,15 +132,15 @@ defines:
       children:
           - name: value
             required: True
-            type: DotSeperatedWords
+            type: DotSeparatedWords
       preferred_object_parser:
           grammar: |
               value
     - define_new: type
-      name: DotSeperatedWords
+      name: DotSeparatedWords
     - define_new: object
-      type: DotSeperatedWords
-      name: dot_seperated_word_list_object
+      type: DotSeparatedWords
+      name: dot_separated_word_list_object
       children:
           - name: current
             type: GenericWord
@@ -155,6 +155,7 @@ defines:
     # need to figure out a way to unambigiously have file paths.
     # For example txt should go to the txt node, not a generic spelled out extension
     # Also needs to somehow detect if the only value or not
+
     #- &extension_obj
     #  define_new: object
     #  type: FileExtension

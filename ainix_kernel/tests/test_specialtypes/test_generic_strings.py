@@ -1,6 +1,8 @@
+from ainix_common.parsing import loader
 from ainix_common.parsing.parse_primitives import TypeParserResult
 from ainix_common.parsing.stringparser import StringParser, AstUnparser, UnparseResult
 from ainix_common.tests.testutils import send_result
+from ainix_kernel.specialtypes import generic_strings
 from ainix_kernel.specialtypes.generic_strings import *
 from ainix_kernel.specialtypes.generic_strings import \
     _get_all_symbols, _create_root_types, _create_all_word_parts, _name_for_word_part
@@ -143,4 +145,24 @@ def test_word_parts_3():
                                      word_part_type)
     assert data.parse_success
     assert data.remaining_string == ".bar"
+
+
+def test_generic_word():
+    context = TypeContext()
+    loader.load_path("builtin_types/generic_parsers.ainix.yaml", context, up_search_limit=4)
+    generic_strings.create_generic_strings(context)
+    context.finalize_data()
+    parser = StringParser(context)
+    ast = parser.create_parse_tree("a", WORD_TYPE_NAME)
+    generic_word_ob = ast.next_node_not_copy
+    assert generic_word_ob.implementation.name == WORD_OBJ_NAME
+    parts_arg = generic_word_ob.get_choice_node_for_arg("parts")
+    parts_v = parts_arg.next_node_not_copy
+    assert parts_v.implementation.name == "word_part_a"
+    mod_type_choice = parts_v.get_choice_node_for_arg(WORD_PART_MODIFIER_ARG_NAME)
+    mod_type_object = mod_type_choice.next_node_not_copy
+    assert mod_type_object.implementation.name == MODIFIER_LOWER_NAME
+    unparser = AstUnparser(context)
+    result = unparser.to_string(ast)
+    assert result.total_string == "a"
 
