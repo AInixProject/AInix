@@ -155,3 +155,28 @@ def test_make_copy_ast_other_arg():
     cpa2 = a2c.next_node_is_copy
     assert cpa2.start == 1
     assert cpa2.end == 1
+
+
+def test_make_copy_ast_both():
+    tc = get_toy_strings_context()
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    ast = parser.create_parse_tree("TWO foo foo", "ToySimpleStrs")
+    unpar_res = unparser.to_string(ast)
+    assert unpar_res.total_string == "TWO foo foo"
+    tokenizer = SpaceTokenizer()
+    in_str = "Hello foo sdf cow"
+    tokens, metadata = tokenizer.tokenize(in_str)
+    result = make_copy_versions_of_tree(ast, unparser, metadata)
+    toy_str_obj = result.next_node_not_copy
+    assert toy_str_obj.implementation.name == "two_string"
+    a1c = toy_str_obj.get_choice_node_for_arg("arg1")
+    assert a1c.copy_was_chosen
+    cpa1 = a1c.next_node_is_copy
+    assert cpa1.start == 1
+    assert cpa1.end == 1
+    a2c = toy_str_obj.get_choice_node_for_arg("arg2")
+    assert a2c.copy_was_chosen
+    cpa2 = a2c.next_node_is_copy
+    assert cpa2.start == 1
+    assert cpa2.end == 1
