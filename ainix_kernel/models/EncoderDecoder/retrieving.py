@@ -8,7 +8,8 @@ from ainix_common.parsing.ast_components import AstObjectChoiceSet
 from ainix_common.parsing.typecontext import AInixType, TypeContext
 from ainix_kernel.model_util.operations import sparse_groupby_sum
 from ainix_kernel.model_util.vocab import are_indices_valid
-from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector, ProduceObjectAction
+from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector, ProduceObjectAction, \
+    CopyAction
 from ainix_kernel.models.EncoderDecoder.latentstore import LatentStore, COPY_IND, LatentStoreTrainer
 from ainix_kernel.models.EncoderDecoder.nonretrieval import CopySpanPredictor, \
     get_copy_depth_discount
@@ -57,7 +58,9 @@ class RetrievalActionSelector(ActionSelector):
         choice_ind = int(impl_keys[impl_scores.argmax()])
         choose_copy = choice_ind == COPY_IND
         if choose_copy:
-            raise NotImplemented()
+            pred_start, pred_end = self.span_predictor.inference_predict_span(
+                latent_vec, memory_tokens)[0]
+            return CopyAction(pred_start, pred_end)
         else:
             impl = self.type_context.get_object_by_ind(choice_ind)
             return ProduceObjectAction(impl)
@@ -86,7 +89,7 @@ class RetrievalActionSelector(ActionSelector):
         impls_chosen = nearest_datas.impl_choices[keep_mask]
 
         impl_scores, impl_keys = sparse_groupby_sum(F.softmax(similarities), impls_chosen)
-        impls_indices_correct = are_indices_valid(impl_keys, self.type_context, expected)
+        impls_indices_correct = are_indices_valid(impl_keys, self.type_context, expected, COPY_IND)
         # TODO weights
         loss = torch.Tensor([0])[0]
         if len(impl_scores) > 1:

@@ -338,12 +338,21 @@ def torch_inds_to_objects(indicies: torch.Tensor, type_context: TypeContext) -> 
 def are_indices_valid(
     indices: torch.Tensor,
     tc: TypeContext,
-    valid_set: AstObjectChoiceSet
+    valid_set: AstObjectChoiceSet,
+    special_copy_ind: int = None
 ):
     """Checks some set of indices into a vocab against a AstSet. Returns a tensor
     with value of 1 where known valid and 0 otherwise"""
-    objects = torch_inds_to_objects(indices, tc)
-    valid_func = np.vectorize(
-        lambda n: 1.0 if valid_set.is_known_choice(n.name) else 0.0,
-        otypes='f')
-    return torch.from_numpy(valid_func(objects))
+    if special_copy_ind is None:
+        objects = torch_inds_to_objects(indices, tc)
+        valid_func = np.vectorize(
+            lambda n: 1.0 if valid_set.is_known_choice(n.name) else 0.0,
+            otypes='f')
+        return torch.from_numpy(valid_func(objects))
+    else:
+        def test_func(ind: int):
+            if ind == special_copy_ind:
+                return 1 if valid_set.copy_is_known_choice() else 0
+            return 1 if valid_set.is_known_choice(tc.ind_to_object[ind]) else 0
+        valid_func = np.vectorize(test_func, otypes='f')
+        return torch.from_numpy(valid_func(indices.numpy()))

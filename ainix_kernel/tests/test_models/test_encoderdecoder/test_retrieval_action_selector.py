@@ -105,8 +105,9 @@ def test_train_retriever_selector_copy():
     bo1 = AInixObject(tc, "BO1", "BT")
     AInixObject(tc, "BO2", "BT")
     tc.finalize_data()
+    latent_size = 3
 
-    builder = TorchLatentStore.get_builder(tc.get_type_count(), 3)
+    builder = TorchLatentStore.get_builder(tc.get_type_count(), latent_size)
     valid_choices = []
     oc = ObjectChoiceNode(ft, ObjectNode(fo1))
     builder.add_example(0, oc)
@@ -119,6 +120,43 @@ def test_train_retriever_selector_copy():
     s1 = AstObjectChoiceSet(ft)
     s1.add(oc, True, 1, 1)
     valid_choices.append((1, 0, s1))
+    latent_store = builder.produce_result()
+    #
+    embed = torch.nn.Embedding(len(valid_choices), latent_size)
+    inputs = [(torch.LongTensor([i]), c, torch.randn(1, 5, latent_size))
+              for i, c in enumerate(valid_choices)]
+    instance = RetrievalActionSelector(latent_store, tc, retrieve_dropout_p=0)
+    instance.start_train_session()
+    params = itertools.chain(instance.parameters(), embed.parameters())
+    optim = torch.optim.Adam(params, lr=1e-2)
+    print(inputs)
 
+    def do_train():
+        optim.zero_grad()
+        loss = 0
+        for x, (example_id, step, astset), mem_tokens in inputs:
+            x_v = embed(x)
+            loss += instance.forward_train(x_v, mem_tokens, [tc.get_type_by_name("FT")],
+                                           astset, 0, [example_id])
+        loss.backward()
+        optim.step()
+        return loss
 
+    for e in range(100):
+        loss = do_train()
+        #print("LOSS", loss)
+        #s: TorchLatentStore = instance.latent_store
+        #print("LATENTS", s.type_ind_to_latents)
 
+    for x, (example_id, step, astset), mem_tokens in inputs:
+        x_v = embed(x)
+        pred = instance.infer_predict(x_v, mem_tokens, tc.get_type_by_name("FT"))
+        #print("x", x)
+        #print("pred", pred)
+        if isinstance(pred, ProduceObjectAction):
+            assert astset.is_known_choice(pred.implementation.name)
+        elif isinstance(pred, CopyAction):
+            n = ObjectChoiceNode(ft, CopyNode(ft, pred.start, pred.end))
+            assert astset.is_node_known_valid(n)
+        else:
+            raise ValueError()
