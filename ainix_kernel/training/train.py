@@ -190,11 +190,14 @@ if __name__ == "__main__":
     from ainix_kernel.models.SeaCR.seacr import make_default_seacr, make_rulebased_seacr
     from ainix_kernel.models.EncoderDecoder.encdecmodel import get_default_encdec_model, EncDecModel, \
     EncDecModel, EncDecModel, EncDecModel
+    replacers = get_all_replacers()
 
-    model = get_default_encdec_model(index, standard_size=64)
+    #model = get_default_encdec_model(index, standard_size=64)
+    model = get_default_encdec_model(
+        index, standard_size=64, replacer=replacers, use_retrieval_decoder=True)
     #model = make_rulebased_seacr(index)
 
-    trainer = TypeTranslateCFTrainer(model, index, replacer=get_all_replacers())
+    trainer = TypeTranslateCFTrainer(model, index, replacer=replacers)
     train_time = datetime.datetime.now()
     print("train time", train_time)
     trainer.train(40)

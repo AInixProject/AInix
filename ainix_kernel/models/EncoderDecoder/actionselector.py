@@ -48,6 +48,9 @@ class ActionSelector(MultiforwardTorchModule, ABC):
     def end_train_session(self):
         pass
 
+    def get_save_state_dict(self) -> dict:
+        raise NotImplemented()
+
 
 # Define classes for each kind of action you can take
 # It is not exactly clear this strictly necessary as there is 1 to 1 mapping

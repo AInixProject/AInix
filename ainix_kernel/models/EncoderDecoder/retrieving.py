@@ -109,3 +109,17 @@ class RetrievalActionSelector(ActionSelector):
     def end_train_session(self):
         self.is_in_training_session = False
         self.latent_store_trainer = None
+
+    def get_save_state_dict(self):
+        raise NotImplemented()
+        return {
+            "name": "RetrievalActionSelector",
+            "version": 0,
+            "latent_size": self.latent_size,
+            "latent_store": self.latent_store,
+            "retrieve_dropout_p": self.retrieve_dropout_p
+        }
+
+    @classmethod
+    def create_from_save_state_dict(cls, save_dict: dict, type_context: TypeContext):
+        pass
