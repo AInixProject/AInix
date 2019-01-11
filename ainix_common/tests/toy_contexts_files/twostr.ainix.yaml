@@ -44,4 +44,37 @@ defines:
       preferred_object_parser:
           grammar: |
             "bpop"
+    # Nested
+    - define_new: type
+      name: ToyNestedStrs
+      default_type_parser: max_munch_type_parser
+    - define_new: object
+      name: double_nested_str
+      type: ToyNestedStrs
+      children:
+          - name: arg1
+            type: ToyNestedStrs
+            required: True
+          - name: arg2
+            type: ToyNestedStrs
+            required: True
+      preferred_object_parser:
+          grammar: |
+              "TWONEST " arg1 " " arg2
+    - define_new: object
+      name: terminal_nested_str
+      type: ToyNestedStrs
+      preferred_object_parser:
+          grammar: |
+              "TERM"
+    - define_new: object
+      name: one_nested_str
+      type: ToyNestedStrs
+      children:
+          - name: arg1
+            type: ToyNestedStrs
+            required: True
+      preferred_object_parser:
+          grammar: |
+              "ONENEST " arg1
 ...

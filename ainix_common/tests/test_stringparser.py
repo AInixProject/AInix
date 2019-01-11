@@ -364,20 +364,26 @@ def test_unparse_single(simple_p_tc):
     unparser = AstUnparser(simple_p_tc)
     result = unparser.to_string(ast)
     assert result.total_string == "Hello Bar"
+    pointers = list(ast.depth_first_iter())
     # Test spans
-    assert result.node_to_string(ast) == "Hello Bar"
-    objectOfFoo = ast.next_node
-    assert result.node_to_string(objectOfFoo) == "Hello Bar"
+    assert result.pointer_to_string(pointers[0]) == "Hello Bar"
+    objectOfFoo = ast.next_node_not_copy
+    assert objectOfFoo == pointers[1].cur_node
+    assert result.pointer_to_string(pointers[1]) == "Hello Bar"
     arg1_is_present = objectOfFoo.get_choice_node_for_arg("Arg1")
-    assert result.node_to_string(arg1_is_present) == "Bar"
-    arg1_present_o = arg1_is_present.next_node
-    assert result.node_to_string(arg1_present_o) == "Bar"
+    assert arg1_is_present == pointers[2].cur_node
+    assert result.pointer_to_string(pointers[2]) == "Bar"
+    arg1_present_o = arg1_is_present.next_node_not_copy
+    assert arg1_present_o == pointers[3].cur_node
+    assert result.pointer_to_string(pointers[3]) == "Bar"
     arg1_typechoice = arg1_present_o.get_choice_node_for_arg(OPTIONAL_ARGUMENT_NEXT_ARG_NAME)
-    assert result.node_to_string(arg1_typechoice) == "Bar"
+    assert arg1_typechoice == pointers[4].cur_node
+    assert result.pointer_to_string(pointers[4]) == "Bar"
     baro = arg1_typechoice.next_node
-    assert result.node_to_string(baro) == "Bar"
-    for pointer in ast.depth_first_iter():
-        assert pointer.cur_node in result.node_to_span
+    assert baro == pointers[5].cur_node
+    assert result.pointer_to_string(pointers[5]) == "Bar"
+    #for pointer in ast.depth_first_iter():
+    #    assert pointer in result.node_to_span
 
 
 def test_unparse_double():
@@ -389,10 +395,13 @@ def test_unparse_double():
     result = unparser.to_string(ast)
     assert result.total_string == "TWO foo bar"
     assert isinstance(ast.next_node, ObjectNode)
+    pointers = list(ast.depth_first_iter())
     arg1_choice: ObjectChoiceNode = ast.next_node.get_choice_node_for_arg("arg1")
-    assert result.node_to_string(arg1_choice) == "foo"
+    assert arg1_choice == pointers[2].cur_node
+    assert result.pointer_to_string(pointers[2]) == "foo"
     arg1_ob: ObjectNode = arg1_choice.next_node
-    assert result.node_to_string(arg1_ob) == "foo"
+    assert arg1_ob == pointers[3].cur_node
+    assert result.pointer_to_string(pointers[3]) == "foo"
 
 
 def test_unparse_no_arg():
@@ -414,10 +423,13 @@ def test_unparse_no_arg():
     unparser = AstUnparser(tc)
     result = unparser.to_string(ast)
     assert result.total_string == "foohere"
+    pointers = list(ast.depth_first_iter())
     noargs = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
-    assert result.node_to_string(noargs) == "here"
+    assert noargs == pointers[2].cur_node
+    assert result.pointer_to_string(pointers[2]) == "here"
     for pointer in ast.depth_first_iter():
-        assert pointer.cur_node in result.node_to_span
+        assert (pointer.get_child_nums_here(), pointer.cur_node) in \
+               result.child_path_and_node_to_span
 
 
 def test_unparse_no_arg_no_str():
@@ -436,10 +448,13 @@ def test_unparse_no_arg_no_str():
     unparser = AstUnparser(tc)
     result = unparser.to_string(ast)
     assert result.total_string == "foo"
+    pointers = list(ast.depth_first_iter())
     noargs = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
-    assert result.node_to_string(noargs) == ""
+    assert noargs == pointers[2].cur_node
+    assert result.pointer_to_string(pointers[2]) == ""
     for pointer in ast.depth_first_iter():
-        assert pointer.cur_node in result.node_to_span
+        assert (pointer.get_child_nums_here(), pointer.cur_node) in \
+               result.child_path_and_node_to_span
 
 
 def test_unparse_copy_node():
@@ -604,6 +619,54 @@ def test_unparse_second_arg():
     ast = parser.create_parse_tree(string, "ToySimpleStrs")
     result = unparser.to_string(ast)
     assert result.total_string == string
+    arg1 = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
+    pointers = list(ast.depth_first_iter())
+    assert arg1 == pointers[2].cur_node
+    assert result.pointer_to_span(pointers[2]) == (4, 7)
+    assert result.pointer_to_string(pointers[2]) == "foo"
     arg2 = ast.next_node_not_copy.get_choice_node_for_arg("arg2")
-    assert result.node_to_span[arg2] == (8, 11)
-    assert result.node_to_string(arg2) == "bar"
+    assert arg2 == pointers[4].cur_node
+    assert result.pointer_to_span(pointers[4]) == (8, 11)
+    assert result.pointer_to_string(pointers[4]) == "bar"
+
+
+def test_unparse_second_arg2():
+    tc = get_toy_strings_context()
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    string = "TWO foo foo"
+    ast = parser.create_parse_tree(string, "ToySimpleStrs")
+    result = unparser.to_string(ast)
+    assert result.total_string == string
+    arg1 = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
+    pointers = list(ast.depth_first_iter())
+    assert arg1 == pointers[2].cur_node
+    assert result.pointer_to_span(pointers[2]) == (4, 7)
+    assert result.pointer_to_string(pointers[2]) == "foo"
+    arg2 = ast.next_node_not_copy.get_choice_node_for_arg("arg2")
+    assert arg2 == pointers[4].cur_node
+    assert result.pointer_to_span(pointers[4]) == (8, 11)
+    assert result.pointer_to_string(pointers[4]) == "foo"
+
+
+def test_unparse_nested2():
+    tc = get_toy_strings_context()
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    string = "TWONEST TWONEST TERM TERM TWONEST TERM ONENEST TERM"
+    ast = parser.create_parse_tree(string, "ToyNestedStrs")
+    result = unparser.to_string(ast)
+    assert result.total_string == string
+    fa1 = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
+    pointers = list(ast.depth_first_iter())
+    assert fa1 == pointers[2].cur_node
+    assert result.pointer_to_string(pointers[2]) == "TWONEST TERM TERM"
+    fa2 = ast.next_node_not_copy.get_choice_node_for_arg("arg2")
+    assert fa2 == pointers[8].cur_node
+    assert result.pointer_to_span(pointers[8]) == (26, len(string))
+    assert result.pointer_to_string(pointers[8]) == "TWONEST TERM ONENEST TERM"
+    sa1 = fa2.next_node_not_copy.get_choice_node_for_arg("arg1")
+    assert sa1 == pointers[10].cur_node
+    assert result.pointer_to_span(pointers[10]) == (34, 38)
+    assert result.pointer_to_string(pointers[10]) == "TERM"
+

@@ -6,7 +6,7 @@ from pyrsistent import pmap
 import ainix_common.parsing
 from ainix_common.parsing import typecontext
 from ainix_common.parsing.ast_components import ObjectChoiceNode, ObjectNode, CopyNode, \
-    ObjectNodeLike, is_obj_choice_a_not_present_node, is_obj_choice_a_present_node
+    ObjectNodeLike, is_obj_choice_a_not_present_node, is_obj_choice_a_present_node, AstIterPointer
 from ainix_common.parsing.model_specific.tokenizers import StringTokensMetadata
 from ainix_common.parsing.parse_primitives import (TypeParser, ArgParseDelegation,
                                                    ParseDelegationReturnMetadata, AInixParseError,
@@ -308,13 +308,15 @@ class AstUnparser:
         node: ObjectChoiceNode,
         parser: TypeParser,
         result_builder: '_UnparseResultBuilder',
-        left_offset: int
+        left_offset: int,
+        child_nums_here: Tuple[int, ...]
     ) -> str:
         if node.copy_was_chosen:
-            out_string = result_builder.add_from_copy_node(node.next_node_is_copy, left_offset)
-            result_builder.add_subspan(node, out_string, left_offset)
+            out_string = result_builder.add_from_copy_node(
+                node.next_node_is_copy, child_nums_here + (0, ), left_offset)
+            result_builder.add_subspan(node, child_nums_here, out_string, left_offset)
             return out_string
-        unparse = parser.to_string(node.next_node.implementation, node.type_to_choose)
+        unparse = parser.to_string(node.next_node_not_copy.implementation, node.type_to_choose)
         out_string = ""
         new_left_offset = left_offset
         for part_of_out in unparse.unparse_seq:
@@ -323,12 +325,13 @@ class AstUnparser:
                 new_left_offset += len(part_of_out)
             elif isinstance(part_of_out, ImplementationToStringDelegation):
                 impl_string = self._unparse_object_node(
-                    node.next_node, part_of_out.next_parser, result_builder, new_left_offset)
+                    node.next_node_not_copy, part_of_out.next_parser, result_builder,
+                    new_left_offset, child_nums_here + (0, ))
                 out_string += impl_string
                 new_left_offset += len(impl_string)
             else:
                 raise ValueError("Unexpected object in unparse_seq")
-        result_builder.add_subspan(node, out_string, left_offset)
+        result_builder.add_subspan(node, child_nums_here, out_string, left_offset)
         return out_string
 
     def _unparse_optional_obj_choice_node(
@@ -336,25 +339,29 @@ class AstUnparser:
         node: ObjectChoiceNode,
         parser_actual_type: TypeParser,
         result_builder: '_UnparseResultBuilder',
-        left_offset: int
+        left_offset: int,
+        child_nums_here: Tuple[int, ...]
     ) -> str:
         """Unparses an ObjectChoiceNode for an arg present or not. Does not actually
         use a parser and passes through the value to the next parser"""
         if node.copy_was_chosen:
-            out_string = result_builder.add_from_copy_node(node.next_node_is_copy, left_offset)
-            result_builder.add_subspan(node, out_string, left_offset)
+            out_string = result_builder.add_from_copy_node(
+                node.next_node_is_copy, child_nums_here + (0, ), left_offset)
+            result_builder.add_subspan(node, child_nums_here, out_string, left_offset)
             return out_string
         elif is_obj_choice_a_present_node(node):
             next_node = node.next_node_not_copy.get_choice_node_for_arg(
                 OPTIONAL_ARGUMENT_NEXT_ARG_NAME)
-            arg_str = self._unparse_object_choice_node(next_node, parser_actual_type,
-                                                       result_builder, left_offset)
-            result_builder.add_subspan(node.next_node, arg_str, left_offset)
+            arg_str = self._unparse_object_choice_node(
+                next_node, parser_actual_type, result_builder, left_offset,
+                child_nums_here + (0, 0))
+            result_builder.add_subspan(node.next_node, child_nums_here + (0, ),
+                                       arg_str, left_offset)
         elif is_obj_choice_a_not_present_node(node):
             arg_str = ""
         else:
             raise ValueError("Expected a present node choice here")
-        result_builder.add_subspan(node, arg_str, left_offset)
+        result_builder.add_subspan(node, child_nums_here, arg_str, left_offset)
         return arg_str
 
     def _unparse_object_node(
@@ -362,7 +369,8 @@ class AstUnparser:
         node: ObjectNode,
         parser: ObjectParser,
         result_builder: '_UnparseResultBuilder',
-        left_offset: int
+        left_offset: int,
+        child_nums_here: Tuple[int, ...]
     ) -> str:
         out_string = ""
         new_left_offset = left_offset
@@ -376,15 +384,16 @@ class AstUnparser:
                 new_left_offset += len(part_of_out.string)
             elif isinstance(part_of_out, ArgToStringDelegation):
                 next_node = node.get_choice_node_for_arg(part_of_out.arg.name)
-                #if next_node.copy_was_chosen:
-                #    arg_string = result_builder.add_from_copy_node(
-                #        next_node.next_node_is_copy, new_left_offset)
+                child_ind = node.implementation.children.index(part_of_out.arg)
+                new_child_path = child_nums_here + (child_ind, )
                 if part_of_out.arg.required:
                     arg_string = self._unparse_object_choice_node(
-                        next_node, part_of_out.arg.type_parser, result_builder, new_left_offset)
+                        next_node, part_of_out.arg.type_parser, result_builder, new_left_offset,
+                        new_child_path)
                 else:
                     arg_string = self._unparse_optional_obj_choice_node(
-                        next_node, part_of_out.arg.type_parser, result_builder, new_left_offset)
+                        next_node, part_of_out.arg.type_parser, result_builder, new_left_offset,
+                        new_child_path)
                 out_string += arg_string
                 new_left_offset += len(arg_string)
             else:
@@ -392,7 +401,7 @@ class AstUnparser:
                                  f"{part_of_out.__class__}")
         # TODO (DNGros): Loop through all not present args and unparse them to add their span.
         # This will allow us to add back in checks into copytools to make sure everything unparses
-        result_builder.add_subspan(node, out_string, left_offset)
+        result_builder.add_subspan(node, child_nums_here, out_string, left_offset)
         return out_string
 
     def _obj_node_to_arg_map(self, node: ObjectNode) -> ObjectNodeArgMap:
@@ -436,7 +445,7 @@ class AstUnparser:
             raise ValueError(f"Unable to get a parser type {ast.get_type_to_choose_name()} and "
                              f"root_parser {root_parser_name}")
         result_builder = _UnparseResultBuilder(ast, tokenized_metadata)
-        self._unparse_object_choice_node(ast, root_parser, result_builder, 0)
+        self._unparse_object_choice_node(ast, root_parser, result_builder, 0, tuple())
         return result_builder.as_result()
 
 
@@ -445,14 +454,20 @@ class UnparseResult:
     """Used to keep track about the relations of AST nodes to their unparsed
     string representation."""
     total_string: str
-    node_to_span: Mapping[Union[ObjectNode, ObjectChoiceNode], Tuple[str, int]]
+    child_path_and_node_to_span: Mapping[
+        Tuple[Tuple[int, ...], Union[ObjectNode, ObjectChoiceNode]],
+        Tuple[int, int]
+    ]
 
-    def node_to_string(self, node) -> str:
-        span = self.node_to_span.get(node)
+    def pointer_to_span(self, pointer: AstIterPointer) -> Tuple[int, int]:
+        span = self.child_path_and_node_to_span.get(
+            (pointer.get_child_nums_here(), pointer.cur_node))
         if span is None:
-            raise KeyError(f"Unable to find node {node} in available options of "
-                           f"{self.node_to_span}")
-        si, endi = self.node_to_span[node]
+            raise KeyError(f"Unable to find pointer {pointer}")
+        return span
+
+    def pointer_to_string(self, pointer: AstIterPointer) -> str:
+        si, endi = self.pointer_to_span(pointer)
         return self.total_string[si:endi]
 
 
@@ -460,12 +475,16 @@ class _UnparseResultBuilder:
     """Used in AstUnparser while building a result"""
     def __init__(self, root: ObjectChoiceNode, copy_input_token_data: StringTokensMetadata):
         self.root = root
-        self._node_map: Dict[Union[ObjectNodeLike, ObjectChoiceNode], Tuple[str, int]] = {}
+        self._node_map: Dict[
+            Tuple[Tuple[int, ...], Union[ObjectNodeLike, ObjectChoiceNode]],
+            Tuple[str, int]
+        ] = {}
         self._copy_input_token_data = copy_input_token_data
 
     def add_subspan(
         self,
         node: Union[ObjectNodeLike, ObjectChoiceNode],
+        child_nums_path: Tuple[int, ...],
         string: str,
         left_offset: int
     ):
@@ -473,20 +492,26 @@ class _UnparseResultBuilder:
 
         Args:
             node: the node that this string relates to
+            child_nums_path: the child num paths that comes from pointer.get_child_nums_here
             string: the string which we have unparsed as
             left_offset: the offset into the unparsed string this occurs
         """
-        self._node_map[node] = (string, left_offset)
+        self._node_map[child_nums_path, node] = (string, left_offset)
 
     def as_result(self) -> UnparseResult:
-        top_string, _ = self._node_map[self.root]
+        top_string, _ = self._node_map[tuple(), self.root]
         node_to_span = pmap({
-            node: (left_offset, left_offset+len(string))
-            for node, (string, left_offset) in self._node_map.items()
+            node_info: (left_offset, left_offset+len(string))
+            for node_info, (string, left_offset) in self._node_map.items()
         })
         return UnparseResult(top_string, node_to_span)
 
-    def add_from_copy_node(self, node: CopyNode, left_offset: int) -> str:
+    def add_from_copy_node(
+        self,
+        node: CopyNode,
+        child_path_here: Tuple[int, ...],
+        left_offset: int
+    ) -> str:
         """Used to add a span from a CopyNode appropriately copy from the input string
 
         Returns:
@@ -498,7 +523,7 @@ class _UnparseResultBuilder:
             self._copy_input_token_data.actual_pos_to_joinable_pos[node.start]:
             self._copy_input_token_data.actual_pos_to_joinable_pos[node.end] + 1
         ])
-        self.add_subspan(node, string, left_offset)
+        self.add_subspan(node, child_path_here, string, left_offset)
         return string
 
 

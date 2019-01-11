@@ -56,23 +56,24 @@ def add_copies_to_ast_set(
     """Takes in an AST that has been parsed and adds copynodes where appropriate
     to an AstSet that contains that AST"""
     unparse = unparser.to_string(ast)
+    df_ast_pointers = list(ast.depth_first_iter())
     df_ast_nodes = [pointer.cur_node for pointer in ast.depth_first_iter()]
     df_ast_set = list(depth_first_iterate_ast_set_along_path(ast_set, df_ast_nodes))
     assert len(df_ast_nodes) == len(df_ast_set)
-    for node, cur_set in zip(df_ast_nodes, df_ast_set):
-        if isinstance(node, ObjectChoiceNode):
+    for pointer, cur_set in zip(df_ast_pointers, df_ast_set):
+        if isinstance(pointer.cur_node, ObjectChoiceNode):
             # TODO (DNGros): Figure out if we are handling weight and probability right
             # I think works fine now if known valid
             _try_add_copy_node_at_object_choice(
-                node, cur_set, True, copy_node_weight, 1, unparse, token_metadata)
-        elif isinstance(node, ObjectNode):
+                pointer, cur_set, True, copy_node_weight, 1, unparse, token_metadata)
+        elif isinstance(pointer.cur_node, ObjectNode):
             pass
         else:
             raise ValueError("Unrecognized node?")
 
 
 def _try_add_copy_node_at_object_choice(
-    node: ObjectChoiceNode,
+    pointer: AstIterPointer,
     ast_set: AstObjectChoiceSet,
     known_valid: bool,
     max_weight: float,
@@ -80,11 +81,12 @@ def _try_add_copy_node_at_object_choice(
     unparse: UnparseResult,
     token_metadata: StringTokensMetadata,
 ):
+    node: ObjectChoiceNode = pointer.cur_node
     if is_obj_choice_a_not_present_node(node):
         return
-    if node not in unparse.node_to_span:
+    if (pointer.get_child_nums_here(), pointer.cur_node) not in unparse.child_path_and_node_to_span:
         return  # This might be a terrible idea since won't know when bad parser...
-    this_node_str = unparse.node_to_string(node)
+    this_node_str = unparse.pointer_to_string(pointer)
     copy_pos = string_in_tok_list(this_node_str, token_metadata)
     if copy_pos:
         copy_node = CopyNode(node.type_to_choose, copy_pos[0], copy_pos[1])
@@ -101,7 +103,7 @@ def make_copy_versions_of_tree(
     last_pointer = None
     while cur_pointer:
         if isinstance(cur_pointer.cur_node, ObjectChoiceNode):
-            this_node_str = unparse.node_to_string(cur_pointer.cur_node)
+            this_node_str = unparse.pointer_to_string(cur_pointer)
             copy_pos = string_in_tok_list(this_node_str, token_metadata) if this_node_str else None
             if copy_pos:
                 copy_node = CopyNode(

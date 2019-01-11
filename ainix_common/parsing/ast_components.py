@@ -573,7 +573,19 @@ class AstIterPointer:
         while cur:
             out.append(cur.cur_node)
             cur = cur.parent
-        out = list(reversed(out)) # appended on bottom up. Switch to top down
+        out = list(reversed(out))  # appended on bottom up. Switch to top down
+        return out
+
+    def get_child_nums_here(self) -> Tuple[int, ...]:
+        """Get nth child path of all the nodes to here such that if from the root
+        down if you called get_nth_child on each of the results, you would get
+        back to this node"""
+        cur = self
+        out = []
+        while cur and cur.parent_child_ind is not None:
+            out.append(cur.parent_child_ind)
+            cur = cur.parent
+        out = tuple(reversed(out))  # appended on bottom up. Switch to top down
         return out
 
     def change_here(
