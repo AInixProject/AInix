@@ -162,8 +162,10 @@ class TorchLatentStore(LatentStore):
         depth_to_inds_in_type = self.example_to_depths_to_ind_to_types[example_id]
         if dfs_depth % 2 != 0 or (dfs_depth / 2) >= len(depth_to_inds_in_type):
             raise ValueError()
-        self.type_ind_to_latents[type_id].latents[depth_to_inds_in_type[int(dfs_depth / 2)]] = \
-            new_latent
+        ind_in_type = depth_to_inds_in_type[int(dfs_depth / 2)]
+        if ind_in_type >= len(self.type_ind_to_latents[type_id].latents):
+            raise ValueError()
+        self.type_ind_to_latents[type_id].latents[ind_in_type] = new_latent
 
 
 class LatentStoreBuilder(ABC):

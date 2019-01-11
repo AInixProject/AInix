@@ -137,7 +137,7 @@ def update_latent_store_from_examples(
         # TODO Think about whether feeding in the raw x is good idea.
         # will change once have replacer sampling
         latents = model.get_latent_select_states(example.xquery, copy_ast)
-        nodes = list(ast.depth_first_iter())
+        nodes = list(copy_ast.depth_first_iter())
         #print("LATENTS", latents)
         for i, l in enumerate(latents):
             dfs_depth = i*2

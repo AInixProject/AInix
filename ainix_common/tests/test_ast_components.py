@@ -460,8 +460,6 @@ def test_object_node_set_equals_with_copy():
     assert set_instance.is_node_known_valid(two_strs)
 
 
-
-
 #def test_parse_set_weights_1(numbers_type_context, numbers_ast_set):
 #    parser = StringParser(numbers_type_context)
 #    root_type_name = "Number"
