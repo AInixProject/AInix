@@ -1,7 +1,7 @@
 from typing import Optional, Tuple, List
 from ainix_common.parsing.ast_components import ObjectChoiceNode, CopyNode, \
     ObjectNode, AstObjectChoiceSet, ObjectNodeSet, ImplementationSetData, \
-    depth_first_iterate_ast_set_along_path, is_obj_choice_a_not_present_node
+    depth_first_iterate_ast_set_along_path, is_obj_choice_a_not_present_node, AstIterPointer
 from ainix_common.parsing.model_specific.tokenizers import StringTokensMetadata, StringTokenizer
 from ainix_common.parsing.stringparser import AstUnparser, UnparseResult
 
@@ -89,4 +89,25 @@ def _try_add_copy_node_at_object_choice(
     if copy_pos:
         copy_node = CopyNode(node.type_to_choose, copy_pos[0], copy_pos[1])
         ast_set.add_node_when_copy(copy_node, known_valid, max_weight, max_probability)
+
+
+def make_copy_versions_of_tree(
+    ast: ObjectChoiceNode,
+    unparser: AstUnparser,
+    token_metadata: StringTokensMetadata
+) -> ObjectChoiceNode:
+    unparse = unparser.to_string(ast)
+    cur_pointer = AstIterPointer(ast, None, None)
+    last_pointer = None
+    while cur_pointer:
+        if isinstance(cur_pointer.cur_node, ObjectChoiceNode):
+            this_node_str = unparse.node_to_string(cur_pointer.cur_node)
+            copy_pos = string_in_tok_list(this_node_str, token_metadata) if this_node_str else None
+            if copy_pos:
+                copy_node = CopyNode(
+                    cur_pointer.cur_node.type_to_choose, copy_pos[0], copy_pos[1])
+                cur_pointer = cur_pointer.dfs_get_next().change_here(copy_node, always_clone=True)
+        last_pointer = cur_pointer
+        cur_pointer = cur_pointer.dfs_get_next()
+    return last_pointer.get_root().cur_node
 

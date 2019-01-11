@@ -42,7 +42,7 @@ def test_substring5():
     assert res is None
 
 
-def test_make_copy_ast():
+def test_add_copies_to_ast_set():
     tc = get_toy_strings_context()
     parser = StringParser(tc)
     unparser = AstUnparser(tc)
@@ -63,6 +63,29 @@ def test_make_copy_ast():
     assert n.implementation.name == "two_string"
     assert arg1set.copy_is_known_choice()
     assert arg1set.is_known_choice("foo")
+
+
+def test_add_copies_to_ast_set_other_arg():
+    tc = get_toy_strings_context()
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    ast = parser.create_parse_tree("TWO foo bar", "ToySimpleStrs")
+    unpar_res = unparser.to_string(ast)
+    assert unpar_res.total_string == "TWO foo bar"
+    tokenizer = SpaceTokenizer()
+    in_str = "Hello bar sf cow"
+    tokens, metadata = tokenizer.tokenize(in_str)
+    ast_set = AstObjectChoiceSet(tc.get_type_by_name("ToySimpleStrs"))
+    ast_set.add(ast, True, 1, 1)
+    n: ObjectNode = ast.next_node_not_copy
+    arg1set = ast_set.get_next_node_for_choice("two_string").next_node. \
+        get_arg_set_data(n.as_childless_node()).get_next_node_for_arg("arg2")
+    assert arg1set.is_known_choice("bar")
+    assert not arg1set.copy_is_known_choice()
+    add_copies_to_ast_set(ast, ast_set, unparser, metadata)
+    assert n.implementation.name == "two_string"
+    assert arg1set.copy_is_known_choice()
+    assert arg1set.is_known_choice("bar")
 
 
 @pytest.fixture(scope="function")
@@ -86,3 +109,49 @@ def test_numbers_copys(numbers_type_context):
     ast_set.add(ast, True, 1, 1)
     add_copies_to_ast_set(ast, ast_set, unparser, metadata)
     assert not ast_set.copy_is_known_choice()
+
+
+def test_make_copy_ast():
+    tc = get_toy_strings_context()
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    ast = parser.create_parse_tree("TWO foo bar", "ToySimpleStrs")
+    unpar_res = unparser.to_string(ast)
+    assert unpar_res.total_string == "TWO foo bar"
+    tokenizer = SpaceTokenizer()
+    in_str = "Hello there foo cow"
+    tokens, metadata = tokenizer.tokenize(in_str)
+    result = make_copy_versions_of_tree(ast, unparser, metadata)
+    toy_str_obj = result.next_node_not_copy
+    assert toy_str_obj.implementation.name == "two_string"
+    a1c = toy_str_obj.get_choice_node_for_arg("arg1")
+    cpa1 = a1c.next_node_is_copy
+    assert cpa1.start == 2
+    assert cpa1.end == 2
+    assert a1c.copy_was_chosen
+    a2c = toy_str_obj.get_choice_node_for_arg("arg2")
+    assert not a2c.copy_was_chosen
+    assert a2c.next_node_not_copy.implementation.name == "bar"
+
+
+def test_make_copy_ast_other_arg():
+    tc = get_toy_strings_context()
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    ast = parser.create_parse_tree("TWO foo bar", "ToySimpleStrs")
+    unpar_res = unparser.to_string(ast)
+    assert unpar_res.total_string == "TWO foo bar"
+    tokenizer = SpaceTokenizer()
+    in_str = "Hello bar sdf cow"
+    tokens, metadata = tokenizer.tokenize(in_str)
+    result = make_copy_versions_of_tree(ast, unparser, metadata)
+    toy_str_obj = result.next_node_not_copy
+    assert toy_str_obj.implementation.name == "two_string"
+    a1c = toy_str_obj.get_choice_node_for_arg("arg1")
+    assert not a1c.copy_was_chosen
+    assert a1c.next_node_not_copy.implementation.name == "foo"
+    a2c = toy_str_obj.get_choice_node_for_arg("arg2")
+    assert a2c.copy_was_chosen
+    cpa2 = a2c.next_node_is_copy
+    assert cpa2.start == 1
+    assert cpa2.end == 1

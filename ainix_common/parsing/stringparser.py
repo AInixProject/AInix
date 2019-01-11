@@ -386,7 +386,7 @@ class AstUnparser:
                     arg_string = self._unparse_optional_obj_choice_node(
                         next_node, part_of_out.arg.type_parser, result_builder, new_left_offset)
                 out_string += arg_string
-                new_left_offset += len(out_string)
+                new_left_offset += len(arg_string)
             else:
                 raise ValueError(f"Unexpected object in unparse_seq {part_of_out} of type "
                                  f"{part_of_out.__class__}")

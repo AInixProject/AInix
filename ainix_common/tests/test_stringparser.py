@@ -594,3 +594,16 @@ def test_num_unparse5(numbers_type_context):
     unparse = AstUnparser(numbers_type_context)
     result = unparse.to_string(ast)
     assert result.total_string == "5.4e8"
+
+
+def test_unparse_second_arg():
+    tc = get_toy_strings_context()
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    string = "TWO foo bar"
+    ast = parser.create_parse_tree(string, "ToySimpleStrs")
+    result = unparser.to_string(ast)
+    assert result.total_string == string
+    arg2 = ast.next_node_not_copy.get_choice_node_for_arg("arg2")
+    assert result.node_to_span[arg2] == (8, 11)
+    assert result.node_to_string(arg2) == "bar"
