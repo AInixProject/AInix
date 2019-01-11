@@ -24,6 +24,7 @@ def create_generic_strings(type_context: TypeContext):
     _create_root_types(type_context)
     all_part_strs = [(symb, False) for symb in ("_", "$", "'", "*", "-")] + \
                     [(symb, True) for symb in _get_all_letters()]
+    all_part_strs = [(str(c), False) for c in range(10)]
     all_part_strs += [(symb, True) for symb in MOST_COMMON_BIGRAM]
     all_part_strs += [(symb, True) for symb in MOST_COMMON_TRIGRAM]
     all_part_strs += [(symb, True) for symb in MOST_COMMON_4GRAMS]

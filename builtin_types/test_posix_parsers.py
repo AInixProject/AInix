@@ -101,19 +101,23 @@ def test_prog_object_parser_nocrash(type_context):
 def test_short_name_match():
     mock_context = MagicMock()
     result = get_arg_with_short_name(
-        [AInixArgument(mock_context, "a", None, arg_data={"short_name": "a"})], "a")
+        [AInixArgument(mock_context, "a", None, arg_data={"short_name": "a"},
+                       parent_object_name="a")], "a")
     assert result.name == "a"
 
     result = get_arg_with_short_name(
-        [AInixArgument(mock_context, "b", None, arg_data={"short_name": "b"}),
-         AInixArgument(mock_context, "a", None, arg_data={"short_name": "a"})], "a")
+        [AInixArgument(mock_context, "b", None, arg_data={"short_name": "b"},
+                       parent_object_name="safd"),
+         AInixArgument(mock_context, "a", None, arg_data={"short_name": "a"},
+                       parent_object_name="sdf")], "a")
     assert result.name == "a"
 
 
 def test_prog_object_parser_basic(type_context):
     onearg = AInixObject(
         type_context, "FooProgram", "Program",
-        [AInixArgument(type_context, "a", None, arg_data = {"short_name": "a"})])
+        [AInixArgument(type_context, "a", None, arg_data = {"short_name": "a"},
+                       parent_object_name="sdf")])
     parser = type_context.get_object_parser_by_name("ProgramObjectParser")
     result = gen_result(parser.parse_string("-a", onearg))
     assert result.get_arg_present("a") is not None
@@ -121,7 +125,8 @@ def test_prog_object_parser_basic(type_context):
 
 
 def test_prog_object_tostring_basic(type_context):
-    a_arg = AInixArgument(type_context, "a", None, arg_data={"short_name": "a"})
+    a_arg = AInixArgument(type_context, "a", None, arg_data={"short_name": "a"},
+                          parent_object_name="sdf")
     onearg = AInixObject(
         type_context, "FooProgram", "Program",
         [a_arg])
@@ -132,7 +137,8 @@ def test_prog_object_tostring_basic(type_context):
 
 
 def test_prog_object_tostring_basic_with_type(type_context):
-    a_arg = AInixArgument(type_context, "a", "Program", arg_data={"short_name": "a"})
+    a_arg = AInixArgument(type_context, "a", "Program", arg_data={"short_name": "a"},
+                          parent_object_name="sdf")
     onearg = AInixObject(
         type_context, "FooProgram", "Program",
         [a_arg])
@@ -146,7 +152,8 @@ def test_prog_object_parser_argval(type_context):
     fooType = AInixType(type_context, "FooType")
     argval = AInixObject(
         type_context, "FooProgram", "Program",
-        [AInixArgument(type_context, "a", fooType.name, arg_data={"short_name": "a"})])
+        [AInixArgument(type_context, "a", fooType.name, arg_data={"short_name": "a"},
+                       parent_object_name="sdf")])
     parser = type_context.get_object_parser_by_name("ProgramObjectParser")
     result = gen_result(parser.parse_string("-a hello", argval))
     assert result.get_arg_present("a") is not None
@@ -161,8 +168,10 @@ def test_prog_object_parser_argval(type_context):
 def test_prog_object_parser_twoargs(type_context):
     twoargs = AInixObject(
         type_context, "FooProgram", "Program",
-        [AInixArgument(type_context, "a", None, arg_data={SHORT_NAME: "a"}),
-         AInixArgument(type_context, "barg", None, arg_data={SHORT_NAME: "b"})]
+        [AInixArgument(type_context, "a", None, arg_data={SHORT_NAME: "a"},
+                       parent_object_name="sfd"),
+         AInixArgument(type_context, "barg", None, arg_data={SHORT_NAME: "b"},
+                       parent_object_name="sfd")]
     )
     parser = type_context.get_object_parser_by_name("ProgramObjectParser")
     result = gen_result(parser.parse_string("-a -b", twoargs))
@@ -247,8 +256,8 @@ def test_prog_object_parser_2posarg_multword_end(type_context):
 def test_string_parse_e2e(type_context):
     twoargs = AInixObject(
         type_context, "FooProgram", "Program",
-        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"}),
-         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"})],
+        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"}, parent_object_name="sdf"),
+         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"}, parent_object_name="bw")],
         type_data={"invoke_name": "hello"}
     )
     parser = StringParser(type_context)
@@ -267,9 +276,12 @@ def test_string_parse_e2e_multiword(type_context):
                      ).name)
     twoargs = AInixObject(
         type_context, "FooProgram", "Program",
-        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"}),
-         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"}),
-         AInixArgument(type_context, "p1", "FooType", arg_data={"position": 0})],
+        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"},
+                       parent_object_name="sdf"),
+         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"},
+                       parent_object_name="bw"),
+         AInixArgument(type_context, "p1", "FooType", arg_data={"position": 0},
+                       parent_object_name="sdf")],
         type_data={"invoke_name": "hello"}
     )
     type_context.finalize_data()
