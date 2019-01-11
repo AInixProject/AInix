@@ -1,5 +1,5 @@
 from ainix_common.parsing.parse_primitives import TypeParserResult
-from ainix_common.parsing.stringparser import StringParser, AstUnparser
+from ainix_common.parsing.stringparser import StringParser, AstUnparser, UnparseResult
 from ainix_common.tests.testutils import send_result
 from ainix_kernel.specialtypes.generic_strings import *
 from ainix_kernel.specialtypes.generic_strings import \
@@ -56,9 +56,15 @@ def test_word_parts():
     unparser = AstUnparser(tc)
     result = unparser.to_string(ast)
     assert result.total_string == "foo"
-    assert result.node_to_string(word_part_o) == "foo"
-    assert result.node_to_string(mod_type_choice) == "foo"
-    assert result.node_to_string(mod_type_object) == ""
+    pointers = list(ast.depth_first_iter())
+    assert ast == pointers[0].cur_node
+    assert result.pointer_to_string(pointers[0]) == "foo"
+    assert word_part_o == pointers[1].cur_node
+    assert result.pointer_to_string(pointers[1]) == "foo"
+    assert mod_type_choice == pointers[2].cur_node
+    assert result.pointer_to_string(pointers[2]) == "foo"
+    assert mod_type_object == pointers[3].cur_node
+    assert result.pointer_to_string(pointers[3]) == ""
 
 
 def test_word_parts_upper():
@@ -81,9 +87,20 @@ def test_word_parts_upper():
     unparser = AstUnparser(tc)
     result = unparser.to_string(ast)
     assert result.total_string == "FOO"
-    assert result.node_to_string(word_part_o) == "FOO"
-    assert result.node_to_string(mod_type_choice) == "FOO"
-    assert result.node_to_string(mod_type_object) == ""
+    pointers = list(ast.depth_first_iter())
+    assert ast == pointers[0].cur_node
+    assert result.pointer_to_string(pointers[0]) == "FOO"
+    assert word_part_o == pointers[1].cur_node
+    assert result.pointer_to_string(pointers[1]) == "FOO"
+    assert mod_type_choice == pointers[2].cur_node
+    assert result.pointer_to_string(pointers[2]) == "FOO"
+    assert mod_type_object == pointers[3].cur_node
+    assert result.pointer_to_string(pointers[3]) == ""
+
+
+def get_str_and_assert_same_part(result, pointer, node):
+    assert pointer.cur_node == node
+    return result.pointer_to_string(pointer)
 
 
 def test_word_parts_2():
@@ -106,12 +123,12 @@ def test_word_parts_2():
     unparser = AstUnparser(tc)
     result = unparser.to_string(ast)
     assert result.total_string == "fooBar"
-    assert result.node_to_string(word_part_o) == "fooBar"
-    assert result.node_to_string(mod_type_choice) == "foo"
-    assert result.node_to_string(mod_type_object) == ""
-    assert result.node_to_string(next_type_choice) == "Bar"
-    assert result.node_to_string(next_part_o) == "Bar"
-    assert result.node_to_string(next_part_o) == "Bar"
+    pointers = list(ast.depth_first_iter())
+    assert get_str_and_assert_same_part(result, pointers[1], word_part_o) == "fooBar"
+    assert get_str_and_assert_same_part(result, pointers[2], mod_type_choice) == "foo"
+    assert get_str_and_assert_same_part(result, pointers[3], mod_type_object) == ""
+    assert get_str_and_assert_same_part(result, pointers[4], next_type_choice) == "Bar"
+    assert get_str_and_assert_same_part(result, pointers[5], next_part_o) == "Bar"
 
 
 def test_word_parts_3():
