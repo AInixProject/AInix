@@ -353,6 +353,6 @@ def are_indices_valid(
         def test_func(ind: int):
             if ind == special_copy_ind:
                 return 1 if valid_set.copy_is_known_choice() else 0
-            return 1 if valid_set.is_known_choice(tc.ind_to_object[ind]) else 0
+            return 1 if valid_set.is_known_choice(tc.ind_to_object[ind].name) else 0
         valid_func = np.vectorize(test_func, otypes='f')
         return torch.from_numpy(valid_func(indices.numpy()))
