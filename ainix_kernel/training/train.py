@@ -2,7 +2,9 @@ import random
 import torch
 from typing import Tuple, Generator
 
+from ainix_common.parsing import copy_tools
 from ainix_common.parsing.copy_tools import add_copies_to_ast_set
+from ainix_common.parsing.model_specific.tokenizers import StringTokenizer
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
 from ainix_kernel.models.EncoderDecoder.latentstore import LatentStore
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException, \
@@ -57,7 +59,8 @@ class TypeTranslateCFTrainer:
                     print("updatedin the thing 🦔🦔")
                     update_latent_store_from_examples(self.model, latent_store, self.example_store,
                                                       self.replacer, self.string_parser,
-                                                      (DataSplits.TRAIN,))
+                                                      (DataSplits.TRAIN,), self.unparser,
+                                                      self.str_tokenizer)
 
         self.model.end_train_session()
 
@@ -120,17 +123,18 @@ def update_latent_store_from_examples(
     examples: ExamplesStore,
     replacer: Replacer,
     parser: StringParser,
-    splits: Tuple[DataSplits]
+    splits: Tuple[DataSplits],
+    unparser: AstUnparser,
+    tokenizer: StringTokenizer
 ):
     model.set_in_eval_mode()
     for example in examples.get_all_examples(splits):
-        # TODO multi sampling replacers
+        # TODO multi sampling and average replacers
         x, y = replacer.strings_replace(example.xquery, example.ytext)
-        if x != example.xquery or y != example.ytext:
-            raise NotImplemented("need to implement copying")
         ast = parser.create_parse_tree(y, example.ytype)
-        # TODO: add copies
-        latents = model.get_latent_select_states(x, ast)
+        _, token_metadata = tokenizer.tokenize(x)
+        copy_ast = copy_tools.make_copy_version_of_tree(ast, unparser, token_metadata)
+        latents = model.get_latent_select_states(x, copy_ast)
         nodes = list(ast.depth_first_iter())
         #print("LATENTS", latents)
         for i, l in enumerate(latents):

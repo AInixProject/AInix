@@ -82,18 +82,20 @@ class RetrievalActionSelector(ActionSelector):
         nearest_datas, similarities = self.latent_store.get_n_nearest_latents(
             latent_vec[0], types_to_select[0].ind,
             max_results=self.max_query_retrieve_count_train)
-        keep_mask = torch.rand(*nearest_datas.impl_choices.shape) > self.retrieve_dropout_p
-        if float(torch.sum(keep_mask)) == 0:
-            keep_mask[random.randint(0, len(keep_mask) - 1)] = 1
-        similarities = similarities[keep_mask]
-        impls_chosen = nearest_datas.impl_choices[keep_mask]
+        loss = torch.tensor(0.0)
+        if len(similarities) > 0:   # This could be false if inside a copy with no examples
+            keep_mask = torch.rand(*nearest_datas.impl_choices.shape) > self.retrieve_dropout_p
+            if float(torch.sum(keep_mask)) == 0:
+                keep_mask[random.randint(0, len(keep_mask) - 1)] = 1
+            similarities = similarities[keep_mask]
+            impls_chosen = nearest_datas.impl_choices[keep_mask]
 
-        impl_scores, impl_keys = sparse_groupby_sum(F.softmax(similarities), impls_chosen)
-        impls_indices_correct = are_indices_valid(impl_keys, self.type_context, expected, COPY_IND)
-        # TODO weights
-        loss = torch.Tensor([0])[0]
-        if len(impl_scores) > 1:
-            loss = self.loss_func(impl_scores.unsqueeze(0), impls_indices_correct.unsqueeze(0))
+            impl_scores, impl_keys = sparse_groupby_sum(F.softmax(similarities), impls_chosen)
+            impls_indices_correct = are_indices_valid(impl_keys, self.type_context, expected, COPY_IND)
+            # TODO weights
+            loss = torch.Tensor([0])[0]
+            if len(impl_scores) > 1:
+                loss = self.loss_func(impl_scores.unsqueeze(0), impls_indices_correct.unsqueeze(0))
         if expected.copy_is_known_choice():
             span_pred_loss = self.span_predictor.train_predict_span(
                 latent_vec, memory_tokens, types_to_select, expected)

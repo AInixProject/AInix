@@ -160,7 +160,7 @@ class TorchLatentStore(LatentStore):
         if example_id not in self.example_to_depths_to_ind_to_types:
             raise ValueError()
         depth_to_inds_in_type = self.example_to_depths_to_ind_to_types[example_id]
-        if int(dfs_depth / 2) >= len(depth_to_inds_in_type):
+        if dfs_depth % 2 != 0 or (dfs_depth / 2) >= len(depth_to_inds_in_type):
             raise ValueError()
         self.type_ind_to_latents[type_id].latents[depth_to_inds_in_type[int(dfs_depth / 2)]] = \
             new_latent
@@ -344,7 +344,6 @@ def make_latent_store_from_examples(
             x, y = example.xquery, example.ytext
         ast = parser.create_parse_tree(y, example.ytype)
         _, token_metadata = tokenizer.tokenize(x)
-        copy_tools.make_copy_version_of_tree(ast, unparser, token_metadata)
-        # TODO: add copies
-        builder.add_example(example.example_id, ast)
+        ast_with_copies = copy_tools.make_copy_version_of_tree(ast, unparser, token_metadata)
+        builder.add_example(example.example_id, ast_with_copies)
     return builder.produce_result()
