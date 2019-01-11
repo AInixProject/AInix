@@ -11,7 +11,9 @@ from ainix_kernel.tests.testutils.torch_test_utils import torch_epsilon_eq
 
 
 @pytest.fixture()
-def latent_store_stuff() -> Tuple[LatentStore, TypeContext, List[AstObjectChoiceSet]]:
+def latent_store_stuff() -> Tuple[
+    LatentStore, TypeContext, List[Tuple[int, int, AstObjectChoiceSet]]
+]:
     torch.manual_seed(1)
     tc = TypeContext()
     ft = AInixType(tc, "FT")
@@ -58,35 +60,65 @@ def latent_store_stuff() -> Tuple[LatentStore, TypeContext, List[AstObjectChoice
 def test_train_retriever_selector(latent_store_stuff):
     latent_store, tc, valid_choices = latent_store_stuff
     latent_size = 3
-    inputs = [(torch.randn(latent_size), c) for i, c in enumerate(valid_choices)]
+    embed = torch.nn.Embedding(len(valid_choices), latent_size)
+    inputs = [(torch.LongTensor([i]), c) for i, c in enumerate(valid_choices)]
     instance = RetrievalActionSelector(latent_store, tc, retrieve_dropout_p=0)
     instance.start_train_session()
-    optim = torch.optim.Adam(instance.parameters(), lr=1e-2)
+    params = itertools.chain(instance.parameters(), embed.parameters())
+    optim = torch.optim.Adam(params, lr=1e-2)
     print(inputs)
 
     def do_train():
         optim.zero_grad()
         loss = 0
         for x, (example_id, step, astset) in inputs:
-            loss += instance.forward_train(x.unsqueeze(0), None, [tc.get_type_by_name("FT")],
-                                           astset, 0, [example_id], [step])
-        try:
-            loss.backward()
-        except RuntimeError as e:
-            if "element 0 of tensors does not require" not in str(e):
-                raise e
+            x_v = embed(x)
+            loss += instance.forward_train(x_v, None, [tc.get_type_by_name("FT")],
+                                           astset, 0, [example_id])
+        loss.backward()
         optim.step()
         return loss
 
-    for e in range(50):
+    for e in range(100):
         loss = do_train()
         #print("LOSS", loss)
         #s: TorchLatentStore = instance.latent_store
         #print("LATENTS", s.type_ind_to_latents)
 
     for x, (example_id, step, astset) in inputs:
-        pred = instance.infer_predict(x, None, tc.get_type_by_name("FT"))
+        x_v = embed(x)
+        pred = instance.infer_predict(x_v, None, tc.get_type_by_name("FT"))
         #print("x", x)
         #print("pred", pred)
         assert isinstance(pred, ProduceObjectAction)
         assert astset.is_known_choice(pred.implementation.name)
+
+
+def test_train_retriever_selector_copy():
+    torch.manual_seed(1)
+    tc = TypeContext()
+    ft = AInixType(tc, "FT")
+    fo1 = AInixObject(tc, "FO1", "FT")
+    fo2 = AInixObject(tc, "FO2", "FT")
+    fo3 = AInixObject(tc, "FO3", "FT")
+    bt = AInixType(tc, "BT")
+    bo1 = AInixObject(tc, "BO1", "BT")
+    AInixObject(tc, "BO2", "BT")
+    tc.finalize_data()
+
+    builder = TorchLatentStore.get_builder(tc.get_type_count(), 3)
+    valid_choices = []
+    oc = ObjectChoiceNode(ft, ObjectNode(fo1))
+    builder.add_example(0, oc)
+    s1 = AstObjectChoiceSet(ft)
+    s1.add(oc, True, 1, 1)
+    valid_choices.append((0, 0, s1))
+
+    oc = ObjectChoiceNode(ft, CopyNode(ft, 0, 3))
+    builder.add_example(1, oc)
+    s1 = AstObjectChoiceSet(ft)
+    s1.add(oc, True, 1, 1)
+    valid_choices.append((1, 0, s1))
+
+
+
