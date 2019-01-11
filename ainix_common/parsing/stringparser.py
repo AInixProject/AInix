@@ -462,12 +462,13 @@ class UnparseResult:
     def pointer_to_span(self, pointer: AstIterPointer) -> Tuple[int, int]:
         span = self.child_path_and_node_to_span.get(
             (pointer.get_child_nums_here(), pointer.cur_node))
-        if span is None:
-            raise KeyError(f"Unable to find pointer {pointer}")
         return span
 
     def pointer_to_string(self, pointer: AstIterPointer) -> str:
-        si, endi = self.pointer_to_span(pointer)
+        span = self.pointer_to_span(pointer)
+        if span is None:
+            return None
+        si, endi = span
         return self.total_string[si:endi]
 
 

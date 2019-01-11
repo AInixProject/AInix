@@ -155,7 +155,8 @@ def get_default_encdec_model(examples: ExamplesStore, standard_size=16, replacer
     if not use_retrieval_decoder:
         decoder = decoders.get_default_nonretrieval_decoder(tc, hidden_size)
     else:
-        decoder = decoders.get_default_retrieval_decoder(tc, hidden_size, examples, replacer)
+        decoder = decoders.get_default_retrieval_decoder(tc, hidden_size, examples,
+                                                         replacer, x_tokenizer)
     model = EncDecModel(examples.type_context, encoder, decoder)
     if use_retrieval_decoder:
         # TODO lolz, this is such a crappy interface

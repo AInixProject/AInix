@@ -7,8 +7,10 @@ import torch
 import attr
 import numpy as np
 
+from ainix_common.parsing import copy_tools
 from ainix_common.parsing.ast_components import ObjectChoiceNode
-from ainix_common.parsing.stringparser import StringParser
+from ainix_common.parsing.model_specific.tokenizers import StringTokenizer
+from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext, AInixObject, AInixType
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits
 import torch.nn.functional as F
@@ -329,18 +331,20 @@ def make_latent_store_from_examples(
     examples: ExamplesStore,
     latent_size: int,
     replacer: Replacer,
+    tokenizer: StringTokenizer,
     splits=(DataSplits.TRAIN,)
 ) -> LatentStore:
     parser = StringParser(type_context=examples.type_context)
+    unparser = AstUnparser(examples.type_context, tokenizer)
     builder = TorchLatentStoreBuilder(examples.type_context.get_type_count(), latent_size)
     for example in examples.get_all_examples(splits):
         if replacer is not None:
             x, y = replacer.strings_replace(example.xquery, example.ytext)
         else:
             x, y = example.xquery, example.ytext
-        if x != example.xquery or y != example.ytext:
-            raise NotImplemented("need to implement copying")
         ast = parser.create_parse_tree(y, example.ytype)
+        _, token_metadata = tokenizer.tokenize(x)
+        copy_tools.make_copy_version_of_tree(ast, unparser, token_metadata)
         # TODO: add copies
         builder.add_example(example.example_id, ast)
     return builder.produce_result()

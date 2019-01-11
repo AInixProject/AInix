@@ -121,7 +121,7 @@ def test_make_copy_ast():
     tokenizer = SpaceTokenizer()
     in_str = "Hello there foo cow"
     tokens, metadata = tokenizer.tokenize(in_str)
-    result = make_copy_versions_of_tree(ast, unparser, metadata)
+    result = make_copy_version_of_tree(ast, unparser, metadata)
     toy_str_obj = result.next_node_not_copy
     assert toy_str_obj.implementation.name == "two_string"
     a1c = toy_str_obj.get_choice_node_for_arg("arg1")
@@ -144,7 +144,7 @@ def test_make_copy_ast_other_arg():
     tokenizer = SpaceTokenizer()
     in_str = "Hello bar sdf cow"
     tokens, metadata = tokenizer.tokenize(in_str)
-    result = make_copy_versions_of_tree(ast, unparser, metadata)
+    result = make_copy_version_of_tree(ast, unparser, metadata)
     toy_str_obj = result.next_node_not_copy
     assert toy_str_obj.implementation.name == "two_string"
     a1c = toy_str_obj.get_choice_node_for_arg("arg1")
@@ -167,7 +167,7 @@ def test_make_copy_ast_both():
     tokenizer = SpaceTokenizer()
     in_str = "Hello foo sdf cow"
     tokens, metadata = tokenizer.tokenize(in_str)
-    result = make_copy_versions_of_tree(ast, unparser, metadata)
+    result = make_copy_version_of_tree(ast, unparser, metadata)
     toy_str_obj = result.next_node_not_copy
     assert toy_str_obj.implementation.name == "two_string"
     a1c = toy_str_obj.get_choice_node_for_arg("arg1")

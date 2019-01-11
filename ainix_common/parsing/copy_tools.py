@@ -93,22 +93,26 @@ def _try_add_copy_node_at_object_choice(
         ast_set.add_node_when_copy(copy_node, known_valid, max_weight, max_probability)
 
 
-def make_copy_versions_of_tree(
+def make_copy_version_of_tree(
     ast: ObjectChoiceNode,
     unparser: AstUnparser,
     token_metadata: StringTokensMetadata
 ) -> ObjectChoiceNode:
+    """Goes through and replaces anywhere can copy with a copy at earliest possible
+    oppertunity. Makes a copy and does not mutate the original ast"""
     unparse = unparser.to_string(ast)
     cur_pointer = AstIterPointer(ast, None, None)
     last_pointer = None
     while cur_pointer:
         if isinstance(cur_pointer.cur_node, ObjectChoiceNode):
             this_node_str = unparse.pointer_to_string(cur_pointer)
-            copy_pos = string_in_tok_list(this_node_str, token_metadata) if this_node_str else None
-            if copy_pos:
-                copy_node = CopyNode(
-                    cur_pointer.cur_node.type_to_choose, copy_pos[0], copy_pos[1])
-                cur_pointer = cur_pointer.dfs_get_next().change_here(copy_node, always_clone=True)
+            if this_node_str:
+                copy_pos = string_in_tok_list(this_node_str, token_metadata)
+                if copy_pos:
+                    copy_node = CopyNode(
+                        cur_pointer.cur_node.type_to_choose, copy_pos[0], copy_pos[1])
+                    cur_pointer = cur_pointer.dfs_get_next().change_here(copy_node,
+                                                                         always_clone=True)
         last_pointer = cur_pointer
         cur_pointer = cur_pointer.dfs_get_next()
     return last_pointer.get_root().cur_node

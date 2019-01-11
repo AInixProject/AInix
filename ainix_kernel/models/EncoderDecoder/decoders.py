@@ -6,6 +6,7 @@ from torch import nn
 import attr
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet, \
     ObjectNode, AstNode, ObjectNodeSet, CopyNode
+from ainix_common.parsing.model_specific.tokenizers import StringTokenizer
 from ainix_common.parsing.typecontext import AInixType, AInixObject, TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.model_util import vectorizers
@@ -421,11 +422,12 @@ def get_default_retrieval_decoder(
     type_context: TypeContext,
     rnn_hidden_size: int,
     examples: ExamplesStore,
-    replacer: Replacer
+    replacer: Replacer,
+    tokenizer: StringTokenizer
 ) -> TreeDecoder:
     type_vectorizer = vectorizers.TorchDeepEmbed(type_context.get_type_count(), rnn_hidden_size)
     rnn_cell = TreeRNNCell(rnn_hidden_size, rnn_hidden_size)
-    latent_store = make_latent_store_from_examples(examples, rnn_hidden_size, replacer)
+    latent_store = make_latent_store_from_examples(examples, rnn_hidden_size, replacer, tokenizer)
     # TODO rework dropout so this will work
     action_selector = RetrievalActionSelector(latent_store, type_context, 0)
     return TreeRNNDecoder(rnn_cell, action_selector, type_vectorizer, type_context)
