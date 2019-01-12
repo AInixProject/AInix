@@ -54,7 +54,7 @@ class RetrievalActionSelector(ActionSelector):
         # TODO ahh this is way diffferent than the loss function
         # TODO is softmax best way to do?
         impl_scores, impl_keys = sparse_groupby_sum(
-            F.softmax(similarities), nearest_datas.impl_choices)
+            F.softmax(similarities, dim=0), nearest_datas.impl_choices)
         choice_ind = int(impl_keys[impl_scores.argmax()])
         choose_copy = choice_ind == COPY_IND
         if choose_copy:
@@ -82,6 +82,7 @@ class RetrievalActionSelector(ActionSelector):
         nearest_datas, similarities = self.latent_store.get_n_nearest_latents(
             latent_vec[0], types_to_select[0].ind,
             max_results=self.max_query_retrieve_count_train)
+        assert len(similarities) <= self.max_query_retrieve_count_train
         loss = torch.tensor(0.0)
         if len(similarities) > 0:   # This could be false if inside a copy with no examples
             keep_mask = torch.rand(*nearest_datas.impl_choices.shape) > self.retrieve_dropout_p
@@ -90,7 +91,8 @@ class RetrievalActionSelector(ActionSelector):
             similarities = similarities[keep_mask]
             impls_chosen = nearest_datas.impl_choices[keep_mask]
 
-            impl_scores, impl_keys = sparse_groupby_sum(F.softmax(similarities), impls_chosen)
+            impl_scores, impl_keys = sparse_groupby_sum(
+                F.softmax(similarities, dim=0), impls_chosen)
             impls_indices_correct = are_indices_valid(impl_keys, self.type_context, expected, COPY_IND)
             # TODO weights
             loss = torch.Tensor([0])[0]

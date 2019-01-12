@@ -37,6 +37,9 @@ class LatentDataWrapper:
     latents: torch.Tensor
     metadata: torch.LongTensor
 
+    def __attrs_post_init__(self):
+        assert len(self.latents) == self.metadata.shape[1]
+
     @property
     def example_indxs(self) -> torch.Tensor:
         return self.metadata[0, :]
@@ -120,11 +123,12 @@ class TorchLatentStore(LatentStore):
         data = self.type_ind_to_latents[type_ind]
         similarities = self._get_similarities(query_latent, data.latents)
         similarities, sort_inds = similarities.sort(descending=True)
-        take_count = max(similarities.shape[0], max_results)
+        take_count = min(similarities.shape[0], max_results)
         similarities, sort_inds = similarities[:take_count], sort_inds[:take_count]
         actual_vals: torch.Tensor = data.latents[:take_count]
-        relevant_metadata = LatentDataWrapper(actual_vals, data.metadata[:, sort_inds])
-        return relevant_metadata, similarities
+        actual_metadatas: torch.Tensor = data.metadata[:, sort_inds][:, :take_count]
+        relevant_metadata = LatentDataWrapper(actual_vals, actual_metadatas)
+        return relevant_metadata, similarities[:take_count]
 
     def _get_similarities(self, query_latent: torch.Tensor, values: torch.Tensor) -> torch.Tensor:
         # Use dot product. Maybe should use cosine similarity?
