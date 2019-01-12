@@ -52,3 +52,16 @@ def test_touch2(all_the_stuff_context, string):
     assert result.pointer_to_string(pointers[0]) == string
     #assert result.pointer_to_string(pointers[1]) == "foo.txt"
 
+
+@pytest.mark.parametrize('string',
+                         ('cp foo bar', 'cp cug.tex ..'))
+def test_cp(all_the_stuff_context, string):
+    tc = all_the_stuff_context
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree(string, "Program")
+    unparser = AstUnparser(tc, NonLetterTokenizer())
+    result = unparser.to_string(ast)
+    assert result.total_string == string
+    pointers = list(ast.depth_first_iter())
+    assert result.pointer_to_string(pointers[0]) == string
+

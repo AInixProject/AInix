@@ -83,6 +83,7 @@ class RecusivePretrainer(Pretrainer):
             pretrainer.close()
 
 
+
 class StringTypeTranslateCF(Pretrainable):
     """Translates a string to another type without taking any prior context
     into account (what the user or the system has said previously)"""

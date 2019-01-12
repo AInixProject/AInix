@@ -417,6 +417,7 @@ class AstUnparser:
             is_present_map=is_present_map
         )
 
+    @functools.lru_cache(maxsize=500)
     def to_string(
         self,
         ast: ObjectChoiceNode,

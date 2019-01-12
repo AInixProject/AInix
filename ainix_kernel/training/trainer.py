@@ -1,6 +1,6 @@
 import random
 import torch
-from typing import Tuple, Generator
+from typing import Tuple, Generator, List, Set
 
 from ainix_common.parsing.copy_tools import add_copies_to_ast_set
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
@@ -30,9 +30,9 @@ class TypeTranslateCFTrainer:
         self.example_store = example_store
         self.type_context = example_store.type_context
         self.string_parser = StringParser(self.type_context)
-        self.unparser = AstUnparser(self.type_context)
         self.batch_size = batch_size
         self.str_tokenizer = self.model.get_string_tokenizer()
+        self.unparser = AstUnparser(self.type_context, self.str_tokenizer)
         self.replacer = replacer
         if self.replacer is None:
             self.replacer = Replacer([])
@@ -46,7 +46,7 @@ class TypeTranslateCFTrainer:
         with tqdm(total=train_count, unit='Examples', miniters=train_count/5) as pbar:
             for batch in batches_iter:
                 batch_as_query = [(replaced_x, y_ast_set, this_example_ast, example.example_id) for
-                                  example, replaced_x, y_ast_set, this_example_ast in batch]
+                                  example, replaced_x, y_ast_set, this_example_ast, ytxts in batch]
                 loss += self.model.train_batch(batch_as_query)
                 pbar.update(len(batch))
         self.model.end_train_epoch()
@@ -72,7 +72,7 @@ class TypeTranslateCFTrainer:
             if epoch + 1 != epochs and epoch % 5 == 0:
                 print("Pausing to do an eval")
                 logger = EvaluateLogger()
-                self.evaluate(logger)
+                self.evaluate(logger, dump_each=True)
                 print_ast_eval_log(logger)
 
         self.model.end_train_session()
@@ -80,24 +80,34 @@ class TypeTranslateCFTrainer:
     def evaluate(
         self,
         logger: EvaluateLogger,
-        filter_splits: Tuple[DataSplits] = (DataSplits.VALIDATION,)
+        filter_splits: Tuple[DataSplits] = (DataSplits.VALIDATION,),
+        dump_each = False
     ):
         self.model.set_in_eval_mode()
-        for example, replaced_x_query, y_ast_set, this_example_ast \
-                in self.data_pair_iterate(filter_splits):
+        for data in self.data_pair_iterate(filter_splits):
+            example, replaced_x_query, y_ast_set, this_example_ast, y_texts = data
+            parse_exception = None
             try:
                 prediction = self.model.predict(replaced_x_query, example.ytype, True)
-            except ModelCantPredictException:
+            except ModelCantPredictException as e:
                 prediction = None
-            except ModelSafePredictError:
+                parse_exception = e
+            except ModelSafePredictError as e:
                 prediction = None
-            logger.add_evaluation(AstEvaluation(prediction, y_ast_set))
+                parse_exception = e
+            eval = AstEvaluation(prediction, y_ast_set, y_texts, replaced_x_query, parse_exception)
+            logger.add_evaluation(eval)
+            if dump_each:
+                eval.print_vals(self.unparser)
+
         self.model.set_in_train_mode()
 
     def data_pair_iterate(
         self,
         filter_splits: Tuple[DataSplits]
-    ) -> Generator[Tuple[Example, str, AstObjectChoiceSet, ObjectChoiceNode], None, None]:
+    ) -> Generator[
+        Tuple[Example, str, AstObjectChoiceSet, ObjectChoiceNode, Set[str]], None, None
+    ]:
         """Will yield one epoch of examples as a tuple of the example and the
         Ast set that represents all valid y_values for that example"""
         # Temporary hack for shuffling
@@ -112,20 +122,23 @@ class TypeTranslateCFTrainer:
             ast_for_this_example = None
             parsed_ast = None
             replacement_sample = self.replacer.create_replace_sampling(example.xquery)
+            y_texts = set()
             for y_example in all_y_examples:
                 replaced_y = replacement_sample.replace_x(y_example.ytext)
-                parsed_ast = self.string_parser.create_parse_tree(
-                    replaced_y, y_type.name)
-                if y_example.ytext == example.ytext:
-                    ast_for_this_example = parsed_ast
-                y_ast_set.add(parsed_ast, True, y_example.weight, 1.0)
+                if replaced_y not in y_texts:
+                    parsed_ast = self.string_parser.create_parse_tree(
+                        replaced_y, y_type.name)
+                    if y_example.ytext == example.ytext:
+                        ast_for_this_example = parsed_ast
+                    y_ast_set.add(parsed_ast, True, y_example.weight, 1.0)
+                    y_texts.add(replaced_y)
             # handle copies
             this_example_replaced_x = replacement_sample.replace_x(example.xquery)
             tokens, metadata = self.str_tokenizer.tokenize(this_example_replaced_x)
             add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
                                   metadata, example.weight)
             y_ast_set.freeze()
-            yield (example, this_example_replaced_x, y_ast_set, ast_for_this_example)
+            yield (example, this_example_replaced_x, y_ast_set, ast_for_this_example, y_texts)
 
 
 # A bunch of code for running the thing which really shouldn't be here.
@@ -168,12 +181,21 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    epochs = 50
+    epochs = 30
     trainer.train(epochs)
 
     print("Lets eval")
+    print("-----------")
+    print("TRAIN")
+    print("-----------")
     logger = EvaluateLogger()
-    trainer.evaluate(logger)
+    trainer.evaluate(logger, filter_splits=(DataSplits.TRAIN,), dump_each=True)
+    print_ast_eval_log(logger)
+    print("-----------")
+    print("Validation")
+    print("-----------")
+    logger = EvaluateLogger()
+    trainer.evaluate(logger, dump_each=True)
     print_ast_eval_log(logger)
     print("serialize model")
     serialize(model, loader, "saved_model.pt", logger, trained_epochs=epochs)

@@ -12,7 +12,7 @@ from ainix_common.parsing.ast_components import AstNode, ObjectNode, ObjectChoic
 from ainix_common.parsing import ast_components
 import numpy as np
 from itertools import chain
-
+import functools
 
 class Tokenizer(ABC):
     def __init__(self):
@@ -103,9 +103,9 @@ class StringTokensMetadata:
 
 
 class NonLetterTokenizer(StringTokenizer):
+    @functools.lru_cache(maxsize=10)  # Larger cache?
     def tokenize(self, to_tokenize: str) -> Tuple[List[str], StringTokensMetadata]:
         """Takes in a string and outputs a tokenization splitting at non-letter boundries"""
-        # TODO (DNGros): Maybe memoize this
         if not isinstance(to_tokenize, str):
             raise ValueError(f"NonAsciiTokenizer expects string inputs. Got {to_tokenize}")
         out_tokens = [[]]
