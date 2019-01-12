@@ -54,24 +54,30 @@ class TypeTranslateCFTrainer:
             print(f"Epoch {epoch} complete. Loss {loss}")
             if hasattr(self.model, "plz_train_this_latent_store_thanks"):
                 # TODO wasdfahwerdfgv I should sleep
+                # (yeah, even with sleep to lazy to fix this crappy interface. It works...)
                 latent_store = self.model.plz_train_this_latent_store_thanks()
                 if latent_store:
-                    print("updatedin the thing 🦔🦔")
+                    print("updateding the latent store 🦔")
                     update_latent_store_from_examples(self.model, latent_store, self.example_store,
                                                       self.replacer, self.string_parser,
                                                       (DataSplits.TRAIN,), self.unparser,
                                                       self.str_tokenizer)
+            if epoch + 1 != epochs and epoch % 5 == 0:
+                print("Pausing to do an eval")
+                logger = EvaluateLogger()
+                self.evaluate(logger)
+                print_ast_eval_log(logger)
 
         self.model.end_train_session()
 
     def evaluate(
         self,
         logger: EvaluateLogger,
-        splits: Tuple[DataSplits] = None
+        filter_splits: Tuple[DataSplits] = (DataSplits.VALIDATION,)
     ):
         self.model.set_in_eval_mode()
         for example, replaced_x_query, y_ast_set, this_example_ast \
-                in self.data_pair_iterate(splits):
+                in self.data_pair_iterate(filter_splits):
             try:
                 prediction = self.model.predict(replaced_x_query, example.ytype, True)
             except ModelCantPredictException:
@@ -83,13 +89,13 @@ class TypeTranslateCFTrainer:
 
     def data_pair_iterate(
         self,
-        splits: Tuple[DataSplits]
+        filter_splits: Tuple[DataSplits]
     ) -> Generator[Tuple[Example, str, AstObjectChoiceSet, ObjectChoiceNode], None, None]:
         """Will yield one epoch of examples as a tuple of the example and the
         Ast set that represents all valid y_values for that example"""
         # Temporary hack for shuffling
         # TODO (DNGros): Make suffle up to a buffer or something
-        all_ex_list = list(self.example_store.get_all_examples(splits))
+        all_ex_list = list(self.example_store.get_all_examples(filter_splits))
         random.shuffle(all_ex_list)
         #
         for example in all_ex_list:  #self.example_store.get_all_examples(splits):
