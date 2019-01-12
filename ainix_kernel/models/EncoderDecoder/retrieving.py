@@ -119,7 +119,7 @@ class RetrievalActionSelector(ActionSelector):
             "latent_size": self.latent_store.latent_size,
             # "latent_store": self.latent_store,
             "retrieve_dropout_p": self.retrieve_dropout_p,
-            "model_state": self.state_dict()
+            #"model_state": self.state_dict()
         }
 
     @classmethod
@@ -134,5 +134,5 @@ class RetrievalActionSelector(ActionSelector):
             type_context,
             save_dict['retrieve_dropout_p']
         )
-        instance.load_state_dict(save_dict['model_state'])
+        #instance.load_state_dict(save_dict['model_state'])
         return instance

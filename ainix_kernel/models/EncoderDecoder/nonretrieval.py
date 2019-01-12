@@ -148,7 +148,7 @@ class SimpleActionSelector(ActionSelector):
             "version": 0,
             "latent_size": self.latent_size,
             "object_selector": self.object_selector,
-            "state_dict": self.state_dict()
+            #"state_dict": self.state_dict()
         }
 
     @classmethod
@@ -158,7 +158,7 @@ class SimpleActionSelector(ActionSelector):
             object_selector=save_dict['object_selector'],
             type_context=type_context
         )
-        instance.load_state_dict(save_dict['state_dict'])
+        #instance.load_state_dict(save_dict['state_dict'])
         return instance
 
 
