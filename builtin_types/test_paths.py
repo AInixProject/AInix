@@ -38,7 +38,7 @@ def test_dot_separated_words(tc, in_str):
 @pytest.mark.parametrize("in_str",
     ("foo", "foo.txt", "foo/bar", "..", "../foo", "*", "~", "~/hello*/fdf.bar",
      ".dotfile", ".dotfile.txt", "1234.vhdl", "a.b.c", "a.b.c.d", ".shh/foo.txt",
-     "foo.tar/bar.txt", "foo.txt/bar"))
+     "foo.tar/bar.txt", "foo.txt/bar", "build/", "../../../", "./", "~foo"))
 def test_path_parse_and_unparse_without_error(tc, in_str):
     parser = StringParser(tc)
     ast = parser.create_parse_tree(in_str, "Path")

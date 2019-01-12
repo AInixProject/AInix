@@ -144,7 +144,6 @@ subdir	subdir	11
 sandbox	sandbox	11
 root	root	11
 releases	releases	11
-`pwd`	`pwd`	11
 plot	plot	11
 packages	packages	11
 obj	obj	11
@@ -582,7 +581,6 @@ binaries	binaries	4
 ../bin/	../bin/	4
 assembly/raw/denovo	assembly/raw/denovo	4
 arch/arm/boot	arch/arm/boot	4
-\	\	4
 ../zz	../zz	3
 zpanelx/	zpanelx/	3
 zookeeper	zookeeper	3
@@ -912,7 +910,6 @@ apex	apex	3
 3d	3d	3
 ../0.11	../0.11	3
 ../../../../..	../../../../..	3
-~-	~-	3
 zyncoder/build	zyncoder/build	2
 zynaddsubfx	zynaddsubfx	2
 zsh-zsh-5.2	zsh-zsh-5.2	2
@@ -1259,7 +1256,6 @@ TESSEL2	TESSEL2	2
 term	term	2
 temp_zip/Tools/ToolTestShinyButton	temp_zip/Tools/ToolTestShinyButton	2
 temp_zip/Tools/ToolTestBroadcastServer	temp_zip/Tools/ToolTestBroadcastServer	2
-temp_zip/../ToolRichelBilderbeekGallery	temp_zip/../ToolRichelBilderbeekGallery	2
 temp_zip/Classes/CppWtShinyButtonWidget	temp_zip/Classes/CppWtShinyButtonWidget	2
 temp_zip/Classes/CppWtRichelBilderbeekGalleryDialog	temp_zip/Classes/CppWtRichelBilderbeekGalleryDialog	2
 temp_zip/Classes/CppWtDialWidget	temp_zip/Classes/CppWtDialWidget	2
@@ -1277,7 +1273,6 @@ temp_zip/Classes/CppProFile	temp_zip/Classes/CppProFile	2
 temp_zip/Classes/CppDialWidget	temp_zip/Classes/CppDialWidget	2
 temp_zip/Classes/CppDial	temp_zip/Classes/CppDial	2
 temp_zip/Classes/CppCodeToHtml	temp_zip/Classes/CppCodeToHtml	2
-temp_zip/..	temp_zip/..	2
 temp_results_dir	temp_results_dir	2
 temp_mount	temp_mount	2
 temp_files	temp_files	2
@@ -1766,7 +1761,6 @@ master	master	2
 manifests	manifests	2
 mandelbulbGPU-v1.0pts/	mandelbulbGPU-v1.0pts/	2
 makefile_debug	makefile_debug	2
-~mailman	~mailman	2
 magnum-bootstrap	magnum-bootstrap	2
 magisk	magisk	2
 macosx-support-libs	macosx-support-libs	2
@@ -2650,7 +2644,6 @@ wqy-microhei	wqy-microhei	1
 wp/wp-content/themes/simplify	wp/wp-content/themes/simplify	1
 ../wp-side-comments	../wp-side-comments	1
 wp-content/themes/theme-name	wp-content/themes/theme-name	1
-wp-content/themes/<project-name>	wp-content/themes/<project-name>	1
 wpa_supplicant_hostapd-0.8_rtw_r7475.20130812/	wpa_supplicant_hostapd-0.8_rtw_r7475.20130812/	1
 wpa_supplicant_hostapd-0.8_rtw_r7475.20130812	wpa_supplicant_hostapd-0.8_rtw_r7475.20130812	1
 wpa_supplicant_hostapd	wpa_supplicant_hostapd	1
@@ -2688,7 +2681,6 @@ WorkHere/	WorkHere/	1
 WorkHere	WorkHere	1
 worker	worker	1
 workdspace/bash	workdspace/bash	1
-WorkdirRepo/å/ä/ö	WorkdirRepo/å/ä/ö	1
 ../work	../work	1
 _work	_work	1
 wordlists/	wordlists/	1
@@ -3794,7 +3786,6 @@ trunk/out_libs	trunk/out_libs	1
 trunk/etc	trunk/etc	1
 trunk/dir	trunk/dir	1
 trunk/DEBIAN	trunk/DEBIAN	1
-trunk/à	trunk/à	1
 ~/trunk	~/trunk	1
 tripleo-repos	tripleo-repos	1
 trimmed	trimmed	1
@@ -4434,15 +4425,9 @@ system-config	system-config	1
 sysroot	sysroot	1
 /sys/kernel/debug/tracing/events	/sys/kernel/debug/tracing/events	1
 /sys/kernel/config/usb_gadget/	/sys/kernel/config/usb_gadget/	1
-/sys/kernel/config/target/iscsi/iqn.2003-01.org.nas-server.iscsi-storage:1/tpgt_1/np/192.168.1.1:3260	/sys/kernel/config/target/iscsi/iqn.2003-01.org.nas-server.iscsi-storage:1/tpgt_1/np/192.168.1.1:3260	1
-/sys/kernel/config/target/iscsi/iqn.2003-01.org.nas-server.iscsi-storage:1/tpgt_1/lun/lun_0	/sys/kernel/config/target/iscsi/iqn.2003-01.org.nas-server.iscsi-storage:1/tpgt_1/lun/lun_0	1
 /sys/fs/cgroup	/sys/fs/cgroup	1
 /sys/devices/system/cpu/cpu0/cpufreq	/sys/devices/system/cpu/cpu0/cpufreq	1
 /sys/devices/system/cpu	/sys/devices/system/cpu	1
-/sys/class/leds/beaglebone\:green\:usr3/	/sys/class/leds/beaglebone\:green\:usr3/	1
-/sys/class/leds/beaglebone\:green\:usr2/	/sys/class/leds/beaglebone\:green\:usr2/	1
-/sys/class/leds/beaglebone\:green\:usr1/	/sys/class/leds/beaglebone\:green\:usr1/	1
-/sys/class/leds/beaglebone\:green\:usr0/	/sys/class/leds/beaglebone\:green\:usr0/	1
 /sys/bus/w1/devices	/sys/bus/w1/devices	1
 /sys/bus/usb/devices/	/sys/bus/usb/devices/	1
 /sys/block	/sys/block	1
@@ -5477,7 +5462,6 @@ Resources/Public	Resources/Public	1
 Resources/HotFiles/scripts	Resources/HotFiles/scripts	1
 Resources/HotFiles/fragments	Resources/HotFiles/fragments	1
 Resources/HotEnvironments	Resources/HotEnvironments	1
-resources>/dev/null	resources>/dev/null	1
 ../../resources/css_and_images	../../resources/css_and_images	1
 ../../resource/es	../../resource/es	1
 ../resource	../resource	1
@@ -6118,7 +6102,6 @@ pcre-7.1	pcre-7.1	1
 ../PCILIB	../PCILIB	1
 ../pci	../pci	1
 /pcbsd/src-sh/pcbsd-utils/pc-sysinstall	/pcbsd/src-sh/pcbsd-utils/pc-sysinstall	1
-<PBS_O_WORKDIR>	<PBS_O_WORKDIR>	1
 pboot	pboot	1
 pbasic-sos	pbasic-sos	1
 PBApp/workspace	PBApp/workspace	1
@@ -6945,7 +6928,6 @@ msgpack-hhvm	msgpack-hhvm	1
 msg/json	msg/json	1
 msg/js	msg/js	1
 ~/.msf4/msfvenom/	~/.msf4/msfvenom/	1
-\\msdfs-src1	\\msdfs-src1	1
 MsCoCo	MsCoCo	1
 msautotest	msautotest	1
 mruby_build	mruby_build	1
@@ -7361,7 +7343,6 @@ Lua	Lua	1
 ~/lsst/repositories/obs_subaru	~/lsst/repositories/obs_subaru	1
 ~/lsst/repositories/meas_mosaic	~/lsst/repositories/meas_mosaic	1
 lshw-B.02.17	lshw-B.02.17	1
-`ls`	`ls`	1
 lpg	lpg	1
 lpc	lpc	1
 lpaq4	lpaq4	1
@@ -8104,7 +8085,6 @@ in	in	1
 implementation	implementation	1
 impera	impera	1
 ../imp	../imp	1
-./img/截图	./img/截图	1
 imdb/train	imdb/train	1
 imdb/test	imdb/test	1
 ../../im-console	../../im-console	1
@@ -9362,7 +9342,6 @@ et_/etmain/demos/	et_/etmain/demos/	1
 /etc/ssl/local	/etc/ssl/local	1
 /etc/ssl/	/etc/ssl/	1
 /etc/ssl	/etc/ssl	1
-/etc/ssh/<os_username>	/etc/ssh/<os_username>	1
 /etc/ssh/local_keys	/etc/ssh/local_keys	1
 /etc/squid/	/etc/squid/	1
 /etc/spamassassin/pyzor	/etc/spamassassin/pyzor	1

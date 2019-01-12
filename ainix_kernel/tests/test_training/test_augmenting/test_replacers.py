@@ -130,3 +130,26 @@ def test_file_replacer():
         result = unparser.to_string(ast)
         assert result.total_string == x
 
+
+def test_dir_replacer():
+    replacements = Replacement.from_tsv("../../../training/data/DIRNAME.tsv")
+    tc = TypeContext()
+    loader = TypeContextDataLoader(tc, up_search_limit=4)
+    loader.load_path("builtin_types/generic_parsers.ainix.yaml")
+    loader.load_path("builtin_types/command.ainix.yaml")
+    loader.load_path("builtin_types/paths.ainix.yaml")
+    allspecials.load_all_special_types(tc)
+    tc.finalize_data()
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    fails = []
+    for repl in replacements:
+        x, y = repl.get_replacement()
+        assert x == y
+        ast = parser.create_parse_tree(x, "Path")
+        result = unparser.to_string(ast)
+        if result.total_string != x:
+            fails.append((x, result.total_string))
+    assert not fails
+
+

@@ -17,6 +17,20 @@ defines:
       preferred_object_parser:
           grammar: |
               start_directory "/" main_path
+    # make less copy pasta and rethink the trailing dash thing
+    - define_new: object
+      type: Path
+      name: path_all_parts_trailing_dash
+      children:
+          - name: start_directory
+            required: True
+            type: StartDirectoryModifier
+          - name: main_path
+            required: True
+            type: SlashSeparatedFiles
+      preferred_object_parser:
+          grammar: |
+              start_directory "/" main_path "/"
     - define_new: object
       type: Path
       name: path_only_start_dir
@@ -29,6 +43,16 @@ defines:
               start_directory
     - define_new: object
       type: Path
+      name: path_only_start_dir_trailing_dash
+      children:
+          - name: start_directory
+            required: True
+            type: StartDirectoryModifier
+      preferred_object_parser:
+          grammar: |
+              start_directory "/"
+    - define_new: object
+      type: Path
       name: path_only_main_part
       children:
           - name: main_path
@@ -37,6 +61,16 @@ defines:
       preferred_object_parser:
           grammar: |
               main_path
+    - define_new: object
+      type: Path
+      name: path_only_main_part_trailing_dash
+      children:
+          - name: main_path
+            type: SlashSeparatedFiles
+            required: True
+      preferred_object_parser:
+          grammar: |
+              main_path "/"
     # SlashSeparatedWords
     - define_new: type
       name: SlashSeparatedFiles
@@ -84,12 +118,12 @@ defines:
       preferred_object_parser:
           grammar: |
               "."
-    - define_new: object
-      name: directory_home
-      type: StartDirectoryModifier
-      preferred_object_parser:
-          grammar: |
-              "~"
+    #- define_new: object
+    #  name: directory_home
+    #  type: StartDirectoryModifier
+    #  preferred_object_parser:
+    #      grammar: |
+    #          "~"
     - define_new: object
       name: directory_two_up
       type: StartDirectoryModifier
