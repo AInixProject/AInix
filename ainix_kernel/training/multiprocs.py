@@ -42,10 +42,6 @@ def make_default_trainer_fac(
     print("hello there")
 
 
-def bound_torch_threads(procs):
-    pass
-
-
 def train_func(pid, model: StringTypeTranslateCF, index: ExamplesStore, batch_size, epochs,
                force_single_thread, eval_thresh, total_proc_count,
                working_count: torch.multiprocessing.Value,

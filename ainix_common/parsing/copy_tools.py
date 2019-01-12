@@ -90,7 +90,20 @@ def _try_add_copy_node_at_object_choice(
     copy_pos = string_in_tok_list(this_node_str, token_metadata)
     if copy_pos:
         copy_node = CopyNode(node.type_to_choose, copy_pos[0], copy_pos[1])
+        object_node_set: ObjectNodeSet = ast_set.parent
         ast_set.add_node_when_copy(copy_node, known_valid, max_weight, max_probability)
+        if object_node_set is not None:
+            # If we have a parent object node, it needs to know about the copy too
+            # This will probably screw up probabilities and weights and stuff
+            # This is really awkward tree surergy which could likely be cleaner
+            object_node: ObjectNode = pointer.parent.cur_node
+            object_node, _ = object_node.path_clone(
+                [object_node, object_node.get_nth_child(pointer.parent_child_ind)])
+            object_node.set_arg_value(
+                object_node.implementation.children[pointer.parent_child_ind].name,
+                ObjectChoiceNode(node.type_to_choose, copy_node)
+            )
+            object_node_set.add(object_node, known_valid, max_weight, max_probability)
 
 
 def make_copy_version_of_tree(

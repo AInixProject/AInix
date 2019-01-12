@@ -181,7 +181,7 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    epochs = 30
+    epochs = 5
     trainer.train(epochs)
 
     print("Lets eval")

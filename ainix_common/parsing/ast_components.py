@@ -294,7 +294,7 @@ class ChildlessObjectNode:
 
     @property
     def implementation(self):
-        return self.implementation
+        return self._implementation
 
     @property
     def chosen_type_names(self):
@@ -640,6 +640,10 @@ class AstSet:
     def freeze(self):
         pass
 
+    @property
+    def parent(self):
+        return self._parent
+
     def get_depth(self):
         cur = self
         depth = 0
@@ -840,7 +844,7 @@ class AstObjectChoiceSet(AstSet):
     def __init__(
         self,
         type_to_choose: ainix_common.parsing.typecontext.AInixType,
-        parent: Optional[AstSet] = None
+        parent: Optional[ObjectNodeSet] = None
     ):
         super().__init__(parent)
         self._type_to_choose = type_to_choose

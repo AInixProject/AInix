@@ -30,6 +30,8 @@ class AstEvaluation(Evaluation):
         else:
             predicted_y = f"EXCEPTION {str(self.p_exception)}"
         y_texts_v = list(self.y_texts)[0] if len(self.y_texts) == 1 else self.y_texts
+        if not correct and predicted_y in self.y_texts:
+            raise ValueError("what the hell")
         print("---")
         print(self.x_text)
         if correct:
