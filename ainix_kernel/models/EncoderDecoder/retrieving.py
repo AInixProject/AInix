@@ -21,7 +21,8 @@ class RetrievalActionSelector(ActionSelector):
         self,
         latent_store: LatentStore,
         type_context: TypeContext,
-        retrieve_dropout_p: float = 0.5
+        retrieve_dropout_p: float = 0.5,
+        square_feature_reg: float = 0.08
     ):
         super().__init__()
         self.latent_store = latent_store
@@ -35,6 +36,7 @@ class RetrievalActionSelector(ActionSelector):
         self.type_context = type_context
         self.is_in_training_session = False
         self.latent_store_trainer: Optional[LatentStoreTrainer] = None
+        self.square_feature_reg = square_feature_reg
         #if self.latent_store.allow_gradients:
         #    print("LATENTSTORE PARAMETERS", list(self.latent_store.parameters()))
         #    for i, p in enumerate(self.latent_store.parameters()):
@@ -93,17 +95,20 @@ class RetrievalActionSelector(ActionSelector):
 
             impl_scores, impl_keys = sparse_groupby_sum(
                 F.softmax(similarities, dim=0), impls_chosen)
-            impls_indices_correct = are_indices_valid(impl_keys, self.type_context, expected, COPY_IND)
+            impls_indices_correct = are_indices_valid(
+                impl_keys, self.type_context, expected, COPY_IND)
             # TODO weights
-            loss = torch.Tensor([0])[0]
             eps = 1e-7
             impl_scores = impl_scores.clamp(eps, 1-eps)
             if len(impl_scores) > 1:
-                loss = self.loss_func(impl_scores.unsqueeze(0), impls_indices_correct.unsqueeze(0))
+                loss += self.loss_func(impl_scores.unsqueeze(0), impls_indices_correct.unsqueeze(0))
         if expected.copy_is_known_choice():
             span_pred_loss = self.span_predictor.train_predict_span(
                 latent_vec, memory_tokens, types_to_select, expected)
             loss += get_copy_depth_discount(num_of_parents_with_copy_option) * span_pred_loss
+        # Do l2_loss
+        feature_sq_avg = torch.mean(latent_vec ** 2)
+        loss += self.square_feature_reg * feature_sq_avg
         return loss
 
     def start_train_session(self):
@@ -121,6 +126,7 @@ class RetrievalActionSelector(ActionSelector):
             "latent_size": self.latent_store.latent_size,
             # "latent_store": self.latent_store,
             "retrieve_dropout_p": self.retrieve_dropout_p,
+            "square_feature_reg": self.square_feature_reg
             #"model_state": self.state_dict()
         }
 
