@@ -131,10 +131,6 @@ def update_latent_store_from_examples(
     for example in examples.get_all_examples(splits):
         # TODO multi sampling and average replacers
         x_replaced, y_replaced = replacer.strings_replace(example.xquery, example.ytext)
-        # TODO Remove
-        x_replaced = 'make a file named 1_SecondaryUnit.vhdl'
-        y_replaced = "touch 1_SecondaryUnit.vhdl"
-        #
         ast = parser.create_parse_tree(y_replaced, example.ytype)
         _, token_metadata = tokenizer.tokenize(x_replaced)
         copy_ast = copy_tools.make_copy_version_of_tree(ast, unparser, token_metadata)
@@ -186,15 +182,15 @@ if __name__ == "__main__":
     type_context.finalize_data()
 
     index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)
-    #for f in with_example_files:
-    #    exampleloader.load_path(f"../../builtin_types/{f}_examples.ainix.yaml", index)
-    exampleloader.load_path(f"../../builtin_types/why_not_work_examples.ainix.yaml", index)
+    for f in with_example_files:
+        exampleloader.load_path(f"../../builtin_types/{f}_examples.ainix.yaml", index)
+    #exampleloader.load_path(f"../../builtin_types/why_not_work_examples.ainix.yaml", index)
 
     print("num docs", index.backend.index.doc_count())
 
     from ainix_kernel.models.SeaCR.seacr import make_default_seacr, make_rulebased_seacr
-    from ainix_kernel.models.EncoderDecoder.encdecmodel import get_default_encdec_model, EncDecModel, \
-    EncDecModel, EncDecModel, EncDecModel
+    from ainix_kernel.models.EncoderDecoder.encdecmodel import \
+        get_default_encdec_model, EncDecModel
     replacers = get_all_replacers()
 
     #model = get_default_encdec_model(index, standard_size=64)

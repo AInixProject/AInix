@@ -3,6 +3,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from ainix_common.parsing.loader import TypeContextDataLoader
+from ainix_common.parsing.stringparser import StringParser, AstUnparser
+from ainix_common.parsing.typecontext import TypeContext
+from ainix_kernel.specialtypes import allspecials
 from ainix_kernel.training.augmenting.replacers import *
 
 
@@ -105,4 +109,24 @@ def test_replacer_no_group():
     replacer = Replacer([rg])
     with pytest.raises(ReplacementError):
         _ = replacer.create_replace_sampling("hello [-[BAD]-]")
+
+
+def test_file_replacer():
+    replacements = Replacement.from_tsv("../../../training/data/FILENAME.tsv")
+    tc = TypeContext()
+    loader = TypeContextDataLoader(tc, up_search_limit=4)
+    loader.load_path("builtin_types/generic_parsers.ainix.yaml")
+    loader.load_path("builtin_types/command.ainix.yaml")
+    loader.load_path("builtin_types/paths.ainix.yaml")
+    allspecials.load_all_special_types(tc)
+    tc.finalize_data()
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+
+    for repl in replacements:
+        x, y = repl.get_replacement()
+        assert x == y
+        ast = parser.create_parse_tree(x, "Path")
+        result = unparser.to_string(ast)
+        assert result.total_string == x
 

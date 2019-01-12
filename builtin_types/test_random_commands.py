@@ -38,10 +38,12 @@ def test_touch(all_the_stuff_context):
     assert result.pointer_to_string(pointers[1]) == "foo.txt"
 
 
-def test_touch2(all_the_stuff_context):
+@pytest.mark.parametrize('string',
+                         ("touch 1234.vhdl", 'touch -r store.json atlas_test.tar',
+                          "touch ../.gitattributes"))
+def test_touch2(all_the_stuff_context, string):
     tc = all_the_stuff_context
     parser = StringParser(tc)
-    string = "touch 1234.vhdl"
     ast = parser.create_parse_tree(string, "Program")
     unparser = AstUnparser(tc, NonLetterTokenizer())
     result = unparser.to_string(ast)
@@ -49,3 +51,4 @@ def test_touch2(all_the_stuff_context):
     pointers = list(ast.depth_first_iter())
     assert result.pointer_to_string(pointers[0]) == string
     #assert result.pointer_to_string(pointers[1]) == "foo.txt"
+

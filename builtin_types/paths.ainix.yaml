@@ -146,7 +146,7 @@ defines:
             type: GenericWord
             required: True
           - name: next
-            type: GenericWord
+            type: DotSeparatedWords
             required: False
       preferred_object_parser:
           grammar: |

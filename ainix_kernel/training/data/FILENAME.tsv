@@ -58,7 +58,6 @@ plugin_test_4.err	plugin_test_4.err	15
 foo.o	foo.o	14
 tmp.log	tmp.log	14
 gnome-autogen.sh	gnome-autogen.sh	14
-%-8.2f	%-8.2f	14
 N.dat	N.dat	13
 server.csr	server.csr	13
 composer.phar	composer.phar	13
@@ -1463,11 +1462,9 @@ etcd.conf	etcd.conf	2
 slput.myr	slput.myr	2
 dev-clean.scp	dev-clean.scp	2
 fac.sy	fac.sy	2
-100.0}	100.0}	2
 rootA.pem	rootA.pem	2
 libapplication.so	libapplication.so	2
 test.o	test.o	2
-Setup...e[0m	Setup...e[0m	2
 tmp-list.txt	tmp-list.txt	2
 mgrl.js	mgrl.js	2
 %0.64s	%0.64s	2
@@ -1936,7 +1933,6 @@ jenkins.war	jenkins.war	1
 SwfLoaderAppTwo.swf	SwfLoaderAppTwo.swf	1
 libogdi3.2-dev	libogdi3.2-dev	1
 BaseMetals-javadoc.zip	BaseMetals-javadoc.zip	1
-[file.js]	[file.js]	1
 saltutil.sync_all	saltutil.sync_all	1
 9ol.es:www/quick-color	9ol.es:www/quick-color	1
 logs.---	logs.---	1
@@ -1985,13 +1981,11 @@ MWAppDelegate.h	MWAppDelegate.h	1
 XNGMarkdownTokens.cpp	XNGMarkdownTokens.cpp	1
 em1.ko	em1.ko	1
 rcn-linux-kernel-3.8.patch	rcn-linux-kernel-3.8.patch	1
-greg.foss[at]owasp.org	greg.foss[at]owasp.org	1
 sample/spec.html	sample/spec.html	1
 code/dgc.params.txt	code/dgc.params.txt	1
 dockward_darwin_386.tar.gz	dockward_darwin_386.tar.gz	1
 xserver-xorg-input-synaptics_1.8.0-1~exp2ubuntu2.dsc	xserver-xorg-input-synaptics_1.8.0-1~exp2ubuntu2.dsc	1
 google_appengine_1.9.14.zip	google_appengine_1.9.14.zip	1
-[daqueue-persist.sh]:	[daqueue-persist.sh]:	1
 rsa120.51.m.old	rsa120.51.m.old	1
 actual/check-pcg32_k16384_fast.out	actual/check-pcg32_k16384_fast.out	1
 cld2_data.bin	cld2_data.bin	1
@@ -2014,7 +2008,6 @@ log_class.py	log_class.py	1
 recipe.xml	recipe.xml	1
 SVGs2Glyphs.py	SVGs2Glyphs.py	1
 qmljsgrammar_p.h	qmljsgrammar_p.h	1
-[json_array_looping-vg.sh]:	[json_array_looping-vg.sh]:	1
 com.softwaremill.mqperf.Sender	com.softwaremill.mqperf.Sender	1
 install_nimble.nims	install_nimble.nims	1
 common/project_comparison.tmpl	common/project_comparison.tmpl	1
@@ -2150,7 +2143,6 @@ setup.n	setup.n	1
 bunkum.us:www/hb_data	bunkum.us:www/hb_data	1
 countries_l.txt	countries_l.txt	1
 actual/check-pcg64_c32.out	actual/check-pcg64_c32.out	1
-[no-dynstats.sh]:	[no-dynstats.sh]:	1
 ncaa._schedule_factors	ncaa._schedule_factors	1
 python.bcrpyt	python.bcrpyt	1
 sys/pie.sh	sys/pie.sh	1
@@ -2171,7 +2163,6 @@ a/test.file	a/test.file	1
 signed_files.log	signed_files.log	1
 WiseAppTest.java	WiseAppTest.java	1
 webstarterkit_hooks.sh	webstarterkit_hooks.sh	1
-da[.po]	da[.po]	1
 check_response_code.png	check_response_code.png	1
 sets.p	sets.p	1
 customerorder-item-details/n-order1-detail1-update.json	customerorder-item-details/n-order1-detail1-update.json	1
@@ -2372,7 +2363,6 @@ CafeTraveler.apk	CafeTraveler.apk	1
 b.framework.random	b.framework.random	1
 luadoc.taglet.mudlet	luadoc.taglet.mudlet	1
 logs/new-bugs.csv	logs/new-bugs.csv	1
-Pypcap...e[0m	Pypcap...e[0m	1
 amc.log	amc.log	1
 pcp-example.c	pcp-example.c	1
 qmlerror.cpp	qmlerror.cpp	1
@@ -2503,7 +2493,6 @@ thinClient.gfxd	thinClient.gfxd	1
 mpi.iworm.out	mpi.iworm.out	1
 gcc-4.6-base	gcc-4.6-base	1
 exceptions.lst	exceptions.lst	1
-Key...033[0m	Key...033[0m	1
 tests/test_random.memh	tests/test_random.memh	1
 aloja2.SAR_swap_util	aloja2.SAR_swap_util	1
 test_client_udp.bin	test_client_udp.bin	1
@@ -2628,7 +2617,6 @@ build_tools.xml	build_tools.xml	1
 bundle-trusty-devkit.restore.heat.yml	bundle-trusty-devkit.restore.heat.yml	1
 map-model.js	map-model.js	1
 icon-72.png	icon-72.png	1
-[mmnormalize_regex.sh]:	[mmnormalize_regex.sh]:	1
 net.ipv4.tcp_tw_reuse	net.ipv4.tcp_tw_reuse	1
 values/strings.xml:	values/strings.xml:	1
 home.lua	home.lua	1
@@ -2726,7 +2714,6 @@ simu/DataView.aadl	simu/DataView.aadl	1
 crypto/ebcdic.c	crypto/ebcdic.c	1
 trace/version.cpp-tmpl	trace/version.cpp-tmpl	1
 b671-1901.png	b671-1901.png	1
-packages...e[0m	packages...e[0m	1
 extract.sh	extract.sh	1
 logs/resolved-bugs.csv	logs/resolved-bugs.csv	1
 scm/events.tmpl	scm/events.tmpl	1
@@ -3391,7 +3378,6 @@ types.csv	types.csv	1
 x.pais.pipeline.sh	x.pais.pipeline.sh	1
 compiletime.zip	compiletime.zip	1
 script_base_parboil_2.pbs	script_base_parboil_2.pbs	1
-..cannot	..cannot	1
 ipxactwriter.py	ipxactwriter.py	1
 actual/check-pcg32_c64_fast.out	actual/check-pcg32_c64_fast.out	1
 lab5_1_1.vds	lab5_1_1.vds	1
@@ -3448,8 +3434,6 @@ version.yml	version.yml	1
 vdt-veditor/CONTRIBUTORS_VEDITOR.txt	vdt-veditor/CONTRIBUTORS_VEDITOR.txt	1
 build-contents.py	build-contents.py	1
 head-part08.scad	head-part08.scad	1
-_ml[.]mfs[.][12]	_ml[.]mfs[.][12]	1
-[rscript_ne.sh]:	[rscript_ne.sh]:	1
 x86_64_mov_to_lea3.stdout	x86_64_mov_to_lea3.stdout	1
 host1.data_out	host1.data_out	1
 join-networks.tar.gz	join-networks.tar.gz	1
@@ -3663,7 +3647,6 @@ mls/overview.tmpl	mls/overview.tmpl	1
 tools/bundle.patch	tools/bundle.patch	1
 test-2.err	test-2.err	1
 /.docker_status	/.docker_status	1
-langcode[.po]	langcode[.po]	1
 reads.right.fq.gz	reads.right.fq.gz	1
 temperature.py	temperature.py	1
 logs/error.log	logs/error.log	1
@@ -3714,7 +3697,6 @@ documentation.n	documentation.n	1
 util/import_unicode.py	util/import_unicode.py	1
 uwsgi.yml	uwsgi.yml	1
 write_xml.py	write_xml.py	1
-:task.checkpoint.replication.factor	:task.checkpoint.replication.factor	1
 nintendo3ds_ctr.dtb	nintendo3ds_ctr.dtb	1
 boot.device-mapper	boot.device-mapper	1
 device_key.reg	device_key.reg	1
@@ -3778,7 +3760,6 @@ chamilo_hooks.sh	chamilo_hooks.sh	1
 files/package.json	files/package.json	1
 mst_QU_1024/smica_nu0_T_OrientQTUT_HAsouth.dat	mst_QU_1024/smica_nu0_T_OrientQTUT_HAsouth.dat	1
 ShowDistanceAndAngleOfNodes.glyphsReporter	ShowDistanceAndAngleOfNodes.glyphsReporter	1
-file_name[.dvi]	file_name[.dvi]	1
 postmaster.opts	postmaster.opts	1
 Trinity.fasta.gz	Trinity.fasta.gz	1
 one_block.sam	one_block.sam	1
@@ -3836,7 +3817,6 @@ PipeApplicationStub.java	PipeApplicationStub.java	1
 libqca-ossl.dylib	libqca-ossl.dylib	1
 cont_testoperators.rst	cont_testoperators.rst	1
 png-exporter.js	png-exporter.js	1
-hellompi_[cr].std	hellompi_[cr].std	1
 .jscs.json	.jscs.json	1
 vp3/coeff_level64.mkv	vp3/coeff_level64.mkv	1
 simple-tailoring-autonegotiation.xml	simple-tailoring-autonegotiation.xml	1
@@ -3868,11 +3848,9 @@ probe.py	probe.py	1
 quick_button.py	quick_button.py	1
 openssl-1.0.1e	openssl-1.0.1e	1
 snp_store_realign_m0mp1oa.stdout	snp_store_realign_m0mp1oa.stdout	1
-[rscript_re_extract.sh]:	[rscript_re_extract.sh]:	1
 runner13.testMultiplicationVerbose.txt	runner13.testMultiplicationVerbose.txt	1
 target/index.html	target/index.html	1
 replay.diff	replay.diff	1
-tests...033[0m	tests...033[0m	1
 compile_commands.json	compile_commands.json	1
 snmpd.conf	snmpd.conf	1
 .bss	.bss	1
@@ -4001,7 +3979,6 @@ libvncserver/Makefile.am.LibVNCServer	libvncserver/Makefile.am.LibVNCServer	1
 load_congresses.cql	load_congresses.cql	1
 meanio_hooks.sh	meanio_hooks.sh	1
 libglib3.0-cil-dev	libglib3.0-cil-dev	1
-.Statement[0].Resource	.Statement[0].Resource	1
 failover-basic.conf	failover-basic.conf	1
 repomd.xml	repomd.xml	1
 SOIL2.h	SOIL2.h	1
@@ -4048,7 +4025,6 @@ t?.txt	t?.txt	1
 .travis_setup	.travis_setup	1
 libsratom-dev_0.4.4~dfsg0-1_amd64.deb	libsratom-dev_0.4.4~dfsg0-1_amd64.deb	1
 sketch.zip	sketch.zip	1
-[www.site.com]	[www.site.com]	1
 make_certificate.cfg	make_certificate.cfg	1
 aloja_logs.BWM	aloja_logs.BWM	1
 .git/index	.git/index	1
@@ -4075,7 +4051,6 @@ bin/thisroot.sh	bin/thisroot.sh	1
 filtered.vcf	filtered.vcf	1
 mbrStimulus_portaudio.py	mbrStimulus_portaudio.py	1
 tools/gitrev.hpp	tools/gitrev.hpp	1
-...t	...t	1
 bash/env.sh	bash/env.sh	1
 usage.sh	usage.sh	1
 libxil.a	libxil.a	1
@@ -4086,7 +4061,6 @@ driver_gpu_nvidia_cula1.c	driver_gpu_nvidia_cula1.c	1
 test_interval_manual_sexp.native	test_interval_manual_sexp.native	1
 GPUImage.framework/GPUImage	GPUImage.framework/GPUImage	1
 .simvision	.simvision	1
-IN[0].yyyy	IN[0].yyyy	1
 7.x-1.x	7.x-1.x	1
 testdata.sql	testdata.sql	1
 shell_pipeline.conf	shell_pipeline.conf	1
@@ -4258,7 +4232,6 @@ oceanbase.h	oceanbase.h	1
 ..recursively	..recursively	1
 selenium_basic.py	selenium_basic.py	1
 signatures.f	signatures.f	1
-IN[0].yzxw	IN[0].yzxw	1
 sclite_score/eval2000.ctm.filt.sys	sclite_score/eval2000.ctm.filt.sys	1
 pymorphy/_morph.py	pymorphy/_morph.py	1
 MODIFY.n	MODIFY.n	1
@@ -4273,7 +4246,6 @@ dwi_mean_seg.nii.gz	dwi_mean_seg.nii.gz	1
 adddrives.hql	adddrives.hql	1
 mac/libavg.10.6.pmdoc	mac/libavg.10.6.pmdoc	1
 dbms.security.auth_enabled	dbms.security.auth_enabled	1
-[failover-async.sh]:	[failover-async.sh]:	1
 libjmf_alsa.so	libjmf_alsa.so	1
 qaforums/overview.tmpl	qaforums/overview.tmpl	1
 .sna	.sna	1
@@ -4323,7 +4295,6 @@ clr.sh	clr.sh	1
 split_x32_3.stdout	split_x32_3.stdout	1
 .testrepository	.testrepository	1
 mst_QU_1024/nilc_nu1_T_OrientQTUT_HAnorth.dat	mst_QU_1024/nilc_nu1_T_OrientQTUT_HAnorth.dat	1
-[mysql-basic.sh]:	[mysql-basic.sh]:	1
 check.upgrade	check.upgrade	1
 first.nn	first.nn	1
 config/trinidad.yml	config/trinidad.yml	1
@@ -4577,7 +4548,6 @@ actual/check-pcg32_c1024.out	actual/check-pcg32_c1024.out	1
 check101_tb.tcl	check101_tb.tcl	1
 real_calc3.p	real_calc3.p	1
 .sql	.sql	1
-???.a	???.a	1
 cm-ios.xcworkspace	cm-ios.xcworkspace	1
 conf/zroot.ini	conf/zroot.ini	1
 cd.sid	cd.sid	1
@@ -4735,7 +4705,6 @@ server-1k.log	server-1k.log	1
 load_subjects.cql	load_subjects.cql	1
 hack/install-etcd.sh	hack/install-etcd.sh	1
 broker.py	broker.py	1
-[sparse_array_lookup_table.sh]:	[sparse_array_lookup_table.sh]:	1
 mst_QU_1024/commander_nu0_T_OrientQTUT_HAnorth.dat	mst_QU_1024/commander_nu0_T_OrientQTUT_HAnorth.dat	1
 messages50_2014_BIOH.csv	messages50_2014_BIOH.csv	1
 tmp/train_lemma.pl	tmp/train_lemma.pl	1
@@ -4789,7 +4758,6 @@ ShowKerningGroupReference.glyphsReporter	ShowKerningGroupReference.glyphsReporte
 /.grafana_configured	/.grafana_configured	1
 test-samples.raw	test-samples.raw	1
 DataGridModule.mxml	DataGridModule.mxml	1
-98.6}}]}	98.6}}]}	1
 sonyflake_server.go	sonyflake_server.go	1
 mordor/uri.cpp	mordor/uri.cpp	1
 Framework.framework/Electron	Framework.framework/Electron	1
@@ -4853,8 +4821,6 @@ alias.webui	alias.webui	1
 tmp/entity_facts_ingest.tsv	tmp/entity_facts_ingest.tsv	1
 conf/wandboard.config	conf/wandboard.config	1
 start.pl	start.pl	1
-...home	...home	1
-hack/update-api-reference-docs.sh	hack/update-api-reference-docs.sh	1
 .git/rebase-apply	.git/rebase-apply	1
 download_and_preprocess_flowers.sh	download_and_preprocess_flowers.sh	1
 gfortran-42-5664.pkg	gfortran-42-5664.pkg	1
@@ -4878,7 +4844,6 @@ out/bus.txt	out/bus.txt	1
 rd.locale.LC_ALL	rd.locale.LC_ALL	1
 1.3m	1.3m	1
 Cadence-XYController.exe	Cadence-XYController.exe	1
-n...Single-threaded	n...Single-threaded	1
 schemacrawler.Main	schemacrawler.Main	1
 physical.vhdl	physical.vhdl	1
 todo.txt	todo.txt	1
@@ -4942,11 +4907,9 @@ map-widget.js	map-widget.js	1
 agent.loggers.root	agent.loggers.root	1
 kr.ron	kr.ron	1
 script/histogram-chart.clj	script/histogram-chart.clj	1
-[consumer.properties]	[consumer.properties]	1
 libqsqlite.dylib	libqsqlite.dylib	1
 sca-serverAuth.pem	sca-serverAuth.pem	1
 empathy-utils.h	empathy-utils.h	1
-..locating	..locating	1
 plugin_start_lib_test.o:	plugin_start_lib_test.o:	1
 query.yacc	query.yacc	1
 src/plink-1.07-x86_64.zip	src/plink-1.07-x86_64.zip	1
@@ -5031,7 +4994,6 @@ schema/db_main.schema	schema/db_main.schema	1
 hw_wrap.o	hw_wrap.o	1
 tables.h	tables.h	1
 release.html	release.html	1
-[tabescape_off.sh]:	[tabescape_off.sh]:	1
 bob_key.pub	bob_key.pub	1
 test/green.png	test/green.png	1
 route_log.out	route_log.out	1
@@ -5141,7 +5103,6 @@ private.sh	private.sh	1
 m6boot.img	m6boot.img	1
 dist/YouTubeCenter.safariextz	dist/YouTubeCenter.safariextz	1
 spigot.jar	spigot.jar	1
-[failover-basic.sh]:	[failover-basic.sh]:	1
 meetup/next-meetings.tmpl	meetup/next-meetings.tmpl	1
 python-netaddr.noarch	python-netaddr.noarch	1
 native.txt	native.txt	1
@@ -5215,7 +5176,6 @@ NUnit.Runners	NUnit.Runners	1
 higgs-numpy.py	higgs-numpy.py	1
 jekyll-autorun.service	jekyll-autorun.service	1
 reinstall_plugin.sh	reinstall_plugin.sh	1
-watch-tests.sh!033[0mn	watch-tests.sh!033[0mn	1
 atom.zip	atom.zip	1
 notedown.exe	notedown.exe	1
 cylc-version.txt	cylc-version.txt	1
@@ -5244,7 +5204,6 @@ start_openair2_ch1.sh	start_openair2_ch1.sh	1
 ui_syncdatetime.py	ui_syncdatetime.py	1
 scripts/backend_tests.py	scripts/backend_tests.py	1
 d3.svg	d3.svg	1
-1.3}}]}	1.3}}]}	1
 test/node-helpers.js	test/node-helpers.js	1
 standalone-full-kie-server.xml	standalone-full-kie-server.xml	1
 actual/check-pcg16_oneseq_once_insecure.out	actual/check-pcg16_oneseq_once_insecure.out	1
@@ -5500,8 +5459,6 @@ log.ref/pr-log	log.ref/pr-log	1
 mst_QU_1024/smica_nu0_T_OrientQTUT.dat	mst_QU_1024/smica_nu0_T_OrientQTUT.dat	1
 test.bin	test.bin	1
 test_api_xccdf_unittests.log	test_api_xccdf_unittests.log	1
-[pmlastmsg.sh]:	[pmlastmsg.sh]:	1
-cores.min	cores.min	1
 scripts/groupFirst.gfr	scripts/groupFirst.gfr	1
 doom.wad	doom.wad	1
 topics.json	topics.json	1
@@ -5546,7 +5503,6 @@ o-tiff2ps-EPS1.ps	o-tiff2ps-EPS1.ps	1
 bf.py	bf.py	1
 Gettext.py	Gettext.py	1
 lab4_2_1_tb.tcl	lab4_2_1_tb.tcl	1
-...File	...File	1
 aci.gonyeo.com/znc	aci.gonyeo.com/znc	1
 routed.v	routed.v	1
 xf86-input-evdev-trackpoint.tar.gz	xf86-input-evdev-trackpoint.tar.gz	1
@@ -5606,7 +5562,6 @@ org.xwalk.packagemgt	org.xwalk.packagemgt	1
 files/config.txt	files/config.txt	1
 kadu-core/kadu.icns	kadu-core/kadu.icns	1
 orchestrator.adb	orchestrator.adb	1
-%.3f	%.3f	1
 SoundManager2_AS3.as	SoundManager2_AS3.as	1
 lib/versions.json	lib/versions.json	1
 megacorp_empty.sql	megacorp_empty.sql	1
@@ -5758,7 +5713,6 @@ bins.tar.gz	bins.tar.gz	1
 meson6_skt.dtd	meson6_skt.dtd	1
 ro.lge.proximity.delay	ro.lge.proximity.delay	1
 public.pem	public.pem	1
-...etc	...etc	1
 nosuchcon_2013_whitebox_nsc_break.c	nosuchcon_2013_whitebox_nsc_break.c	1
 address.address	address.address	1
 actual/check-pcg64_c32_fast.out	actual/check-pcg64_c32_fast.out	1
@@ -5792,7 +5746,6 @@ messages.po	messages.po	1
 queries.hql	queries.hql	1
 common.yml	common.yml	1
 mgspec-exact.txt	mgspec-exact.txt	1
-...Complete!	...Complete!	1
 .pot	.pot	1
 mst_QU_1024/nilc_nu1_T_OrientQTUT_HAsouth.dat	mst_QU_1024/nilc_nu1_T_OrientQTUT_HAsouth.dat	1
 CopyDirect-X-Memory.java.template	CopyDirect-X-Memory.java.template	1
@@ -5879,7 +5832,6 @@ mixpanel-jslib-snippet.min.test.js	mixpanel-jslib-snippet.min.test.js	1
 DummyTutorial.java	DummyTutorial.java	1
 kernel.randomize_va_space	kernel.randomize_va_space	1
 61.44MHz	61.44MHz	1
-user...:n	user...:n	1
 log4net.dll	log4net.dll	1
 mttest.c	mttest.c	1
 RTL283XACCESS.dll	RTL283XACCESS.dll	1
@@ -5975,7 +5927,6 @@ sql_uninstall.php	sql_uninstall.php	1
 ../common.sh	../common.sh	10
 ./testout.txt	./testout.txt	9
 /etc/motd.tmp	/etc/motd.tmp	9
-~/.nvm/nvm.sh	~/.nvm/nvm.sh	9
 ./init.sh	./init.sh	7
 ./swagger.yml	./swagger.yml	7
 /opt/source/list.txt	/opt/source/list.txt	6
