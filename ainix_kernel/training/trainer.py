@@ -13,6 +13,7 @@ from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_
 import more_itertools
 from ainix_kernel.specialtypes import allspecials
 from ainix_kernel.training.model_specific_training import update_latent_store_from_examples
+from ainix_kernel.training.train_contexts import ALL_EXAMPLE_NAMES, load_all_examples
 from ainix_kernel.util.serialization import serialize
 
 
@@ -139,16 +140,12 @@ if __name__ == "__main__":
     loader.load_path("builtin_types/paths.ainix.yaml")
     allspecials.load_all_special_types(type_context)
 
-    with_example_files = ("numbers", "pwd", "ls", "cat", "head", "cp", "wc",
-                          "mkdir", "echo", "mv", "touch")
-    for f in with_example_files:
+    for f in ALL_EXAMPLE_NAMES:
         loader.load_path(f"builtin_types/{f}.ainix.yaml")
     type_context.finalize_data()
 
-    index = ainix_kernel.indexing.exampleindex.ExamplesIndex(type_context)
-    for f in with_example_files:
-        exampleloader.load_path(f"../../builtin_types/{f}_examples.ainix.yaml", index)
     #exampleloader.load_path(f"../../builtin_types/why_not_work_examples.ainix.yaml", index)
+    index = load_all_examples(type_context)
 
     print("num docs", index.backend.index.doc_count())
 

@@ -116,7 +116,8 @@ class EncDecModel(StringTypeTranslateCF):
             "query_encoder": self.query_encoder.get_save_state_dict(),
             "decoder": self.decoder.get_save_state_dict(),
             # TODO figure out a better interface for this
-            "need_latent_train": self.plz_train_this_latent_store_thanks() is not None
+            "need_latent_train": self.plz_train_this_latent_store_thanks() is not None,
+            "need_example_store": self.plz_train_this_latent_store_thanks() is not None
         }
 
     @classmethod

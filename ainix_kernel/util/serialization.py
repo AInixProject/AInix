@@ -7,6 +7,7 @@ from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.models.EncoderDecoder.encdecmodel import EncDecModel
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 from ainix_kernel.specialtypes import allspecials
+from ainix_kernel.training.train_contexts import load_all_examples
 
 
 def serialize(model: StringTypeTranslateCF, loader: TypeContextDataLoader, save_path: str):
@@ -24,6 +25,12 @@ def restore(file_name) -> Tuple[TypeContext, StringTypeTranslateCF]:
     allspecials.load_all_special_types(type_context)
     type_context.finalize_data()
     # Hard code model type. Should not do this...
-    model = EncDecModel.create_from_save_state_dict(save_dict['model'], type_context, None)
+    #need_example_store = save_dict['model']['need_example_store']
+    if True: #need_example_store:
+        # TODO (DNGros) smart restoring.
+        example_store = load_all_examples(type_context)
+    else:
+        example_store = None
+    model = EncDecModel.create_from_save_state_dict(save_dict['model'], type_context, example_store)
     model.end_train_session()
     return type_context, model
