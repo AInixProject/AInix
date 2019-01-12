@@ -94,6 +94,8 @@ class RetrievalActionSelector(ActionSelector):
             impls_indices_correct = are_indices_valid(impl_keys, self.type_context, expected, COPY_IND)
             # TODO weights
             loss = torch.Tensor([0])[0]
+            eps = 1e-7
+            impl_scores = impl_scores.clamp(eps, 1-eps)
             if len(impl_scores) > 1:
                 loss = self.loss_func(impl_scores.unsqueeze(0), impls_indices_correct.unsqueeze(0))
         if expected.copy_is_known_choice():

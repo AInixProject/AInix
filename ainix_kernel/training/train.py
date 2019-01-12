@@ -41,17 +41,20 @@ class TypeTranslateCFTrainer:
     def _train_one_epoch(self, which_epoch_on: int):
         single_examples_iter = self.data_pair_iterate((DataSplits.TRAIN,))
         batches_iter = more_itertools.chunked(single_examples_iter, self.batch_size)
+        loss = torch.tensor(0.0)
         for batch in batches_iter:
             batch_as_query = [(replaced_x, y_ast_set, this_example_ast, example.example_id) for
                               example, replaced_x, y_ast_set, this_example_ast in batch]
-            self.model.train_batch(batch_as_query)
+            loss += self.model.train_batch(batch_as_query)
         self.model.end_train_epoch()
+        return loss
 
     def train(self, epochs: int):
         self.model.start_train_session()
         for epoch in range(epochs):
-            print(f"Epoch {epoch}")
-            self._train_one_epoch(epoch)
+            print(f"Start epoch {epoch}")
+            loss = self._train_one_epoch(epoch)
+            print(f"Epoch {epoch} complete. Loss {loss}")
             if hasattr(self.model, "plz_train_this_latent_store_thanks"):
                 # TODO wasdfahwerdfgv I should sleep
                 latent_store = self.model.plz_train_this_latent_store_thanks()
