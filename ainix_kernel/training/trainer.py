@@ -15,6 +15,7 @@ from ainix_kernel.specialtypes import allspecials
 from ainix_kernel.training.model_specific_training import update_latent_store_from_examples
 from ainix_kernel.training.train_contexts import ALL_EXAMPLE_NAMES, load_all_examples
 from ainix_kernel.util.serialization import serialize
+from tqdm import tqdm
 
 
 class TypeTranslateCFTrainer:
@@ -37,22 +38,27 @@ class TypeTranslateCFTrainer:
             self.replacer = Replacer([])
 
     def _train_one_epoch(self, which_epoch_on: int):
-        single_examples_iter = self.data_pair_iterate((DataSplits.TRAIN,))
+        train_splits = (DataSplits.TRAIN,)
+        train_count = sum(1 for _ in self.example_store.get_all_examples(train_splits))
+        single_examples_iter = self.data_pair_iterate(train_splits)
         batches_iter = more_itertools.chunked(single_examples_iter, self.batch_size)
         loss = torch.tensor(0.0)
-        for batch in batches_iter:
-            batch_as_query = [(replaced_x, y_ast_set, this_example_ast, example.example_id) for
-                              example, replaced_x, y_ast_set, this_example_ast in batch]
-            loss += self.model.train_batch(batch_as_query)
+        with tqdm(total=train_count, unit='Examples', miniters=train_count/5) as pbar:
+            for batch in batches_iter:
+                batch_as_query = [(replaced_x, y_ast_set, this_example_ast, example.example_id) for
+                                  example, replaced_x, y_ast_set, this_example_ast in batch]
+                loss += self.model.train_batch(batch_as_query)
+                pbar.update(len(batch))
         self.model.end_train_epoch()
         return loss
 
     def train(self, epochs: int):
         self.model.start_train_session()
-        for epoch in range(epochs):
+        for epoch in tqdm(range(epochs), unit="Epochs"):
+            print()
             print(f"Start epoch {epoch}")
             loss = self._train_one_epoch(epoch)
-            print(f"Epoch {epoch} complete. Loss {loss}")
+            print(f"\nEpoch {epoch} complete. Loss {loss}")
             if hasattr(self.model, "plz_train_this_latent_store_thanks"):
                 # TODO wasdfahwerdfgv I should sleep
                 # (yeah, even with sleep to lazy to fix this crappy interface. It works...)
@@ -162,14 +168,15 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    trainer.train(40)
+    epochs = 50
+    trainer.train(epochs)
 
     print("Lets eval")
     logger = EvaluateLogger()
     trainer.evaluate(logger)
     print_ast_eval_log(logger)
     print("serialize model")
-    serialize(model, loader, "saved_model.pt")
+    serialize(model, loader, "saved_model.pt", logger, trained_epochs=epochs)
     print("done.")
     print("done time", datetime.datetime.now())
     print(datetime.datetime.now() - train_time)

@@ -7,14 +7,23 @@ from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.models.EncoderDecoder.encdecmodel import EncDecModel
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 from ainix_kernel.specialtypes import allspecials
+from ainix_kernel.training.evaluate import EvaluateLogger
 from ainix_kernel.training.train_contexts import load_all_examples
 
 
-def serialize(model: StringTypeTranslateCF, loader: TypeContextDataLoader, save_path: str):
+def serialize(
+    model: StringTypeTranslateCF,
+    loader: TypeContextDataLoader,
+    save_path: str,
+    eval_results: EvaluateLogger = None,
+    trained_epochs = None
+):
     ser = {
         "version": 0,
         "model": model.get_save_state_dict(),
-        "type_loader": loader.get_save_state_dict()
+        "type_loader": loader.get_save_state_dict(),
+        "eval_results": eval_results,
+        "trained_epochs": trained_epochs
     }
     torch.save(ser, save_path)
 
@@ -25,8 +34,8 @@ def restore(file_name) -> Tuple[TypeContext, StringTypeTranslateCF]:
     allspecials.load_all_special_types(type_context)
     type_context.finalize_data()
     # Hard code model type. Should not do this...
-    #need_example_store = save_dict['model']['need_example_store']
-    if True: #need_example_store:
+    need_example_store = save_dict['model']['need_example_store']
+    if need_example_store:
         # TODO (DNGros) smart restoring.
         example_store = load_all_examples(type_context)
     else:

@@ -21,55 +21,14 @@ from aish.parser import BashParser
 
 builtin_dict = {}
 
-
-class AishShell(BaseShell):
-    def __init__(self):
-        self.session = PromptSession()
-        self.parser = BashParser()
-        self.kernel_interface = Interface("../ainix_kernel/training/saved_model.pt")
-        self.exec_classifier = ExecutionClassifier()
-        self.exec_function = aish.execer.execute
-
-    def singleline(self, store_in_history=True, auto_suggest=None,
-                   enable_history_search=True, multiline=True, **kwargs):
-        """Reads a single line of input from the shell. The store_in_history
-        kwarg flags whether the input should be stored in PTK's in-memory
-        history.
-        """
-        events.on_pre_prompt.fire()
-        env = builtins.__xonsh_env__
-        line = self.session.prompt('$ ', lexer=PygmentsLexer(BashLexer))
-        events.on_post_prompt.fire()
-        return line
-
-    def cmdloop(self, intro=None):
-        while not builtins.__xonsh_exit__:
-            env = builtins.__xonsh_env__
-            env['XONSH_SHOW_TRACEBACK'] = True
-            text = self.singleline()
-            parse = self.parser.parse(text)
-            if parse.was_error:
-                continue
-
-            exec_type = self.exec_classifier.classify_string(parse)
-            if False and words[0] in builtin_dict:
-                builtin_dict[words[0]](words[1:], None, None, None, env)
-            else:
-                try:
-                    if exec_type.run_through_model:
-                        prediction = self.kernel_interface.predict(text)
-                        print("predict:", prediction)
-                    else:
-                        self.exec_function(parse)
-                except Exception as e:
-                    print(e)
-
-
 class AishShell2(PromptToolkit2Shell):
     def __init__(self, **kwargs):
         super().__init__(execer=None, ctx=None, **kwargs)
 
         self.parser = BashParser()
+        print("Loading model...")
+        print("(NOTE, this currently super inefficient and takes quite a while.\n"
+              " It could be optimized a lot).")
         self.kernel_interface = Interface("../ainix_kernel/training/saved_model.pt")
         self.exec_classifier = ExecutionClassifier()
         self.exec_function = aish.execer.execute
