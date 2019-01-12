@@ -301,7 +301,7 @@ class AstUnparser:
         default_input_str_tokenizer: tokenizers.StringTokenizer = None
     ):
         self._type_context = type_context
-        self._input_str_tokenizr = default_input_str_tokenizer
+        self.input_str_tokenizer = default_input_str_tokenizer
 
     def _unparse_object_choice_node(
         self,
@@ -432,7 +432,7 @@ class AstUnparser:
                 parser for the root of the ast.
         """
         if copy_from_str:
-            _, tokenized_metadata = self._input_str_tokenizr.tokenize(copy_from_str)
+            _, tokenized_metadata = self.input_str_tokenizer.tokenize(copy_from_str)
         else:
             tokenized_metadata = None
 

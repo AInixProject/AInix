@@ -144,7 +144,7 @@ class SimpleActionSelector(ActionSelector):
 
     def get_save_state_dict(self) -> dict:
         return {
-            "name": "SimpleNonRetrieval",
+            "name": "SimpleActionSelector",
             "version": 0,
             "latent_size": self.latent_size,
             "object_selector": self.object_selector,

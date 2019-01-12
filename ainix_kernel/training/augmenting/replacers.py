@@ -213,3 +213,13 @@ class ReplacementGroup:
     def sample_replacement(self, argwords = []):
         return self._sampler.sample().get_replacement()
 
+
+def get_all_replacers() -> Replacer:
+    import os
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    repl_groups = [
+        ReplacementGroup(fn, Replacement.from_tsv(f"{dirname}/data/{fn}.tsv"))
+        for fn in ('FILENAME', "DIRNAME", "ENGWORD")
+    ]
+    replacer = Replacer(repl_groups)
+    return replacer

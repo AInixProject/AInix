@@ -113,15 +113,26 @@ class RetrievalActionSelector(ActionSelector):
         self.latent_store_trainer = None
 
     def get_save_state_dict(self):
-        raise NotImplemented()
         return {
             "name": "RetrievalActionSelector",
             "version": 0,
-            "latent_size": self.latent_size,
-            "latent_store": self.latent_store,
-            "retrieve_dropout_p": self.retrieve_dropout_p
+            "latent_size": self.latent_store.latent_size,
+            # "latent_store": self.latent_store,
+            "retrieve_dropout_p": self.retrieve_dropout_p,
+            "model_state": self.state_dict()
         }
 
     @classmethod
-    def create_from_save_state_dict(cls, save_dict: dict, type_context: TypeContext):
-        pass
+    def create_from_save_state_dict(
+        cls,
+        save_dict: dict,
+        type_context: TypeContext,
+        latent_store: LatentStore
+    ) -> 'RetrievalActionSelector':
+        instance = RetrievalActionSelector(
+            latent_store,
+            type_context,
+            save_dict['retrieve_dropout_p']
+        )
+        instance.load_state_dict(save_dict['model_state'])
+        return instance

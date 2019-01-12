@@ -3,6 +3,7 @@ from typing import Tuple, List
 import torch
 
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
+from ainix_common.parsing.stringparser import AstUnparser, StringParser
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.model_util import vocab, vectorizers
@@ -12,7 +13,8 @@ from ainix_kernel.models.EncoderDecoder import encoders, decoders
 from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder, TreeRNNDecoder
 from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder, StringQueryEncoder
 from ainix_kernel.models.model_types import StringTypeTranslateCF
-from ainix_kernel.training.augmenting.replacers import Replacer
+from ainix_kernel.training.augmenting.replacers import Replacer, get_all_replacers
+from ainix_kernel.training.model_specific_training import update_latent_store_from_examples
 
 
 class EncDecModel(StringTypeTranslateCF):
@@ -112,7 +114,9 @@ class EncDecModel(StringTypeTranslateCF):
         return {
             "version": 0,
             "query_encoder": self.query_encoder.get_save_state_dict(),
-            "decoder": self.decoder.get_save_state_dict()
+            "decoder": self.decoder.get_save_state_dict(),
+            # TODO figure out a better interface for this
+            "need_latent_train": self.plz_train_this_latent_store_thanks() is not None
         }
 
     @classmethod
@@ -120,17 +124,26 @@ class EncDecModel(StringTypeTranslateCF):
         cls,
         state_dict: dict,
         new_type_context: TypeContext,
-        new_example_store: ExamplesStore
+        new_example_store: ExamplesStore,
     ) -> 'EncDecModel':
         # TODO (DNGros): acutally handle the new type context.
         query_encoder = StringQueryEncoder.create_from_save_state_dict(state_dict['query_encoder'])
-        decoder = TreeRNNDecoder.create_from_save_state_dict(
-            state_dict['decoder'], new_type_context, new_example_store)
-        return cls(
+        parser = StringParser(new_type_context)
+        unparser = AstUnparser(new_type_context, query_encoder.get_tokenizer())
+        replacers = get_all_replacers()
+        decoder = TreeRNNDecoder.create_from_save_state_dict(state_dict[
+            'decoder'], new_type_context, new_example_store, replacers, parser, unparser)
+        model = cls(
             type_context=new_type_context,
             query_encoder=query_encoder,
             tree_decoder=decoder
         )
+        if state_dict['need_latent_train']:
+            update_latent_store_from_examples(
+                model, decoder.action_selector.latent_store, new_example_store, replacers,
+                parser, None, unparser, query_encoder.get_tokenizer()
+            )
+        return model
 
     def plz_train_this_latent_store_thanks(self):
         """Really crappy interface for getting the trainer to update the latent store at
@@ -145,8 +158,12 @@ def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenize
     return NonLetterTokenizer(), AstValTokenizer()
 
 
-def get_default_encdec_model(examples: ExamplesStore, standard_size=16, replacer: Replacer = None,
-                             use_retrieval_decoder: bool = False):
+def get_default_encdec_model(
+    examples: ExamplesStore,
+    standard_size=16,
+    replacer: Replacer = None,
+    use_retrieval_decoder: bool = False
+):
     x_tokenizer, y_tokenizer = _get_default_tokenizers()
     x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer)
     hidden_size = standard_size
@@ -155,8 +172,10 @@ def get_default_encdec_model(examples: ExamplesStore, standard_size=16, replacer
     if not use_retrieval_decoder:
         decoder = decoders.get_default_nonretrieval_decoder(tc, hidden_size)
     else:
-        decoder = decoders.get_default_retrieval_decoder(tc, hidden_size, examples,
-                                                         replacer, x_tokenizer)
+        parser = StringParser(tc)
+        unparser = AstUnparser(tc, x_tokenizer)
+        decoder = decoders.get_default_retrieval_decoder(
+            tc, hidden_size, examples, replacer, parser, unparser)
     model = EncDecModel(examples.type_context, encoder, decoder)
     if use_retrieval_decoder:
         # TODO lolz, this is such a crappy interface

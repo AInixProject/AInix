@@ -2,21 +2,18 @@ import random
 import torch
 from typing import Tuple, Generator
 
-from ainix_common.parsing import copy_tools
 from ainix_common.parsing.copy_tools import add_copies_to_ast_set
-from ainix_common.parsing.model_specific.tokenizers import StringTokenizer
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
-from ainix_kernel.models.EncoderDecoder.latentstore import LatentStore
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException, \
     ModelSafePredictError
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
-from ainix_kernel.training.augmenting.replacers import Replacer, ReplacementGroup, Replacement
+from ainix_kernel.training.augmenting.replacers import Replacer, get_all_replacers
 from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 import more_itertools
-from ainix_kernel.specialtypes import generic_strings, allspecials
+from ainix_kernel.specialtypes import allspecials
+from ainix_kernel.training.model_specific_training import update_latent_store_from_examples
 from ainix_kernel.util.serialization import serialize
-from ainix_kernel.models.EncoderDecoder.encdecmodel import EncDecModel
 
 
 class TypeTranslateCFTrainer:
@@ -118,49 +115,7 @@ class TypeTranslateCFTrainer:
             yield (example, this_example_replaced_x, y_ast_set, ast_for_this_example)
 
 
-# Latent store update code because I don't know where else to put it
-
-def update_latent_store_from_examples(
-    model: EncDecModel,
-    latent_store: LatentStore,
-    examples: ExamplesStore,
-    replacer: Replacer,
-    parser: StringParser,
-    splits: Tuple[DataSplits],
-    unparser: AstUnparser,
-    tokenizer: StringTokenizer
-):
-    model.set_in_eval_mode()
-    for example in examples.get_all_examples(splits):
-        # TODO multi sampling and average replacers
-        x_replaced, y_replaced = replacer.strings_replace(example.xquery, example.ytext)
-        ast = parser.create_parse_tree(y_replaced, example.ytype)
-        _, token_metadata = tokenizer.tokenize(x_replaced)
-        copy_ast = copy_tools.make_copy_version_of_tree(ast, unparser, token_metadata)
-        # TODO Think about whether feeding in the raw x is good idea.
-        # will change once have replacer sampling
-        latents = model.get_latent_select_states(example.xquery, copy_ast)
-        nodes = list(copy_ast.depth_first_iter())
-        #print("LATENTS", latents)
-        for i, l in enumerate(latents):
-            dfs_depth = i*2
-            n = nodes[dfs_depth].cur_node
-            assert isinstance(n, ObjectChoiceNode)
-            c = l.detach()
-            assert not c.requires_grad
-            latent_store.set_latent_for_example(c, n.type_to_choose.ind,
-                                                example.example_id, dfs_depth)
-    model.set_in_train_mode()
-
-
 # A bunch of code for running the thing which really shouldn't be here.
-
-def get_all_replacers() -> Replacer:
-    filename_repl = ReplacementGroup('FILENAME', Replacement.from_tsv("./data/FILENAME.tsv"))
-    dirname_repl = ReplacementGroup('DIRNAME', Replacement.from_tsv("./data/DIRNAME.tsv"))
-    eng_word_repl = ReplacementGroup('ENGWORD', Replacement.from_tsv("./data/ENGWORD.tsv"))
-    replacer = Replacer([filename_repl, dirname_repl, eng_word_repl])
-    return replacer
 
 
 if __name__ == "__main__":
@@ -191,9 +146,9 @@ if __name__ == "__main__":
 
     print("num docs", index.backend.index.doc_count())
 
-    from ainix_kernel.models.SeaCR.seacr import make_default_seacr, make_rulebased_seacr
     from ainix_kernel.models.EncoderDecoder.encdecmodel import \
-        get_default_encdec_model, EncDecModel
+        get_default_encdec_model
+
     replacers = get_all_replacers()
 
     #model = get_default_encdec_model(index, standard_size=64)

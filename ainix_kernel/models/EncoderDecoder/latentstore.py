@@ -333,11 +333,10 @@ def make_latent_store_from_examples(
     examples: ExamplesStore,
     latent_size: int,
     replacer: Replacer,
-    tokenizer: StringTokenizer,
+    parser: StringParser,
+    unparser: AstUnparser,
     splits=(DataSplits.TRAIN,)
 ) -> LatentStore:
-    parser = StringParser(type_context=examples.type_context)
-    unparser = AstUnparser(examples.type_context, tokenizer)
     builder = TorchLatentStoreBuilder(examples.type_context.get_type_count(), latent_size)
     for example in examples.get_all_examples(splits):
         if replacer is not None:
@@ -345,7 +344,7 @@ def make_latent_store_from_examples(
         else:
             x, y = example.xquery, example.ytext
         ast = parser.create_parse_tree(y, example.ytype)
-        _, token_metadata = tokenizer.tokenize(x)
+        _, token_metadata = unparser.input_str_tokenizer.tokenize(x)
         ast_with_copies = copy_tools.make_copy_version_of_tree(ast, unparser, token_metadata)
         builder.add_example(example.example_id, ast_with_copies)
     return builder.produce_result()

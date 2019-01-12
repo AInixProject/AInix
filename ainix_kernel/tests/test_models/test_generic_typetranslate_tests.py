@@ -20,12 +20,13 @@ from ainix_common.parsing.typecontext import TypeContext, AInixType, AInixObject
 from ainix_common.parsing import loader
 from ainix_kernel.models.model_types import StringTypeTranslateCF
 from ainix_kernel.training.evaluate import EvaluateLogger
-from ainix_kernel.training.train import TypeTranslateCFTrainer, get_all_replacers
 import tempfile
 
 # Here we define functions to generate each of the models we want to test
 # Full models are models which should pass every test
 #FULL_MODELS = ["SeaCR"]
+from ainix_kernel.training.trainer import TypeTranslateCFTrainer
+
 FULL_MODELS = ["EncDec", "EncDecRetrieval"]
 # All Models are just all available models. Some might not be expect to pass
 # every test

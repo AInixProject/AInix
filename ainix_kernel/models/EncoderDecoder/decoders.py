@@ -7,6 +7,7 @@ import attr
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet, \
     ObjectNode, AstNode, ObjectNodeSet, CopyNode
 from ainix_common.parsing.model_specific.tokenizers import StringTokenizer
+from ainix_common.parsing.stringparser import AstUnparser, StringParser
 from ainix_common.parsing.typecontext import AInixType, AInixObject, TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.model_util import vectorizers
@@ -89,7 +90,10 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
         cls,
         state_dict: dict,
         new_type_context: TypeContext,
-        new_example_store: ExamplesStore
+        new_example_store: ExamplesStore,
+        replacer: Replacer,
+        parser: StringParser,
+        unparser: AstUnparser
     ):
         raise NotImplemented
 
@@ -390,19 +394,44 @@ class TreeRNNDecoder(TreeDecoder):
         cls,
         state_dict: dict,
         new_type_context: TypeContext,
-        new_example_store: ExamplesStore
+        new_example_store: ExamplesStore,
+        replacer: Replacer,
+        parser: StringParser,
+        unparser: AstUnparser
     ):
         instance = cls(
             rnn_cell=state_dict['rnn_cell'],
-            action_selector=SimpleActionSelector.create_from_save_state_dict(
-                state_dict['action_selector'], new_type_context),
+            action_selector=make_action_selector_from_dict(
+                state_dict['action_selector'], new_type_context, new_example_store,
+                replacer, parser, unparser),
             type_vectorizer=vectorizer_from_save_dict(state_dict['type_vectorizer']),
             type_context=new_type_context
         )
         # Caution, this will probably overwrite any speciallness we do in
-        # the custom loading. Another reason to put the copying in its own module.
+        # the custom loading. Need to figure that out when we do that.
         instance.load_state_dict(state_dict['my_model_state'])
         return instance
+
+
+def make_action_selector_from_dict(
+    save_dict: dict,
+    new_type_context: TypeContext,
+    new_example_store: ExamplesStore,
+    replacer: Replacer,
+    parser: StringParser,
+    unparser: AstUnparser
+) -> ActionSelector:
+    """Creates a action selector off the serialized form. Looks a the name to make the right one"""
+    name = save_dict['name']
+    if name == "SimpleActionSelector":
+        return SimpleActionSelector.create_from_save_state_dict(save_dict, new_type_context)
+    elif name == "RetrievalActionSelector":
+        latent_store = make_latent_store_from_examples(
+            new_example_store, save_dict['latent_size'], replacer, parser, unparser, splits=None)
+        return RetrievalActionSelector(latent_store, new_type_context,
+                                       save_dict['retrieve_dropout_p'])
+    else:
+        raise ValueError(f"unrecognized action selector {name}")
 
 
 def get_default_nonretrieval_decoder(
@@ -423,11 +452,13 @@ def get_default_retrieval_decoder(
     rnn_hidden_size: int,
     examples: ExamplesStore,
     replacer: Replacer,
-    tokenizer: StringTokenizer
+    parser: StringParser,
+    unparser: AstUnparser
 ) -> TreeDecoder:
     type_vectorizer = vectorizers.TorchDeepEmbed(type_context.get_type_count(), rnn_hidden_size)
     rnn_cell = TreeRNNCell(rnn_hidden_size, rnn_hidden_size)
-    latent_store = make_latent_store_from_examples(examples, rnn_hidden_size, replacer, tokenizer)
+    latent_store = make_latent_store_from_examples(
+        examples, rnn_hidden_size, replacer, parser, unparser)
     # TODO rework dropout so this will work
     action_selector = RetrievalActionSelector(latent_store, type_context, 0)
     return TreeRNNDecoder(rnn_cell, action_selector, type_vectorizer, type_context)
