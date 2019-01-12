@@ -13,13 +13,10 @@ defines:
             type: StartDirectoryModifier
           - name: main_path
             required: True
-            type: SlashSeparatedWords
-          - name: extension
-            required: False
-            type: FileExtension
+            type: SlashSeparatedFiles
       preferred_object_parser:
           grammar: |
-              start_directory "/" main_path ("." extension)?
+              start_directory "/" main_path
     - define_new: object
       type: Path
       name: path_only_start_dir
@@ -35,30 +32,42 @@ defines:
       name: path_only_main_part
       children:
           - name: main_path
-            type: SlashSeparatedWords
+            type: SlashSeparatedFiles
+            required: True
+      preferred_object_parser:
+          grammar: |
+              main_path
+    # SlashSeparatedWords
+    - define_new: type
+      name: SlashSeparatedFiles
+    - define_new: object
+      type: SlashSeparatedFiles
+      name: slash_seperated_words
+      children:
+          - name: current
+            type: WordAndExtension
+            required: True
+          - name: next
+            type: SlashSeparatedFiles
+            required: False
+      preferred_object_parser:
+          grammar: |
+            current ("/" next)?
+    - define_new: type
+      name: WordAndExtension
+    - define_new: object
+      type: WordAndExtension
+      name: word_and_extension_object
+      children:
+          - name: path
+            type: GenericWord
             required: True
           - name: extension
             required: False
             type: FileExtension
       preferred_object_parser:
           grammar: |
-              main_path ("." extension)?
-    # SlashSeparatedWords
-    - define_new: type
-      name: SlashSeparatedWords
-    - define_new: object
-      type: SlashSeparatedWords
-      name: slash_seperated_words
-      children:
-          - name: current
-            type: GenericWord
-            required: True
-          - name: next
-            type: SlashSeparatedWords
-            required: False
-      preferred_object_parser:
-          grammar: |
-            current ("/" next)?
+              path ("." extension)?
     # Start dir
     - define_new: type
       name: StartDirectoryModifier
