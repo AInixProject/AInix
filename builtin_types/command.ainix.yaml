@@ -9,7 +9,6 @@ defines:
     - define_new: type
       name: CompoundOperator
       default_type_parser: CommandOperatorParser
-      default_object_parser: CommandOperatorObjParser
     - define_new: type
       name: Program
       default_type_parser: ProgramTypeParser
@@ -34,9 +33,12 @@ defines:
       type: CompoundOperator
       type_data: {OperatorRepresentation: "|"}
       children:
-            - name: NextCommand
+            - name: next_command
               type: CommandSequence
               required: True
+      preferred_object_parser:
+          grammar: |
+              next_command
     - << : *operator
       name: "AndObj"
       type_data: {OperatorRepresentation: "&&"}
@@ -54,6 +56,7 @@ defines:
     - &type_parser_from_posix
       define_new: type_parser
       name: CommandOperatorParser
+      to_string_func: CommandOperatorUnparserFunc
       type: CompoundOperator
       source: python_module
       file: posix_parsers.py
@@ -68,9 +71,6 @@ defines:
       type: CommandSequence
       source: python_module
       file: posix_parsers.py
-    - << : *object_parser_from_posix
-      name: CommandOperatorObjParser
-      type: CompoundOperator
     - << : *object_parser_from_posix
       name: ProgramObjectParser
       to_string_func: ProgramObjectUnparser

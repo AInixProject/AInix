@@ -294,10 +294,7 @@ def CommandOperatorParser(
     result.set_next_slice(len(matching_str) + amount_lstriped, len(string))
 
 
-
-
-####
-
-
-def CommandOperatorObjParser(parser, string, result):
-    raise NotImplemented()
+def CommandOperatorUnparserFunc(result: parse_primitives.TypeToStringResult):
+    result.add_string(result.implementation.type_data[OPERATOR_REP_KEY])
+    result.add_string(" ")
+    result.add_impl_unparse()

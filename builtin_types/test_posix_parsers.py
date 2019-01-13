@@ -322,8 +322,13 @@ def test_string_parse_e2e_sequence(type_context):
         type_data={"invoke_name": "hello"}
     )
     parser = StringParser(type_context)
+    unparser = AstUnparser(type_context)
     string = "hello -a | hello -b"
     ast = parser.create_parse_tree(string, "CommandSequence")
-    unparser = AstUnparser(type_context)
+    to_string = unparser.to_string(ast)
+    assert to_string.total_string == string
+
+    no_space = "hello -a|hello -b"
+    ast = parser.create_parse_tree(no_space, "CommandSequence")
     to_string = unparser.to_string(ast)
     assert to_string.total_string == string
