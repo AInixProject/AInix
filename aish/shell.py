@@ -48,8 +48,10 @@ class AishShell2(PromptToolkit2Shell):
                 try:
                     if exec_type.run_through_model:
                         print("running on", parse.model_input_str)
-                        prediction = self.kernel_interface.predict(parse.model_input_str, "Program")
-                        print("predict:", prediction)
+                        prediction, metad = self.kernel_interface.predict(
+                            parse.model_input_str, "Program")
+                        print(f"predict: {prediction} "
+                              f"(confidence score {metad.total_confidence:.2f})")
                     else:
                         self.exec_function(parse)
                 except Exception as e:

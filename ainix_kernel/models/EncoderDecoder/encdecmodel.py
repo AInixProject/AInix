@@ -12,7 +12,7 @@ from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer, A
 from ainix_kernel.models.EncoderDecoder import encoders, decoders
 from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder, TreeRNNDecoder
 from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder, StringQueryEncoder
-from ainix_kernel.models.model_types import StringTypeTranslateCF
+from ainix_kernel.models.model_types import StringTypeTranslateCF, TypeTranslatePredictMetadata
 from ainix_kernel.training.augmenting.replacers import Replacer, get_all_replacers
 from ainix_kernel.training.model_specific_training import update_latent_store_from_examples
 
@@ -36,14 +36,15 @@ class EncDecModel(StringTypeTranslateCF):
         x_string: str,
         y_type_name: str,
         use_only_train_data: bool
-    ) -> ObjectChoiceNode:
+    ) -> Tuple[ObjectChoiceNode, TypeTranslatePredictMetadata]:
         if self.modules.training:
             raise ValueError("Should be in eval mode to predict")
         query_summary, encoded_tokens = self.query_encoder([x_string])
         root_type = self.type_context.get_type_by_name(y_type_name)
-        out_node = self.decoder.forward_predict(query_summary, encoded_tokens, root_type)
+        out_node, predict_data = self.decoder.forward_predict(
+            query_summary, encoded_tokens, root_type)
         out_node.freeze()
-        return out_node
+        return out_node, predict_data
 
     def train(
         self,

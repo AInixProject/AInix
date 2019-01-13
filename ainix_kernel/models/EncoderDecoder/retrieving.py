@@ -1,5 +1,5 @@
 import random
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import torch
 from torch.distributions import Bernoulli
@@ -14,6 +14,8 @@ from ainix_kernel.models.EncoderDecoder.latentstore import LatentStore, COPY_IND
 from ainix_kernel.models.EncoderDecoder.nonretrieval import CopySpanPredictor, \
     get_copy_depth_discount
 import torch.nn.functional as F
+
+from ainix_kernel.models.model_types import TypeTranslatePredictMetadata
 
 
 class RetrievalActionSelector(ActionSelector):
@@ -48,24 +50,27 @@ class RetrievalActionSelector(ActionSelector):
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
         type_to_select: AInixType
-    ) -> 'ActionResult':
+    ) -> Tuple['ActionResult', TypeTranslatePredictMetadata]:
         nearest_datas, similarities = self.latent_store.get_n_nearest_latents(
             latent_vec, type_to_select.ind, max_results=self.max_query_retrieve_count_infer)
         # TODO think about whether need to scale for dropout???
-
         # TODO ahh this is way diffferent than the loss function
         # TODO is softmax best way to do?
         impl_scores, impl_keys = sparse_groupby_sum(
             F.softmax(similarities, dim=0), nearest_datas.impl_choices)
-        choice_ind = int(impl_keys[impl_scores.argmax()])
+        max_scores_inds = impl_scores.argmax()
+        choice_ind = int(impl_keys[max_scores_inds])
+        log_total_conf = float(torch.log(impl_scores.max()))
         choose_copy = choice_ind == COPY_IND
         if choose_copy:
-            pred_start, pred_end = self.span_predictor.inference_predict_span(
+            pred_start, pred_end, cp_log_conf = self.span_predictor.inference_predict_span(
                 latent_vec, memory_tokens)[0]
-            return CopyAction(pred_start, pred_end)
+            metad = TypeTranslatePredictMetadata.create_leaf_value(cp_log_conf + log_total_conf)
+            return CopyAction(pred_start, pred_end), metad
         else:
             impl = self.type_context.get_object_by_ind(choice_ind)
-            return ProduceObjectAction(impl)
+            metad = TypeTranslatePredictMetadata.create_leaf_value(log_total_conf)
+            return ProduceObjectAction(impl), metad
 
     def forward_train(
         self,

@@ -1,4 +1,6 @@
 """Selectors for the nonretrieval method"""
+import math
+
 import numpy as np
 from abc import ABC
 from typing import Tuple, List, Type
@@ -16,6 +18,7 @@ from ainix_kernel.model_util.vocab import are_indices_valid, Vocab
 from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector, CopyAction, \
     ProduceObjectAction, ActionResult
 from ainix_kernel.models.EncoderDecoder.objectselector import ObjectSelector
+from ainix_kernel.models.model_types import TypeTranslatePredictMetadata
 from ainix_kernel.models.multiforward import add_hooks, MultiforwardTorchModule
 import torch.nn.functional as F
 
@@ -51,20 +54,22 @@ class SimpleActionSelector(ActionSelector):
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
         type_to_select: AInixType
-    ) -> ActionResult:
+    ) -> Tuple[ActionResult, TypeTranslatePredictMetadata]:
         copy_probs = self._predict_whether_copy(latent_vec)
         do_copy = copy_probs[0] > 0.5
         if do_copy:
-            pred_start, pred_end = self.span_predictor.inference_predict_span(
+            pred_start, pred_end, log_conf = self.span_predictor.inference_predict_span(
                 latent_vec, memory_tokens)[0]
-            return CopyAction(pred_start, pred_end)
+            full_copy_log_conf = math.log(copy_probs[0]) + log_conf
+            metad = TypeTranslatePredictMetadata.create_leaf_value(full_copy_log_conf)
+            return CopyAction(pred_start, pred_end), metad
         else:
-            predicted_impl = self._predict_most_likely_implementation(
+            predicted_impl, metad = self._predict_most_likely_implementation(
                 vectors_to_select_on=latent_vec,
                 types_to_select=[type_to_select]
             )
             assert len(predicted_impl) == len(latent_vec)
-            return ProduceObjectAction(predicted_impl[0])
+            return ProduceObjectAction(predicted_impl[0]), metad
 
     @add_hooks
     def forward_train(
@@ -117,16 +122,20 @@ class SimpleActionSelector(ActionSelector):
         self,
         vectors_to_select_on: torch.Tensor,
         types_to_select: List[AInixType]
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, TypeTranslatePredictMetadata]:
         impls_indices, scores = self.object_selector(vectors_to_select_on, types_to_select)
         # Because not batch yet, just take first of each
         assert len(scores) == 1, "No batch yet"
         scores = scores[0]
         impls_indices = impls_indices[0]
         ####
+        log_softmaxes = F.log_softmax(scores, dim=0)
         best_scores = torch.argmax(scores)
         best_obj_indxs = impls_indices[best_scores]
-        return vocab.torch_inds_to_objects(torch.stack([best_obj_indxs]), self.type_context)
+        metad = TypeTranslatePredictMetadata.create_leaf_value(float(torch.max(log_softmaxes)))
+        best_impl = vocab.torch_inds_to_objects(torch.stack([best_obj_indxs]), self.type_context)
+        return best_impl, metad
+
 
     def _predict_whether_copy(
         self,
@@ -189,13 +198,14 @@ class CopySpanPredictor(MultiforwardTorchModule):
         self,
         select_on_vec: torch.Tensor,
         memory_tokens: torch.Tensor
-    ) -> List[Tuple[int, int]]:
-        """Given a copy is valid, finds the most likely (start, end) span"""
+    ) -> List[Tuple[int, int, float]]:
+        """Given a copy is valid, finds the most likely (start, end, log_confidence) span"""
         start_preds, end_preds = self._get_copy_span_weights(select_on_vec, memory_tokens)
         starts = torch.argmax(start_preds, dim=1)
         ends = torch.argmax(end_preds, dim=1)
-        # TODO should eventually also probably return the log probability of this span
-        return [(int(s), int(e)) for s, e in zip(starts, ends)]
+        confidences = F.log_softmax(start_preds, dim=1)[: starts] + \
+                      F.log_softmax(end_preds, dim=1)[:, ends]
+        return [(int(s), int(e), float(conf[0])) for s, e, conf in zip(starts, ends, confidences)]
 
     def train_predict_span(
         self,

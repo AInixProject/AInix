@@ -1,6 +1,6 @@
 """"""
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
 import attr
 
 import torch
@@ -9,6 +9,7 @@ from torch import nn
 from ainix_common.parsing.ast_components import ObjectNodeLike, CopyNode, ObjectNode, \
     AstObjectChoiceSet, ObjectChoiceNode, AstIterPointer
 from ainix_common.parsing.typecontext import AInixType, AInixObject
+from ainix_kernel.models.model_types import TypeTranslatePredictMetadata
 from ainix_kernel.models.multiforward import MultiforwardTorchModule, add_hooks
 
 
@@ -25,7 +26,7 @@ class ActionSelector(MultiforwardTorchModule, ABC):
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
         type_to_select: AInixType
-    ) -> 'ActionResult':
+    ) -> Tuple['ActionResult', TypeTranslatePredictMetadata]:
         # for beam will could also have a max_return_count and extra_min_prob_return for 2nd val
         pass
 

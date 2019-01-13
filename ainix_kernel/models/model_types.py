@@ -1,9 +1,16 @@
+"""Centaurnix might eventually support many different kinds of models (currently
+though the only supported model type converts from a string into an arbitrary
+AST.) This module defines ABC's for models for the vary tasks and stuff that
+might be useful."""
+import math
 from abc import ABC, abstractmethod, abstractclassmethod
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import Example, ExamplesStore
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Tuple, Sequence
 from ainix_common.parsing.model_specific import tokenizers
+from pyrsistent import pvector
+import attr
 
 
 class ModelException(RuntimeError):
@@ -83,7 +90,6 @@ class RecusivePretrainer(Pretrainer):
             pretrainer.close()
 
 
-
 class StringTypeTranslateCF(Pretrainable):
     """Translates a string to another type without taking any prior context
     into account (what the user or the system has said previously)"""
@@ -94,7 +100,7 @@ class StringTypeTranslateCF(Pretrainable):
         x_string: str,
         y_type_name: str,
         use_only_train_data: bool
-    ) -> ObjectChoiceNode:
+    ) -> Tuple[ObjectChoiceNode, 'TypeTranslatePredictMetadata']:
         raise NotImplemented
 
     @abstractmethod
@@ -177,4 +183,41 @@ class StringTypeTranslateCF(Pretrainable):
         new_example_store: ExamplesStore
     ):
         raise NotImplemented
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class TypeTranslatePredictMetadata:
+    """
+    Args:
+        log_confidences: A sequence which for ObjectChoiceNode choice in the prediction
+            Gives  A value less < 0. When raised to e power, will be in the
+            interval [0, 1]. This should ideally roughly correspond to a
+            probability, but in reality this currently will probably be poorly
+            calibrated, or the loss might be formulated that a probability
+            interpretation does not hold. In the future we need to work on
+            improving the interpretability guarrantees of this number.
+    """
+    log_confidences: Tuple[float, ...]
+
+    @property
+    def total_confidence(self) -> float:
+        return math.exp(sum(self.log_confidences))
+
+    @classmethod
+    def create_leaf_value(cls, log_confidence: float):
+        return cls(
+            log_confidences=(log_confidence, )
+        )
+
+    @classmethod
+    def create_empty(cls):
+        return cls(
+            log_confidences=tuple()
+        )
+
+    def concat(self, later_vals: 'TypeTranslatePredictMetadata') -> 'TypeTranslatePredictMetadata':
+        """Immutably returns a instance which combines this data with other data at end"""
+        return TypeTranslatePredictMetadata(
+            log_confidences=self.log_confidences + later_vals.log_confidences
+        )
 

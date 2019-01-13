@@ -101,7 +101,7 @@ class TypeTranslateCFTrainer:
             example, replaced_x_query, y_ast_set, this_example_ast, y_texts = data
             parse_exception = None
             try:
-                prediction = self.model.predict(replaced_x_query, example.ytype, True)
+                prediction, metad = self.model.predict(replaced_x_query, example.ytype, True)
             except ModelCantPredictException as e:
                 prediction = None
                 parse_exception = e
@@ -186,8 +186,10 @@ if __name__ == "__main__":
     replacers = get_all_replacers()
 
     #model = get_default_encdec_model(index, standard_size=64)
+
     model = get_default_encdec_model(
         index, standard_size=64, replacer=replacers, use_retrieval_decoder=True)
+
     #model = make_rulebased_seacr(index)
 
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)

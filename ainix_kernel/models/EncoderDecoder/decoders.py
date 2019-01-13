@@ -21,7 +21,8 @@ from ainix_kernel.models.EncoderDecoder.latentstore import make_latent_store_fro
 from ainix_kernel.models.EncoderDecoder.nonretrieval import SimpleActionSelector
 from ainix_kernel.models.EncoderDecoder.objectselector import ObjectSelector
 from ainix_kernel.models.EncoderDecoder.retrieving import RetrievalActionSelector
-from ainix_kernel.models.model_types import ModelException, ModelSafePredictError
+from ainix_kernel.models.model_types import ModelException, ModelSafePredictError, \
+    TypeTranslatePredictMetadata
 import numpy as np
 import torch.nn.functional as F
 
@@ -41,7 +42,7 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
         query_summary: torch.Tensor,
         query_encoded_tokens: torch.Tensor,
         root_type: AInixType
-    ) -> ObjectChoiceNode:
+    ) -> Tuple[ObjectChoiceNode, TypeTranslatePredictMetadata]:
         """
         A forward function to call during inference.
 
@@ -197,7 +198,7 @@ class TreeRNNDecoder(TreeDecoder):
         memory_tokens: torch.Tensor,
         cur_depth: int,
         override_action_selector: ActionSelector = None
-    ) -> torch.Tensor:
+    ) -> Tuple[torch.Tensor, TypeTranslatePredictMetadata]:
         if cur_depth > self.MAX_DEPTH:
             raise ModelException()
         outs, hiddens = self.rnn_cell(
@@ -210,7 +211,7 @@ class TreeRNNDecoder(TreeDecoder):
             raise NotImplemented("Batches not implemented")
 
         use_selector = override_action_selector or self.action_selector
-        predicted_action = use_selector.infer_predict(
+        predicted_action, my_metad = use_selector.infer_predict(
             outs, memory_tokens, current_leaf.type_to_choose)
         if isinstance(predicted_action, CopyAction):
             current_leaf.set_choice(CopyNode(
@@ -218,11 +219,12 @@ class TreeRNNDecoder(TreeDecoder):
         elif isinstance(predicted_action, ProduceObjectAction):
             new_node = ObjectNode(predicted_action.implementation)
             current_leaf.set_choice(new_node)
-            hiddens = self._inference_object_step(
+            hiddens, child_metad = self._inference_object_step(
                 new_node, outs, hiddens, memory_tokens, cur_depth + 1, override_action_selector)
+            my_metad = my_metad.concat(child_metad)
         else:
             raise ValueError()
-        return hiddens
+        return hiddens, my_metad
 
     def _train_objectchoice_step(
         self,
@@ -269,21 +271,23 @@ class TreeRNNDecoder(TreeDecoder):
         memory_tokens: torch.Tensor,
         cur_depth,
         override_selector: ActionSelector = None
-    ) -> torch.Tensor:
+    ) -> Tuple[torch.Tensor, TypeTranslatePredictMetadata]:
         """makes one step for ObjectNodes. Returns last hidden state"""
         if cur_depth > self.MAX_DEPTH:
             raise ModelSafePredictError("Max length exceeded")
         latest_hidden = last_hidden
+        metad = TypeTranslatePredictMetadata.create_empty()
         for arg in current_leaf.implementation.children:
             if arg.next_choice_type is not None:
                 new_node = ObjectChoiceNode(arg.next_choice_type)
             else:
                 continue
             current_leaf.set_arg_value(arg.name, new_node)
-            latest_hidden = self._inference_objectchoice_step(
+            latest_hidden, child_metad = self._inference_objectchoice_step(
                 new_node, latest_hidden, my_features, memory_tokens, cur_depth + 1,
                 override_selector)
-        return latest_hidden
+            metad = metad.concat(child_metad)
+        return latest_hidden, metad
 
     def _train_objectnode_step(
         self,
@@ -315,14 +319,14 @@ class TreeRNNDecoder(TreeDecoder):
         memory_encoding: torch.Tensor,
         root_type: AInixType,
         override_action_selector: ActionSelector = None
-    ) -> ObjectChoiceNode:
+    ) -> Tuple[ObjectChoiceNode, TypeTranslatePredictMetadata]:
         if self.training:
             raise ValueError("Expect to not being in training mode during inference.")
         # TODO (DNGros): make steps this not mutate state and iterative
         prediction_root_node = ObjectChoiceNode(root_type)
-        last_hidden = self._inference_objectchoice_step(
+        last_hidden, metad = self._inference_objectchoice_step(
             prediction_root_node, query_summary, None, memory_encoding, 0, override_action_selector)
-        return prediction_root_node
+        return prediction_root_node, metad
 
     @add_hooks
     def forward_train(
