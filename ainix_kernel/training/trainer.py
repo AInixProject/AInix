@@ -52,7 +52,7 @@ class TypeTranslateCFTrainer:
         self.model.end_train_epoch()
         return loss
 
-    def train(self, epochs: int):
+    def train(self, epochs: int, eval_every_n_epochs: int = None):
         self.model.start_train_session()
         for epoch in tqdm(range(epochs), unit="Epochs"):
             print()
@@ -61,7 +61,7 @@ class TypeTranslateCFTrainer:
             print(f"\nEpoch {epoch} complete. Loss {loss}")
             if hasattr(self.model, "plz_train_this_latent_store_thanks"):
                 # TODO wasdfahwerdfgv I should sleep
-                # (yeah, even with sleep to lazy to fix this crappy interface. It works...)
+                # (yeah, even with sleep to lazy to fix this crappy interface. It works for now...)
                 latent_store = self.model.plz_train_this_latent_store_thanks()
                 if latent_store:
                     print("updateding the latent store 🦔")
@@ -69,7 +69,7 @@ class TypeTranslateCFTrainer:
                                                       self.replacer, self.string_parser,
                                                       (DataSplits.TRAIN,), self.unparser,
                                                       self.str_tokenizer)
-            if epoch + 1 != epochs and epoch % 5 == 0:
+            if eval_every_n_epochs and epoch + 1 != epochs and epoch % eval_every_n_epochs == 0:
                 print("Pausing to do an eval")
                 logger = EvaluateLogger()
                 self.evaluate(logger, dump_each=True)
@@ -181,8 +181,8 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    epochs = 5
-    trainer.train(epochs)
+    epochs = 50
+    trainer.train(epochs, eval_every_n_epochs=5)
 
     print("Lets eval")
     print("-----------")

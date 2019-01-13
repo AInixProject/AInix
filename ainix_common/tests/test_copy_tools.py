@@ -1,4 +1,5 @@
 import pytest
+from pyrsistent import pmap
 
 from ainix_common.parsing import loader
 from ainix_common.parsing.copy_tools import *
@@ -228,3 +229,64 @@ def test_make_copy_optional_arg():
     assert unpar_res.total_string == "foobar"
     result = make_copy_version_of_tree(ast, unparser, metadata)
     assert result.next_node_not_copy.get_choice_node_for_arg("arg1").copy_was_chosen
+
+
+def test_partial_copy_numbers():
+    tc = TypeContext()
+    loader.load_path(f"builtin_types/generic_parsers.ainix.yaml", tc, up_search_limit=3)
+    loader.load_path(f"builtin_types/numbers.ainix.yaml", tc, up_search_limit=3)
+    tc.finalize_data()
+    parser = StringParser(tc)
+    tokenizer = NonLetterTokenizer()
+    unparser = AstUnparser(tc, tokenizer)
+    ast = parser.create_parse_tree("1000", "Number")
+
+
+def test_multi_copy():
+    tc = TypeContext()
+    loader.load_path(f"builtin_types/generic_parsers.ainix.yaml", tc, up_search_limit=3)
+    ft = AInixType(tc, "ft")
+    bt = AInixType(tc, "bt", default_type_parser_name="max_munch_type_parser")
+    arg1 = AInixArgument(tc, "lhs", "bt", required=True, parent_object_name="fo")
+    arg2 = AInixArgument(tc, "right", "bt", required=True, parent_object_name="sg")
+    fo = AInixObject(tc, "fo", "ft", [arg1, arg2],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         tc, "mp", 'lhs right'
+                     ).name)
+    bfoo = AInixObject(tc, "bfoo", "bt", None,
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         tc, "masdfo_parser", '"foo"'
+                     ).name)
+    bbar = AInixObject(tc, "bbar", "bt", None,
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         tc, "mdf", '"bar"'
+                     ).name)
+    tc.finalize_data()
+
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    ast = parser.create_parse_tree("foofoo", "ft")
+    tokenizer = SpaceTokenizer()
+    in_str = "Hello foo"
+    tokens, metadata = tokenizer.tokenize(in_str)
+    unpar_res = unparser.to_string(ast)
+    assert unpar_res.total_string == "foofoo"
+    cset = AstObjectChoiceSet(ft)
+    cset.add(ast, True, 1, 1)
+    assert cset.is_node_known_valid(ast)
+    add_copies_to_ast_set(ast, cset, unparser, metadata)
+    copy_left = ObjectChoiceNode(ft, ObjectNode(fo, pmap({
+        "lhs": ObjectChoiceNode(bt, CopyNode(bt, 1, 1)),
+        "right": ObjectChoiceNode(bt, ObjectNode(bfoo, pmap()))
+    })))
+    assert cset.is_node_known_valid(copy_left)
+    copy_right = ObjectChoiceNode(ft, ObjectNode(fo, pmap({
+        "lhs": ObjectChoiceNode(bt, ObjectNode(bfoo, pmap())),
+        "right": ObjectChoiceNode(bt, CopyNode(bt, 1, 1))
+    })))
+    assert cset.is_node_known_valid(copy_right)
+    copy_both = ObjectChoiceNode(ft, ObjectNode(fo, pmap({
+        "lhs": ObjectChoiceNode(bt, CopyNode(bt, 1, 1)),
+        "right": ObjectChoiceNode(bt, CopyNode(bt, 1, 1))
+    })))
+    assert cset.is_node_known_valid(copy_both)

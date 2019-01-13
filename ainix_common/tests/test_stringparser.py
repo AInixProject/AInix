@@ -234,6 +234,8 @@ def test_parse_set_3(numbers_type_context, numbers_ast_set):
     assert numbers_ast_set.is_node_known_valid(ast_2)
     assert numbers_ast_set.is_node_known_valid(ast_3)
     assert numbers_ast_set.is_node_known_valid(ast_4)
+    ast_5 = parser.create_parse_tree("-6", root_type_name)
+    assert not numbers_ast_set.is_node_known_valid(ast_5)
 
 
 def test_parse_set_4(numbers_type_context, numbers_ast_set):

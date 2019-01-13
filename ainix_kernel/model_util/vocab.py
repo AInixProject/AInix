@@ -331,8 +331,18 @@ def make_x_vocab_from_examples(
 
 
 def torch_inds_to_objects(indicies: torch.Tensor, type_context: TypeContext) -> np.ndarray:
-    # TODO vectorize
     return type_context.ind_to_object[indicies.numpy()]
+
+
+def _non_vec_object_ind(o: AInixObject) -> int:
+    return o.ind
+
+
+_vec_obj_to_ind = np.vectorize(_non_vec_object_ind, otypes='l')
+
+
+def objects_to_torch_inds(objects: typing.Sequence) -> torch.Tensor:
+    return torch.from_numpy(_vec_obj_to_ind(np.array(objects)))
 
 
 def are_indices_valid(

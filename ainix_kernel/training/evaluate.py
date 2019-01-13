@@ -44,7 +44,6 @@ class AstEvaluation(Evaluation):
         print("Predicted:", predicted_y)
         print(Style.RESET_ALL, end='')
 
-
     def _do_eval(self):
         self.data["ExactMatch"] = self.ground_truth.is_node_known_valid(self.prediction)
 

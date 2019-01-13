@@ -7,21 +7,20 @@ from ainix_kernel.model_util.vocab import *
 import pytest
 
 @pytest.fixture()
-def toy_vocab_and_context() -> Tuple[Vocab, TypeContext]:
+def toy_context() -> TypeContext:
     tc = TypeContext()
-    counter = Counter()
-    counter[AInixType(tc, "Foo")] += 1
-    counter[AInixObject(tc, "oFoo1", "Foo")] += 1
-    counter[AInixObject(tc, "oFoo2", "Foo")] += 1
-    counter[AInixObject(tc, "oFoo3", "Foo")] += 1
-    counter[AInixObject(tc, "oFoo4", "Foo")] += 1
-    counter[AInixType(tc, "Bar")] += 1
-    counter[AInixObject(tc, "oBar1", "Bar")] += 1
-    counter[AInixObject(tc, "oBar2", "Bar")] += 1
-    counter[AInixType(tc, "Baz")] += 1
-    counter[AInixObject(tc, "oBaz1", "Baz")] += 1
-    ast_vocab = CounterVocab(counter, specials=[])
-    return ast_vocab, tc
+    AInixType(tc, "Foo")
+    AInixObject(tc, "oFoo1", "Foo")
+    AInixObject(tc, "oFoo2", "Foo")
+    AInixObject(tc, "oFoo3", "Foo")
+    AInixObject(tc, "oFoo4", "Foo")
+    AInixType(tc, "Bar")
+    AInixObject(tc, "oBar1", "Bar")
+    AInixObject(tc, "oBar2", "Bar")
+    AInixType(tc, "Baz")
+    AInixObject(tc, "oBaz1", "Baz")
+    tc.finalize_data()
+    return tc
 
 @pytest.fixture()
 def string_vocab() -> Vocab:
@@ -50,8 +49,8 @@ def test_vocab_seq_to_tok(string_vocab):
     assert tuple(res[1]) == ("bar", "moo")
 
 
-def test_ast_valid_thing(toy_vocab_and_context):
-    toy_vocab, type_context = toy_vocab_and_context
+def test_ast_valid_thing(toy_context):
+    type_context = toy_context
     foo_type = type_context.get_type_by_name("Foo")
     f1 = type_context.get_object_by_name("oFoo1")
     f2 = type_context.get_object_by_name("oFoo2")
@@ -59,9 +58,9 @@ def test_ast_valid_thing(toy_vocab_and_context):
     f4 = type_context.get_object_by_name("oFoo4")
     ast_set = AstObjectChoiceSet(foo_type, None)
     ast_set.is_known_choice = lambda n: True if n in ("oFoo1", "oFoo3") else False
-    to_test = toy_vocab.token_seq_to_indices(
-        [[f1, f2, f3]], True)
-    result = are_indices_valid(to_test, toy_vocab, ast_set)
+    to_test = objects_to_torch_inds([[f1, f2, f3]])
+    assert isinstance(to_test, torch.LongTensor)
+    result = are_indices_valid(to_test, type_context, ast_set)
     assert torch.all(torch.Tensor([[1, 0, 1]]) == result)
 
 

@@ -284,6 +284,7 @@ def is_obj_choice_a_present_node(node: ObjectChoiceNode):
 
 
 class ChildlessObjectNode:
+    COPY_VAL_NAME = "~COPYVAL"
     def __init__(
         self,
         implementation: ainix_common.parsing.typecontext.AInixObject,
@@ -301,11 +302,23 @@ class ChildlessObjectNode:
         return self._chosen_type_names
 
     def __hash__(self):
-        return hash((self._implementation, self._chosen_type_names))
+        # Because of copyvals being equal we don't put the actual choices
+        # in the hash. This is unfortunate as it will lead to a lot possible
+        # collisions. We need to think through if there is a better way.
+        # return hash((self._implementation, self._chosen_type_names))
+        return hash(self._implementation)
 
     def __eq__(self, other):
-        return self._implementation == other._implementation and \
-                self._chosen_type_names == other._chosen_type_names
+        # TODO (DNGros)
+        # We view a copy value equal to everything. This solves some issues
+        # but also creates some some as there are cases where this should not
+        # be true. We also don't take into account the
+        if self._implementation != other._implementation:
+            return False
+        for a, b in zip(self._chosen_type_names, other._chosen_type_names):
+            if not (a == self.COPY_VAL_NAME or b == self.COPY_VAL_NAME or a == b):
+                return False
+        return True
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -420,7 +433,7 @@ class ObjectNode(ObjectNodeLike):
             if not node.copy_was_chosen:
                 choices.append(node.get_chosen_impl_name())
             else:
-                choices.append("~COPYVALNAME")
+                choices.append(ChildlessObjectNode.COPY_VAL_NAME)
         return ChildlessObjectNode(self._implementation, tuple(choices))
 
     def __hash__(self):
@@ -757,6 +770,10 @@ class ObjectNodeSet(AstSet):
     ):
         super().__init__(parent)
         self._implementation = implementation
+        # TODO (DNGros): becuase of the the way equality works with copy args, I don't
+        # think this should work. There are likely subtle bugs with order things are
+        # added. Currently the few tests we have pass though. This code needs
+        # to be better tested though.
         self._arg_data: MutableMapping[ChildlessObjectNode, ArgsSetData] = {}
 
     @property
