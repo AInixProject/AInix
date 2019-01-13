@@ -16,6 +16,7 @@ from ainix_kernel.training.model_specific_training import update_latent_store_fr
 from ainix_kernel.training.train_contexts import ALL_EXAMPLE_NAMES, load_all_examples
 from ainix_kernel.util.serialization import serialize
 from tqdm import tqdm
+from ainix_common.parsing.loader import TypeContextDataLoader
 
 
 class TypeTranslateCFTrainer:
@@ -24,7 +25,8 @@ class TypeTranslateCFTrainer:
         model: StringTypeTranslateCF,
         example_store: ExamplesStore,
         batch_size: int = 1,
-        replacer: Replacer = None
+        replacer: Replacer = None,
+        loader: TypeContextDataLoader = None
     ):
         self.model = model
         self.example_store = example_store
@@ -34,6 +36,7 @@ class TypeTranslateCFTrainer:
         self.str_tokenizer = self.model.get_string_tokenizer()
         self.unparser = AstUnparser(self.type_context, self.str_tokenizer)
         self.replacer = replacer
+        self.loader = loader
         if self.replacer is None:
             self.replacer = Replacer([])
 
@@ -52,7 +55,7 @@ class TypeTranslateCFTrainer:
         self.model.end_train_epoch()
         return loss
 
-    def train(self, epochs: int, eval_every_n_epochs: int = None):
+    def train(self, epochs: int, eval_every_n_epochs: int = None, intermitted_save_path = None):
         self.model.start_train_session()
         for epoch in tqdm(range(epochs), unit="Epochs"):
             print()
@@ -74,6 +77,14 @@ class TypeTranslateCFTrainer:
                 logger = EvaluateLogger()
                 self.evaluate(logger, dump_each=True)
                 print_ast_eval_log(logger)
+                if intermitted_save_path:
+                    if self.loader is None:
+                        raise ValueError("Must be given loader to serialize")
+                    serialize(self.model, self.loader,
+                              f"{intermitted_save_path}_epoch{epoch}_exactmatch_"
+                              f"{logger.stats['ExactMatch'].percent_true_str}",
+                              eval_results=logger,
+                              trained_epochs=epoch)
 
         self.model.end_train_session()
 
@@ -145,7 +156,6 @@ class TypeTranslateCFTrainer:
 
 
 if __name__ == "__main__":
-    from ainix_common.parsing.loader import TypeContextDataLoader
     from ainix_common.parsing.typecontext import TypeContext
     import ainix_kernel.indexing.exampleindex
     from ainix_kernel.indexing import exampleloader
@@ -178,11 +188,11 @@ if __name__ == "__main__":
         index, standard_size=64, replacer=replacers, use_retrieval_decoder=True)
     #model = make_rulebased_seacr(index)
 
-    trainer = TypeTranslateCFTrainer(model, index, replacer=replacers)
+    trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
     train_time = datetime.datetime.now()
     print("train time", train_time)
     epochs = 50
-    trainer.train(epochs, eval_every_n_epochs=5)
+    trainer.train(epochs, eval_every_n_epochs=5, intermitted_save_path="./modelsave")
 
     print("Lets eval")
     print("-----------")
