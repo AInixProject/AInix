@@ -11,7 +11,6 @@ ALL_EXAMPLE_NAMES = ("numbers", "pwd", "ls", "cat", "head", "cp", "wc",
 
 
 def load_all_examples(tc: TypeContext) -> ExamplesStore:
-    print("""Loading all examples...""")
     dirname, filename = os.path.split(os.path.abspath(__file__))
     index = ainix_kernel.indexing.exampleindex.ExamplesIndex(tc)
     for f in ALL_EXAMPLE_NAMES:

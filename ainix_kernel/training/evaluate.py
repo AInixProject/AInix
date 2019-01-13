@@ -31,7 +31,8 @@ class AstEvaluation(Evaluation):
             predicted_y = f"EXCEPTION {str(self.p_exception)}"
         y_texts_v = list(self.y_texts)[0] if len(self.y_texts) == 1 else self.y_texts
         if not correct and predicted_y in self.y_texts:
-            raise ValueError("what the hell")
+            raise ValueError(f"The prediction is not in ground truth but value matches a y string."
+                             f"Prediction text {predicted_y} actuals {self.y_texts}")
         print("---")
         print(self.x_text)
         if correct:
