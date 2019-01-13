@@ -1,6 +1,7 @@
 from ainix_common.parsing import parse_primitives
 from typing import List
 
+from ainix_common.parsing.parse_primitives import AInixParseError
 from ainix_common.parsing.typecontext import AInixArgument
 
 
@@ -270,8 +271,30 @@ def ProgramObjectUnparser(
 ####
 
 
-def CommandOperatorParser(parser, string, result):
-    raise NotImplemented()
+OPERATOR_REP_KEY = "OperatorRepresentation"
+
+
+def CommandOperatorParser(
+    run: parse_primitives.TypeParserRun,
+    string: str,
+    result: parse_primitives.TypeParserResult
+):
+    lstriped = string.lstrip()
+    amount_lstriped = len(string) - len(lstriped)
+    canidates = [(o.type_data[OPERATOR_REP_KEY], o) for o in run.all_type_implementations
+                 if lstriped.startswith(o.type_data[OPERATOR_REP_KEY])]
+    if not canidates:
+        raise AInixParseError(f"No operator matched string {string}")
+    if len(canidates) > 2:
+        raise ValueError(f"Operators shouldn't match more than twice? {string} {canidates}")
+    # Sort taking longest first. So take || over |.
+    canidates.sort(reverse=True)
+    matching_str, matching_impl = canidates[0]
+    result.set_valid_implementation(matching_impl)
+    result.set_next_slice(len(matching_str) + amount_lstriped, len(string))
+
+
+
 
 ####
 

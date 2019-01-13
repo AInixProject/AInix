@@ -6,6 +6,7 @@ import pytest
 from ainix_common.parsing.loader import TypeContextDataLoader
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext
+from ainix_common.util.strings import id_generator
 from ainix_kernel.specialtypes import allspecials
 from ainix_kernel.training.augmenting.replacers import *
 
@@ -65,6 +66,28 @@ def test_replacer_seeded():
     samples2 = [replacer.strings_replace(x, "yo [-[TEST]-]", seed_from_x_val(x))
                for _ in range(100)]
     assert samples == samples2
+
+
+def test_replacer_seeded_not_same():
+    """Test when you have seeded value it doesn't pick the same one if two of same
+    group in the thing"""
+    repls = []
+    for i in range(1000):
+        replacement_val = id_generator()
+        repls.append(Replacement(replacement_val, replacement_val, 1))
+    replacement = Replacement("foo", "foo", 1)
+    replacement2 = Replacement("moo", "moo", 3)
+    rg = ReplacementGroup('TEST', [replacement, replacement2])
+    replacer = Replacer([rg])
+    x = "hello [-[1=TEST]-] [-[2=TEST]-]"
+    new_x, new_y = replacer.strings_replace(x, "[-[$1]-] [-[$2]-]", seed_from_x_val(x))
+    first_repl, second_repl = new_x.split()[1:]
+    assert first_repl != second_repl
+    y_first_repl, y_second_repl = new_y.split()
+    assert first_repl == y_first_repl
+    assert y_second_repl == second_repl
+
+
 
 
 def test_replacer5():

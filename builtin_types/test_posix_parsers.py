@@ -7,14 +7,16 @@ from unittest.mock import MagicMock
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import AInixArgument, TypeContext, AInixObject, AInixType
 from ainix_common.parsing.parse_primitives import AInixParseError, ObjectNodeArgMap, \
-    ArgToStringDelegation
+    ArgToStringDelegation, TypeParserResult
 from ainix_common.parsing import loader
 
 
 @pytest.fixture(scope="function")
 def type_context():
     context = TypeContext()
-    loader.load_path("command.ainix.yaml", context)
+    import os
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    loader.load_path(f"{dirname}/command.ainix.yaml", context)
     return context
 
 
@@ -256,8 +258,10 @@ def test_prog_object_parser_2posarg_multword_end(type_context):
 def test_string_parse_e2e(type_context):
     twoargs = AInixObject(
         type_context, "FooProgram", "Program",
-        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"}, parent_object_name="sdf"),
-         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"}, parent_object_name="bw")],
+        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"},
+                       parent_object_name="sdf"),
+         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"},
+                       parent_object_name="bw")],
         type_data={"invoke_name": "hello"}
     )
     parser = StringParser(type_context)
@@ -290,3 +294,36 @@ def test_string_parse_e2e_multiword(type_context):
     unparser = AstUnparser(type_context)
     to_string = unparser.to_string(ast)
     assert to_string.total_string == "hello -a foo"
+
+
+def test_command_operator_parser(type_context):
+    instance = type_context.get_type_parser_by_name("CommandOperatorParser")
+    s = "| wc -l"
+    result: TypeParserResult = gen_result(instance.parse_string(s))
+    assert result.get_implementation().name == "PipeObj"
+    assert result.get_next_slice() == (1, len(s))
+
+
+def test_command_operator_parser_left_space(type_context):
+    instance = type_context.get_type_parser_by_name("CommandOperatorParser")
+    s = "  && wc -l"
+    result: TypeParserResult = gen_result(instance.parse_string(s))
+    assert result.get_implementation().name == "AndObj"
+    assert result.get_next_slice() == (4, len(s))
+
+
+def test_string_parse_e2e_sequence(type_context):
+    twoargs = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"},
+                       parent_object_name="sdf"),
+         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"},
+                       parent_object_name="bw")],
+        type_data={"invoke_name": "hello"}
+    )
+    parser = StringParser(type_context)
+    string = "hello -a | hello -b"
+    ast = parser.create_parse_tree(string, "CommandSequence")
+    unparser = AstUnparser(type_context)
+    to_string = unparser.to_string(ast)
+    assert to_string.total_string == string

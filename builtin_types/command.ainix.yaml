@@ -32,14 +32,23 @@ defines:
       define_new: object
       name: "PipeObj"
       type: CompoundOperator
+      type_data: {OperatorRepresentation: "|"}
       children:
             - name: NextCommand
               type: CommandSequence
               required: True
     - << : *operator
       name: "AndObj"
+      type_data: {OperatorRepresentation: "&&"}
     - << : *operator
       name: "OrObj"
+      type_data: {OperatorRepresentation: "||"}
+    - << : *operator
+      name: "FileRedirect"
+      type_data: {OperatorRepresentation: ">"}
+    - << : *operator
+      name: "FileAppend"
+      type_data: {OperatorRepresentation: ">>"}
 
     ### Parsers ###
     - &type_parser_from_posix

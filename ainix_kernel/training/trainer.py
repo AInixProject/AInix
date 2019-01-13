@@ -80,9 +80,11 @@ class TypeTranslateCFTrainer:
                 if intermitted_save_path:
                     if self.loader is None:
                         raise ValueError("Must be given loader to serialize")
+                    s_path = f"{intermitted_save_path}_epoch{epoch}_exactmatch_" + \
+                             f"{logger.stats['ExactMatch'].percent_true_str}"
+                    print(f"serializing to {s_path}")
                     serialize(self.model, self.loader,
-                              f"{intermitted_save_path}_epoch{epoch}_exactmatch_"
-                              f"{logger.stats['ExactMatch'].percent_true_str}",
+                              s_path,
                               eval_results=logger,
                               trained_epochs=epoch)
 
@@ -192,7 +194,7 @@ if __name__ == "__main__":
     train_time = datetime.datetime.now()
     print("train time", train_time)
     epochs = 50
-    trainer.train(epochs, eval_every_n_epochs=5, intermitted_save_path="./modelsave")
+    trainer.train(epochs, eval_every_n_epochs=5, intermitted_save_path="./checkpoints/chkp")
 
     print("Lets eval")
     print("-----------")

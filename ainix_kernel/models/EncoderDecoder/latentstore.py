@@ -15,7 +15,7 @@ from ainix_common.parsing.typecontext import TypeContext, AInixObject, AInixType
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits
 import torch.nn.functional as F
 
-from ainix_kernel.training.augmenting.replacers import Replacer
+from ainix_kernel.training.augmenting.replacers import Replacer, seed_from_x_val
 
 COPY_IND = 10000
 
@@ -344,7 +344,8 @@ def make_latent_store_from_examples(
     builder = TorchLatentStoreBuilder(examples.type_context.get_type_count(), latent_size)
     for example in examples.get_all_examples(splits):
         if replacer is not None:
-            x, y = replacer.strings_replace(example.xquery, example.ytext)
+            x = example.xquery
+            x, y = replacer.strings_replace(x, example.ytext, seed_from_x_val(x))
         else:
             x, y = example.xquery, example.ytext
         ast = parser.create_parse_tree(y, example.ytype)

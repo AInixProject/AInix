@@ -149,7 +149,8 @@ class TypeParserRun:
         key: str,
         value: str
     ) -> List['typecontext.AInixObject']:
-        """Helper that filters a list objects that only have a certain attribute
+        """Helper that filters a list objects that only have a certain type_data
+        attribute
 
         Args:
             object_list : list to filter.
@@ -203,6 +204,8 @@ class TypeParserResult:
 
     def get_next_string(self):
         si, ei = self._next_slice
+        # TODO This striping is probably a bad idea. Refactor so does that in StringParser instead.
+        # so that way left offsets dont get screwed up
         return self.string[si:ei].strip()
 
     def get_next_slice(self) -> Tuple[int, int]:

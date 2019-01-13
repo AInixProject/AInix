@@ -7,7 +7,7 @@ from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits
 from ainix_kernel.models.EncoderDecoder.latentstore import LatentStore
 from ainix_kernel.models.model_types import StringTypeTranslateCF
-from ainix_kernel.training.augmenting.replacers import Replacer
+from ainix_kernel.training.augmenting.replacers import Replacer, seed_from_x_val
 
 
 def update_latent_store_from_examples(
@@ -23,7 +23,8 @@ def update_latent_store_from_examples(
     model.set_in_eval_mode()
     for example in examples.get_all_examples(splits):
         # TODO multi sampling and average replacers
-        x_replaced, y_replaced = replacer.strings_replace(example.xquery, example.ytext)
+        x_replaced, y_replaced = replacer.strings_replace(
+            example.xquery, example.ytext, seed_from_x_val(example.xquery))
         ast = parser.create_parse_tree(y_replaced, example.ytype)
         _, token_metadata = tokenizer.tokenize(x_replaced)
         copy_ast = copy_tools.make_copy_version_of_tree(ast, unparser, token_metadata)
