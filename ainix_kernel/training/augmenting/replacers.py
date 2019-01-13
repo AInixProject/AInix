@@ -25,6 +25,7 @@ be rewritten better. Most importantly we should probably be able to make these
 with .yaml files or something.
 """
 import csv
+import random
 import re
 from typing import List, Tuple, Dict, Set
 
@@ -44,9 +45,16 @@ class Replacer:
 
     def __init__(self, types: List['ReplacementGroup']):
         self.types = types
-        self.name_to_types = {t.name: t for t in types}
+        self.name_to_types: Dict[Dict, 'ReplacementGroup'] = {t.name: t for t in types}
 
-    def create_replace_sampling(self, x: str) -> 'ReplacementSampling':
+    def create_replace_sampling(self, x: str, replace_seed: int = None) -> 'ReplacementSampling':
+        """Creates a replacement sampling which can be reused multiple times
+
+        Args:
+            x: the string we are replacing in.
+            replace_seed: A seed to do the replacement with
+        """
+        random_instance = random.Random(replace_seed) if replace_seed is not None else None
         no_brackets = self.get_bracketless_matches(x)
         # Go through and find variable assignments
         var_to_val_map = {}
@@ -75,13 +83,14 @@ class Replacer:
             if match_typename not in self.name_to_types:
                 raise ReplacementError("unrecognized replacement type", match_typename,
                                        "accepted = ", self.name_to_types)
-            x_replace, y_replace = self.name_to_types[match_typename].sample_replacement(val_words)
+            repl_group = self.name_to_types[match_typename]
+            x_replace, y_replace = repl_group.sample_replacement(val_words, random_instance)
             var_to_x_y_vals[var] = (x_replace, y_replace)
         return ReplacementSampling(var_to_x_y_vals)
 
-    def strings_replace(self, x: str, y: str) -> Tuple[str, str]:
+    def strings_replace(self, x: str, y: str, replace_seed: int = None) -> Tuple[str, str]:
         """The main method used to replace"""
-        sampling = self.create_replace_sampling(x)
+        sampling = self.create_replace_sampling(x, replace_seed)
         return sampling.replace_x(x), sampling.replace_y(y)
 
     @staticmethod
@@ -210,8 +219,12 @@ class ReplacementGroup:
         weights = [r.weight for r in replacements]
         self._sampler = WeightedRandomChooser(replacements, weights)
 
-    def sample_replacement(self, argwords = []):
-        return self._sampler.sample().get_replacement()
+    def sample_replacement(self, argwords = [], random_instance: random.Random = None):
+        return self._sampler.sample(random_instance).get_replacement()
+
+
+def seed_from_x_val(x: str, offset: int = 0) -> int:
+    return (hash(x) + offset) % 100000
 
 
 def get_all_replacers() -> Replacer:

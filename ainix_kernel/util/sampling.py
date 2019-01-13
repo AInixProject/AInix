@@ -26,7 +26,7 @@ class WeightedRandomChooser(Generic[T]):
             self._cum_weights.append(cum)
         self.weight_sum = cum
 
-    def sample(self) -> T:
-        rnd = random.random() * self.weight_sum
+    def sample(self, random_instance: random.Random = None) -> T:
+        rnd = (random_instance or random).random() * self.weight_sum
         idx = bisect.bisect_right(self._cum_weights, rnd)
         return self.elements[idx]

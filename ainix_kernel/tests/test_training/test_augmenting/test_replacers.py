@@ -53,6 +53,20 @@ def test_replacer4():
     assert abs(nlcount["hello moo"] - 750) < 40
 
 
+def test_replacer_seeded():
+    """Test sampleing"""
+    replacement = Replacement("foo", "foo", 1)
+    replacement2 = Replacement("moo", "moo", 3)
+    rg = ReplacementGroup('TEST', [replacement, replacement2])
+    replacer = Replacer([rg])
+    x = "hello [-[TEST]-]"
+    samples = [replacer.strings_replace(x, "yo [-[TEST]-]", seed_from_x_val(x))
+               for _ in range(100)]
+    samples2 = [replacer.strings_replace(x, "yo [-[TEST]-]", seed_from_x_val(x))
+               for _ in range(100)]
+    assert samples == samples2
+
+
 def test_replacer5():
     """Test reusing same thing multiple times in cmd"""
     replacement = Replacement("foo", "bar", 1)
@@ -80,7 +94,7 @@ def test_replacer7():
     rg.sample_replacement = MagicMock(return_value=("foo", "bar"))
     replacer = Replacer([rg])
     nl, cmd = replacer.strings_replace("hello [-[1=TEST -t foo]-]", "run")
-    rg.sample_replacement.assert_called_once_with(["TEST", '-t', "foo"])
+    rg.sample_replacement.assert_called_once_with(["TEST", '-t', "foo"], None)
 
 
 def test_replacer8():
@@ -90,7 +104,7 @@ def test_replacer8():
     rg.sample_replacement = MagicMock(return_value=("foo", "bar"))
     replacer = Replacer([rg])
     nl, cmd = replacer.strings_replace("hello [-[1=TEST -t foo]-]", "run [-[$1]-]")
-    rg.sample_replacement.assert_called_once_with(["TEST", '-t', "foo"])
+    rg.sample_replacement.assert_called_once_with(["TEST", '-t', "foo"], None)
 
 
 def test_replacer_bad():
@@ -112,7 +126,7 @@ def test_replacer_no_group():
 
 
 def test_file_replacer():
-    replacements = Replacement.from_tsv("../../../training/data/FILENAME.tsv")
+    replacements = Replacement.from_tsv("../../../training/augmenting/data/FILENAME.tsv")
     tc = TypeContext()
     loader = TypeContextDataLoader(tc, up_search_limit=4)
     loader.load_path("builtin_types/generic_parsers.ainix.yaml")
@@ -132,7 +146,7 @@ def test_file_replacer():
 
 
 def test_dir_replacer():
-    replacements = Replacement.from_tsv("../../../training/data/DIRNAME.tsv")
+    replacements = Replacement.from_tsv("../../../training/augmenting/data/DIRNAME.tsv")
     tc = TypeContext()
     loader = TypeContextDataLoader(tc, up_search_limit=4)
     loader.load_path("builtin_types/generic_parsers.ainix.yaml")
