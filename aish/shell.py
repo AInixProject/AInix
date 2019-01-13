@@ -29,9 +29,17 @@ class AishShell2(PromptToolkit2Shell):
         print("Loading model...")
         print("(NOTE, this currently super inefficient and takes quite a while.\n"
               " It could be optimized a lot).")
-        self.kernel_interface = Interface("../ainix_kernel/training/saved_model.pt")
+        self.kernel_interface = Interface("../ainix_kernel/training/saved_model_retr.pt")
         self.exec_classifier = ExecutionClassifier()
         self.exec_function = aish.execer.execute
+        print("model loaded.")
+
+    def do_predict(self, in_x: str):
+        print(f"model: {in_x}")
+        pred_result = self.kernel_interface.predict(
+            in_x, "CommandSequence")
+        print(f"predict: {pred_result.unparse.total_string} "
+              f"(confidence score {pred_result.metad.total_confidence:.2f})")
 
     def cmdloop(self, intro=None):
         """Enters a loop that reads and execute input from user."""
@@ -47,11 +55,7 @@ class AishShell2(PromptToolkit2Shell):
                 exec_type = self.exec_classifier.classify_string(parse)
                 try:
                     if exec_type.run_through_model:
-                        print("running on", parse.model_input_str)
-                        prediction, metad = self.kernel_interface.predict(
-                            parse.model_input_str, "Program")
-                        print(f"predict: {prediction} "
-                              f"(confidence score {metad.total_confidence:.2f})")
+                        self.do_predict(parse.model_input_str)
                     else:
                         self.exec_function(parse)
                 except Exception as e:

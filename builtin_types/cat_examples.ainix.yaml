@@ -1,5 +1,6 @@
 defines:
 - define_new: example_set
+  y_type: CommandSequence
   examples:
   - x:
     - print the contents of [-[FILENAME]-]
@@ -35,4 +36,3 @@ defines:
     - concatenate [-[1=FILENAME]-], [-[2=FILENAME]-], and [-[3=FILENAME]-] together
     y:
     - cat [-[$1]-] [-[$2]-] [-[$3]-]
-  y_type: Program

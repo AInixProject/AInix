@@ -109,7 +109,7 @@ class PathForceSpySelector(ActionSelector):
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
         type_to_select: AInixType
-    ) -> ActionResult:
+    ) -> Tuple[ActionResult, TypeTranslatePredictMetadata]:
         cur = self.path_stack.pop().cur_node
         if isinstance(cur, ObjectChoiceNode):
             if cur.type_to_choose != type_to_select:
@@ -121,7 +121,8 @@ class PathForceSpySelector(ActionSelector):
             self.path_stack.pop()
             self.current_y_ind += 1
             # return along the force path
-            return objectlike_to_action(cur.next_node)
+            fake_metad = TypeTranslatePredictMetadata.create_leaf_value(1)
+            return objectlike_to_action(cur.next_node), fake_metad
         else:
             raise ValueError()
 

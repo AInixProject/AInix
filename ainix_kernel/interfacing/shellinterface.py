@@ -7,12 +7,26 @@ from typing import Tuple
 
 import torch
 
-from ainix_common.parsing.stringparser import AstUnparser
+from ainix_common.parsing.ast_components import ObjectChoiceNode
+from ainix_common.parsing.parse_primitives import AInixParseError
+from ainix_common.parsing.stringparser import AstUnparser, UnparseResult
 from ainix_kernel.models.EncoderDecoder.encdecmodel import EncDecModel
 from ainix_common.parsing.loader import TypeContextDataLoader
-from ainix_kernel.models.model_types import TypeTranslatePredictMetadata
+from ainix_kernel.models.model_types import TypeTranslatePredictMetadata, ModelException
 from ainix_kernel.util.serialization import restore
 from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer
+import attr
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class PredictReturn:
+    success: bool
+    ast: ObjectChoiceNode = None
+    unparse: UnparseResult = None
+    # TODO the shell interface should only have require the user code to depend
+    # on ainix_common. Figure out how to move this.
+    metad: TypeTranslatePredictMetadata = None
+    error_message: str = None
 
 
 class Interface():
@@ -20,8 +34,22 @@ class Interface():
         self.type_context, self.model = restore(file_name)
         self.unparser = AstUnparser(self.type_context, self.model.get_string_tokenizer())
 
-    def predict(self, utterance: str, ytype: str) -> Tuple[str, TypeTranslatePredictMetadata]:
-        result, metad = self.model.predict(utterance, ytype, False)
-        assert result.is_frozen
-        unparse = self.unparser.to_string(result, utterance)
-        return unparse.total_string, metad
+    def predict(self, utterance: str, ytype: str) -> PredictReturn:
+        try:
+            result, metad = self.model.predict(utterance, ytype, False)
+            assert result.is_frozen
+            unparse = self.unparser.to_string(result, utterance)
+            return PredictReturn(
+                success=True,
+                ast=result,
+                unparse=unparse,
+                metad=metad,
+                error_message=None
+            )
+        except ModelException as e:
+            return PredictReturn(
+                False,
+                None,
+                None,
+                None, str(e)
+            )

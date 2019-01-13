@@ -1,7 +1,7 @@
 ---
 defines:
   - define_new: example_set
-    y_type: Program
+    y_type: CommandSequence
     examples:
     - x:
       - what file am I in

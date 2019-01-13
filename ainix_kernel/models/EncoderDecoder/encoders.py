@@ -237,6 +237,7 @@ def make_default_query_encoder(
         hidden_size=output_size,
         summary_size=output_size,
         memory_tokens_size=output_size,
+        num_layers=1,
         variable_lengths=True
     )
     return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)

@@ -55,4 +55,4 @@ defines:
     - move [-[FILENAME]-] up two dirs
     y:
     - mv [-[FILENAME]-] ../..
-  y_type: Program
+  y_type: CommandSequence

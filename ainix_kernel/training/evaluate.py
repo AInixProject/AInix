@@ -14,39 +14,44 @@ class Evaluation(ABC):
 
 class AstEvaluation(Evaluation):
     def __init__(self, prediction: ObjectChoiceNode, ground_truth: AstObjectChoiceSet,
-                 y_texts: Set[str], x_text: str, exception):
+                 y_texts: Set[str], x_text: str, exception, unparser: AstUnparser):
         self.data = {}
         self.prediction = prediction
         self.ground_truth = ground_truth
         self.y_texts = y_texts
         self.x_text = x_text
         self.p_exception = exception
-        self._do_eval()
+        if self.prediction is not None:
+            self.predicted_y = unparser.to_string(self.prediction, self.x_text).total_string
+        else:
+            self.predicted_y = f"EXCEPTION {str(self.p_exception)}"
+        self.in_ast_set = self.ground_truth.is_node_known_valid(self.prediction)
+        self.correct = self.in_ast_set or self.predicted_y in self.y_texts
+        if self.correct and not self.in_ast_set:
+            raise RuntimeWarning(f"The prediction is not in ground truth but value "
+                                 f"matches a y string. "
+                                 f"Prediction text {self.predicted_y} actuals {self.y_texts}")
+        self._fill_stats()
 
     def print_vals(self, unparser: AstUnparser):
-        correct = self.data['ExactMatch']
-        if self.prediction is not None:
-            predicted_y = unparser.to_string(self.prediction, self.x_text).total_string
-        else:
-            predicted_y = f"EXCEPTION {str(self.p_exception)}"
         y_texts_v = list(self.y_texts)[0] if len(self.y_texts) == 1 else self.y_texts
-        if not correct and predicted_y in self.y_texts:
-            raise ValueError(f"The prediction is not in ground truth but value matches a y string."
-                             f"Prediction text {predicted_y} actuals {self.y_texts}")
         print("---")
         print(self.x_text)
-        if correct:
-            print(Fore.GREEN, end='')
-            if predicted_y not in self.y_texts:
+        if self.correct:
+            if self.correct and not self.in_ast_set:
+                print(Fore.YELLOW, end='')
+            else:
+                print(Fore.GREEN, end='')
+            if self.predicted_y not in self.y_texts:
                 print(" Expected:", y_texts_v)
         else:
             print(Fore.RED, end='')
             print(" Expected:", y_texts_v)
-        print("Predicted:", predicted_y)
+        print("Predicted:", self.predicted_y)
         print(Style.RESET_ALL, end='')
 
-    def _do_eval(self):
-        self.data["ExactMatch"] = self.ground_truth.is_node_known_valid(self.prediction)
+    def _fill_stats(self):
+        self.data["ExactMatch"] = self.correct
 
     def get_data(self) -> Dict:
         return self.data

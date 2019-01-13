@@ -7,6 +7,7 @@ import os
 import signal
 import builtins
 import shell
+import argparse
 
 def main(argv=None):
     #xmain.setup()
