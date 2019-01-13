@@ -29,7 +29,7 @@ class AishShell2(PromptToolkit2Shell):
         print("Loading model...")
         print("(NOTE, this currently super inefficient and takes quite a while.\n"
               " It could be optimized a lot).")
-        self.kernel_interface = Interface("../ainix_kernel/training/saved_model_retr.pt")
+        self.kernel_interface = Interface("../ainix_kernel/training/saved_model.pt")
         self.exec_classifier = ExecutionClassifier()
         self.exec_function = aish.execer.execute
         print("model loaded.")
@@ -38,8 +38,12 @@ class AishShell2(PromptToolkit2Shell):
         print(f"model: {in_x}")
         pred_result = self.kernel_interface.predict(
             in_x, "CommandSequence")
-        print(f"predict: {pred_result.unparse.total_string} "
-              f"(confidence score {pred_result.metad.total_confidence:.2f})")
+        if pred_result.success:
+            print(f"predict: {pred_result.unparse.total_string} "
+                  f"(confidence score {pred_result.metad.total_confidence:.2f})")
+        else:
+            print("Model encountered an error while predicting:")
+            print(f"{pred_result.error_message}")
 
     def cmdloop(self, intro=None):
         """Enters a loop that reads and execute input from user."""

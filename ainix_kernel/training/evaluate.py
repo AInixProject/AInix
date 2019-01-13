@@ -4,6 +4,7 @@ from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoic
 from ainix_common.parsing.model_specific.tokenizers import StringTokenizer
 from ainix_common.parsing.stringparser import AstUnparser
 from colorama import Fore, Back, Style
+import warnings
 
 
 class Evaluation(ABC):
@@ -28,9 +29,9 @@ class AstEvaluation(Evaluation):
         self.in_ast_set = self.ground_truth.is_node_known_valid(self.prediction)
         self.correct = self.in_ast_set or self.predicted_y in self.y_texts
         if self.correct and not self.in_ast_set:
-            raise RuntimeWarning(f"The prediction is not in ground truth but value "
-                                 f"matches a y string. "
-                                 f"Prediction text {self.predicted_y} actuals {self.y_texts}")
+            warnings.warn(f"The prediction is not in ground truth but value "
+                          f"matches a y string. "
+                          f"Prediction text {self.predicted_y} actuals {self.y_texts}")
         self._fill_stats()
 
     def print_vals(self, unparser: AstUnparser):

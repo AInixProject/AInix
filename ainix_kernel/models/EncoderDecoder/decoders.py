@@ -162,7 +162,7 @@ class TreeRNNCell(nn.Module):
 
 
 class TreeRNNDecoder(TreeDecoder):
-    MAX_DEPTH = 40
+    MAX_DEPTH = 50
 
     def __init__(
         self,
