@@ -91,6 +91,10 @@ class ExamplesStore(ABC):
     def get_doc_count(self) -> int:
         pass
 
+    @abstractmethod
+    def get_example_by_id(self, id: int) -> Example:
+        pass
+
     def _default_weight(self, i: int, n: int):
         """Gets a default weight for a value. Each value in the sequence
         is half as preferable as the one before it

@@ -1,19 +1,15 @@
+from typing import Tuple
+
+
 print("Preparing shell...")
-import xonsh
-from xonsh.base_shell import BaseShell
 from xonsh.ptk2.shell import PromptToolkit2Shell
 import builtins
 
-from prompt_toolkit import PromptSession
-from prompt_toolkit.shortcuts import prompt
-from prompt_toolkit.lexers import PygmentsLexer
-import pygments
-from pygments.lexers import BashLexer
-import subprocess
-import os
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 from ainix_kernel.interfacing.shellinterface import Interface
+from ainix_kernel.models.model_types import ExampleRetrieveExplanation
+from ainix_kernel.explan_tools.example_explan import post_process_explanations
 from aish.execution_classifier import ExecutionClassifier
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 import aish.execer
@@ -34,6 +30,11 @@ class AishShell2(PromptToolkit2Shell):
         self.exec_function = aish.execer.execute
         print("model loaded.")
 
+    def do_example_retrieve_explanation(self, retr_explans: Tuple[ExampleRetrieveExplanation, ...]):
+        post_procs = post_process_explanations(retr_explans, self.kernel_interface.example_store)
+        print(post_procs)
+
+
     def do_predict(self, in_x: str):
         print(f"model: {in_x}")
         pred_result = self.kernel_interface.predict(
@@ -41,7 +42,7 @@ class AishShell2(PromptToolkit2Shell):
         if pred_result.success:
             print(f"predict: {pred_result.unparse.total_string} "
                   f"(confidence score {pred_result.metad.total_confidence*10:.1f})")
-            print(pred_result.metad.example_retrieve_explanations)
+            self.do_example_retrieve_explanation(pred_result.metad.example_retrieve_explanations)
         else:
             print("Model encountered an error while predicting:")
             print(f"{pred_result.error_message}")

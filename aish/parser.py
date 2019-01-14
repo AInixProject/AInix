@@ -12,14 +12,17 @@ class BashParser():
         lexed = list(pygments.lex(text, self.lexer))
         words: List[str] = []
         error = False
+        known_tokens = (Token.Text, Token.Literal.Number, Token.Name.Builtin,
+                        Token.Punctuation, Token.Keyword)
         for tokenType, value in lexed:
-            if tokenType in (Token.Text, Token.Literal.Number, Token.Name.Builtin, Token.Punctuation):
+            if tokenType in known_tokens:
                 stripped = value.strip()
                 if len(stripped) > 0:
                     words.append(value)
             else:
                 print("AAAHHHH", tokenType, value)
                 error = True
+                raise ValueError("unrecognized token", tokenType, value)
                 break
         # If the user starts the query with a question mark it forces running through model
         has_force_modeling_escape = False

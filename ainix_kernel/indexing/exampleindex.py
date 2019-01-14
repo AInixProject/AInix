@@ -1,3 +1,5 @@
+"""NOTE: this code is needs to refactored since our aproach is very different
+now."""
 from typing import List, Generator, Dict, Tuple
 import attr
 from ainix_kernel.indexing.whooshbackend import WhooshIndexBackend
@@ -92,6 +94,13 @@ class ExamplesIndex(ExamplesStore):
         doc_copy['example_id'] = int(doc_copy['example_id'])
         return Example(**doc_copy)
 
+    def get_example_by_id(self, id: int) -> Example:
+        query = Term("example_id", id)
+        hits = list(self.backend.query(query))
+        assert len(hits) == 1
+        return self._dict_to_example(hits[0].doc)
+
+    # This code is not very relvant anymore.
     def get_nearest_examples(
         self,
         x_value: str,
