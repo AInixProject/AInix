@@ -81,22 +81,22 @@ def _get_unparse_intervals_of_inds(
             # Only take into account the choice nodes. Skip the object nodes
             continue
         assert isinstance(pointer.cur_node, ObjectChoiceNode)
+        func_need_to_do_here = None
         if ind in include_set:
             if not currently_including:
-                span = unparse.pointer_to_span(pointer)
-                if span is None:
-                    continue
-                start, end = span
-                interval_tree.add(Interval(start, end))
+                func_need_to_do_here = lambda start, end: interval_tree.add(Interval(start, end))
                 currently_including = True
         else:
             if currently_including:
-                span = unparse.pointer_to_span(pointer)
-                if span is None or span[1] - span[0] == 0:
-                    continue
-                start, end = span
-                interval_tree.chop(start, end)
+                func_need_to_do_here = lambda start, end: interval_tree.chop(start, end)
                 currently_including = False
+        if func_need_to_do_here:
+            span = unparse.pointer_to_span(pointer)
+            if span is None or span[1] - span[0] == 0:
+                continue
+            start, end = span
+            func_need_to_do_here(start, end)
+
     return interval_tree
 
 

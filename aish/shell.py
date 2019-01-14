@@ -1,7 +1,10 @@
 import sys, os
+
+from strformat_utils import get_highlighted_text
+
 print("Preparing shell...")
 sys.path.insert(0, os.path.abspath('..'))
-from typing import Tuple
+from typing import Tuple, Sequence
 from xonsh.ptk2.shell import PromptToolkit2Shell
 import builtins
 from ainix_kernel.interfacing.shellinterface import Interface
@@ -14,6 +17,7 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 import aish.execer
 from aish.parser import BashParser
 from terminaltables import SingleTable
+import colorama
 
 builtin_dict = {}
 
@@ -36,6 +40,7 @@ class AishShell2(PromptToolkit2Shell):
         outputted_ast: ObjectChoiceNode,
         outputted_unparse: UnparseResult
     ):
+        print("How each part of the output was derived:")
         post_procs = post_process_explanations(
             retr_explans,
             # Hackily just grab things out of the interface. This should be improved
@@ -43,8 +48,20 @@ class AishShell2(PromptToolkit2Shell):
             outputted_ast,
             outputted_unparse
         )
-        headers = ["Parts of Output", "Reference Y", "Reference X"]
-        rows = [[p.input_str_intervals, p.example_cmd, p.example_str] for p in post_procs]
+        print(post_procs)
+        headers = ("Parts of Output", "Reference Y", "Reference X")
+        rows = [
+            (
+                get_highlighted_text(
+                    string=outputted_unparse.total_string,
+                    include_intervals=[(interval.begin, interval.end)
+                                       for interval in p.input_str_intervals]
+                ),
+                p.example_cmd,
+                p.example_str
+            )
+            for p in post_procs
+        ]
         table = SingleTable([headers] + rows)
         print(table.table)
 
@@ -94,4 +111,6 @@ class AishShell2(PromptToolkit2Shell):
                     print('Use "exit" to leave the shell.', file=sys.stderr)
                 else:
                     break
+
+
 

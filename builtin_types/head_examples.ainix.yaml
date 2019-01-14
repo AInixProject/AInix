@@ -4,6 +4,7 @@ defines:
   examples:
   - x:
     - print the first 12 lines of [-[1=FILENAME]-]
+    - first dozen lines of [-[1=FILENAME]-]
     y:
     - head -n 12 [-[$1]-]
   - x:
@@ -30,3 +31,7 @@ defines:
     - first five lines of [-[1=FILENAME]-]
     y:
     - head -c 5 [-[$1]-]
+  - x:
+    - print the first ten lines of [-[1=FILENAME]-]
+    y:
+    - head -c 10 [-[$1]-]

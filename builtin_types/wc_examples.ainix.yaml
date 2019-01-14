@@ -5,6 +5,7 @@ defines:
   - x:
     - how many lines are in [-[1=FILENAME]-]?
     - count the number of lines in [-[1=FILENAME]-]
+    - count the number of lines [-[1=FILENAME]-]
     - get the line count of [-[1=FILENAME]-]
     - how many lines in [-[1=FILENAME]-]
     - how many lines in [-[1=FILENAME]-]
