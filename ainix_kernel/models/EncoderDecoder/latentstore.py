@@ -2,6 +2,7 @@
 retrieval-based decoder."""
 import math
 from abc import abstractmethod, ABC
+from enum import Enum
 from typing import Dict, Tuple, List, Optional
 import torch
 import attr
@@ -19,8 +20,9 @@ from ainix_kernel.training.augmenting.replacers import Replacer, seed_from_x_val
 
 COPY_IND = 10000
 
-# Type -> tensor of latetnts
-# Exampleid, dfs-depth/2 -> ind in the type tensor
+class SimilarityMeasure(Enum):
+    DOT = "DOT"
+    COS = "COS"
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -72,6 +74,7 @@ class LatentStore(ABC):
         self,
         query_latent: torch.Tensor,
         type_ind: int,
+        similarity_metric: SimilarityMeasure = SimilarityMeasure.DOT,
         max_results=50
     ) -> Tuple[LatentDataWrapper, torch.Tensor]:
         pass
@@ -101,7 +104,6 @@ class LatentStore(ABC):
     ):
         raise NotImplemented()
 
-
 class TorchLatentStore(LatentStore):
     def __init__(
         self,
@@ -118,10 +120,16 @@ class TorchLatentStore(LatentStore):
         self,
         query_latent: torch.Tensor,
         type_ind: int,
-        max_results=50
+        similarity_metric: SimilarityMeasure = SimilarityMeasure.DOT,
+        max_results=50,
     ) -> Tuple[LatentDataWrapper, torch.Tensor]:
         data = self.type_ind_to_latents[type_ind]
-        similarities = self._get_similarities(query_latent, data.latents)
+        if similarity_metric == SimilarityMeasure.DOT:
+            similarities = self._dot_similarity(query_latent, data.latents)
+        elif similarity_metric == SimilarityMeasure.COS:
+            similarities = self._cos_similarity(query_latent, data.latents)
+        else:
+            raise ValueError(f"Unsupported similarity {similarity_metric}")
         similarities, sort_inds = similarities.sort(descending=True)
         take_count = min(similarities.shape[0], max_results)
         similarities, sort_inds = similarities[:take_count], sort_inds[:take_count]
@@ -130,9 +138,13 @@ class TorchLatentStore(LatentStore):
         relevant_metadata = LatentDataWrapper(actual_vals, actual_metadatas)
         return relevant_metadata, similarities[:take_count]
 
-    def _get_similarities(self, query_latent: torch.Tensor, values: torch.Tensor) -> torch.Tensor:
+    def _dot_similarity(self, query_latent: torch.Tensor, values: torch.Tensor) -> torch.Tensor:
         # Use dot product. Maybe should use cosine similarity?
         return torch.sum(query_latent*values, dim=1)
+
+    def _cos_similarity(self, query_latent: torch.Tensor, values: torch.Tensor) -> torch.Tensor:
+        # Use dot product. Maybe should use cosine similarity?
+        return F.cosine_similarity(query_latent, values, dim=1)
 
     @classmethod
     def get_builder(cls, num_types: int, latent_size: int) -> 'LatentStoreBuilder':

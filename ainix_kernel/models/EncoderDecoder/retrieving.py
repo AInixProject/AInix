@@ -10,7 +10,8 @@ from ainix_kernel.model_util.operations import sparse_groupby_sum
 from ainix_kernel.model_util.vocab import are_indices_valid
 from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector, ProduceObjectAction, \
     CopyAction
-from ainix_kernel.models.EncoderDecoder.latentstore import LatentStore, COPY_IND, LatentStoreTrainer
+from ainix_kernel.models.EncoderDecoder.latentstore import LatentStore, COPY_IND, \
+    LatentStoreTrainer, SimilarityMeasure
 from ainix_kernel.models.EncoderDecoder.nonretrieval import CopySpanPredictor, \
     get_copy_depth_discount
 import torch.nn.functional as F
@@ -30,7 +31,7 @@ class RetrievalActionSelector(ActionSelector):
         self.latent_store = latent_store
         self.retrieve_dropout_p = retrieve_dropout_p
         self.max_query_retrieve_count_train = 50
-        self.max_query_retrieve_count_infer = 10
+        self.max_query_retrieve_count_infer = 1
         #self.loss_func = torch.nn.MultiLabelSoftMarginLoss()
         # TODO figure out a better loss
         self.loss_func = torch.nn.BCELoss()
@@ -52,15 +53,30 @@ class RetrievalActionSelector(ActionSelector):
         type_to_select: AInixType
     ) -> Tuple['ActionResult', TypeTranslatePredictMetadata]:
         nearest_datas, similarities = self.latent_store.get_n_nearest_latents(
-            latent_vec, type_to_select.ind, max_results=self.max_query_retrieve_count_infer)
+            latent_vec, type_to_select.ind,
+            similarity_metric=SimilarityMeasure.COS,
+            max_results=self.max_query_retrieve_count_infer
+        )
+        #print("---")
+        #print(f"similarities {similarities}")
+        #names = [self.type_context.get_object_by_ind(int(o)).name if o != COPY_IND else "COPY"
+        #         for o in nearest_datas.impl_choices]
+        #print(f"Impl_choices {names}")
+        #print(f"Example numbers {nearest_datas.example_indxs}")
         # TODO think about whether need to scale for dropout???
         # TODO ahh this is way diffferent than the loss function
         # TODO is softmax best way to do?
-        impl_scores, impl_keys = sparse_groupby_sum(
-            F.softmax(similarities, dim=0), nearest_datas.impl_choices)
-        max_scores_inds = impl_scores.argmax()
-        choice_ind = int(impl_keys[max_scores_inds])
-        log_total_conf = float(torch.log(impl_scores.max()))
+        # other way thing
+        #impl_scores, impl_keys = sparse_groupby_sum(
+        #    F.softmax(similarities, dim=0), nearest_datas.impl_choices)
+        #max_scores_inds = impl_scores.argmax()
+        #choice_ind = int(impl_keys[max_scores_inds])
+        #log_total_conf = float(torch.log(impl_scores.max()))
+
+        # Just nearest neighbor
+        choice_ind = nearest_datas.impl_choices[0]
+        log_total_conf = float(torch.log(similarities[0]))
+
         choose_copy = choice_ind == COPY_IND
         if choose_copy:
             pred_start, pred_end, cp_log_conf = self.span_predictor.inference_predict_span(

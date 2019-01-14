@@ -291,7 +291,7 @@ class TypeContext:
             'ainix_common.parsing.parse_primitives.ObjectParser':
         return self._name_to_object_parser.get(name, None)
 
-    def get_object_by_ind(self, ind: int):
+    def get_object_by_ind(self, ind: int) -> AInixObject:
         return self.ind_to_object[ind]
 
     def get_implementations(self, type) -> List[AInixObject]:

@@ -1,6 +1,6 @@
 import random
 import torch
-from typing import Tuple, Generator, List, Set
+from typing import Tuple, Generator, List, Set, Optional
 
 from ainix_common.parsing.copy_tools import add_copies_to_ast_set
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
@@ -93,7 +93,7 @@ class TypeTranslateCFTrainer:
     def evaluate(
         self,
         logger: EvaluateLogger,
-        filter_splits: Tuple[DataSplits] = (DataSplits.VALIDATION,),
+        filter_splits: Optional[Tuple[DataSplits]] = (DataSplits.VALIDATION,),
         dump_each = False
     ):
         self.model.set_in_eval_mode()

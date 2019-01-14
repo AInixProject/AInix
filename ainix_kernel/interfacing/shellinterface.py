@@ -31,7 +31,7 @@ class PredictReturn:
 
 class Interface():
     def __init__(self, file_name):
-        self.type_context, self.model = restore(file_name)
+        self.type_context, self.model, self.example_store = restore(file_name)
         self.unparser = AstUnparser(self.type_context, self.model.get_string_tokenizer())
 
     def predict(self, utterance: str, ytype: str) -> PredictReturn:
