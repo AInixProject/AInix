@@ -16,4 +16,3 @@ def _convert_to_xonsh_subproc_string(parse : ParseResult):
 def execute(parse: ParseResult):
     xonsh_seq = _convert_to_xonsh_subproc_string(parse)
     xonsh_builtin.run_subproc(xonsh_seq)
-

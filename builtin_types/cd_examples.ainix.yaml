@@ -15,6 +15,7 @@ defines:
     - cd up one directory
     - cd to parent dir
     - go up to parent directory
+    - cd up one directory
     y:
     - cd ..
   - x:

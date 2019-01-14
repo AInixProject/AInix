@@ -4,7 +4,7 @@ from strformat_utils import get_highlighted_text, get_only_text_in_intervals
 
 print("Preparing shell...")
 sys.path.insert(0, os.path.abspath('..'))
-from typing import Tuple, Sequence
+from typing import Tuple, Sequence, Optional
 from xonsh.ptk2.shell import PromptToolkit2Shell
 import builtins
 from ainix_kernel.interfacing.shellinterface import Interface
@@ -20,6 +20,8 @@ from terminaltables import SingleTable
 import colorama
 
 builtin_dict = {}
+
+PROMPT_CONF_THRESHOLD = 0.8
 
 
 class AishShell2(PromptToolkit2Shell):
@@ -64,7 +66,7 @@ class AishShell2(PromptToolkit2Shell):
         table = SingleTable([headers] + rows)
         print(table.table)
 
-    def do_predict(self, in_x: str):
+    def do_predict(self, in_x: str) -> Tuple[Optional[str], float]:
         #print(f"model: {in_x}")
         pred_result = self.kernel_interface.predict(
             in_x, "CommandSequence")
@@ -80,13 +82,17 @@ class AishShell2(PromptToolkit2Shell):
             print(f"predict: "
                   f"{colorama.Fore.BLUE}{pred_result.unparse.total_string.strip()}"
                   f"{colorama.Fore.RESET} "
-                  f"(confidence score {pred_result.metad.total_confidence*10:.1f} {conf_emoji})")
+                  f"(confidence score {pred_result.metad.total_confidence:.2f} {conf_emoji})")
             self.do_example_retrieve_explanation(
                 pred_result.metad.example_retrieve_explanations, pred_result.ast,
                 pred_result.unparse)
+            if total_confidence > PROMPT_CONF_THRESHOLD:
+                pass
+            return pred_result.unparse.total_string.strip(), total_confidence
         else:
             print("Model encountered an error while predicting:")
             print(f"{pred_result.error_message}")
+            return None, 0
 
     def cmdloop(self, intro=None):
         """Enters a loop that reads and execute input from user."""
@@ -102,7 +108,14 @@ class AishShell2(PromptToolkit2Shell):
                 exec_type = self.exec_classifier.classify_string(parse)
                 try:
                     if exec_type.run_through_model:
-                        self.do_predict(parse.model_input_str)
+                        pred_str, confidence = self.do_predict(parse.model_input_str)
+                        if confidence > PROMPT_CONF_THRESHOLD:
+                            if self.ask_user_confirm_exec(pred_str):
+                                print("")
+                                self.exec_function(self.parser.parse(pred_str))
+                        else:
+                            print("Model output did not meet confidence threshold "
+                                  "prompt whether to execute.")
                     else:
                         self.exec_function(parse)
                 except Exception as e:
@@ -121,5 +134,9 @@ class AishShell2(PromptToolkit2Shell):
                 else:
                     break
 
+    def ask_user_confirm_exec(self, str_to_exec) -> bool:
+        print(f'Would you like to execute "{str_to_exec}"? "yes" to confirm: ')
+        user_input = input()
+        return user_input == "yes"
 
 
