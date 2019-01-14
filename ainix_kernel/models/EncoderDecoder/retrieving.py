@@ -16,7 +16,7 @@ from ainix_kernel.models.EncoderDecoder.nonretrieval import CopySpanPredictor, \
     get_copy_depth_discount
 import torch.nn.functional as F
 
-from ainix_kernel.models.model_types import TypeTranslatePredictMetadata
+from ainix_kernel.models.model_types import TypeTranslatePredictMetadata, ExampleRetrieveExplanation
 
 
 class RetrievalActionSelector(ActionSelector):
@@ -31,7 +31,8 @@ class RetrievalActionSelector(ActionSelector):
         self.latent_store = latent_store
         self.retrieve_dropout_p = retrieve_dropout_p
         self.max_query_retrieve_count_train = 50
-        self.max_query_retrieve_count_infer = 1
+        self.max_query_retrieve_count_infer = 10
+        self.num_to_report_for_explan = 5
         #self.loss_func = torch.nn.MultiLabelSoftMarginLoss()
         # TODO figure out a better loss
         self.loss_func = torch.nn.BCELoss()
@@ -76,16 +77,30 @@ class RetrievalActionSelector(ActionSelector):
         # Just nearest neighbor
         choice_ind = nearest_datas.impl_choices[0]
         log_total_conf = float(torch.log(similarities[0]))
+        # Build the "example explanation"
+        match_choice_mask = nearest_datas.impl_choices == choice_ind
+        num_to_take = min(int(torch.sum(match_choice_mask)),
+                          self.num_to_report_for_explan)
+        example_retr_exp = ExampleRetrieveExplanation(
+            reference_example_ids=
+            tuple(int(v) for v in nearest_datas.example_indxs[match_choice_mask][:num_to_take]),
+            reference_confidence=
+            tuple(float(v) for v in similarities[match_choice_mask][:num_to_take]),
+            reference_example_dfs_ind=
+            tuple(int(v) for v in nearest_datas.y_inds[match_choice_mask][:num_to_take]),
+        )
 
         choose_copy = choice_ind == COPY_IND
         if choose_copy:
             pred_start, pred_end, cp_log_conf = self.span_predictor.inference_predict_span(
                 latent_vec, memory_tokens)[0]
-            metad = TypeTranslatePredictMetadata.create_leaf_value(cp_log_conf + log_total_conf)
+            metad = TypeTranslatePredictMetadata.create_leaf_value(
+                cp_log_conf + log_total_conf, example_retr_exp)
             return CopyAction(pred_start, pred_end), metad
         else:
             impl = self.type_context.get_object_by_ind(choice_ind)
-            metad = TypeTranslatePredictMetadata.create_leaf_value(log_total_conf)
+            metad = TypeTranslatePredictMetadata.create_leaf_value(
+                log_total_conf, example_retr_exp)
             return ProduceObjectAction(impl), metad
 
     def forward_train(

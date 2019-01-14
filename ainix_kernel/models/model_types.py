@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod, abstractclassmethod
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import Example, ExamplesStore
-from typing import Iterable, List, Tuple, Sequence
+from typing import Iterable, List, Tuple, Sequence, Optional
 from ainix_common.parsing.model_specific import tokenizers
 from pyrsistent import pvector
 import attr
@@ -45,6 +45,7 @@ class Pretrainer(ABC):
     models can provide a Pretrainer implementation in their get_pretrainer method.
     The calling training method will ensure that each example is given to the
     pretrainer exactly once."""
+
     def __init__(self):
         self._is_open = True
 
@@ -66,6 +67,7 @@ class Pretrainer(ABC):
 
 class Pretrainable(ABC):
     """An interface for something which can provide a pretrainer."""
+
     def get_pretrainer(self):
         return None
 
@@ -73,6 +75,7 @@ class Pretrainable(ABC):
 class RecusivePretrainer(Pretrainer):
     """A Pretrainer which doesn't actually do any pretraining itself, but takes
     a collection of pretrainers on init, and will pass all values to those."""
+
     def __init__(self, things_to_pretrain: Iterable[Pretrainable]):
         super().__init__()
         self._open_pretrainers: List[Pretrainer] = []
@@ -96,26 +99,26 @@ class StringTypeTranslateCF(Pretrainable):
 
     @abstractmethod
     def predict(
-        self,
-        x_string: str,
-        y_type_name: str,
-        use_only_train_data: bool
+            self,
+            x_string: str,
+            y_type_name: str,
+            use_only_train_data: bool
     ) -> Tuple[ObjectChoiceNode, 'TypeTranslatePredictMetadata']:
         raise NotImplemented
 
     @abstractmethod
     def train(
-        self,
-        x_string: str,
-        y_ast: AstObjectChoiceSet,
-        teacher_force_path: ObjectChoiceNode,
-        example_id: int
+            self,
+            x_string: str,
+            y_ast: AstObjectChoiceSet,
+            teacher_force_path: ObjectChoiceNode,
+            example_id: int
     ):
         raise NotImplemented
 
     def train_batch(
-        self,
-        batch: List[Tuple[str, AstObjectChoiceSet, ObjectChoiceNode, int]]
+            self,
+            batch: List[Tuple[str, AstObjectChoiceSet, ObjectChoiceNode, int]]
     ):
         """Used for batch training. Will by default call train on each element
         in batch, but expected to be overridden.
@@ -177,10 +180,10 @@ class StringTypeTranslateCF(Pretrainable):
 
     @classmethod
     def create_from_save_state_dict(
-        cls,
-        state_dict: dict,
-        new_type_context: TypeContext,
-        new_example_store: ExamplesStore
+            cls,
+            state_dict: dict,
+            new_type_context: TypeContext,
+            new_example_store: ExamplesStore
     ):
         raise NotImplemented
 
@@ -198,26 +201,44 @@ class TypeTranslatePredictMetadata:
             improving the interpretability guarrantees of this number.
     """
     log_confidences: Tuple[float, ...]
+    example_retrieve_explanations: Tuple['ExampleRetrieveExplanation', ...]
 
     @property
     def total_confidence(self) -> float:
         return math.exp(sum(self.log_confidences))
 
     @classmethod
-    def create_leaf_value(cls, log_confidence: float):
+    def create_leaf_value(
+        cls,
+        log_confidence: float,
+        example_retrieve_explantion: 'ExampleRetrieveExplanation' = None
+    ):
         return cls(
-            log_confidences=(log_confidence, )
+            log_confidences=(log_confidence,),
+            example_retrieve_explanations=(example_retrieve_explantion,)
+                if example_retrieve_explantion is not None else tuple()
         )
 
     @classmethod
     def create_empty(cls):
         return cls(
-            log_confidences=tuple()
+            log_confidences=tuple(),
+            example_retrieve_explanations=tuple()
         )
 
     def concat(self, later_vals: 'TypeTranslatePredictMetadata') -> 'TypeTranslatePredictMetadata':
         """Immutably returns a instance which combines this data with other data at end"""
         return TypeTranslatePredictMetadata(
-            log_confidences=self.log_confidences + later_vals.log_confidences
+            log_confidences=self.log_confidences + later_vals.log_confidences,
+            example_retrieve_explanations=self.example_retrieve_explanations +
+                                          later_vals.example_retrieve_explanations
         )
 
+
+@attr.s(auto_attribs=True, frozen=True)
+class ExampleRetrieveExplanation:
+    """Contains several examples from the example index which support our choice
+    at this step."""
+    reference_example_ids: Tuple[int, ...]
+    reference_confidence: Tuple[float, ...]
+    reference_example_dfs_ind: Tuple[int, ...]
