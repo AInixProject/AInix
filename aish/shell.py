@@ -40,7 +40,7 @@ class AishShell2(PromptToolkit2Shell):
             in_x, "CommandSequence")
         if pred_result.success:
             print(f"predict: {pred_result.unparse.total_string} "
-                  f"(confidence score {pred_result.metad.total_confidence:.2f})")
+                  f"(confidence score {pred_result.metad.total_confidence*10:.1f})")
         else:
             print("Model encountered an error while predicting:")
             print(f"{pred_result.error_message}")
