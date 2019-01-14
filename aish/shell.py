@@ -1,13 +1,12 @@
-from typing import Tuple
-
-
+import sys, os
 print("Preparing shell...")
+sys.path.insert(0, os.path.abspath('..'))
+from typing import Tuple
 from xonsh.ptk2.shell import PromptToolkit2Shell
 import builtins
-
-import sys, os
-sys.path.insert(0, os.path.abspath('..'))
 from ainix_kernel.interfacing.shellinterface import Interface
+from ainix_common.parsing.ast_components import ObjectChoiceNode
+from ainix_common.parsing.stringparser import UnparseResult
 from ainix_kernel.models.model_types import ExampleRetrieveExplanation
 from ainix_kernel.explan_tools.example_explan import post_process_explanations
 from aish.execution_classifier import ExecutionClassifier
@@ -31,10 +30,21 @@ class AishShell2(PromptToolkit2Shell):
         self.exec_function = aish.execer.execute
         print("model loaded.")
 
-    def do_example_retrieve_explanation(self, retr_explans: Tuple[ExampleRetrieveExplanation, ...]):
-        post_procs = post_process_explanations(retr_explans, self.kernel_interface.example_store)
-        headers = ["Example Cmd", "Example Text"]
-        rows = [[p.example_cmd, p.example_str] for p in post_procs]
+    def do_example_retrieve_explanation(
+        self,
+        retr_explans: Tuple[ExampleRetrieveExplanation, ...],
+        outputted_ast: ObjectChoiceNode,
+        outputted_unparse: UnparseResult
+    ):
+        post_procs = post_process_explanations(
+            retr_explans,
+            # Hackily just grab things out of the interface. This should be improved
+            self.kernel_interface.example_store,
+            outputted_ast,
+            outputted_unparse
+        )
+        headers = ["Parts of Output", "Reference Y", "Reference X"]
+        rows = [[p.input_str_intervals, p.example_cmd, p.example_str] for p in post_procs]
         table = SingleTable([headers] + rows)
         print(table.table)
 
@@ -45,7 +55,9 @@ class AishShell2(PromptToolkit2Shell):
         if pred_result.success:
             print(f"predict: {pred_result.unparse.total_string} "
                   f"(confidence score {pred_result.metad.total_confidence*10:.1f})")
-            self.do_example_retrieve_explanation(pred_result.metad.example_retrieve_explanations)
+            self.do_example_retrieve_explanation(
+                pred_result.metad.example_retrieve_explanations, pred_result.ast,
+                pred_result.unparse)
         else:
             print("Model encountered an error while predicting:")
             print(f"{pred_result.error_message}")

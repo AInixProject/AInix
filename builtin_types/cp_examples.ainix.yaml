@@ -15,6 +15,7 @@ defines:
   - x:
     - make a copy of [-[1=FILENAME]-] in parent dir
     - copy [-[1=FILENAME]-] to parent directory
+    - copy [-[1=FILENAME]-] up to parent dir
     - copy [-[1=FILENAME]-] up one directory
     y:
     - cp [-[$1]-] ..
