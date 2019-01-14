@@ -14,6 +14,7 @@ from aish.execution_classifier import ExecutionClassifier
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 import aish.execer
 from aish.parser import BashParser
+from terminaltables import SingleTable
 
 builtin_dict = {}
 
@@ -32,11 +33,13 @@ class AishShell2(PromptToolkit2Shell):
 
     def do_example_retrieve_explanation(self, retr_explans: Tuple[ExampleRetrieveExplanation, ...]):
         post_procs = post_process_explanations(retr_explans, self.kernel_interface.example_store)
-        print(post_procs)
-
+        headers = ["Example Cmd", "Example Text"]
+        rows = [[p.example_cmd, p.example_str] for p in post_procs]
+        table = SingleTable([headers] + rows)
+        print(table.table)
 
     def do_predict(self, in_x: str):
-        print(f"model: {in_x}")
+        #print(f"model: {in_x}")
         pred_result = self.kernel_interface.predict(
             in_x, "CommandSequence")
         if pred_result.success:
