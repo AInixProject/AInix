@@ -13,7 +13,8 @@ class BashParser():
         words: List[str] = []
         error = False
         known_tokens = (Token.Text, Token.Literal.Number, Token.Name.Builtin,
-                        Token.Punctuation, Token.Keyword)
+                        Token.Punctuation, Token.Keyword, Token.Literal.String.Double,
+                        Token.Literal.String.Single)
         for tokenType, value in lexed:
             if tokenType in known_tokens:
                 stripped = value.strip()

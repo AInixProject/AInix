@@ -48,6 +48,7 @@ class AishShell2(PromptToolkit2Shell):
             outputted_ast,
             outputted_unparse
         )
+        print(post_procs)
         headers = ("Parts of Output", "Reference Y", "Reference X")
         rows = [
             (

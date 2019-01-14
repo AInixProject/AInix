@@ -101,7 +101,7 @@ def _get_unparse_intervals_of_inds(
                 continue
             start, end = span
             func_need_to_do_here(start, end)
-
+    interval_tree.merge_overlaps()
     return interval_tree
 
 
