@@ -42,7 +42,6 @@ defines:
             - ls with long format
             - ls in long format
             - what files are here with file information
-            - list with long format - show permissions
             - display a long list of the content of current directory
             - show long listing information about each file/directory here
             - display total information about Files/Directories

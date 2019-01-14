@@ -1,6 +1,6 @@
 import sys, os
 
-from strformat_utils import get_highlighted_text
+from strformat_utils import get_highlighted_text, get_only_text_in_intervals
 
 print("Preparing shell...")
 sys.path.insert(0, os.path.abspath('..'))
@@ -48,14 +48,12 @@ class AishShell2(PromptToolkit2Shell):
             outputted_ast,
             outputted_unparse
         )
-        print(post_procs)
         headers = ("Parts of Output", "Reference Y", "Reference X")
         rows = [
             (
-                get_highlighted_text(
+                get_only_text_in_intervals(
                     string=outputted_unparse.total_string,
-                    include_intervals=[(interval.begin, interval.end)
-                                       for interval in p.input_str_intervals]
+                    include_intervals=p.input_str_intervals
                 ),
                 p.example_cmd,
                 p.example_str

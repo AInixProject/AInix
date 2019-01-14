@@ -37,3 +37,26 @@ def get_highlighted_text(
         out_str_builder.append(string[cur_ind:len(string)])
     out_str_builder.append(ending_escape)
     return "".join(out_str_builder)
+
+
+def get_only_text_in_intervals(
+    string: str,
+    include_intervals: Sequence[Tuple[int, int]],
+    exclude_filler = " "
+) -> str:
+    """Gets only the parts of string in intervals adding in filler for parts
+    not in the intervals
+    Args:
+        string: The string we wish pull out the parts in the interval
+        include_intervals: A list of (start, end) intervals.
+        exclude_filler: The char to fill in for parts not in the interval
+    """
+    cur_ind = 0
+    out_str_builder = []
+    for i, (start, end) in enumerate(include_intervals):
+        out_str_builder.append(exclude_filler * (start - cur_ind))
+        out_str_builder.append(string[start:end])
+        cur_ind = end
+    if cur_ind != len(string):
+        out_str_builder.append(exclude_filler * (len(string) - cur_ind))
+    return "".join(out_str_builder)

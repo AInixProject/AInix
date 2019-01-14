@@ -17,7 +17,7 @@ from intervaltree import Interval, IntervalTree
 class ExampleExplanPostProcessedOutput:
     example_str: str
     example_cmd: str
-    input_str_intervals: IntervalTree
+    input_str_intervals: List[Tuple[int, int]]
 
 
 def post_process_explanations(
@@ -36,8 +36,9 @@ def post_process_explanations(
         out.append(ExampleExplanPostProcessedOutput(
             example_str=actual_example.xquery,
             example_cmd=actual_example.ytext,
-            input_str_intervals=intervals
+            input_str_intervals=_interval_tree_to_tuples(intervals)
         ))
+    out.sort(key=lambda v: v.input_str_intervals[0][0])
     return out
 
 
@@ -64,6 +65,10 @@ def _narrow_down_examples(
 
 def _example_inds_to_examples(example_inds: Sequence[int], example_store: ExamplesStore):
     return [example_store.get_example_by_id(eid) for eid in example_inds]
+
+
+def _interval_tree_to_tuples(interval_tree: IntervalTree) -> List[Tuple[int, int]]:
+    return [(interval.begin, interval.end) for interval in interval_tree]
 
 
 def _get_unparse_intervals_of_inds(
