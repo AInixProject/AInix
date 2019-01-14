@@ -21,6 +21,7 @@ import colorama
 
 builtin_dict = {}
 
+
 class AishShell2(PromptToolkit2Shell):
     def __init__(self, **kwargs):
         super().__init__(execer=None, ctx=None, **kwargs)
@@ -48,7 +49,6 @@ class AishShell2(PromptToolkit2Shell):
             outputted_ast,
             outputted_unparse
         )
-        print(post_procs)
         headers = ("Parts of Output", "Reference Y", "Reference X")
         rows = [
             (
@@ -69,8 +69,18 @@ class AishShell2(PromptToolkit2Shell):
         pred_result = self.kernel_interface.predict(
             in_x, "CommandSequence")
         if pred_result.success:
-            print(f"predict: {pred_result.unparse.total_string} "
-                  f"(confidence score {pred_result.metad.total_confidence*10:.1f})")
+            conf_emoji = ""
+            total_confidence = pred_result.metad.total_confidence
+            if total_confidence < 0.2:
+                conf_emoji = "❌"
+            elif total_confidence < 0.5:
+                conf_emoji = "⚠️"
+            elif total_confidence > 0.925:
+                conf_emoji = "✅"
+            print(f"predict: "
+                  f"{colorama.Fore.BLUE}{pred_result.unparse.total_string.strip()}"
+                  f"{colorama.Fore.RESET} "
+                  f"(confidence score {pred_result.metad.total_confidence*10:.1f} {conf_emoji})")
             self.do_example_retrieve_explanation(
                 pred_result.metad.example_retrieve_explanations, pred_result.ast,
                 pred_result.unparse)
