@@ -1,6 +1,7 @@
 """Code for multiproccessing training
 
-TODO (DNGros): This code is a disgusting mess. Clean before pushing.
+TODO (DNGros): This code is very sloppy and was done for a quick experiment.
+               It might not work as expected anymore, and needs to redone.
 """
 from typing import List
 

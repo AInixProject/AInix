@@ -1,6 +1,8 @@
-"""Poorly written code for plots for concurrency
+"""Poorly written code to experiment and make figures for how things
+perform with batches and multiprocessing.
 
-TODO (DNGros): Cleanup / move / document before publish
+TODO (DNGros): This code is very sloppy and was done for quick experiments.
+               It might not work as expected anymore, and needs to redone.
 """
 import os
 os.environ["OMP_NUM_THREADS"] = "1"
