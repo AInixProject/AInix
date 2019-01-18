@@ -75,9 +75,7 @@ def test_replacer_seeded_not_same():
     for i in range(1000):
         replacement_val = id_generator()
         repls.append(Replacement(replacement_val, replacement_val, 1))
-    replacement = Replacement("foo", "foo", 1)
-    replacement2 = Replacement("moo", "moo", 3)
-    rg = ReplacementGroup('TEST', [replacement, replacement2])
+    rg = ReplacementGroup('TEST', repls)
     replacer = Replacer([rg])
     x = "hello [-[1=TEST]-] [-[2=TEST]-]"
     new_x, new_y = replacer.strings_replace(x, "[-[$1]-] [-[$2]-]", seed_from_x_val(x))
