@@ -3,3 +3,6 @@ about the vision of the project at [AInix.org](http://ainix.org).
 
 This readme is fairly useless in terms of getting started info and
 installation. Hopefully we can fix that soon.
+
+NOTE: the project is still very early, and many features are
+still being developed.
