@@ -1,3 +1,9 @@
+"""Code for a actionselector that lookups input latents in a latent store
+in order to make its decision.
+
+TODO: parts of this code is pretty sloppy while trying to quickly experiment
+with things. It needs to be cleaned up
+"""
 import random
 from typing import List, Optional, Tuple
 
@@ -35,12 +41,18 @@ class RetrievalActionSelector(ActionSelector):
         self.num_to_report_for_explan = 5
         #self.loss_func = torch.nn.MultiLabelSoftMarginLoss()
         # TODO figure out a better loss
-        self.loss_func = torch.nn.BCELoss()
+        #self.loss_func = torch.nn.BCELoss()
         self.span_predictor = CopySpanPredictor(latent_store.latent_size)
         self.type_context = type_context
         self.is_in_training_session = False
         self.latent_store_trainer: Optional[LatentStoreTrainer] = None
         self.square_feature_reg = square_feature_reg
+        self.train_rank_weights = \
+            1 / (1 + (torch.arange(
+                0, self.max_query_retrieve_count_train, dtype=torch.float) * 0.1))
+        self.train_rank_weights.requires_grad = False
+        self.copy_boost = 3
+        self.non_example_boost = 0.5
         #if self.latent_store.allow_gradients:
         #    print("LATENTSTORE PARAMETERS", list(self.latent_store.parameters()))
         #    for i, p in enumerate(self.latent_store.parameters()):
@@ -114,12 +126,14 @@ class RetrievalActionSelector(ActionSelector):
     ) -> torch.Tensor:
         if not self.is_in_training_session:
             raise ValueError("must be in training session to train")
-        assert len(types_to_select) == len(example_inds) == 1
+        assert len(latent_vec) == len(types_to_select) == len(example_inds) == 1
         #self.latent_store_trainer.update_value(
         #    types_to_select[0].ind, example_inds[0], dfs_depths[0], latent_vec[0])
         nearest_datas, similarities = self.latent_store.get_n_nearest_latents(
-            latent_vec[0], types_to_select[0].ind,
-            max_results=self.max_query_retrieve_count_train)
+            latent_vec, types_to_select[0].ind,
+            max_results=self.max_query_retrieve_count_train,
+            similarity_metric=SimilarityMeasure.COS
+        )
         assert len(similarities) <= self.max_query_retrieve_count_train
         loss = torch.tensor(0.0)
         if len(similarities) > 0:   # This could be false if inside a copy with no examples
@@ -128,21 +142,41 @@ class RetrievalActionSelector(ActionSelector):
                 keep_mask[random.randint(0, len(keep_mask) - 1)] = 1
             similarities = similarities[keep_mask]
             impls_chosen = nearest_datas.impl_choices[keep_mask]
+            rank_weightings = self.train_rank_weights[:len(similarities)]
+            # TODO weights
 
+            # OLD softmax way
             impl_scores, impl_keys = sparse_groupby_sum(
                 F.softmax(similarities, dim=0), impls_chosen)
             impls_indices_correct = are_indices_valid(
                 impl_keys, self.type_context, expected, COPY_IND)
-            # TODO weights
             eps = 1e-7
             impl_scores = impl_scores.clamp(eps, 1-eps)
             if len(impl_scores) > 1:
-                loss += self.loss_func(impl_scores.unsqueeze(0), impls_indices_correct.unsqueeze(0))
+                loss += F.binary_cross_entropy(
+                    impl_scores.unsqueeze(0), impls_indices_correct.unsqueeze(0))
+
+            # New cosine sim way
+            #correct_similarities = are_indices_valid(
+            #    impls_chosen, self.type_context, expected, COPY_IND)
+            #eps = 1e-7
+            #similarities = similarities.clamp(eps, 1-eps)
+            ## Since we are retrieving the nearest, odds are we have a lot of correct ones.
+            ## Weight the wrong ones more
+            #new_weights = rank_weightings * (1 +
+            #                                 ((1 - correct_similarities) * self.non_example_boost))
+
+            #bce_loss = F.binary_cross_entropy(
+            #    similarities, correct_similarities, weight=new_weights)
+            # TODO: think through some form of boosting where we weight ones
+            # where there is not much uncertainty less
+            #loss += bce_loss
         if expected.copy_is_known_choice():
             span_pred_loss = self.span_predictor.train_predict_span(
                 latent_vec, memory_tokens, types_to_select, expected)
-            loss += get_copy_depth_discount(num_of_parents_with_copy_option) * span_pred_loss
-        # Do l2_loss
+            loss += get_copy_depth_discount(num_of_parents_with_copy_option) * \
+                    span_pred_loss * self.copy_boost
+        # Do regularization loss
         feature_sq_avg = torch.mean(latent_vec ** 2)
         loss += self.square_feature_reg * feature_sq_avg
         return loss

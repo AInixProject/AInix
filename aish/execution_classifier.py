@@ -6,16 +6,25 @@ from xonsh.xoreutils import _which
 import builtins
 from parser import ParseResult
 
+builtin_cmds = ("cd", "echo", "source", "source-bash")
+
 class ExecutionClassifier():
     def classify_string(self, parse : ParseResult): 
+        return ExecutionType(
+            run_through_model=self.get_whether_to_run_through_model(parse))
+
+    def get_whether_to_run_through_model(self, parse: ParseResult) -> bool:
+        if parse.has_force_modeling_escape:
+            return True
         firstWordValue = parse.get_first_word()
+        if firstWordValue in builtin_cmds:
+            return False
         try:
             pathOfProgram = _which.which(firstWordValue, path=builtins.__xonsh__.env['PATH'])
             programOnPath = True
         except _which.WhichError:
             programOnPath = False
-        return ExecutionType(
-            run_through_model=parse.has_force_modeling_escape or not programOnPath)
+        return not programOnPath
 
 
 @attr.s(frozen = True)

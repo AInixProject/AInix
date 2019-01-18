@@ -16,6 +16,7 @@ defines:
             - list all files and directories here
             - list all files and dirs in this dir
             - display a list of files and or directories only
+            - what files and dirs are here?
             y:
             - ls
           - x:
@@ -181,13 +182,23 @@ defines:
             y:
             - "ls -Xa"
           - x:
-            - ls order files based on last modified time in dec-ending order
             - list files here ordering by last mod time with oldest files first
+            - ls order files based on last modified time in dec-ending order
             - ls -l sorted by last modified time oldest first
             - ls -lt in reverse
             - ls -lr by modified date
             y:
             - "ls -lrt"
+          - x:
+            - what is the oldest file (by last modified time) in current directory
+            - what is the oldest file here
+            y:
+            - "ls -rt -1 | head -n 1"
+          - x:
+            - what file or directory here was last modified most recently
+            - most recently modified file here
+            y:
+            - "ls -t -1 | head -n 1"
           - x:
             - list all jpg files here
             - ls all jpg files

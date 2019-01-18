@@ -43,6 +43,8 @@ class AishShell2(PromptToolkit2Shell):
         outputted_ast: ObjectChoiceNode,
         outputted_unparse: UnparseResult
     ):
+        if retr_explans is None or len(retr_explans) == 0:
+            return
         print("How each part of the output was derived:")
         post_procs = post_process_explanations(
             retr_explans,
