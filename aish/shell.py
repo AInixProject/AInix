@@ -84,7 +84,7 @@ class AishShell2(PromptToolkit2Shell):
             print(f"predict: "
                   f"{colorama.Fore.BLUE}{pred_result.unparse.total_string.strip()}"
                   f"{colorama.Fore.RESET} "
-                  f"(confidence score {pred_result.metad.total_confidence:.2f} {conf_emoji})")
+                  f"(confidence score {pred_result.metad.total_confidence:.2f} {conf_emoji} )")
             self.do_example_retrieve_explanation(
                 pred_result.metad.example_retrieve_explanations, pred_result.ast,
                 pred_result.unparse)
