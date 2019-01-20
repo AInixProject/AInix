@@ -1,9 +1,10 @@
 from typing import List
-
 import attr
 from pygments.token import Token
 from pygments.lexers import BashLexer
 import pygments
+
+
 class BashParser():
     def __init__(self):
         self.lexer = BashLexer()
@@ -38,6 +39,7 @@ class BashParser():
             model_input_str = model_input_str[1:]
         return ParseResult(was_error=error, words=words, model_input_str = model_input_str,
                            has_force_modeling_escape=has_force_modeling_escape)
+
 
 @attr.s(frozen = True)
 class ParseResult():
