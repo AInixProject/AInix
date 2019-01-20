@@ -22,8 +22,8 @@ class BashParser():
                 if len(stripped) > 0:
                     words.append(value)
             else:
-                print("AAAHHHH", tokenType, value)
                 error = True
+                # TODO this should raise and exception here
                 raise ValueError("unrecognized token", tokenType, value)
                 break
         # If the user starts the query with a question mark it forces running through model
