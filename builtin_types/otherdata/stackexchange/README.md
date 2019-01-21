@@ -5,3 +5,6 @@ about 500MB.
 
 We get data from https://archive.org/details/stackexchange
 which is availble under [CC-BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
+
+First you should use download_data.sh
+Then you should split those into sentences using split_stacke_data.py
