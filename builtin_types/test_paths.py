@@ -6,7 +6,6 @@ from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.specialtypes import generic_strings
 
-
 @pytest.fixture(scope="function")
 def tc():
     context = TypeContext()
@@ -45,6 +44,17 @@ def test_path_parse_and_unparse_without_error(tc, in_str):
     unparser = AstUnparser(tc)
     to_string = unparser.to_string(ast)
     assert to_string.total_string == in_str
+
+
+@pytest.mark.parametrize("in_str",
+                         ("~/foo/bar{1,2,3}",))
+def test_path_parse_and_unparse_with_error(tc, in_str):
+    parser = StringParser(tc)
+    try:
+        ast = parser.create_parse_tree(in_str, "Path")
+        pytest.fail(f"{in_str} unexpectedly worked")
+    except AInixParseError as e:
+        pass
 
 
 def test_empty_string_not_a_path(tc):

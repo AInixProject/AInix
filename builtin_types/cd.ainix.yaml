@@ -5,7 +5,10 @@ defines:
       type: Program
       type_data: {invoke_name: "cd"}
       children:
-          - name: new_apth
+          - name: L
+            required: False
+            arg_data: {short_name: "L"}
+          - name: new_path
             required: False
             type: Path
             arg_data: {position: 0}
