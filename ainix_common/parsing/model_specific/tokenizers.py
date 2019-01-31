@@ -3,9 +3,11 @@ string parsers. Rather it can be useful for something like models which wish
 to tokenize the input string. It is used in string parsers in order to enable
 producing AST's with copying."""
 from abc import ABC, abstractmethod
-from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional, Dict
+from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional, Dict, MutableMapping
 
 import attr
+import pygtrie
+
 from ainix_common.parsing.typecontext import AInixObject, AInixType
 from ainix_common.parsing.model_specific import parse_constants
 from ainix_common.parsing.ast_components import AstNode, ObjectNode, ObjectChoiceNode
@@ -13,6 +15,7 @@ from ainix_common.parsing import ast_components
 import numpy as np
 from itertools import chain
 import functools
+from enum import IntEnum, unique
 
 class Tokenizer(ABC):
     def __init__(self):
@@ -65,6 +68,14 @@ class StringTokenizer(Tokenizer):
         raise NotImplemented()
 
 
+class StringTokenizerWithMods(Tokenizer):
+    def tokenize(
+        self,
+        to_tokenize: str
+    ) -> Tuple[List['ModifiedStringTokens'], 'StringTokensMetadata']:
+        raise NotImplemented()
+
+
 @attr.s(frozen=True)
 class StringTokensMetadata:
     """Metadata about the tokens returned by a StringTokenizer
@@ -102,6 +113,27 @@ class StringTokensMetadata:
         assert len(self.joinable_tokens) == len(self.joinable_tokens_pos_to_actual)
 
 
+@unique
+class CasingModifier(IntEnum):
+    LOWER = 0
+    ALL_UPPER = 1
+    FIRST_UPPER = 2
+    CASELESS = 3  # True if all symbols
+
+
+@unique
+class WhitespaceModifier(IntEnum):
+    AFTER_SPACE = 0
+    NOT_AFTER_SPACE = 1
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class ModifiedStringTokens:
+    token_string: str
+    casing_modifier: CasingModifier
+    whitespace_modifier: WhitespaceModifier
+
+
 class NonLetterTokenizer(StringTokenizer):
     @functools.lru_cache(maxsize=10)  # Larger cache?
     def tokenize(self, to_tokenize: str) -> Tuple[List[str], StringTokensMetadata]:
@@ -129,6 +161,56 @@ class NonLetterTokenizer(StringTokenizer):
 
     def get_save_state_dict(self) -> Dict:
         return {"tok_name": "NonLetterTokenizer"}
+
+
+# TODO (DNGros): This should be unified with the tokenizer in generic_strings.
+class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
+    def __init__(self, vocab: List[str], SOS=1, UNK=0, EOS=2):
+        super().__init__()
+        self.trie: pygtrie.CharTrie[str, CasingModifier] = pygtrie.CharTrie()
+        self.SOS_IND = SOS
+        self.UNK_IND = UNK
+        self.EOS_IND = EOS
+        self.SOS = vocab[SOS]
+        self.UNK = vocab[UNK]
+        self.EOS = vocab[EOS]
+        specials = (SOS, UNK, EOS)
+
+        for i, tok in enumerate(vocab):
+            assert tok.lower() == tok, "Vocab should be all lower case"
+            if i in specials:
+                continue
+            tok_upper = tok.upper()
+            is_casable = tok_upper != tok
+            if is_casable:
+                self.trie[tok_upper] = CasingModifier.ALL_UPPER
+            tok_first_cap = tok[0].upper() + tok[1:]
+            if tok_first_cap != tok_upper:
+                self.trie[tok_first_cap] = CasingModifier.FIRST_UPPER
+            self.trie[tok] = CasingModifier.LOWER if is_casable else CasingModifier.CASELESS
+
+    @functools.lru_cache(maxsize=10)
+    def tokenize(
+        self,
+        to_tokenize: str
+    ) -> Tuple[List[StringTokenizerWithMods], StringTokensMetadata]:
+        outs_strs: List[StringTokenizerWithMods] = []
+        joinable_tokens: List[str] = []
+        joinable_tokens_to_actual: List[Optional[int]] = []
+        actual_to_joinable_ind: List[Optional[int]] = []
+        cur_ind = 0
+        while cur_ind < len(to_tokenize):
+            cur_str = outs_strs[cur_ind:]
+            longest_prefix: str = self.trie.longest_prefix(cur_str).key
+            if longest_prefix is None:
+                assert False
+            is_casable = longest_prefix.upper() == longest_prefix
+            case_mod = CasingModifier.LOWER if is_casable and longest_prefix == long
+
+        assert len(outs_strs) == len(actual_to_joinable_ind)
+        metadata = StringTokensMetadata(
+            joinable_tokens, joinable_tokens_to_actual, actual_to_joinable_ind)
+        return outs_strs, metadata
 
 
 class SpaceTokenizer(StringTokenizer):

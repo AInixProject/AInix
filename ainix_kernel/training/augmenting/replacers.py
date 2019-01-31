@@ -101,8 +101,6 @@ class Replacer:
         return no_brackets
 
 
-
-
 def _split_replacement_assignment(no_brackets: str):
     """Separates the name and the value of a replacement item"""
     var_and_val = no_brackets.split("=")
