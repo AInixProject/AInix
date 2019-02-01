@@ -1,0 +1,12 @@
+---
+defines:
+  - define_new: example_set
+    y_type: CommandSequence
+    examples:
+    - x:
+      - sleep for five seconds
+      - do nothing for 5 seconds
+      - wait for 5 seconds
+      - pause for five sec
+      y: sleep 5
+...

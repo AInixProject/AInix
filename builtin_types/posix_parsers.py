@@ -206,7 +206,8 @@ def ProgramObjectParser(
             # Must be a positional arg
             sorted_pos_args = get_all_positional_args(remaining_args)
             if not sorted_pos_args:
-                raise ValueError(f"Unexpected word '{word}' with no remaing positional args")
+                raise AInixParseError(f"Unexpected word '{word}' with no remaing positional args."
+                                      f" Input was {string}")
             arg_to_do = sorted_pos_args[0]
             if arg_to_do.type is None:
                 raise ValueError(f"Positional arg {arg_to_do.name} can't have None type")

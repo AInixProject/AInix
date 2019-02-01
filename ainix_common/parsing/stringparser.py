@@ -71,6 +71,9 @@ class StringParser:
         root_type = self._type_context.get_type_by_name(root_type_name)
         new_node, string_metadata = self._parse_object_choice_node(
             string, root_parser, root_type)
+        if string_metadata.remaining_right_starti != len(string):
+            raise AInixParseError(f"Error. Expect to fully the input string {string}. However, "
+                                  f"only consumed {string[:string_metadata.remaining_right_starti]}")
         return new_node
 
     def _parse_object_node(

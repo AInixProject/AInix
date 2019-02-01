@@ -12,6 +12,8 @@ from ainix_kernel.indexing import exampleloader
 from ainix_kernel.specialtypes import allspecials
 import pytest
 
+from ainix_kernel.training.train_contexts import ALL_EXAMPLE_NAMES
+
 
 @pytest.fixture()
 def all_the_stuff_context():
@@ -22,9 +24,7 @@ def all_the_stuff_context():
     loader.load_path("builtin_types/paths.ainix.yaml")
     allspecials.load_all_special_types(type_context)
 
-    with_example_files = ("numbers", "pwd", "ls", "cat", "head", "cp", "wc",
-                          "mkdir", "echo", "mv", "touch")
-    for f in with_example_files:
+    for f in ALL_EXAMPLE_NAMES:
         loader.load_path(f"builtin_types/{f}.ainix.yaml")
     type_context.finalize_data()
     return type_context

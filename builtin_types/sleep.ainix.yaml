@@ -1,0 +1,12 @@
+---
+defines:
+    - define_new: object
+      name: sleep
+      type: Program
+      type_data: {invoke_name: "sleep"}
+      children:
+          - name: sleep_time
+            required: True
+            type: Number
+            arg_data: {position: 0, multiword_pos_arg: False}
+...
