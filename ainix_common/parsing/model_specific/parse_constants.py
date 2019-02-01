@@ -1,4 +1,5 @@
 SOS = "<SOS>"
+SOS_IND = 1
 EOS = "<EOS>"
 UNK = "<UNK>"
 SPACE = "<SPACE>"

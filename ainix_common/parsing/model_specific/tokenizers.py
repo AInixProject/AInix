@@ -72,7 +72,7 @@ class StringTokenizerWithMods(Tokenizer):
     def tokenize(
         self,
         to_tokenize: str
-    ) -> Tuple[List['ModifiedStringTokens'], 'StringTokensMetadata']:
+    ) -> Tuple[List['ModifiedStringToken'], 'StringTokensMetadata']:
         raise NotImplemented()
 
 
@@ -128,7 +128,7 @@ class WhitespaceModifier(IntEnum):
 
 
 @attr.s(auto_attribs=True, frozen=True)
-class ModifiedStringTokens:
+class ModifiedStringToken:
     token_string: str
     casing_modifier: CasingModifier
     whitespace_modifier: WhitespaceModifier
@@ -165,21 +165,11 @@ class NonLetterTokenizer(StringTokenizer):
 
 # TODO (DNGros): This should be unified with the tokenizer in generic_strings.
 class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
-    def __init__(self, vocab: List[str], SOS=1, UNK=0, EOS=2):
+    def __init__(self, vocab: List[str]):
         super().__init__()
         self.trie: pygtrie.CharTrie[str, CasingModifier] = pygtrie.CharTrie()
-        self.SOS_IND = SOS
-        self.UNK_IND = UNK
-        self.EOS_IND = EOS
-        self.SOS = vocab[SOS]
-        self.UNK = vocab[UNK]
-        self.EOS = vocab[EOS]
-        specials = (SOS, UNK, EOS)
-
-        for i, tok in enumerate(vocab):
+        for tok in vocab:
             assert tok.lower() == tok, "Vocab should be all lower case"
-            if i in specials:
-                continue
             tok_upper = tok.upper()
             is_casable = tok_upper != tok
             if is_casable:
@@ -193,20 +183,29 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
     def tokenize(
         self,
         to_tokenize: str
-    ) -> Tuple[List[StringTokenizerWithMods], StringTokensMetadata]:
-        outs_strs: List[StringTokenizerWithMods] = []
+    ) -> Tuple[List[ModifiedStringToken], StringTokensMetadata]:
+        outs_strs: List[ModifiedStringToken] = []
         joinable_tokens: List[str] = []
         joinable_tokens_to_actual: List[Optional[int]] = []
         actual_to_joinable_ind: List[Optional[int]] = []
         cur_ind = 0
+        after_whitespace = True
         while cur_ind < len(to_tokenize):
-            cur_str = outs_strs[cur_ind:]
-            longest_prefix: str = self.trie.longest_prefix(cur_str).key
-            if longest_prefix is None:
-                assert False
-            is_casable = longest_prefix.upper() == longest_prefix
-            case_mod = CasingModifier.LOWER if is_casable and longest_prefix == long
-
+            cur_str = to_tokenize[cur_ind:]
+            longest_prefix = self.trie.longest_prefix(cur_str)
+            if not longest_prefix:
+                raise NotImplementedError("Need to handle unk")
+            token_str: str = longest_prefix.key
+            casing_mod: CasingModifier = longest_prefix.value
+            outs_strs.append(ModifiedStringToken(
+                token_string=token_str,
+                casing_modifier=casing_mod,
+                whitespace_modifier=WhitespaceModifier.AFTER_SPACE if after_whitespace else WhitespaceModifier.NOT_AFTER_SPACE
+            ))
+            actual_to_joinable_ind.append(len(actual_to_joinable_ind))
+            joinable_tokens_to_actual.append(len(outs_strs) - 1)
+            joinable_tokens.append(token_str)
+            cur_ind += len(token_str)
         assert len(outs_strs) == len(actual_to_joinable_ind)
         metadata = StringTokensMetadata(
             joinable_tokens, joinable_tokens_to_actual, actual_to_joinable_ind)

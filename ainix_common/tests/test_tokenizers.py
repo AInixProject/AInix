@@ -1,5 +1,6 @@
 from ainix_common.parsing.model_specific.tokenizers import *
 from ainix_common.parsing.model_specific import parse_constants
+import pytest
 
 
 def test_non_letter():
@@ -57,3 +58,10 @@ def test_space_tokenizer2():
     assert tokens == ["hello"]
     assert "".join(metadata.joinable_tokens) == str
     assert metadata.joinable_tokens_pos_to_actual == [0]
+
+
+def test_mod_word_piece_tokenizer():
+    tokenizer = ModifiedWordPieceTokenizer(["ab", "bc", "a"])
+    moded_tokens, metad = tokenizer.tokenize("a")
+    print(metad)
+    assert len(moded_tokens) == len(metad.joinable_tokens) == 1
