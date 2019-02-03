@@ -123,7 +123,7 @@ class CasingModifier(IntEnum):
 
 @unique
 class WhitespaceModifier(IntEnum):
-    AFTER_SPACE = 0
+    AFTER_SPACE_OR_SOS = 0
     NOT_AFTER_SPACE = 1
 
 
@@ -179,6 +179,14 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
                 self.trie[tok_first_cap] = CasingModifier.FIRST_UPPER
             self.trie[tok] = CasingModifier.LOWER if is_casable else CasingModifier.CASELESS
 
+    SOS_TOK = ModifiedStringToken(
+        parse_constants.SOS,
+        CasingModifier.CASELESS, WhitespaceModifier.AFTER_SPACE_OR_SOS)
+
+    EOS_TOK = ModifiedStringToken(
+        parse_constants.EOS,
+        CasingModifier.CASELESS, WhitespaceModifier.AFTER_SPACE_OR_SOS)
+
     @functools.lru_cache(maxsize=10)
     def tokenize(
         self,
@@ -190,6 +198,12 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
         actual_to_joinable_ind: List[Optional[int]] = []
         cur_ind = 0
         after_whitespace = True
+
+        # Handle SOS
+        outs_strs.append(self.SOS_TOK)
+        actual_to_joinable_ind.append(None)
+
+        # Go through and parse tokens
         while cur_ind < len(to_tokenize):
             cur_str = to_tokenize[cur_ind:]
             longest_prefix = self.trie.longest_prefix(cur_str)
@@ -200,12 +214,17 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
             outs_strs.append(ModifiedStringToken(
                 token_string=token_str,
                 casing_modifier=casing_mod,
-                whitespace_modifier=WhitespaceModifier.AFTER_SPACE if after_whitespace else WhitespaceModifier.NOT_AFTER_SPACE
+                whitespace_modifier=WhitespaceModifier.AFTER_SPACE_OR_SOS if after_whitespace else WhitespaceModifier.NOT_AFTER_SPACE
             ))
             actual_to_joinable_ind.append(len(actual_to_joinable_ind))
             joinable_tokens_to_actual.append(len(outs_strs) - 1)
             joinable_tokens.append(token_str)
             cur_ind += len(token_str)
+
+        # Handle EOS
+        outs_strs.append(self.EOS_TOK)
+        actual_to_joinable_ind.append(None)
+
         assert len(outs_strs) == len(actual_to_joinable_ind)
         metadata = StringTokensMetadata(
             joinable_tokens, joinable_tokens_to_actual, actual_to_joinable_ind)
