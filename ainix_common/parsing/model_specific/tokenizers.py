@@ -220,6 +220,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
             joinable_tokens_to_actual.append(len(outs_strs) - 1)
             joinable_tokens.append(token_str)
             cur_ind += len(token_str)
+            after_whitespace = token_str == " "
 
         # Handle EOS
         outs_strs.append(self.EOS_TOK)

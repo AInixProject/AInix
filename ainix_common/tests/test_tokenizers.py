@@ -63,7 +63,6 @@ def test_space_tokenizer2():
 def test_mod_word_piece_tokenizer():
     tokenizer = ModifiedWordPieceTokenizer(["ab", "bc", "a"])
     moded_tokens, metad = tokenizer.tokenize("a")
-    assert len(moded_tokens) == 3
     assert moded_tokens == [
         ModifiedWordPieceTokenizer.SOS_TOK,
         ModifiedStringToken("a", CasingModifier.LOWER, WhitespaceModifier.AFTER_SPACE_OR_SOS),
@@ -72,3 +71,17 @@ def test_mod_word_piece_tokenizer():
     assert metad.joinable_tokens == ["a"]
     assert metad.actual_pos_to_joinable_pos == [None, 0, None]
     assert metad.joinable_tokens_pos_to_actual == [1]
+
+
+def test_mod_word_piece_tokenizer2():
+    tokenizer = ModifiedWordPieceTokenizer(["ab", "bc", "a", "c"])
+    moded_tokens, metad = tokenizer.tokenize("abc")
+    assert moded_tokens == [
+        ModifiedWordPieceTokenizer.SOS_TOK,
+        ModifiedStringToken("ab", CasingModifier.LOWER, WhitespaceModifier.AFTER_SPACE_OR_SOS),
+        ModifiedStringToken("c", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
+        ModifiedWordPieceTokenizer.EOS_TOK
+    ]
+    assert metad.joinable_tokens == ["ab", "c"]
+    assert metad.actual_pos_to_joinable_pos == [None, 0, 1, None]
+    assert metad.joinable_tokens_pos_to_actual == [1, 2]
