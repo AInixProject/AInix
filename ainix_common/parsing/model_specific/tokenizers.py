@@ -119,6 +119,7 @@ class CasingModifier(IntEnum):
     ALL_UPPER = 1
     FIRST_UPPER = 2
     CASELESS = 3  # True if all symbols
+    SINGLE_CHAR_UPPER = 4  # True if all symbols
 
 
 @unique
@@ -173,7 +174,8 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
             tok_upper = tok.upper()
             is_casable = tok_upper != tok
             if is_casable:
-                self.trie[tok_upper] = CasingModifier.ALL_UPPER
+                self.trie[tok_upper] = CasingModifier.ALL_UPPER if len(tok) > 1 \
+                    else CasingModifier.SINGLE_CHAR_UPPER
             tok_first_cap = tok[0].upper() + tok[1:]
             if tok_first_cap != tok_upper:
                 self.trie[tok_first_cap] = CasingModifier.FIRST_UPPER
@@ -205,6 +207,16 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
 
         # Go through and parse tokens
         while cur_ind < len(to_tokenize):
+            if to_tokenize[cur_ind] == " ":
+                # TODO (DNGros): Extra white space might have semantic meaning
+                # we should allow this to be captured and reconstructed.
+                # It might be wise to ignore the extra whitespace if not in quotes
+                # and captures it when in quotes.
+                after_whitespace = True
+                joinable_tokens.append(" ")
+                cur_ind += 1
+                joinable_tokens_to_actual.append(None)
+                continue
             cur_str = to_tokenize[cur_ind:]
             longest_prefix = self.trie.longest_prefix(cur_str)
             if not longest_prefix:
@@ -212,7 +224,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
             token_str: str = longest_prefix.key
             casing_mod: CasingModifier = longest_prefix.value
             outs_strs.append(ModifiedStringToken(
-                token_string=token_str,
+                token_string=token_str.lower(),
                 casing_modifier=casing_mod,
                 whitespace_modifier=WhitespaceModifier.AFTER_SPACE_OR_SOS if after_whitespace else WhitespaceModifier.NOT_AFTER_SPACE
             ))
@@ -220,7 +232,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
             joinable_tokens_to_actual.append(len(outs_strs) - 1)
             joinable_tokens.append(token_str)
             cur_ind += len(token_str)
-            after_whitespace = token_str == " "
+            after_whitespace = False
 
         # Handle EOS
         outs_strs.append(self.EOS_TOK)
