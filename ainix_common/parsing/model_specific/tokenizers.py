@@ -217,21 +217,29 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
                 cur_ind += 1
                 joinable_tokens_to_actual.append(None)
                 continue
+
             cur_str = to_tokenize[cur_ind:]
             longest_prefix = self.trie.longest_prefix(cur_str)
-            if not longest_prefix:
-                raise NotImplementedError("Need to handle unk")
-            token_str: str = longest_prefix.key
-            casing_mod: CasingModifier = longest_prefix.value
+            is_an_unk_tok = not longest_prefix
+            if is_an_unk_tok:
+                raw_tok: str = cur_str[0]
+                token_str = parse_constants.UNK
+                casing_mod = CasingModifier.CASELESS
+            else:
+                raw_tok: str = longest_prefix.key
+                token_str = raw_tok.lower()
+                casing_mod: CasingModifier = longest_prefix.value
+
             outs_strs.append(ModifiedStringToken(
-                token_string=token_str.lower(),
+                token_string=token_str,
                 casing_modifier=casing_mod,
-                whitespace_modifier=WhitespaceModifier.AFTER_SPACE_OR_SOS if after_whitespace else WhitespaceModifier.NOT_AFTER_SPACE
+                whitespace_modifier=WhitespaceModifier.AFTER_SPACE_OR_SOS if after_whitespace \
+                    else WhitespaceModifier.NOT_AFTER_SPACE
             ))
             actual_to_joinable_ind.append(len(joinable_tokens))
             joinable_tokens_to_actual.append(len(outs_strs) - 1)
-            joinable_tokens.append(token_str)
-            cur_ind += len(token_str)
+            joinable_tokens.append(raw_tok)
+            cur_ind += len(raw_tok)
             after_whitespace = False
 
         # Handle EOS

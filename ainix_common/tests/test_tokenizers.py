@@ -141,3 +141,18 @@ def test_mod_word_piece_tokenizer_cap3():
     assert metad.joinable_tokens == ["Ab"]
     assert metad.actual_pos_to_joinable_pos == [None, 0, None]
     assert metad.joinable_tokens_pos_to_actual == [1]
+
+
+def test_mod_word_piece_tokenizer_unk():
+    tokenizer = ModifiedWordPieceTokenizer(["ab", "bc", "a"])
+    moded_tokens, metad = tokenizer.tokenize("dab")
+    assert moded_tokens == [
+        ModifiedWordPieceTokenizer.SOS_TOK,
+        ModifiedStringToken(parse_constants.UNK, CasingModifier.CASELESS,
+                            WhitespaceModifier.AFTER_SPACE_OR_SOS),
+        ModifiedStringToken("ab", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
+        ModifiedWordPieceTokenizer.EOS_TOK
+    ]
+    assert metad.joinable_tokens == ["d", "ab"]
+    assert metad.actual_pos_to_joinable_pos == [None, 0, 1, None]
+    assert metad.joinable_tokens_pos_to_actual == [1, 2]
