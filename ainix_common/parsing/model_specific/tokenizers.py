@@ -216,7 +216,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
                 casing_modifier=casing_mod,
                 whitespace_modifier=WhitespaceModifier.AFTER_SPACE_OR_SOS if after_whitespace else WhitespaceModifier.NOT_AFTER_SPACE
             ))
-            actual_to_joinable_ind.append(len(actual_to_joinable_ind))
+            actual_to_joinable_ind.append(len(joinable_tokens))
             joinable_tokens_to_actual.append(len(outs_strs) - 1)
             joinable_tokens.append(token_str)
             cur_ind += len(token_str)

@@ -60,7 +60,6 @@ def test_space_tokenizer2():
     assert metadata.joinable_tokens_pos_to_actual == [0]
 
 
-
 def test_mod_word_piece_tokenizer():
     tokenizer = ModifiedWordPieceTokenizer(["ab", "bc", "a"])
     moded_tokens, metad = tokenizer.tokenize("a")
@@ -70,3 +69,6 @@ def test_mod_word_piece_tokenizer():
         ModifiedStringToken("a", CasingModifier.LOWER, WhitespaceModifier.AFTER_SPACE_OR_SOS),
         ModifiedWordPieceTokenizer.EOS_TOK
     ]
+    assert metad.joinable_tokens == ["a"]
+    assert metad.actual_pos_to_joinable_pos == [None, 0, None]
+    assert metad.joinable_tokens_pos_to_actual == [1]
