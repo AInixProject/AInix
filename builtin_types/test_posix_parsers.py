@@ -296,6 +296,52 @@ def test_string_parse_e2e_multiword(type_context):
     assert to_string.total_string == "hello -a foo"
 
 
+def test_string_parse_e2e_multiword2(type_context):
+    fooType = AInixType(type_context, "FooType")
+    fo = AInixObject(type_context, "fo", "FooType", [],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         type_context,
+                         "fooname", '"foo"'
+                     ).name)
+    twoargs = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"},
+                       parent_object_name="sdf"),
+         AInixArgument(type_context, "p1", "FooType", arg_data={POSITION: 0,
+                                                                MULTIWORD_POS_ARG: True},
+                       parent_object_name="sdf")],
+        type_data={"invoke_name": "hello"}
+    )
+    type_context.finalize_data()
+    parser = StringParser(type_context)
+    with pytest.raises(AInixParseError):
+        ast = parser.create_parse_tree("hello foo baz -a", "Program")
+
+
+def test_string_parse_e2e_multiword3(type_context):
+    fooType = AInixType(type_context, "FooType")
+    fo = AInixObject(type_context, "fo", "FooType", [],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         type_context,
+                         "fooname", '"foo bar"'
+                     ).name)
+    twoargs = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"},
+                       parent_object_name="sdf"),
+         AInixArgument(type_context, "p1", "FooType", arg_data={POSITION: 0,
+                                                                MULTIWORD_POS_ARG: True},
+                       parent_object_name="sdf")],
+        type_data={"invoke_name": "hello"}
+    )
+    type_context.finalize_data()
+    parser = StringParser(type_context)
+    ast = parser.create_parse_tree("hello foo baz -a", "Program")
+    unparser = AstUnparser(type_context)
+    to_string = unparser.to_string(ast)
+    assert to_string.total_string == "hello -a foo baz"
+
+
 def test_command_operator_parser(type_context):
     instance = type_context.get_type_parser_by_name("CommandOperatorParser")
     s = "| wc -l"
