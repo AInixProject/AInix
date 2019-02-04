@@ -2,6 +2,7 @@
 string parsers. Rather it can be useful for something like models which wish
 to tokenize the input string. It is used in string parsers in order to enable
 producing AST's with copying."""
+import os
 from abc import ABC, abstractmethod
 from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional, Dict, MutableMapping
 
@@ -227,8 +228,8 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
                 casing_mod = CasingModifier.CASELESS
             else:
                 raw_tok: str = longest_prefix.key
-                token_str = raw_tok.lower()
                 casing_mod: CasingModifier = longest_prefix.value
+                token_str = raw_tok.lower() if casing_mod != CasingModifier.CASELESS else raw_tok
 
             outs_strs.append(ModifiedStringToken(
                 token_string=token_str,
@@ -322,3 +323,10 @@ def tokenizer_from_save_dict(save_dict: dict):
     else:
         raise ValueError(f"Bad name {name}")
 
+
+def get_default_pieced_tokenizer() -> StringTokenizerWithMods:
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(dir_path, "unix_vocab.txt")) as f:
+        vocab_str = f.read()
+    vocab = vocab_str.split("\n")
+    return ModifiedWordPieceTokenizer(vocab)
