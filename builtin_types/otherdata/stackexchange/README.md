@@ -32,6 +32,8 @@ $ pip3 install sentencepiece
 # Make version with no blank lines and lowercase
 $ sed '/^$/d' sentences.txt > sentences_no_blank_lines.txt
 $ tr '[:upper:]' '[:lower:]' < sentences_no_blank_lines.txt > sentences_lower.txt
+$ python3 prepare_sentence_piece.py --srcsentences unix-stackexchange/sentences_lower.txt --outfile unix_vocab.txt -n 3000
+# Or if you want to just run it raw
 $ spm_train --input sentences_no_blank_lines.txt --model_prefix testmod --vocab_size 1000 --num_threads 8 --max_sentence_length 6000k
 
 # random notes about experiements with fast text
