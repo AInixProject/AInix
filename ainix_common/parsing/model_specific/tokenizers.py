@@ -9,6 +9,7 @@ from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional, 
 import attr
 import pygtrie
 
+from ainix_common.parsing.model_specific.parse_constants import TOKEN_SPECIALS
 from ainix_common.parsing.typecontext import AInixObject, AInixType
 from ainix_common.parsing.model_specific import parse_constants
 from ainix_common.parsing.ast_components import AstNode, ObjectNode, ObjectChoiceNode
@@ -181,6 +182,9 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
             if tok_first_cap != tok_upper:
                 self.trie[tok_first_cap] = CasingModifier.FIRST_UPPER
             self.trie[tok] = CasingModifier.LOWER if is_casable else CasingModifier.CASELESS
+        for special in TOKEN_SPECIALS:
+            self.trie[special] = CasingModifier.CASELESS
+
 
     SOS_TOK = ModifiedStringToken(
         parse_constants.SOS,
