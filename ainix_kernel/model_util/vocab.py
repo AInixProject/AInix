@@ -9,7 +9,8 @@ import torch
 from ainix_common.parsing.ast_components import AstObjectChoiceSet
 from ainix_common.parsing.stringparser import StringParser
 from ainix_kernel.indexing.examplestore import ExamplesStore
-from ainix_common.parsing.model_specific.tokenizers import Tokenizer, ModifiedWordPieceTokenizer
+from ainix_common.parsing.model_specific.tokenizers import Tokenizer, ModifiedWordPieceTokenizer, \
+    ModifiedStringToken
 from typing import Hashable, TypeVar, Generic
 import numpy as np
 import typing
@@ -62,7 +63,8 @@ class Vocab(Generic[T]):
 
 
 class BasicVocab(Vocab):
-    """A vocab that takes is constructed via counter with counts of tokens"""
+    """Provides an implementation of the Vocab interface which takes in a list
+    of tokens and is backed by a np array."""
     def __init__(self, itos: List[T]):
         try:
             self.unk_index = itos.index(parse_constants.UNK)
@@ -371,5 +373,24 @@ def are_indices_valid(
         return torch.from_numpy(valid_func(indices.numpy()))
 
 
-def vocab_from_word_list(vocab: List[str]) -> str:
-    pass
+def torchify_moded_tokens(
+    tokens: List[ModifiedStringToken],
+    vocab: Vocab
+) -> typing.Tuple[torch.LongTensor, torch.LongTensor, torch.LongTensor]:
+    """
+    Converts a list of modded tokens into torch from
+    Args:
+        tokens: tokens to process
+        vocab: vocab to use to index into for the token strs
+
+    Returns:
+        token_str_inds: Tensor of the token inds
+        case_mod_inds: Tensor of case mode ind
+        whitespace_mod_inds: tensor of whitepsace mods
+    """
+    return (vocab.token_seq_to_indices([t.token_string for t in tokens]),
+            torch.LongTensor([t.casing_modifier.value for t in tokens]),
+            torch.LongTensor([t.whitespace_modifier.value for t in tokens]))
+
+
+

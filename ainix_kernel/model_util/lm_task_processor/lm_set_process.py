@@ -11,14 +11,18 @@ import random
 
 import attr
 
+from ainix_kernel.model_util.vocab import torchify_moded_tokens, Vocab, BasicVocab
+
+
 class CookieMonsterDataset(Dataset):
     def __init__(
         self,
         corpuses: List[str],
         tokenizer: StringTokenizerWithMods,
-        target_tok_count
+        vocab: Vocab
     ):
         assert len(corpuses) == 1, "Only one corpus currently supported"
+        self.vocab = vocab
         # The data is in the a list which is indexed as
         # data[corpus][document_num][sentence_in_doc_num]
         # This gives a tuple.
@@ -67,7 +71,11 @@ class CookieMonsterDataset(Dataset):
             second_sentence = random.choice(other_doc)
         return (first_sentence[1], second_sentence[1]), want_sequential
 
-    def _random_mask(self, sentence, mask_prob: float = 0.15):
+    def _random_mask(
+        self,
+        sentence,
+        mask_prob: float = 0.15
+    ) -> Tuple[str, List[Tuple[int, ModifiedStringToken]]]:
         tokens, metad = self.tokenizer.tokenize(sentence)
         new_joinable = list(metad.joinable_tokens)
         restore_map: List[Tuple[int, ModifiedStringToken]] = []
@@ -77,14 +85,40 @@ class CookieMonsterDataset(Dataset):
                 restore_map.append((i, tok))
         return "".join(new_joinable), restore_map
 
-    def random_sample(self):
+    def random_sample_sentence_str(self) -> Tuple[str, bool, Tuple[int, ModifiedStringToken]]:
         (first_sent, second_sent), was_sequential = self._get_two_sentences()
         combined_sent = first_sent + f" {parse_constants.TASK_SPLITTER} " + second_sent
         masked_sent, restore_map = self._random_mask(combined_sent)
         return masked_sent, was_sequential, restore_map
 
-    def __getitem__(self, index):
-        pass
+    def torchify_example(
+        self,
+        masked_sent: str,
+        was_seq: bool,
+        restore_map: Tuple[int, ModifiedStringToken]
+    ) -> 'LMExampleTorched':
+        # TODO (DNGros): Repeatedly doing the tokenization is terribly inefficient
+        # should just tokenize once and keep things in tokenized form
+        tokens, metad = self.tokenizer.tokenize(masked_sent)
+        token_inds, case_inds, whitespace_inds = torchify_moded_tokens(tokens, self.vocab)
+        return LMExampleTorched(
+            tokens = token_inds,
+            token_case_mod=case_inds,
+            token_whitespace_mod=whitespace_inds,
+            is_sequential=was_seq,
+            mask_inds=torch.LongTensor([ind for ind, real_token in restore_map]),
+            mask_expected_ind=self.vocab.token_seq_to_indices(
+                [real_token.token_string for ind, real_token in restore_map]),
+            mask_expected_case=[real_token.casing_modifier for ind, real_token in restore_map]
+        )
+
+    def random_sample(self) -> 'LMExampleTorched':
+        masked_sent, was_seq, restore_map = self.random_sample_sentence_str()
+        return self.torchify_example(masked_sent, was_seq, restore_map)
+
+    def __getitem__(self, index) -> 'LMExampleTorched':
+        # TODO (Make this deterministic based off ind
+        return self.random_sample()
 
     def __len__(self):
         return self.num_senteces
@@ -93,7 +127,7 @@ class CookieMonsterDataset(Dataset):
 def human_test(dataset: CookieMonsterDataset, samples):
     rights = []
     for i in range(samples):
-        sent, gt_seq, restore_map = dataset.random_sample()
+        sent, gt_seq, restore_map = dataset.random_sample_sentence_str()
         guess = input(f"TRY(1 seq/ 0 not): {sent}")
         print(restore_map)
         right = bool(float(guess)) == gt_seq
@@ -113,7 +147,10 @@ class LMExampleTorched:
     mask_expected_case: torch.LongTensor
 
     def __attrs_post_init__(self):
-        pass
+        assert len(self.tokens.shape) == 1
+        assert len(self.tokens) == len(self.token_case_mod) == len(self.token_whitespace_mod)
+        assert len(self.mask_inds.shape) == 1
+        assert len(self.mask_inds) == len(self.mask_expected_case) == len(self.mask_expected_case)
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -128,11 +165,11 @@ class LMBatch:
 
 
 if __name__ == "__main__":
+    tokenizer, vocab = tokenizers.get_default_pieced_tokenizer_word_list()
     dataset = CookieMonsterDataset(
         ["../../../builtin_types/otherdata/stackexchange/unix-stackexchange/sentences.txt"],
-        tokenizers.get_default_pieced_tokenizer(),
-        64
+        tokenizer, BasicVocab(vocab + parse_constants.ALL_SPECIALS)
     )
     print(len(dataset))
-    #print(dataset.random_sample())
+    print(dataset.random_sample())
     human_test(dataset, 10)

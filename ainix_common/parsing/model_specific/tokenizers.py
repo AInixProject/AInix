@@ -19,6 +19,8 @@ from itertools import chain
 import functools
 from enum import IntEnum, unique
 
+
+
 class Tokenizer(ABC):
     def __init__(self):
         self._vectorized_tokenize = np.vectorize(self.tokenize)
@@ -329,9 +331,9 @@ def tokenizer_from_save_dict(save_dict: dict):
         raise ValueError(f"Bad name {name}")
 
 
-def get_default_pieced_tokenizer() -> StringTokenizerWithMods:
+def get_default_pieced_tokenizer_word_list() -> Tuple[StringTokenizerWithMods, List[str]]:
     dir_path = os.path.dirname(os.path.realpath(__file__))
     with open(os.path.join(dir_path, "unix_vocab.txt")) as f:
         vocab_str = f.read()
     vocab = vocab_str.split("\n")
-    return ModifiedWordPieceTokenizer(vocab)
+    return ModifiedWordPieceTokenizer(vocab), vocab
