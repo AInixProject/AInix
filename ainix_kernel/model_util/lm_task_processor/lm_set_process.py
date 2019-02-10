@@ -1,13 +1,15 @@
+import torch
 from typing import Tuple, List, Iterable, MutableMapping
 
 from torch.utils.data import Dataset
 
 from ainix_common.parsing.model_specific import tokenizers, parse_constants
 from ainix_common.parsing.model_specific.tokenizers import StringTokenizerWithMods, \
-    ModifiedStringToken
+    ModifiedStringToken, StringTokensMetadata
 from tqdm import tqdm
 import random
 
+import attr
 
 class CookieMonsterDataset(Dataset):
     def __init__(
@@ -98,6 +100,31 @@ def human_test(dataset: CookieMonsterDataset, samples):
         print("guess", bool(float(guess)), "actual", gt_seq, "right", right)
         rights.append(right)
     print(f"Right percent {sum(rights)/samples*100}")
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class LMExampleTorched:
+    tokens: torch.LongTensor
+    token_case_mod: torch.LongTensor
+    token_whitespace_mod: torch.LongTensor
+    is_sequential: bool
+    mask_inds: torch.LongTensor  # The indices into tokens for masks tokens
+    mask_expected_ind: torch.LongTensor
+    mask_expected_case: torch.LongTensor
+
+    def __attrs_post_init__(self):
+        pass
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class LMBatch:
+    tokens: torch.LongTensor
+    token_case_mod: torch.LongTensor
+    token_whitespace_mod: torch.LongTensor
+    is_sequential: torch.Tensor
+    mask_inds: torch.LongTensor  # The indices into tokens for masks tokens
+    mask_expected_ind: torch.LongTensor
+    mask_expected_case: torch.LongTensor
 
 
 if __name__ == "__main__":

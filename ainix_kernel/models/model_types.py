@@ -12,6 +12,8 @@ from ainix_common.parsing.model_specific import tokenizers
 from pyrsistent import pvector
 import attr
 
+from ainix_kernel.model_util.lm_task_processor.lm_set_process import LMBatch
+
 
 class ModelException(RuntimeError):
     """An exception for something that went wrong during a call in a model"""
@@ -93,60 +95,8 @@ class RecusivePretrainer(Pretrainer):
             pretrainer.close()
 
 
-class StringTypeTranslateCF(Pretrainable):
-    """Translates a string to another type without taking any prior context
-    into account (what the user or the system has said previously)"""
-
-    @abstractmethod
-    def predict(
-            self,
-            x_string: str,
-            y_type_name: str,
-            use_only_train_data: bool
-    ) -> Tuple[ObjectChoiceNode, 'TypeTranslatePredictMetadata']:
-        raise NotImplemented
-
-    @abstractmethod
-    def train(
-            self,
-            x_string: str,
-            y_ast: AstObjectChoiceSet,
-            teacher_force_path: ObjectChoiceNode,
-            example_id: int
-    ):
-        raise NotImplemented
-
-    def train_batch(
-            self,
-            batch: List[Tuple[str, AstObjectChoiceSet, ObjectChoiceNode, int]]
-    ):
-        """Used for batch training. Will by default call train on each element
-        in batch, but expected to be overridden.
-
-        Args:
-            batch: List of tuples which have 3 values:
-                x: the string x value
-                y: the ast set we are trying to generate to
-                teacher_force_paths: the path to follow while decide
-                example_id: the example id this came from
-        """
-        for x, y, path, example_id in zip(batch):
-            self.train(x, y, path, example_id)
-
-    @classmethod
-    @abstractmethod
-    def make_examples_store(cls, type_context: TypeContext, is_training: bool) -> ExamplesStore:
-        """Returns the an instance of the desired kind of example store"""
-        raise NotImplemented
-
-    def set_shared_memory(self):
-        """Used for when doing multiprocess training to set to shared memory."""
-        raise NotImplemented
-
-    @abstractmethod
-    def get_string_tokenizer(self) -> tokenizers.StringTokenizer:
-        pass
-
+class Model(ABC):
+    """The shared interface parts for all models which we support"""
     # Some methods for communicating state during training. This is sort of
     # a bad interface. Should maybe abstract out into a seperate trainer class.
 
@@ -186,6 +136,61 @@ class StringTypeTranslateCF(Pretrainable):
             new_example_store: ExamplesStore
     ):
         raise NotImplemented
+
+
+class StringTypeTranslateCF(Model, Pretrainable):
+    """Translates a string to another type without taking any prior context
+    into account (what the user or the system has said previously)"""
+
+    @abstractmethod
+    def predict(
+        self,
+        x_string: str,
+        y_type_name: str,
+        use_only_train_data: bool
+    ) -> Tuple[ObjectChoiceNode, 'TypeTranslatePredictMetadata']:
+        raise NotImplemented
+
+    @abstractmethod
+    def train(
+        self,
+        x_string: str,
+        y_ast: AstObjectChoiceSet,
+        teacher_force_path: ObjectChoiceNode,
+        example_id: int
+    ):
+        raise NotImplemented
+
+    def train_batch(
+        self,
+        batch: List[Tuple[str, AstObjectChoiceSet, ObjectChoiceNode, int]]
+    ):
+        """Used for batch training. Will by default call train on each element
+        in batch, but expected to be overridden.
+
+        Args:
+            batch: List of tuples which have 3 values:
+                x: the string x value
+                y: the ast set we are trying to generate to
+                teacher_force_paths: the path to follow while decide
+                example_id: the example id this came from
+        """
+        for x, y, path, example_id in zip(batch):
+            self.train(x, y, path, example_id)
+
+    @classmethod
+    @abstractmethod
+    def make_examples_store(cls, type_context: TypeContext, is_training: bool) -> ExamplesStore:
+        """Returns the an instance of the desired kind of example store"""
+        raise NotImplemented
+
+    def set_shared_memory(self):
+        """Used for when doing multiprocess training to set to shared memory."""
+        raise NotImplemented
+
+    @abstractmethod
+    def get_string_tokenizer(self) -> tokenizers.StringTokenizer:
+        pass
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -242,3 +247,17 @@ class ExampleRetrieveExplanation:
     reference_example_ids: Tuple[int, ...]
     reference_confidence: Tuple[float, ...]
     reference_example_dfs_ind: Tuple[int, ...]
+
+
+class BertlikeLangModel(Model):
+    """A model that which model which performance a language modeling task
+    similar to that to BERT (https://arxiv.org/abs/1810.04805).
+
+    This includes whether predicting two sentences are sequentially drawn from
+    the same document as well as predicting several masked out tokens.
+    """
+    def train_batch(
+        self,
+        batch: LMBatch
+    ):
+        pass

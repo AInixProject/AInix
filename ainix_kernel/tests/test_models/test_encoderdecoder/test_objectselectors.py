@@ -4,7 +4,7 @@ from typing import Tuple
 import pytest
 
 from ainix_common.parsing.typecontext import TypeContext
-from ainix_kernel.model_util.vocab import CounterVocab
+from ainix_kernel.model_util.vocab import BasicVocab
 from ainix_kernel.models.EncoderDecoder.objectselector import *
 
 SELECTORS = ["VectorizedSelector"]

@@ -9,12 +9,16 @@ import torch
 from ainix_common.parsing.ast_components import AstObjectChoiceSet
 from ainix_common.parsing.stringparser import StringParser
 from ainix_kernel.indexing.examplestore import ExamplesStore
-from ainix_common.parsing.model_specific.tokenizers import Tokenizer
+from ainix_common.parsing.model_specific.tokenizers import Tokenizer, ModifiedWordPieceTokenizer
 from typing import Hashable, TypeVar, Generic
 import numpy as np
 import typing
 
 T = TypeVar('T')
+
+# Parts of this module is based off torchtext vocabs
+# Copyright (c) James Bradbury and Soumith Chintala 2016
+# https://github.com/pytorch/text/blob/master/torchtext/vocab.py
 
 
 class Vocab(Generic[T]):
@@ -57,47 +61,17 @@ class Vocab(Generic[T]):
         raise NotImplemented()
 
 
-class CounterVocab(Vocab):
-    """A vocab that takes is constructed via counter with counts of tokens
-
-    This is based off torchtext vocabs
-    Copyright (c) James Bradbury and Soumith Chintala 2016
-    https://github.com/pytorch/text/blob/master/torchtext/vocab.py
-
-    Args:
-        counter: Counter object holding the frequency of each token
-        max_size: The max size of the vocab. If None have no max.
-        min_freq: The minium frequency needed to be included in the vocabulary
-        specials: The list of special tokens (e.g., padding or eos) that
-            will be prepended to the vocabulary in addition to an <unk>
-            token.
-    """
-    def __init__(self, counter: typing.Counter, max_size: int=None, min_freq: int = 1,
-                 specials=(parse_constants.UNK, parse_constants.PAD)):
-        counter = counter.copy()
-        min_freq = max(min_freq, 1)
-        self.itos: List[T] = list(specials)
+class BasicVocab(Vocab):
+    """A vocab that takes is constructed via counter with counts of tokens"""
+    def __init__(self, itos: List[T]):
         try:
-            self.unk_index = self.itos.index(parse_constants.UNK)
+            self.unk_index = itos.index(parse_constants.UNK)
         except ValueError:
             self.unk_index = None
-
-
-        # frequencies of special tokens are not counted when building vocabulary
-        # in frequency order
-        for tok in specials:
-            del counter[tok]
-
-        # sort by frequency, then alphabetically
-        words_and_frequencies = sorted(counter.items(), key=lambda tup: tup[0])
-        words_and_frequencies.sort(key=lambda tup: tup[1], reverse=True)
-
-        len_to_use = min(max_size or 9e9, len(words_and_frequencies))
-        # TODO (DNGros): if was a cool kid would bisect to find point where freq chnages
-        self.itos = np.array([word
-                              for word, freq in words_and_frequencies[:len_to_use]
-                              if freq >= min_freq])
+        self.itos = np.array(itos)
         self._finish_init()
+
+
 
     def _finish_init(self):
         """Finishes initing an object. Used to calculate stuff that needs to happen
@@ -114,7 +88,7 @@ class CounterVocab(Vocab):
     def token_to_index(self, token: T) -> int:
         return self.stoi.get(token, self.unk_index)
 
-    def extend(self, v: 'CounterVocab', sort=False):
+    def extend(self, v: 'BasicVocab', sort=False):
         words = sorted(v.itos) if sort else v.itos
         for w in words:
             if w not in self.stoi:
@@ -144,7 +118,7 @@ class CounterVocab(Vocab):
         return {"itos": self.itos, 'unk_index': self.unk_index, "version": 0}
 
     @classmethod
-    def create_from_save_state_dict(cls, save_state: dict) -> 'CounterVocab':
+    def create_from_save_state_dict(cls, save_state: dict) -> 'BasicVocab':
         instance = cls.__new__(cls)
         instance.itos = save_state['itos']
         instance.unk_index = save_state['unk_index']
@@ -167,16 +141,45 @@ class VocabBuilder(ABC):
 
 
 class CounterVocabBuilder(VocabBuilder):
-    def __init__(self, vocab_to_make: Type[CounterVocab]=CounterVocab, **kwargs):
+    """
+    Args:
+        counter: Counter object holding the frequency of each token
+        max_size: The max size of the vocab. If None have no max.
+        min_freq: The minium frequency needed to be included in the vocabulary
+        specials: The list of special tokens (e.g., padding or eos) that
+        will be prepended to the vocabulary in addition to an <unk>
+        token.
+    """
+    def __init__(
+        self,
+        max_size: int=None,
+        min_freq: int = 1,
+        specials=(parse_constants.UNK, parse_constants.PAD)
+    ):
         self._counter = collections.Counter()
-        self.vocab_to_make = vocab_to_make
-        self.in_args = kwargs
+        self.specials = specials
+        self.min_freq = max(min_freq, 1)
+        self.max_size = max_size
 
     def add_sequence(self, sequence: Iterable[str]):
         self._counter.update(sequence)
 
-    def produce_vocab(self) -> Vocab:
-        return self.vocab_to_make(self._counter, **self.in_args)
+    def produce_vocab(self) -> BasicVocab:
+        # sort by frequency, then alphabetically
+        words_and_frequencies = sorted(self._counter.items(), key=lambda tup: tup[0])
+        words_and_frequencies.sort(key=lambda tup: tup[1], reverse=True)
+
+        len_to_use = min(self.max_size or 9e9, len(words_and_frequencies))
+        taken_words = words_and_frequencies[:len_to_use]
+        # Make sure all the specials are in there
+        for special in self.specials:
+            if special not in taken_words:
+                taken_words.append((special, 1))
+
+        # TODO (DNGros): if was a cool kid would bisect to find point where freq chnages
+        itos = [word for word, freq in taken_words
+                if freq >= self.min_freq or word in self.specials]
+        return BasicVocab(itos)
 
     def extend_vocab(self):
         raise NotImplemented()
@@ -366,3 +369,7 @@ def are_indices_valid(
             return 1 if valid_set.is_known_choice(tc.ind_to_object[ind].name) else 0
         valid_func = np.vectorize(test_func, otypes='f')
         return torch.from_numpy(valid_func(indices.numpy()))
+
+
+def vocab_from_word_list(vocab: List[str]) -> str:
+    pass

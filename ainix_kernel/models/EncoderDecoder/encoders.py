@@ -6,7 +6,7 @@ from typing import Tuple, Type, Sequence, List
 
 from ainix_kernel.model_util import vectorizers
 from ainix_kernel.model_util.vectorizers import VectorizerBase, vectorizer_from_save_dict
-from ainix_kernel.model_util.vocab import Vocab, CounterVocab
+from ainix_kernel.model_util.vocab import Vocab, BasicVocab
 from ainix_common.parsing.model_specific import tokenizers
 import numpy as np
 
@@ -92,7 +92,7 @@ class StringQueryEncoder(QueryEncoder):
     ) -> 'StringQueryEncoder':
         return StringQueryEncoder(
             tokenizer=tokenizers.tokenizer_from_save_dict(state_dict['tokenizer']),
-            query_vocab=CounterVocab.create_from_save_state_dict(state_dict['query_vocab']),
+            query_vocab=BasicVocab.create_from_save_state_dict(state_dict['query_vocab']),
             query_vectorizer=vectorizer_from_save_dict(state_dict['query_vectorizer']),
             internal_encoder=state_dict['internal_encoder']
         )

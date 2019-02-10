@@ -171,6 +171,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
     def __init__(self, vocab: List[str]):
         super().__init__()
         self.trie: pygtrie.CharTrie[str, CasingModifier] = pygtrie.CharTrie()
+        self.vocab_list = list(vocab)
         for tok in vocab:
             assert tok.lower() == tok, "Vocab should be all lower case"
             tok_upper = tok.upper()
