@@ -1,5 +1,6 @@
 import sys, os
 
+from man_explain import print_man_page_explan
 from strformat_utils import get_highlighted_text, get_only_text_in_intervals
 
 print("Preparing shell...")
@@ -112,6 +113,8 @@ class AishShell2(PromptToolkit2Shell):
                     if exec_type.run_through_model:
                         pred_str, confidence = self.do_predict(parse.model_input_str)
                         if confidence > PROMPT_CONF_THRESHOLD:
+                            print()
+                            print_man_page_explan(pred_str, parse.model_input_str)
                             if self.ask_user_confirm_exec(pred_str):
                                 print("")
                                 self.exec_function(self.parser.parse(pred_str))

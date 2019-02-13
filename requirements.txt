@@ -40,3 +40,4 @@ vprof
 wcwidth
 Whoosh~=2.7
 xonsh~=0.8
+requests
