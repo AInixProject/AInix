@@ -2,10 +2,14 @@
 string parsers. Rather it can be useful for something like models which wish
 to tokenize the input string. It is used in string parsers in order to enable
 producing AST's with copying."""
+import os
 from abc import ABC, abstractmethod
-from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional, Dict
+from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional, Dict, MutableMapping
 
 import attr
+import pygtrie
+
+from ainix_common.parsing.model_specific.parse_constants import TOKEN_SPECIALS
 from ainix_common.parsing.typecontext import AInixObject, AInixType
 from ainix_common.parsing.model_specific import parse_constants
 from ainix_common.parsing.ast_components import AstNode, ObjectNode, ObjectChoiceNode
@@ -13,6 +17,9 @@ from ainix_common.parsing import ast_components
 import numpy as np
 from itertools import chain
 import functools
+from enum import IntEnum, unique
+
+
 
 class Tokenizer(ABC):
     def __init__(self):
@@ -65,6 +72,14 @@ class StringTokenizer(Tokenizer):
         raise NotImplemented()
 
 
+class StringTokenizerWithMods(Tokenizer):
+    def tokenize(
+        self,
+        to_tokenize: str
+    ) -> Tuple[List['ModifiedStringToken'], 'StringTokensMetadata']:
+        raise NotImplemented()
+
+
 @attr.s(frozen=True)
 class StringTokensMetadata:
     """Metadata about the tokens returned by a StringTokenizer
@@ -102,6 +117,28 @@ class StringTokensMetadata:
         assert len(self.joinable_tokens) == len(self.joinable_tokens_pos_to_actual)
 
 
+@unique
+class CasingModifier(IntEnum):
+    LOWER = 0
+    ALL_UPPER = 1
+    FIRST_UPPER = 2
+    CASELESS = 3  # True if all symbols
+    SINGLE_CHAR_UPPER = 4  # True if all symbols
+
+
+@unique
+class WhitespaceModifier(IntEnum):
+    AFTER_SPACE_OR_SOS = 0
+    NOT_AFTER_SPACE = 1
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class ModifiedStringToken:
+    token_string: str
+    casing_modifier: CasingModifier
+    whitespace_modifier: WhitespaceModifier
+
+
 class NonLetterTokenizer(StringTokenizer):
     @functools.lru_cache(maxsize=10)  # Larger cache?
     def tokenize(self, to_tokenize: str) -> Tuple[List[str], StringTokensMetadata]:
@@ -129,6 +166,98 @@ class NonLetterTokenizer(StringTokenizer):
 
     def get_save_state_dict(self) -> Dict:
         return {"tok_name": "NonLetterTokenizer"}
+
+
+# TODO (DNGros): This should be unified with the tokenizer in generic_strings.
+class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
+    def __init__(self, vocab: List[str]):
+        super().__init__()
+        self.trie: pygtrie.CharTrie[str, CasingModifier] = pygtrie.CharTrie()
+        self.vocab_list = list(vocab)
+        for tok in vocab:
+            assert tok.lower() == tok, "Vocab should be all lower case"
+            tok_upper = tok.upper()
+            is_casable = tok_upper != tok
+            if is_casable:
+                self.trie[tok_upper] = CasingModifier.ALL_UPPER if len(tok) > 1 \
+                    else CasingModifier.SINGLE_CHAR_UPPER
+            tok_first_cap = tok[0].upper() + tok[1:]
+            if tok_first_cap != tok_upper:
+                self.trie[tok_first_cap] = CasingModifier.FIRST_UPPER
+            self.trie[tok] = CasingModifier.LOWER if is_casable else CasingModifier.CASELESS
+        for special in TOKEN_SPECIALS:
+            self.trie[special] = CasingModifier.CASELESS
+
+
+    SOS_TOK = ModifiedStringToken(
+        parse_constants.SOS,
+        CasingModifier.CASELESS, WhitespaceModifier.AFTER_SPACE_OR_SOS)
+
+    EOS_TOK = ModifiedStringToken(
+        parse_constants.EOS,
+        CasingModifier.CASELESS, WhitespaceModifier.AFTER_SPACE_OR_SOS)
+
+    @functools.lru_cache(maxsize=10)
+    def tokenize(
+        self,
+        to_tokenize: str
+    ) -> Tuple[List[ModifiedStringToken], StringTokensMetadata]:
+        outs_strs: List[ModifiedStringToken] = []
+        joinable_tokens: List[str] = []
+        joinable_tokens_to_actual: List[Optional[int]] = []
+        actual_to_joinable_ind: List[Optional[int]] = []
+        cur_ind = 0
+        after_whitespace = True
+
+        # Handle SOS
+        outs_strs.append(self.SOS_TOK)
+        actual_to_joinable_ind.append(None)
+
+        # Go through and parse tokens
+        while cur_ind < len(to_tokenize):
+            if to_tokenize[cur_ind] == " ":
+                # TODO (DNGros): Extra white space might have semantic meaning
+                # we should allow this to be captured and reconstructed.
+                # It might be wise to ignore the extra whitespace if not in quotes
+                # and captures it when in quotes.
+                after_whitespace = True
+                joinable_tokens.append(" ")
+                cur_ind += 1
+                joinable_tokens_to_actual.append(None)
+                continue
+
+            cur_str = to_tokenize[cur_ind:]
+            longest_prefix = self.trie.longest_prefix(cur_str)
+            is_an_unk_tok = not longest_prefix
+            if is_an_unk_tok:
+                raw_tok: str = cur_str[0]
+                token_str = parse_constants.UNK
+                casing_mod = CasingModifier.CASELESS
+            else:
+                raw_tok: str = longest_prefix.key
+                casing_mod: CasingModifier = longest_prefix.value
+                token_str = raw_tok.lower() if casing_mod != CasingModifier.CASELESS else raw_tok
+
+            outs_strs.append(ModifiedStringToken(
+                token_string=token_str,
+                casing_modifier=casing_mod,
+                whitespace_modifier=WhitespaceModifier.AFTER_SPACE_OR_SOS if after_whitespace \
+                    else WhitespaceModifier.NOT_AFTER_SPACE
+            ))
+            actual_to_joinable_ind.append(len(joinable_tokens))
+            joinable_tokens_to_actual.append(len(outs_strs) - 1)
+            joinable_tokens.append(raw_tok)
+            cur_ind += len(raw_tok)
+            after_whitespace = False
+
+        # Handle EOS
+        outs_strs.append(self.EOS_TOK)
+        actual_to_joinable_ind.append(None)
+
+        assert len(outs_strs) == len(actual_to_joinable_ind)
+        metadata = StringTokensMetadata(
+            joinable_tokens, joinable_tokens_to_actual, actual_to_joinable_ind)
+        return outs_strs, metadata
 
 
 class SpaceTokenizer(StringTokenizer):
@@ -201,3 +330,10 @@ def tokenizer_from_save_dict(save_dict: dict):
     else:
         raise ValueError(f"Bad name {name}")
 
+
+def get_default_pieced_tokenizer_word_list() -> Tuple[StringTokenizerWithMods, List[str]]:
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(dir_path, "unix_vocab.txt")) as f:
+        vocab_str = f.read()
+    vocab = vocab_str.split("\n")
+    return ModifiedWordPieceTokenizer(vocab), vocab

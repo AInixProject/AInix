@@ -66,7 +66,7 @@ def test_ast_valid_thing(toy_context):
 
 def test_counter_vocab_serialize(string_vocab):
     save = string_vocab.get_save_state_dict()
-    new = CounterVocab.create_from_save_state_dict(save)
+    new = BasicVocab.create_from_save_state_dict(save)
     print(vars(string_vocab))
     print(vars(new))
     assert list(string_vocab.itos) == list(new.itos)
