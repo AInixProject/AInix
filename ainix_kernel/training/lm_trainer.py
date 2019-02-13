@@ -48,7 +48,7 @@ if __name__ == "__main__":
         ["../../builtin_types/otherdata/stackexchange/unix-stackexchange/sentences.txt"],
         tokenizer, vocab
     )
-    model = make_default_cookie_monster(vocab, hidden_size_base=4)
+    model = make_default_cookie_monster(vocab, hidden_size_base=64)
     batch_size = 32
     trainer = BertlikeTrainer(model, dataset, batch_size=batch_size)
-    trainer.train(int(1e4 / batch_size))
+    trainer.train(int(1e5 / batch_size))

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import torch
 from torch import nn
-from typing import Tuple, Type, Sequence, List
+from typing import Tuple, Type, Sequence, List, Union, Optional
 
 from ainix_kernel.model_util import vectorizers
 from ainix_kernel.model_util.vectorizers import VectorizerBase, vectorizer_from_save_dict
@@ -173,6 +173,9 @@ class RNNSeqEncoder(VectorSeqEncoder):
     Args:
         input_dims: Diminsionality of input vectors
         hidden_size: How many dims to use inside rnn cells
+        summary_size: How many dims for the summary of the whole sequence. This
+            is derived from the last val in the sequence. If None, then a summary is
+            not computed.
         rnn_cell: A type object of the rnn module to use (likely either nn.GRU or nn.LSTM)
         num_layers: Number of RNN layers to use
         input_dropout_p: A dropout over the inputs
@@ -183,7 +186,7 @@ class RNNSeqEncoder(VectorSeqEncoder):
         self,
         input_dims: int,
         hidden_size: int,
-        summary_size: int,
+        summary_size: Optional[int],
         memory_tokens_size: int,
         rnn_cell: Type = nn.GRU,
         num_layers: int = 1,
@@ -195,15 +198,21 @@ class RNNSeqEncoder(VectorSeqEncoder):
         super().__init__(input_dims)
         self.hidden_size = hidden_size
         self.input_dropout = nn.Dropout(p=input_dropout_p)
-        self.rnn = nn.GRU(input_dims, hidden_size, num_layers,
+        self.rnn = rnn_cell(input_dims, hidden_size, num_layers,
                             batch_first=True, dropout=dropout_p,
                             bidirectional=bidirectional)
         # Actual hidden size will be twice size since bidirectional
-        self.summary_linear = nn.Linear(hidden_size*2, summary_size)
+        self.perform_summary = summary_size is not None
+        if self.perform_summary:
+            self.summary_linear = nn.Linear(hidden_size*2, summary_size)
         self.memory_tokens_linear = nn.Linear(hidden_size*2, memory_tokens_size)
         self.variable_lengths = variable_lengths
 
-    def forward(self, seqs: torch.Tensor, input_lengths=None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        seqs: torch.Tensor,
+        input_lengths=None
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         seqs = self.input_dropout(seqs)
         # Pepare if have variable lens
         assert (input_lengths is None) == (not self.variable_lengths)
@@ -220,9 +229,12 @@ class RNNSeqEncoder(VectorSeqEncoder):
         else:
             last_val_of_each_in_batch = outputs[:, -1]
         # Prepare output
-        summaries = self.summary_linear(last_val_of_each_in_batch)
         memory_tokens = self.memory_tokens_linear(outputs)
-        return summaries, memory_tokens
+        if self.perform_summary:
+            summaries = self.summary_linear(last_val_of_each_in_batch)
+            return summaries, memory_tokens
+        else:
+            return memory_tokens
 
 
 def make_default_query_encoder(
