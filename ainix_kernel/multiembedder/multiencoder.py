@@ -30,6 +30,7 @@ class Multiembedder(MultiforwardTorchModule):
         combiner_activation_factory: Callable = lambda: LeakyReLU()
     ):
         super().__init__()
+        self.vocab_sizes = vocab_sizes
         self.num_categories = len(vocab_sizes)
         self.target_out_len = target_out_len
         assert 0 <= additive_portion <= 1

@@ -188,7 +188,7 @@ if __name__ == "__main__":
 
     model = get_default_encdec_model(index, standard_size=64)
 
-    #model = get_default_encdec_model(
+    #t model = get_default_encdec_model(
     #    index, standard_size=64, replacer=replacers, use_retrieval_decoder=True)
 
     #model = make_rulebased_seacr(index)
