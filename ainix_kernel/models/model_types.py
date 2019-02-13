@@ -256,8 +256,14 @@ class BertlikeLangModel(Model):
     This includes whether predicting two sentences are sequentially drawn from
     the same document as well as predicting several masked out tokens.
     """
+    def eval_run(
+        self,
+        batch: LMBatch
+    ):
+        raise NotImplemented()
+
     def train_batch(
         self,
         batch: LMBatch
     ):
-        pass
+        raise NotImplemented()

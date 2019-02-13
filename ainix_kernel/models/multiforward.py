@@ -25,9 +25,6 @@ Example:
     # instead of this: mod(foo, bar)
     # we can do this: mod.forward_train(foo, bar)
     # and still have the forward/backwards hooks called
-
-Copyright 2019 David Gros. Freely available under MIT license
-(https://opensource.org/licenses/MIT)
 """
 from typing import Callable
 import torch.nn

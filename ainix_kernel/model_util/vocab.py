@@ -91,6 +91,7 @@ class BasicVocab(Vocab):
         return self.stoi.get(token, self.unk_index)
 
     def extend(self, v: 'BasicVocab', sort=False):
+        raise NotImplemented()
         words = sorted(v.itos) if sort else v.itos
         for w in words:
             if w not in self.stoi:
@@ -111,7 +112,10 @@ class BasicVocab(Vocab):
         sequence: typing.Sequence[T],
         as_torch=True
     ):
-        indices = self.vectorized_stoi(sequence)
+        if len(sequence) == 0:
+            indices = np.array([])
+        else:
+            indices = self.vectorized_stoi(sequence)
         if as_torch:
             return torch.from_numpy(indices)
         return indices

@@ -1,13 +1,14 @@
 import torch
 from typing import Tuple, List, Iterable, MutableMapping
 
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 from ainix_common.parsing.model_specific import tokenizers, parse_constants
 from ainix_common.parsing.model_specific.tokenizers import StringTokenizerWithMods, \
-    ModifiedStringToken, StringTokensMetadata
+    ModifiedStringToken, StringTokensMetadata, CasingModifier, WhitespaceModifier
 from tqdm import tqdm
 import random
+import torch.nn.functional as F
 
 import attr
 
@@ -152,6 +153,9 @@ class LMExampleTorched:
         assert len(self.mask_inds.shape) == 1
         assert len(self.mask_inds) == len(self.mask_expected_case) == len(self.mask_expected_case)
 
+    def __len__(self):
+        return len(self.tokens)
+
 
 @attr.s(auto_attribs=True, frozen=True)
 class LMBatch:
@@ -159,9 +163,64 @@ class LMBatch:
     token_case_mod: torch.LongTensor
     token_whitespace_mod: torch.LongTensor
     is_sequential: torch.Tensor
-    mask_inds: torch.LongTensor  # The indices into tokens for masks tokens
-    mask_expected_ind: torch.LongTensor
-    mask_expected_case: torch.LongTensor
+    mask_inds: List[torch.LongTensor]  # The indices into tokens for masks tokens
+    mask_expected_ind: List[torch.LongTensor]
+    mask_expected_case: List[torch.LongTensor]
+
+    @classmethod
+    def from_example_list(cls, examples: List[LMExampleTorched], pad_ind: int) -> 'LMBatch':
+        targ_len_tokens = max(map(len, examples))
+
+        def pad_toks(t: torch.Tensor, val=pad_ind) -> torch.Tensor:
+            return F.pad(t, pad=(0, targ_len_tokens - len(t)), value=val)
+        return LMBatch(
+            tokens=torch.stack([pad_toks(e.tokens) for e in examples]),
+            token_case_mod=torch.stack(
+                [pad_toks(e.token_case_mod, CasingModifier.CASELESS) for e in examples]),
+            token_whitespace_mod=torch.stack(
+                [pad_toks(e.token_whitespace_mod, WhitespaceModifier.AFTER_SPACE_OR_SOS)
+                 for e in examples]),
+            is_sequential=torch.tensor([e.is_sequential for e in examples]),
+            mask_inds=[e.mask_inds for e in examples],
+            mask_expected_ind=[e.mask_expected_ind for e in examples],
+            mask_expected_case=[e.mask_expected_case for e in examples]
+        )
+
+
+class CookieMonsterBatchIterator:
+    def __init__(
+        self,
+        dataset: CookieMonsterDataset,
+        batch_size,
+        bucket_count=2,
+        max_num_batches=None
+    ):
+        # TODO (DNGros): figure out how to use data loader so can use fancy
+        # stuff like multiprocessing
+        #self.loader = iter(DataLoader(dataset, batch_size=batch_size, shuffle=True))
+        self.dataset = dataset
+        self.batch_size = batch_size
+        self.bucket_count = bucket_count
+        self.example_q = []
+        self.max_num_batches = max_num_batches
+        self.yielded_batches = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.max_num_batches and self.yielded_batches > self.max_num_batches:
+            raise StopIteration()
+        while len(self.example_q) < self.batch_size*self.bucket_count:
+            self.example_q.append(self.dataset.random_sample())
+        self.example_q.sort(key=lambda x: len(x), reverse=True)
+        start = random.randint(0, self.bucket_count - 1) * self.batch_size
+        end = start + self.batch_size
+        take_examples = self.example_q[start:end]
+        self.example_q = self.example_q[:start] + self.example_q[end:]
+        self.yielded_batches += 1
+        return LMBatch.from_example_list(
+            take_examples, self.dataset.vocab.token_to_index(parse_constants.PAD))
 
 
 if __name__ == "__main__":
@@ -172,4 +231,6 @@ if __name__ == "__main__":
     )
     print(len(dataset))
     print(dataset.random_sample())
+    for batch in CookieMonsterBatchIterator(dataset, batch_size=4, max_num_batches=2):
+        print(batch)
     human_test(dataset, 10)
