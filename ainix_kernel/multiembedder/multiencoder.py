@@ -34,7 +34,8 @@ class Multiembedder(MultiforwardTorchModule):
         self.target_out_len = target_out_len
         assert 0 <= additive_portion <= 1
         self.additive_portion = additive_portion
-        self.embedders = [nn.Embedding(v_size, target_out_len) for v_size in vocab_sizes]
+        self.embedders = nn.ModuleList(
+            [nn.Embedding(v_size, target_out_len) for v_size in vocab_sizes])
         eps = 0.00001
         assert -eps < int(additive_portion*target_out_len) - additive_portion*target_out_len < eps
         combine_part_size = int(target_out_len*(1-additive_portion))

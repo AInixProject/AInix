@@ -17,7 +17,8 @@ class CookieMonster(BertlikeLangModel):
     def __init__(
         self,
         base_embedder: Multiembedder,
-        hidden_size_base: int = 128
+        hidden_size_base: int = 128,
+        use_cuda: bool = False
     ):
         self.embedder = base_embedder
         self.conv1 = nn.Conv1d(hidden_size_base, hidden_size_base, 3)
@@ -30,6 +31,9 @@ class CookieMonster(BertlikeLangModel):
         self.torch_models = nn.ModuleList([
             self.embedder, self.conv1, self.next_sent_predictor, self.rnn2])
         self.optimizer: Optional[torch.optim.Optimizer] = None
+        if use_cuda:
+            self.torch_models.cuda()
+        self.use_cuda = use_cuda
 
     def eval_run(
         self,
@@ -78,9 +82,10 @@ class CookieMonster(BertlikeLangModel):
         prediction = prediction.squeeze(1)
         return prediction if not apply_sigmoid else torch.sigmoid(prediction)
 
-def make_default_cookie_monster(vocab: Vocab, hidden_size_base: int) -> BertlikeLangModel:
+def make_default_cookie_monster(
+        vocab: Vocab, hidden_size_base: int, use_cuda: bool) -> BertlikeLangModel:
     embedder = Multiembedder(
         (len(vocab), len(CasingModifier), len(WhitespaceModifier)),
         target_out_len=hidden_size_base
     )
-    return CookieMonster(embedder, hidden_size_base)
+    return CookieMonster(embedder, hidden_size_base, use_cuda)

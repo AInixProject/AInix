@@ -21,7 +21,8 @@ class CookieMonsterDataset(Dataset):
         corpuses: List[str],
         tokenizer: StringTokenizerWithMods,
         vocab: Vocab,
-        max_docs_to_load: int = 9e9
+        max_docs_to_load: int = 9e9,
+        use_cuda: bool = False
     ):
         assert len(corpuses) == 1, "Only one corpus currently supported"
         self.vocab = vocab
@@ -36,6 +37,8 @@ class CookieMonsterDataset(Dataset):
         self.max_docs_to_load = max_docs_to_load
         self.data = list(map(self._load_corpus, corpuses))
         self.num_senteces = sum(sum(len(d) - 1 for d in c) for c in self.data)
+        self.use_cuda = use_cuda
+        self.device = torch.device("cuda" if use_cuda else "cpu")
         print(f"avg sentence len {sum(self.sentence_lens) / len(self.sentence_lens)}")
 
     def _load_sentence(self, sentence_text: str) -> Tuple[int, str]:
@@ -105,13 +108,15 @@ class CookieMonsterDataset(Dataset):
         # TODO (DNGros): Repeatedly doing the tokenization is terribly inefficient
         # should just tokenize once and keep things in tokenized form
         tokens, metad = self.tokenizer.tokenize(masked_sent)
-        token_inds, case_inds, whitespace_inds = torchify_moded_tokens(tokens, self.vocab)
+        token_inds, case_inds, whitespace_inds = torchify_moded_tokens(
+            tokens, self.vocab, device=self.device)
         return LMExampleTorched(
-            tokens = token_inds,
+            tokens=token_inds,
             token_case_mod=case_inds,
             token_whitespace_mod=whitespace_inds,
             is_sequential=was_seq,
-            mask_inds=torch.LongTensor([ind for ind, real_token in restore_map]),
+            mask_inds=torch.tensor([ind for ind, real_token in restore_map],
+                                       device=self.device),
             mask_expected_ind=self.vocab.token_seq_to_indices(
                 [real_token.token_string for ind, real_token in restore_map]),
             mask_expected_case=[real_token.casing_modifier for ind, real_token in restore_map]
@@ -172,7 +177,12 @@ class LMBatch:
     mask_expected_case: List[torch.LongTensor]
 
     @classmethod
-    def from_example_list(cls, examples: List[LMExampleTorched], pad_ind: int) -> 'LMBatch':
+    def from_example_list(
+        cls,
+        examples: List[LMExampleTorched],
+        pad_ind: int,
+        device = torch.device("cpu")
+    ) -> 'LMBatch':
         targ_len_tokens = max(map(len, examples))
 
         def pad_toks(t: torch.Tensor, val=pad_ind) -> torch.Tensor:
@@ -184,11 +194,13 @@ class LMBatch:
             token_whitespace_mod=torch.stack(
                 [pad_toks(e.token_whitespace_mod, WhitespaceModifier.AFTER_SPACE_OR_SOS)
                  for e in examples]),
-            is_sequential=torch.tensor([e.is_sequential for e in examples]),
+            is_sequential=torch.tensor([e.is_sequential for e in examples],
+                                       device=device),
             mask_inds=[e.mask_inds for e in examples],
             mask_expected_ind=[e.mask_expected_ind for e in examples],
             mask_expected_case=[e.mask_expected_case for e in examples]
         )
+
 
 
 class CookieMonsterBatchIterator:
@@ -224,7 +236,9 @@ class CookieMonsterBatchIterator:
         self.example_q = self.example_q[:start] + self.example_q[end:]
         self.yielded_batches += 1
         return LMBatch.from_example_list(
-            take_examples, self.dataset.vocab.token_to_index(parse_constants.PAD))
+            take_examples, self.dataset.vocab.token_to_index(parse_constants.PAD),
+            device=self.dataset.device
+        )
 
 
 if __name__ == "__main__":

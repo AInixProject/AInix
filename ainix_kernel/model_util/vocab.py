@@ -65,12 +65,13 @@ class Vocab(Generic[T]):
 class BasicVocab(Vocab):
     """Provides an implementation of the Vocab interface which takes in a list
     of tokens and is backed by a np array."""
-    def __init__(self, itos: List[T]):
+    def __init__(self, itos: List[T], default_device: torch.device = torch.device("cpu")):
         try:
             self.unk_index = itos.index(parse_constants.UNK)
         except ValueError:
             self.unk_index = None
         self.itos = np.array(itos)
+        self.default_device = default_device
         self._finish_init()
 
 
@@ -117,7 +118,7 @@ class BasicVocab(Vocab):
         else:
             indices = self.vectorized_stoi(sequence)
         if as_torch:
-            return torch.from_numpy(indices)
+            return torch.from_numpy(indices).to(self.default_device)
         return indices
 
     def get_save_state_dict(self):
@@ -379,7 +380,8 @@ def are_indices_valid(
 
 def torchify_moded_tokens(
     tokens: List[ModifiedStringToken],
-    vocab: Vocab
+    vocab: Vocab,
+    device = torch.device("cpu")
 ) -> typing.Tuple[torch.LongTensor, torch.LongTensor, torch.LongTensor]:
     """
     Converts a list of modded tokens into torch from
@@ -393,8 +395,8 @@ def torchify_moded_tokens(
         whitespace_mod_inds: tensor of whitepsace mods
     """
     return (vocab.token_seq_to_indices([t.token_string for t in tokens]),
-            torch.LongTensor([t.casing_modifier.value for t in tokens]),
-            torch.LongTensor([t.whitespace_modifier.value for t in tokens]))
+            torch.tensor([t.casing_modifier.value for t in tokens], device=device),
+            torch.tensor([t.whitespace_modifier.value for t in tokens], device=device))
 
 
 
