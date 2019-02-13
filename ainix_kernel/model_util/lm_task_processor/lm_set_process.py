@@ -20,7 +20,8 @@ class CookieMonsterDataset(Dataset):
         self,
         corpuses: List[str],
         tokenizer: StringTokenizerWithMods,
-        vocab: Vocab
+        vocab: Vocab,
+        max_docs_to_load: int = 9e9
     ):
         assert len(corpuses) == 1, "Only one corpus currently supported"
         self.vocab = vocab
@@ -32,6 +33,7 @@ class CookieMonsterDataset(Dataset):
         self.data: List[List[List[Tuple[int, str]]]] = []
         self.tokenizer = tokenizer
         self.sentence_lens = []
+        self.max_docs_to_load = max_docs_to_load
         self.data = list(map(self._load_corpus, corpuses))
         self.num_senteces = sum(sum(len(d) - 1 for d in c) for c in self.data)
         print(f"avg sentence len {sum(self.sentence_lens) / len(self.sentence_lens)}")
@@ -48,7 +50,9 @@ class CookieMonsterDataset(Dataset):
 
     def _load_corpus_text(self, corpus_text: str) -> List[List[Tuple[int, str]]]:
         doc_split = corpus_text.split("\n\n")
-        return [self._load_doc(dt) for dt in tqdm(doc_split[:100], unit="documents")]
+        to_take = min(self.max_docs_to_load, len(doc_split))
+        return [self._load_doc(dt)
+                for dt in tqdm(doc_split[:to_take], unit="documents")]
 
     def _load_corpus(self, path_to_corpus: str) -> List[List[Tuple[int, str]]]:
         with open(path_to_corpus, "r") as corp_file:

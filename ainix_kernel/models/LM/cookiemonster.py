@@ -47,7 +47,6 @@ class CookieMonster(BertlikeLangModel):
     ) -> torch.Tensor:
         self.torch_models.zero_grad()
         lm_predictions, next_sent_pred = self._predict(batch, for_loss_input=True)
-        print("Sent predictions", next_sent_pred)
         next_sent_loss = self._get_next_sentence_pred_loss(next_sent_pred, batch.is_sequential)
         next_sent_loss.backward()
         self.optimizer.step()

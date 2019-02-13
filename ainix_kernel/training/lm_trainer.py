@@ -6,6 +6,7 @@ from ainix_kernel.model_util.lm_task_processor.lm_set_process import CookieMonst
 from ainix_kernel.model_util.vocab import BasicVocab
 from ainix_kernel.models.LM.cookiemonster import CookieMonster, make_default_cookie_monster
 from ainix_kernel.models.model_types import BertlikeLangModel
+from tqdm import tqdm
 
 class MovingAverage:
     def __init__(self, window: int):
@@ -33,8 +34,9 @@ class BertlikeTrainer:
         self.batch_iter = CookieMonsterBatchIterator(dataset, batch_size)
 
     def train(self, iterations: int):
+        self.model.start_train_session()
         self.loss_avg = MovingAverage(10)
-        for iteration in range(iterations):
+        for iteration in tqdm(range(iterations)):
             batch = next(self.batch_iter)
             loss = self.model.train_batch(batch)
             self.loss_avg.add(loss)
@@ -46,9 +48,9 @@ if __name__ == "__main__":
     vocab = BasicVocab(vocab_list + parse_constants.ALL_SPECIALS)
     dataset = CookieMonsterDataset(
         ["../../builtin_types/otherdata/stackexchange/unix-stackexchange/sentences.txt"],
-        tokenizer, vocab
+        tokenizer, vocab, max_docs_to_load=50
     )
     model = make_default_cookie_monster(vocab, hidden_size_base=64)
-    batch_size = 32
+    batch_size = 16
     trainer = BertlikeTrainer(model, dataset, batch_size=batch_size)
     trainer.train(int(1e5 / batch_size))
