@@ -40,7 +40,7 @@ class BertlikeTrainer:
 
     def train(self, iterations: int, intermitted_save_path="./checkpoints/chkp"):
         self.model.start_train_session()
-        window = 100
+        window = 50
         self.total_loss_avg = MovingAverage(window)
         self.next_sent_loss_avg = MovingAverage(window)
         self.lm_loss_avg = MovingAverage(window)
@@ -53,9 +53,10 @@ class BertlikeTrainer:
             if iteration % window == 0:
                 print(f"Iter {iteration} total loss {self.total_loss_avg.get()}. "
                       f"Next Sent {self.next_sent_loss_avg.get()}. LM {self.lm_loss_avg.get()}")
-            if iteration % (window*20) == 0 and intermitted_save_path:
+            if iteration > 0 and iteration % (window*20) == 0 and intermitted_save_path:
                 s_path = f"{intermitted_save_path}_iter{iteration}_total_" + \
-                         f"{total_loss}.pt"
+                         f"{total_loss}_ns{self.next_sent_loss_avg.get()}_" \
+                             f"lm{self.lm_loss_avg.get()}.pt"
                 print(f"serializing to {s_path}")
                 serialize_func(s_path, iteration*self.batch_iter.batch_size)
 
@@ -79,9 +80,10 @@ if __name__ == "__main__":
             "seen_instances": seen_instances
         }
         torch.save(ser, path)
-    batch_size = 128
+    batch_size = 96
     trainer = BertlikeTrainer(model, dataset, batch_size=batch_size,
                               serialize_callback=serialize_func)
-    iters = 1e7
+    iters = 1e6
+    print(f"Doing {iters} or about {len(dataset) / iters} epochs")
     trainer.train(int(iters / batch_size))
     serialize_func("saved_model.pt", iters)

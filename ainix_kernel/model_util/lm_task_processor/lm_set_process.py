@@ -48,11 +48,12 @@ class CookieMonsterDataset(Dataset):
         self.num_senteces = sum(sum(len(d) - 1 for d in c) for c in self.data)
         self.use_cuda = use_cuda
         self.device = torch.device("cuda" if use_cuda else "cpu")
-        print(f"avg sentence len {sum(self.sentence_lens) / len(self.sentence_lens)}")
+        #print(f"avg sentence len {sum(self.sentence_lens) / len(self.sentence_lens)}")
 
     def _load_sentence(self, sentence_text: str) -> Tuple[int, str]:
-        toks, metad = self.tokenizer.tokenize(sentence_text)
-        tok_len = len(toks)
+        #toks, metad = self.tokenizer.tokenize(sentence_text)
+        #tok_len = len(toks)
+        tok_len = None  # Don't actually use it, so quicker
         self.sentence_lens.append(tok_len)
         return tok_len, sentence_text
 
