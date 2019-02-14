@@ -260,6 +260,20 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
         return outs_strs, metadata
 
 
+def apply_case_mod(string: str, case_mod: CasingModifier):
+    if case_mod == CasingModifier.CASELESS:
+        assert string.lower() == string.upper()
+    elif case_mod == CasingModifier.ALL_UPPER:
+        return string.upper()
+    elif case_mod == CasingModifier.FIRST_UPPER:
+        return string[0].upper() + string[1:]
+    elif case_mod == CasingModifier.LOWER:
+        return string.lower()
+    else:
+        raise ValueError()
+
+
+
 class SpaceTokenizer(StringTokenizer):
     def tokenize(self, to_tokenize: str) -> Tuple[List[str], StringTokensMetadata]:
         tokens = to_tokenize.split()
