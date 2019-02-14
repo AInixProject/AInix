@@ -41,7 +41,7 @@ class BertlikeTrainer:
 
     def train(self, iterations: int, intermitted_save_path="./checkpoints/lmchkp"):
         self.model.start_train_session()
-        window = 200
+        window = 400
         self.total_loss_avg = MovingAverage(window)
         self.next_sent_loss_avg = MovingAverage(window)
         self.lm_loss_avg = MovingAverage(window)
@@ -56,7 +56,7 @@ class BertlikeTrainer:
                       f"Next Sent {self.next_sent_loss_avg.get()}. LM {self.lm_loss_avg.get()}")
             if iteration > 0 and iteration % (window*20) == 0 and intermitted_save_path:
                 s_path = f"{intermitted_save_path}_iter{iteration}_total_" + \
-                         f"{total_loss}_ns{self.next_sent_loss_avg.get()}_" \
+                         f"{self.total_loss_avg.get()}_ns{self.next_sent_loss_avg.get()}_" \
                              f"lm{self.lm_loss_avg.get()}.pt"
                 print(f"serializing to {s_path}")
                 serialize_func(s_path, iteration*self.batch_iter.batch_size)
