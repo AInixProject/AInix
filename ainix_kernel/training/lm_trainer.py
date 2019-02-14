@@ -40,7 +40,7 @@ class BertlikeTrainer:
 
     def train(self, iterations: int, intermitted_save_path="./checkpoints/chkp"):
         self.model.start_train_session()
-        window = 50
+        window = 100
         self.total_loss_avg = MovingAverage(window)
         self.next_sent_loss_avg = MovingAverage(window)
         self.lm_loss_avg = MovingAverage(window)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
                        default_device=torch.device("cuda" if use_cuda else "cpu"))
     dataset = CookieMonsterDataset(
         ["../../builtin_types/otherdata/stackexchange/unix-stackexchange/sentences.txt"],
-        tokenizer, vocab, max_docs_to_load=100, use_cuda=use_cuda
+        tokenizer, vocab, max_docs_to_load=9e9, use_cuda=use_cuda
     )
     model = make_default_cookie_monster(vocab, hidden_size_base=64, use_cuda=use_cuda)
 
@@ -79,8 +79,9 @@ if __name__ == "__main__":
             "seen_instances": seen_instances
         }
         torch.save(ser, path)
-    batch_size = 64
+    batch_size = 128
     trainer = BertlikeTrainer(model, dataset, batch_size=batch_size,
                               serialize_callback=serialize_func)
-    trainer.train(int(1e5 / batch_size))
-    serialize_func("saved_model.pt", 1e5)
+    iters = 1e7
+    trainer.train(int(iters / batch_size))
+    serialize_func("saved_model.pt", iters)

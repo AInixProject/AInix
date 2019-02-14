@@ -69,7 +69,7 @@ class CookieMonster(BertlikeLangModel):
         self.torch_models.zero_grad()
         lm_predictions, next_sent_pred = self._predict(batch, for_loss_input=True)
         next_sent_loss = self._get_next_sentence_pred_loss(next_sent_pred, batch.is_sequential)
-        mask_task_loss = self._get_mask_task_loss(lm_predictions, batch.mask_inds)
+        mask_task_loss = self._get_mask_task_loss(lm_predictions, batch.mask_expected_ind)
         total_loss = next_sent_loss + mask_task_loss
         total_loss.backward()
         self.optimizer.step()
