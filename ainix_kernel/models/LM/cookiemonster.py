@@ -36,6 +36,7 @@ class CookieMonster(BertlikeLangModel):
         self.embedder = base_embedder
         self.conv1 = Conv1dSame(hidden_size_base, hidden_size_base, 3, tokens_before_channels=True)
         self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base)
+        self.rnn3 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base)
         self.next_sent_predictor = nn.Sequential(
             nn.Linear(hidden_size_base, hidden_size_base // 2),
             nn.ReLU(),
@@ -46,7 +47,7 @@ class CookieMonster(BertlikeLangModel):
         #    hidden_size_base, self.embedder.vocab_sizes[0], [10, 100, 1000])
         self.torch_models = nn.ModuleList([
             self.embedder, self.conv1, self.next_sent_predictor, self.rnn2,
-            self.lm_head])
+            self.lm_head, self.rnn3])
         self.optimizer: Optional[torch.optim.Optimizer] = None
         if use_cuda:
             self.torch_models.cuda()
@@ -88,6 +89,7 @@ class CookieMonster(BertlikeLangModel):
         start_shape = x.shape
         x = self.conv1(x)
         x = self.rnn2(x)
+        x = self.rnn3(x)
         assert x.shape[0] == start_shape[0] and x.shape[1] == start_shape[1]
         return (
             self.lm_head(x, batch.mask_inds, not for_loss_input),
