@@ -58,3 +58,33 @@ def test_pack_picks1():
         val,
         torch.tensor([1,3,5,7,8])
     )
+
+
+def test_pack_picks2():
+    val = pack_picks(
+        [
+            torch.tensor([1, 2, 3]),
+            torch.tensor([4, 5]),
+            torch.tensor([6, 7, 8])
+        ],
+        [torch.tensor([0, 2]), torch.tensor([]), torch.tensor([1, 2])]
+    )
+    assert torch_epsilon_eq(
+        val,
+        torch.tensor([1,3, 7, 8])
+    )
+
+
+def test_pack_picks3():
+    val = pack_picks(
+        [
+            torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
+            torch.tensor([[3, 2, 1], [4, 3, 2]]),
+            torch.tensor([[1, 8, 3], [4, 9, 6], [7, 0, 9]])
+        ],
+        [torch.tensor([0,2]), torch.tensor([]), torch.tensor([1,2])]
+    )
+    assert torch_epsilon_eq(
+        val,
+        torch.tensor([[1, 2, 3], [7, 8, 9], [4, 9, 6], [7, 0, 9]])
+    )

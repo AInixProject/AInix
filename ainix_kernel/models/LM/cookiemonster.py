@@ -9,7 +9,7 @@ https://github.com/huggingface/pytorch-pretrained-BERT
 That was derived from stuff from Google AI and NVIDIA CORPORATION.
 Their code is avaiable under Apache 2.0 license on an "AS IS" BASIS
 """
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import torch
 from torch import nn
@@ -19,6 +19,7 @@ from torch.optim import Adam
 from ainix_common.parsing.model_specific.tokenizers import CasingModifier, WhitespaceModifier
 from ainix_kernel.model_util.lm_task_processor.lm_set_process import LMBatch
 from ainix_kernel.model_util.operations import pack_picks
+from ainix_kernel.model_util.usefulmodules import Conv1dSame
 from ainix_kernel.model_util.vocab import Vocab
 from ainix_kernel.models.EncoderDecoder.encoders import RNNSeqEncoder
 from ainix_kernel.models.model_types import BertlikeLangModel
@@ -33,7 +34,7 @@ class CookieMonster(BertlikeLangModel):
         use_cuda: bool = False
     ):
         self.embedder = base_embedder
-        self.conv1 = nn.Conv1d(hidden_size_base, hidden_size_base, 3)
+        self.conv1 = Conv1dSame(hidden_size_base, hidden_size_base, 3, tokens_before_channels=True)
         self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base)
         self.next_sent_predictor = nn.Sequential(
             nn.Linear(hidden_size_base, hidden_size_base // 2),
@@ -41,11 +42,11 @@ class CookieMonster(BertlikeLangModel):
             nn.Linear(hidden_size_base // 2, 1)
         )
         self.lm_head = CookieMonsterLMPredictionHead(self.embedder.embedders[0].weight)
-        self.adaptive_softmax = nn.AdaptiveLogSoftmaxWithLoss(
-            hidden_size_base, len(self.embedder.vocab_sizes[0]), [10, 100, 1000])
+        #self.adaptive_softmax = nn.AdaptiveLogSoftmaxWithLoss(
+        #    hidden_size_base, self.embedder.vocab_sizes[0], [10, 100, 1000])
         self.torch_models = nn.ModuleList([
             self.embedder, self.conv1, self.next_sent_predictor, self.rnn2,
-            self.adaptive_softmax])
+            self.lm_head])
         self.optimizer: Optional[torch.optim.Optimizer] = None
         if use_cuda:
             self.torch_models.cuda()
@@ -64,28 +65,30 @@ class CookieMonster(BertlikeLangModel):
     def train_batch(
         self,
         batch: LMBatch
-    ) -> torch.Tensor:
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         self.torch_models.zero_grad()
         lm_predictions, next_sent_pred = self._predict(batch, for_loss_input=True)
         next_sent_loss = self._get_next_sentence_pred_loss(next_sent_pred, batch.is_sequential)
         mask_task_loss = self._get_mask_task_loss(lm_predictions, batch.mask_inds)
-        next_sent_loss.backward()
+        total_loss = next_sent_loss + mask_task_loss
+        total_loss.backward()
         self.optimizer.step()
-        return next_sent_loss
+        return next_sent_loss, mask_task_loss, total_loss
 
     def _get_next_sentence_pred_loss(self, pred_no_sigmoid, expected) -> torch.Tensor:
         return F.binary_cross_entropy_with_logits(pred_no_sigmoid, expected.float())
 
     def _get_mask_task_loss(self, pred_vals, expected_tok_inds) -> torch.Tensor:
-        return F.cross_entropy(pred_vals)
+        flat_expected = torch.cat([v for v in expected_tok_inds if len(v) > 0])
+        return F.cross_entropy(pred_vals, flat_expected)
 
     def _predict(self, batch: LMBatch, for_loss_input = False):
         x = self.embedder.embed(
             torch.stack((batch.tokens, batch.token_case_mod, batch.token_whitespace_mod)))
-        x = x.transpose(1, 2)  # B x T x C -> B x C x T
+        start_shape = x.shape
         x = self.conv1(x)
-        x = x.transpose(1, 2)  # B x C x T -> B x T x C
         x = self.rnn2(x)
+        assert x.shape[0] == start_shape[0] and x.shape[1] == start_shape[1]
         return (
             self.lm_head(x, batch.mask_inds, not for_loss_input),
             self._predict_next_sentence(x, apply_sigmoid=not for_loss_input)
@@ -104,6 +107,9 @@ class CookieMonster(BertlikeLangModel):
         prediction = self.next_sent_predictor(flattened)
         prediction = prediction.squeeze(1)
         return prediction if not apply_sigmoid else torch.sigmoid(prediction)
+
+    def get_save_state_dict(self):
+        return self.torch_models.state_dict()
 
 
 class CookieMonsterLMPredictionHead(nn.Module):

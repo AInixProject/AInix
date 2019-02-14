@@ -46,7 +46,8 @@ def sparse_groupby_sum(
 def pack_picks(data, picks):
     """Flattens a iterable of tensors. For each selection, we take indicies from
     a corresponding part of another and packs it all together"""
-    return torch.cat([data_b[pick_b] for data_b, pick_b in zip(data, picks)])
+    return torch.cat([data_b[pick_b] if len(pick_b) > 0 else data_b.new()
+                      for data_b, pick_b in zip(data, picks)])
 
 
 class MultilabelKindaCategoricalCrossEntropy(torch.nn.Module):

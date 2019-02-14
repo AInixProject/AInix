@@ -142,7 +142,6 @@ class CookieMonsterDataset(Dataset):
     ]:
         (first_sent, second_sent), was_sequential = self._get_two_sentences()
         combined_sent = first_sent + f" {parse_constants.TASK_SPLITTER} " + second_sent
-        print(combined_sent)
         tokens, metad = self.tokenizer.tokenize(combined_sent)
         tokens, metad, restore_map = self._random_mask(tokens, metad)
         return tokens, metad, was_sequential, restore_map
@@ -162,7 +161,7 @@ class CookieMonsterDataset(Dataset):
     ) -> 'LMExampleTorched':
         token_inds, case_inds, whitespace_inds = torchify_moded_tokens(
             tokens, self.vocab, device=self.device)
-        return LMExampleTorched(
+        out = LMExampleTorched(
             tokens=token_inds,
             token_case_mod=case_inds,
             token_whitespace_mod=whitespace_inds,
@@ -173,6 +172,7 @@ class CookieMonsterDataset(Dataset):
                 [real_token.token_string for ind, real_token in restore_map]),
             mask_expected_case=[real_token.casing_modifier for ind, real_token in restore_map]
         )
+        return out
 
     def random_sample(self) -> 'LMExampleTorched':
         tokens, metad, was_seq, restore_map = self.random_sample_toks()
@@ -228,7 +228,7 @@ class LMBatch:
         def pad_toks(t: torch.Tensor, val=pad_ind) -> torch.Tensor:
             return F.pad(t, pad=(0, targ_len_tokens - len(t)), value=val)
 
-        return LMBatch(
+        out = LMBatch(
             tokens=torch.stack([pad_toks(e.tokens) for e in examples]),
             token_case_mod=torch.stack(
                 [pad_toks(e.token_case_mod, CasingModifier.CASELESS) for e in examples]),
@@ -241,6 +241,7 @@ class LMBatch:
             mask_expected_ind=[e.mask_expected_ind for e in examples],
             mask_expected_case=[e.mask_expected_case for e in examples]
         )
+        return out
 
 
 class CookieMonsterBatchIterator:
