@@ -101,12 +101,11 @@ class CookieMonster(BertlikeLangModel):
         return F.softmax(x) if apply_softmax else x
 
 
-def _pack_picks(data, picks):
-    return torch.cat([data_b[pick_b] for data_b, pick_b in zip(data, picks)])
-
-
 def make_default_cookie_monster(
-        vocab: Vocab, hidden_size_base: int, use_cuda: bool) -> BertlikeLangModel:
+    vocab: Vocab,
+    hidden_size_base: int,
+    use_cuda: bool
+) -> BertlikeLangModel:
     embedder = Multiembedder(
         (len(vocab), len(CasingModifier), len(WhitespaceModifier)),
         target_out_len=hidden_size_base

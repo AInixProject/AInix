@@ -43,6 +43,12 @@ def sparse_groupby_sum(
     return reduced_vals, group_keys
 
 
+def pack_picks(data, picks):
+    """Flattens a iterable of tensors. For each selection, we take indicies from
+    a corresponding part of another and packs it all together"""
+    return torch.cat([data_b[pick_b] for data_b, pick_b in zip(data, picks)])
+
+
 class MultilabelKindaCategoricalCrossEntropy(torch.nn.Module):
     """A somewhat funky loss function that sort of seems like a good idea.
     It is designed to accommodate when you have multiple correct labels
