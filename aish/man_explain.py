@@ -21,7 +21,7 @@ def print_man_page_explan(query: str, ref_text: str):
     print("man page explanation:")
     mak_text = get_text_from_mankier(query)
     highlight_stuff = "-" in ref_text
-    for line in mak_text.split("\n")[1:]:
+    for line in mak_text.split("\n")[1:-1]:
         striped = line.strip()
         if highlight_stuff and striped and striped[0] == "-" and len(striped) < WRAP_LEN:
             # hackily highlight args not in the query

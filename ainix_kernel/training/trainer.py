@@ -196,7 +196,7 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    epochs = 50
+    epochs = 30
     trainer.train(epochs, eval_every_n_epochs=5, intermitted_save_path="./checkpoints/chkp")
 
     print("Lets eval")
