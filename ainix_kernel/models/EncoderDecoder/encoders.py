@@ -103,7 +103,8 @@ class ModTokensEncoder(nn.Module, ABC):
         self,
         token_inds: torch.LongTensor,
         case_mod_inds: torch.LongTensor,
-        whitespace_mod_inds: torch.LongTensor
+        whitespace_mod_inds: torch.LongTensor,
+        input_lens: Optional[torch.LongTensor] = None
     ):
         raise NotImplemented()
 
@@ -257,21 +258,5 @@ class RNNSeqEncoder(VectorSeqEncoder):
             return memory_tokens
 
 
-def make_default_query_encoder(
-    x_tokenizer: tokenizers.Tokenizer,
-    query_vocab: Vocab,
-    output_size=64
-) -> QueryEncoder:
-    """Factory for making a default QueryEncoder"""
-    x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
-    internal_encoder = RNNSeqEncoder(
-        input_dims=x_vectorizer.feature_len(),
-        hidden_size=output_size,
-        summary_size=output_size,
-        memory_tokens_size=output_size,
-        num_layers=1,
-        variable_lengths=True
-    )
-    return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
 
 

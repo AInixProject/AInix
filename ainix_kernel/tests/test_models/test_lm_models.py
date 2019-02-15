@@ -2,6 +2,8 @@
 Generic testing for language modeling
 """
 import math
+import os
+import tempfile
 
 import torch
 from typing import List
@@ -31,7 +33,8 @@ def make_fake_lm_example(token_inds: List[int], is_seq: bool, device: torch.devi
 
 
 @pytest.mark.parametrize("use_cuda", (False, True))
-def test_basic_e2e(use_cuda):
+@pytest.mark.parametrize("try_serialize", (False, True))
+def test_basic_e2e(use_cuda, try_serialize):
     if use_cuda and not torch.cuda.is_available():
         pytest.skip("Cuda not available")
     vocab = BasicVocab(["a", "b", "c", "d", "e", "f", "g", "h", "i"] + parse_constants.ALL_SPECIALS)
@@ -48,13 +51,30 @@ def test_basic_e2e(use_cuda):
         make_fake_lm_example([6, 5, 3, split_ind, 1, 1], False, dvc),
     ]
     model.start_train_session()
-    for i in range(400):
+    for i in range(1000):
         ns_loss, lm_loss, total_loss = model.train_batch(
             LMBatch.from_example_list(examples, pad_ind, dvc))
         if ns_loss < math.log(1.25) and lm_loss < 0.0001 and total_loss < math.log(1.25):
             break
     else:
         pytest.fail("Did not converge in expected number of iterations")
+
+    if try_serialize:
+        save_state = model.get_save_state_dict()
+        _, f = tempfile.mkstemp()
+        try:
+            torch.save(save_state, f)
+            new_state = torch.load(f)
+            new_model = model.create_from_save_state_dict(new_state)
+            new_model.start_train_session()
+            if use_cuda:
+                new_model.cuda()
+            # TODO really should be eval
+            ns_loss, lm_loss, total_loss = new_model.train_batch(
+                LMBatch.from_example_list(examples, pad_ind, dvc))
+            assert ns_loss < math.log(1.25) and lm_loss < 0.0001 and total_loss < math.log(1.25)
+        finally:
+            os.remove(f)
 
 
 # TODO (DNGros): Add test for mask task

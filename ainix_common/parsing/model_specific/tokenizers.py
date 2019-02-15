@@ -4,7 +4,8 @@ to tokenize the input string. It is used in string parsers in order to enable
 producing AST's with copying."""
 import os
 from abc import ABC, abstractmethod
-from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional, Dict, MutableMapping
+from typing import Iterable, Generator, List, Tuple, Hashable, Union, Optional, Dict, \
+    MutableMapping, TypeVar
 
 import attr
 import pygtrie
@@ -165,7 +166,7 @@ class NonLetterTokenizer(StringTokenizer):
         return out_tokens, metadata
 
     def get_save_state_dict(self) -> Dict:
-        return {"tok_name": "NonLetterTokenizer"}
+        return {"name": "NonLetterTokenizer"}
 
 
 # TODO (DNGros): This should be unified with the tokenizer in generic_strings.
@@ -259,6 +260,9 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
             joinable_tokens, joinable_tokens_to_actual, actual_to_joinable_ind)
         return outs_strs, metadata
 
+    def get_save_state_dict(self):
+        return {"version": 0, "name": type(self).__name__, "vocab": self.vocab_list}
+
 
 def apply_case_mod(string: str, case_mod: CasingModifier):
     if case_mod == CasingModifier.CASELESS:
@@ -322,7 +326,10 @@ class AstValTokenizer(Tokenizer):
         return out_tokens, out_nodes
 
 
-def add_str_pads(token_seqs: List[List[str]], pad_with=parse_constants.PAD):
+T = TypeVar('T')
+
+
+def add_pad_arbitrary(token_seqs: List[List[T]], pad_with: T) -> Tuple[List[List[T]], List[int]]:
     """Add padding tokens to an collection of tokenized values so all the same len
 
     Returns:
@@ -337,10 +344,29 @@ def add_str_pads(token_seqs: List[List[str]], pad_with=parse_constants.PAD):
     return padded_seqs, lengths
 
 
+def add_str_pads(token_seqs: List[List[str]], pad_with=parse_constants.PAD):
+    return add_str_pads(token_seqs, pad_with)
+
+
+def add_pads_to_mod_tokens(
+    token_seqs: List[List[ModifiedStringToken]]
+):
+    return add_pad_arbitrary(
+        token_seqs,
+        ModifiedStringToken(
+            parse_constants.PAD,
+            CasingModifier.CASELESS,
+            WhitespaceModifier.AFTER_SPACE_OR_SOS
+        )
+    )
+
+
 def tokenizer_from_save_dict(save_dict: dict):
-    name = save_dict['tok_name']
+    name = save_dict['name']
     if name == "NonLetterTokenizer":
         return NonLetterTokenizer()
+    if name == ModifiedWordPieceTokenizer.__name__:
+        return ModifiedWordPieceTokenizer(save_dict['vocab'])
     else:
         raise ValueError(f"Bad name {name}")
 

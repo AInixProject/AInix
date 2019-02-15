@@ -212,6 +212,7 @@ class LMBatch:
     tokens: torch.LongTensor
     token_case_mod: torch.LongTensor
     token_whitespace_mod: torch.LongTensor
+    original_token_counts: torch.LongTensor  # originoal length before padding each of batch
     is_sequential: torch.Tensor
     mask_inds: List[torch.LongTensor]  # The indices into tokens for masks tokens
     mask_expected_ind: List[torch.LongTensor]
@@ -219,12 +220,13 @@ class LMBatch:
 
     @classmethod
     def from_example_list(
-            cls,
-            examples: List[LMExampleTorched],
-            pad_ind: int,
-            device=torch.device("cpu")
+        cls,
+        examples: List[LMExampleTorched],
+        pad_ind: int,
+        device=torch.device("cpu")
     ) -> 'LMBatch':
-        targ_len_tokens = max(map(len, examples))
+        lens = list(map(len, examples))
+        targ_len_tokens = max(lens)
 
         def pad_toks(t: torch.Tensor, val=pad_ind) -> torch.Tensor:
             return F.pad(t, pad=(0, targ_len_tokens - len(t)), value=val)
@@ -236,6 +238,7 @@ class LMBatch:
             token_whitespace_mod=torch.stack(
                 [pad_toks(e.token_whitespace_mod, WhitespaceModifier.AFTER_SPACE_OR_SOS)
                  for e in examples]),
+            original_token_counts=torch.tensor(lens, device=device),
             is_sequential=torch.tensor([e.is_sequential for e in examples],
                                        device=device),
             mask_inds=[e.mask_inds for e in examples],

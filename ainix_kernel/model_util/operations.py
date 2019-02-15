@@ -66,6 +66,19 @@ class MultilabelKindaCategoricalCrossEntropy(torch.nn.Module):
     pass  # not implemented
 
 
+def avg_pool(data):
+    """
+
+    Args:
+        data: of dim (batch, seq_len, hidden_size)
+
+    Returns:
+        Tensor (batch, hidden_size)
+
+    """
+    return torch.sum(data, dim=1) / float(data.shape[1])
+
+
 #class BackwardsMask(torch.autograd.Function):
 #    """An identity function, but lets only certain functions be non-zero"""
 #    @staticmethod

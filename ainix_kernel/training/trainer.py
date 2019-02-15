@@ -108,6 +108,8 @@ class TypeTranslateCFTrainer:
             except ModelSafePredictError as e:
                 prediction = None
                 parse_exception = e
+            print("predict", prediction, "expect", y_ast_set, "ytext", y_texts,
+                  "replx", replaced_x_query)
             eval = AstEvaluation(prediction, y_ast_set, y_texts, replaced_x_query,
                                  parse_exception, self.unparser)
             logger.add_evaluation(eval)

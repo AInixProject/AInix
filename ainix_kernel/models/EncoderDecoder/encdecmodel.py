@@ -8,10 +8,14 @@ from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.model_util import vocab, vectorizers
 from ainix_common.parsing.model_specific import tokenizers
-from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer, AstValTokenizer
+from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer, AstValTokenizer, \
+    ModifiedWordPieceTokenizer, get_default_pieced_tokenizer_word_list
+from ainix_kernel.model_util.vocab import Vocab
 from ainix_kernel.models.EncoderDecoder import encoders, decoders
 from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder, TreeRNNDecoder
 from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder, StringQueryEncoder
+from ainix_kernel.models.LM.cookiemonster import make_default_cookie_monster_base, \
+    PretrainPoweredQueryEncoder
 from ainix_kernel.models.model_types import StringTypeTranslateCF, TypeTranslatePredictMetadata
 from ainix_kernel.training.augmenting.replacers import Replacer, get_all_replacers
 from ainix_kernel.training.model_specific_training import update_latent_store_from_examples
@@ -129,7 +133,10 @@ class EncDecModel(StringTypeTranslateCF):
         new_example_store: ExamplesStore,
     ) -> 'EncDecModel':
         # TODO (DNGros): acutally handle the new type context.
-        query_encoder = StringQueryEncoder.create_from_save_state_dict(state_dict['query_encoder'])
+
+        # TODO check the name of the query encoder
+        query_encoder = PretrainPoweredQueryEncoder.create_from_save_state_dict(
+            state_dict['query_encoder'])
         parser = StringParser(new_type_context)
         unparser = AstUnparser(new_type_context, query_encoder.get_tokenizer())
         replacers = get_all_replacers()
@@ -157,7 +164,21 @@ class EncDecModel(StringTypeTranslateCF):
 # Factory methods for different versions
 def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenizer]:
     """Returns tuple (default x tokenizer, default y tokenizer)"""
-    return NonLetterTokenizer(), AstValTokenizer()
+    word_piece_tok, _ = get_default_pieced_tokenizer_word_list()
+    return word_piece_tok, AstValTokenizer()
+
+
+def make_default_query_encoder(
+    x_tokenizer: tokenizers.Tokenizer,
+    query_vocab: Vocab,
+    output_size=64
+) -> QueryEncoder:
+    """Factory for making a default QueryEncoder"""
+    base_enc = make_default_cookie_monster_base(
+        query_vocab, output_size)
+    return PretrainPoweredQueryEncoder(
+        x_tokenizer, query_vocab, base_enc, output_size
+    )
 
 
 def get_default_encdec_model(
@@ -170,7 +191,7 @@ def get_default_encdec_model(
     x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer)
     hidden_size = standard_size
     tc = examples.type_context
-    encoder = encoders.make_default_query_encoder(x_tokenizer, x_vocab, hidden_size)
+    encoder = make_default_query_encoder(x_tokenizer, x_vocab, hidden_size)
     if not use_retrieval_decoder:
         decoder = decoders.get_default_nonretrieval_decoder(tc, hidden_size)
     else:
