@@ -21,33 +21,24 @@ from ainix_kernel.model_util.lm_task_processor.lm_set_process import LMBatch
 from ainix_kernel.model_util.operations import pack_picks
 from ainix_kernel.model_util.usefulmodules import Conv1dSame
 from ainix_kernel.model_util.vocab import Vocab
-from ainix_kernel.models.EncoderDecoder.encoders import RNNSeqEncoder
+from ainix_kernel.models.EncoderDecoder.encoders import RNNSeqEncoder, ModTokensEncoder
 from ainix_kernel.models.model_types import BertlikeLangModel
 from ainix_kernel.multiembedder.multiencoder import Multiembedder
 
 
-class CookieMonster(BertlikeLangModel):
+class CookieMonsterForPretraining(BertlikeLangModel):
     def __init__(
         self,
-        base_embedder: Multiembedder,
-        hidden_size_base: int = 128,
+        base_encoder: 'ModTokensEncoder',
         use_cuda: bool = False
     ):
-        self.embedder = base_embedder
-        self.conv1 = Conv1dSame(hidden_size_base, hidden_size_base, 3, tokens_before_channels=True)
-        self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base)
-        self.rnn3 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base)
-        self.next_sent_predictor = nn.Sequential(
-            nn.Linear(hidden_size_base, hidden_size_base // 2),
-            nn.ReLU(),
-            nn.Linear(hidden_size_base // 2, 1)
-        )
-        self.lm_head = CookieMonsterLMPredictionHead(self.embedder.embedders[0].weight)
+        self.base_encoder = base_encoder
+        self.lm_head = CookieMonsterLMPredictionHead(base_encoder.get_tokens_input_weights())
+        self.next_sent_head = NextSentenceCookieMonsterHead(
+            self.base_encoder.output_size)
         #self.adaptive_softmax = nn.AdaptiveLogSoftmaxWithLoss(
         #    hidden_size_base, self.embedder.vocab_sizes[0], [10, 100, 1000])
-        self.torch_models = nn.ModuleList([
-            self.embedder, self.conv1, self.next_sent_predictor, self.rnn2,
-            self.lm_head, self.rnn3])
+        self.torch_models = nn.ModuleList([self.base_encoder, self.lm_head, self.next_sent_head])
         self.optimizer: Optional[torch.optim.Optimizer] = None
         if use_cuda:
             self.torch_models.cuda()
@@ -57,15 +48,15 @@ class CookieMonster(BertlikeLangModel):
         self,
         batch: LMBatch,
     ):
-        pass
+        raise NotImplemented()
 
     def start_train_session(self):
         self.optimizer = Adam(self.torch_models.parameters())
         self.torch_models.train()
 
     def train_batch(
-        self,
-        batch: LMBatch
+            self,
+            batch: LMBatch
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         self.torch_models.zero_grad()
         lm_predictions, next_sent_pred = self._predict(batch, for_loss_input=True)
@@ -80,38 +71,60 @@ class CookieMonster(BertlikeLangModel):
         return F.binary_cross_entropy_with_logits(pred_no_sigmoid, expected.float())
 
     def _get_mask_task_loss(self, pred_vals, expected_tok_inds) -> torch.Tensor:
+        if len(pred_vals) == 0:
+            return torch.tensor(0.0)
         flat_expected = torch.cat([v for v in expected_tok_inds if len(v) > 0])
         return F.cross_entropy(pred_vals, flat_expected)
 
-    def _predict(self, batch: LMBatch, for_loss_input = False):
+    def _predict(self, batch: LMBatch, for_loss_input: bool = False):
+        x = self.base_encoder(batch.tokens, batch.token_case_mod, batch.token_whitespace_mod)
+        return (
+            self.lm_head(x, batch.mask_inds, not for_loss_input),
+            self.next_sent_head(x, apply_sigmoid=not for_loss_input)
+        )
+
+    def get_save_state_dict(self):
+        return self.torch_models.state_dict()
+
+
+class CookieMonsterBaseEncoder(ModTokensEncoder):
+    def __init__(
+        self,
+        base_embedder: Multiembedder,
+        hidden_size_base: int = 128
+    ):
+        super().__init__()
+        self.hidden_size_base = hidden_size_base
+        self.embedder = base_embedder
+        self.conv1 = Conv1dSame(hidden_size_base, hidden_size_base, 3, tokens_before_channels=True)
+        self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base)
+        self.rnn3 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base)
+        self.torch_models = nn.ModuleList([
+            self.embedder, self.conv1, self.rnn2, self.rnn3])
+
+    def forward(
+        self,
+        token_inds: torch.LongTensor,
+        case_mod_inds: torch.LongTensor,
+        whitespace_mod_inds: torch.LongTensor
+    ):
         x = self.embedder.embed(
-            torch.stack((batch.tokens, batch.token_case_mod, batch.token_whitespace_mod)))
+            torch.stack((token_inds, case_mod_inds, whitespace_mod_inds)))
         start_shape = x.shape
         x = self.conv1(x)
         x = self.rnn2(x)
         x = self.rnn3(x)
         assert x.shape[0] == start_shape[0] and x.shape[1] == start_shape[1]
-        return (
-            self.lm_head(x, batch.mask_inds, not for_loss_input),
-            self._predict_next_sentence(x, apply_sigmoid=not for_loss_input)
-        )
+        return x
 
-    def _predict_next_sentence(self, data: torch.Tensor, apply_sigmoid = True):
-        """
+    @property
+    def output_size(self) -> int:
+        return self.hidden_size_base
 
-        Args:
-            data: of dim (batch, seq_len, hidden_size)
-
-        Returns:
-
-        """
-        flattened = torch.sum(data, dim=1) / float(data.shape[1])
-        prediction = self.next_sent_predictor(flattened)
-        prediction = prediction.squeeze(1)
-        return prediction if not apply_sigmoid else torch.sigmoid(prediction)
-
-    def get_save_state_dict(self):
-        return self.torch_models.state_dict()
+    def get_tokens_input_weights(self) -> torch.Tensor:
+        """For the BERT task the prediction of the tokens shares the weights with
+        base embedding. Get this weight"""
+        return self.embedder.embedders[0].weight
 
 
 class CookieMonsterLMPredictionHead(nn.Module):
@@ -135,9 +148,39 @@ class CookieMonsterLMPredictionHead(nn.Module):
     ):
         #hidden_states = self.transform(hidden_states)
         hidden_states = pack_picks(hidden_states, mask_inds)
+        if len(hidden_states) == 0:
+            return hidden_states
         hidden_states = self.decoder(hidden_states) + self.bias
 
         return hidden_states
+
+
+class NextSentenceCookieMonsterHead(nn.Module):
+    """Given some hidden states, predicts whether two sentece are seqentual"""
+    def __init__(self, input_size):
+        super().__init__()
+        self.pooled_feed_forward = nn.Sequential(
+            nn.Linear(input_size, input_size // 2),
+            nn.ReLU(),
+            nn.Linear(input_size // 2, 1)
+        )
+
+    def forward(self, data: torch.Tensor, apply_sigmoid = True):
+        """
+
+        Args:
+            data: of dim (batch, seq_len, hidden_size)
+
+        Returns:
+            Tensor of dim (batch, ) predicting whether sequential. If
+            apply_sigmoid is true, then this 0 to 1. Otherwise is a logit.
+        """
+        pooled = torch.sum(data, dim=1) / float(data.shape[1])
+        pooled = self.pooled_feed_forward(pooled)
+        pooled = pooled.squeeze(1)
+        return pooled if not apply_sigmoid else torch.sigmoid(pooled)
+
+
 
 
 def make_default_cookie_monster(
@@ -149,4 +192,5 @@ def make_default_cookie_monster(
         (len(vocab), len(CasingModifier), len(WhitespaceModifier)),
         target_out_len=hidden_size_base
     )
-    return CookieMonster(embedder, hidden_size_base, use_cuda)
+    encoder = CookieMonsterBaseEncoder(embedder, hidden_size_base)
+    return CookieMonsterForPretraining(encoder, use_cuda)

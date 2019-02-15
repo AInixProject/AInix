@@ -13,7 +13,7 @@ import numpy as np
 
 class QueryEncoder(nn.Module, ABC):
     @abstractmethod
-    def forward(self, queries: Sequence[Sequence[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, queries: Sequence[str]) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Args:
             queries: An iterable representing a batch of query strings to encode
@@ -57,7 +57,7 @@ class StringQueryEncoder(QueryEncoder):
         self.query_vectorizer = query_vectorizer
         self.internal_encoder = internal_encoder
         
-    def _vectorize_query(self, queries: Sequence[Sequence[str]]):
+    def _vectorize_query(self, queries: Sequence[str]):
         """Converts a batch of string queries into dense vectors"""
         tokenized = self.tokenizer.tokenize_batch(queries, take_only_tokens=True)
         tokenized, input_lens = tokenizers.add_str_pads(tokenized)
@@ -96,6 +96,26 @@ class StringQueryEncoder(QueryEncoder):
             query_vectorizer=vectorizer_from_save_dict(state_dict['query_vectorizer']),
             internal_encoder=state_dict['internal_encoder']
         )
+
+
+class ModTokensEncoder(nn.Module, ABC):
+    def forward(
+        self,
+        token_inds: torch.LongTensor,
+        case_mod_inds: torch.LongTensor,
+        whitespace_mod_inds: torch.LongTensor
+    ):
+        raise NotImplemented()
+
+    @property
+    @abstractmethod
+    def output_size(self) -> int:
+        raise NotImplemented()
+
+    def get_tokens_input_weights(self) -> torch.Tensor:
+        """For the BERT task the prediction of the tokens shares the weights with
+        base embedding. Get this weight"""
+        raise NotImplemented
 
 
 class VectorSeqEncoder(nn.Module, ABC):

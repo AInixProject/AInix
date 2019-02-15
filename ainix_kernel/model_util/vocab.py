@@ -378,6 +378,7 @@ def are_indices_valid(
         return torch.from_numpy(valid_func(indices.numpy()))
 
 
+
 def torchify_moded_tokens(
     tokens: List[ModifiedStringToken],
     vocab: Vocab,
