@@ -54,7 +54,7 @@ def make_model(model_name, example_store):
     elif model_name == "SeaCR-OracleCompare":
         return seacr.make_default_seacr_with_oracle_comparer(example_store)
     elif model_name == "EncDec":
-        return encdecmodel.get_default_encdec_model(example_store, standard_size=32)
+        return encdecmodel.get_default_encdec_model(example_store, standard_size=8)
     elif model_name == "EncDecRetrieval":
         return encdecmodel.get_default_encdec_model(
             example_store, replacer=None, use_retrieval_decoder=True)
@@ -186,19 +186,20 @@ def test_basic_classify(model_name, basic_classify_tc):
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
                              "FooBarBazType", ALL_TRAIN_SPLIT)
     adder.add_examples(
-        x_strings=["woof", "bow wo", "bark"],
+        x_strings=["a", "b", "c"],
         y_strings=["foo"]
     )
     adder.add_examples(
-        x_strings=["meow", "prrr"],
+        x_strings=["d", "e"],
         y_strings=["bar"],
     )
     adder.add_examples(
-        x_strings=["moo", "im a cow"],
+        x_strings=["f", "g"],
         y_strings=["baz"],
     )
     model = make_model(model_name, example_store)
-    do_train(model, example_store, epochs=200)
+    do_train(model, example_store, epochs=1000)
+    print("---Done Train")
     assert_train_acc(model, example_store)
 
 

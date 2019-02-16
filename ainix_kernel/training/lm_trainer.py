@@ -6,7 +6,7 @@ from ainix_common.parsing.model_specific import tokenizers, parse_constants
 from ainix_kernel.model_util.lm_task_processor.lm_set_process import CookieMonsterDataset, \
     CookieMonsterBatchIterator
 from ainix_kernel.model_util.vocab import BasicVocab
-from ainix_kernel.models.LM.cookiemonster import CookieMonster, make_default_cookie_monster
+from ainix_kernel.models.LM.cookiemonster import make_default_cookie_monster
 from ainix_kernel.models.model_types import BertlikeLangModel
 from tqdm import tqdm
 

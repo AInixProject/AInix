@@ -2,6 +2,7 @@
 from typing import Tuple
 
 import torch
+from torch import nn
 
 
 def manual_bincount(groups: torch.Tensor, weights: torch.Tensor = None):
@@ -77,6 +78,33 @@ def avg_pool(data):
 
     """
     return torch.sum(data, dim=1) / float(data.shape[1])
+
+
+def fastgelu(x):
+    """
+    The approximate version from https://github.com/hendrycks/GELUs
+    """
+    return torch.sigmoid(1.702 * x) * x
+
+
+def gelu(x):
+    """
+    GELU activation from https://github.com/hendrycks/GELUs
+    """
+    return 0.5 * x * (1 + torch.tanh(x * 0.7978845608 * (1 + 0.044715 * x * x)))
+
+
+class GELUActivation(nn.Module):
+    def __init__(self, use_aprox: bool = True):
+        super().__init__()
+        self.use_aprox = use_aprox
+
+    def forward(self, x):
+        if self.use_aprox:
+            return fastgelu(x)
+        else:
+            return gelu(x)
+
 
 
 #class BackwardsMask(torch.autograd.Function):

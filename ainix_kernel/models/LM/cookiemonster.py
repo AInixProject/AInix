@@ -21,7 +21,7 @@ from ainix_common.parsing.model_specific import tokenizers
 from ainix_common.parsing.model_specific.tokenizers import CasingModifier, WhitespaceModifier, \
     ModifiedWordPieceTokenizer
 from ainix_kernel.model_util.lm_task_processor.lm_set_process import LMBatch
-from ainix_kernel.model_util.operations import pack_picks, avg_pool
+from ainix_kernel.model_util.operations import pack_picks, avg_pool, GELUActivation
 from ainix_kernel.model_util.usefulmodules import Conv1dSame
 from ainix_kernel.model_util.vocab import Vocab, torchify_moded_tokens, BasicVocab, \
     torchify_batch_modded_tokens
@@ -67,10 +67,10 @@ class CookieMonsterForPretraining(BertlikeLangModel):
         self.all_torch_models.train()
 
     def train_batch(
-            self,
-            batch: LMBatch
+        self,
+        batch: LMBatch
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        self.all_torch_models.zero_grad()
+        self.optimizer.zero_grad()
         lm_predictions, next_sent_pred = self._predict(batch, for_loss_input=True)
         next_sent_loss = self._get_next_sentence_pred_loss(next_sent_pred, batch.is_sequential)
         mask_task_loss = self._get_mask_task_loss(lm_predictions, batch.mask_expected_ind)
@@ -126,12 +126,12 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
         self.hidden_size_base = hidden_size_base
         self.embedder = base_embedder
         self.conv1 = Conv1dSame(hidden_size_base, hidden_size_base, 3, tokens_before_channels=True)
-        self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
-                                  variable_lengths=True)
-        self.rnn3 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
-                                  variable_lengths=True)
+        #self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
+        #                          variable_lengths=True, num_layers=2)
+        #self.rnn3 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
+        #                          variable_lengths=True)
         self.torch_models = nn.ModuleList([
-            self.embedder, self.conv1, self.rnn2, self.rnn3])
+            self.embedder, self.conv1])#, self.rnn2])
 
     def forward(
         self,
@@ -144,8 +144,8 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
             torch.stack((token_inds, case_mod_inds, whitespace_mod_inds)))
         start_shape = x.shape
         x = self.conv1(x)
-        x = self.rnn2(x, input_lens)
-        x = self.rnn3(x, input_lens)
+        #x = self.rnn2(x, input_lens)
+        #x = self.rnn3(x, input_lens)
         assert x.shape[0] == start_shape[0] and x.shape[1] == start_shape[1]
         return x
 
@@ -193,7 +193,7 @@ class NextSentenceCookieMonsterHead(nn.Module):
         super().__init__()
         self.pooled_feed_forward = nn.Sequential(
             nn.Linear(input_size, input_size // 2),
-            nn.ReLU(),
+            GELUActivation(),
             nn.Linear(input_size // 2, 1)
         )
 
