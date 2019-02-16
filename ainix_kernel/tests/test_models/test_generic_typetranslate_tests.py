@@ -356,8 +356,8 @@ def test_string_gen(model_name, basic_string_tc):
         #assert_val_acc(model, example_store, expect_fail=True)
         pass
     # Do training and expect it to work
-    do_train(model, example_store, epochs=35, batch_size=1)
-    assert_train_acc(model, example_store, required_accuracy=0.85)
+    do_train(model, example_store, epochs=30, batch_size=1)
+    assert_train_acc(model, example_store, required_accuracy=0.8)
     assert_val_acc(model, example_store, required_accuracy=0.7)
 
 
@@ -395,9 +395,9 @@ def test_copy(model_name, basic_string_tc):
         # Don't expect it to work before training.
         assert_val_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
-    do_train(model, example_store, epochs=40, batch_size=1)
+    do_train(model, example_store, epochs=50, batch_size=1)
     assert_train_acc(model, example_store, required_accuracy=0.85)
-    assert_val_acc(model, example_store, required_accuracy=0.8)
+    assert_val_acc(model, example_store, required_accuracy=0.75)
     print("PASS NON-SERIALIZED")
-    check_survives_serialization(model, example_store, basic_string_tc, acc=0.8)
+    check_survives_serialization(model, example_store, basic_string_tc, acc=0.75)
 
