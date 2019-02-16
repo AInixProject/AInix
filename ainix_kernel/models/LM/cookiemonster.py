@@ -93,7 +93,7 @@ class CookieMonsterForPretraining(BertlikeLangModel):
                               batch.original_token_counts)
         return (
             self.lm_head(x, batch.mask_inds, not for_loss_input),
-            self.next_sent_head(x, apply_sigmoid=not for_loss_input)
+            self.next_sent_head(x, batch.original_token_counts, apply_sigmoid=not for_loss_input)
         )
 
     def get_save_state_dict(self):
@@ -195,7 +195,7 @@ class NextSentenceCookieMonsterHead(nn.Module):
             nn.Linear(input_size // 2, 1)
         )
 
-    def forward(self, data: torch.Tensor, apply_sigmoid = True):
+    def forward(self, data: torch.Tensor, input_lens, apply_sigmoid = True):
         """
 
         Args:
@@ -205,7 +205,7 @@ class NextSentenceCookieMonsterHead(nn.Module):
             Tensor of dim (batch, ) predicting whether sequential. If
             apply_sigmoid is true, then this 0 to 1. Otherwise is a logit.
         """
-        pooled = avg_pool(data)
+        pooled = avg_pool(data, input_lens)
         pooled = self.pooled_feed_forward(pooled)
         pooled = pooled.squeeze(1)
         return pooled if not apply_sigmoid else torch.sigmoid(pooled)
@@ -244,11 +244,11 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
 
     def forward(self, queries: Sequence[str]) -> Tuple[torch.Tensor, torch.Tensor]:
         vectorized, tokenized, input_lens = self._vectorize_query(queries)
-        return self._sumarize(vectorized), vectorized
+        return self._sumarize(vectorized, input_lens), vectorized
 
-    def _sumarize(self, hidden):
+    def _sumarize(self, hidden, input_lens):
         hidden = self.pre_summary(hidden)
-        hidden = avg_pool(hidden)
+        hidden = avg_pool(hidden, input_lens)
         hidden = self.post_summary_linear(hidden)
         return hidden
 

@@ -5,15 +5,24 @@ import more_itertools
 import random
 import math
 
-def torch_epsilon_eq(a, b, epsilon=1e-12):
+def torch_epsilon_eq(val, expected, epsilon=1e-12, print_error=True):
     """Test if two tensors are equal within some epsilon"""
-    if isinstance(a, torch.LongTensor):
+    if isinstance(val, torch.LongTensor):
         epsilon = math.ceil(epsilon)
-    if isinstance(a, list):
-        a = torch.Tensor(a)
-    if isinstance(b, list):
-        b = torch.Tensor(b) if not isinstance(a, torch.LongTensor) else torch.LongTensor(b)
-    return torch.all(torch.lt(torch.abs(torch.add(a, -b)), epsilon))
+    if isinstance(val, list):
+        val = torch.Tensor(val)
+    if isinstance(expected, list):
+        expected = torch.Tensor(expected) \
+            if not isinstance(val, torch.LongTensor) else torch.LongTensor(expected)
+    difs = torch.abs(torch.add(val, -expected))
+    eqs = torch.lt(difs, epsilon)
+    if torch.all(eqs):
+        return True
+    if print_error:
+        print("Epsilon equals failure.")
+        print(f"Expected:\n {expected}")
+        print(f"Got:\n {val}")
+    return False
 
 
 def eps_eq_at(epsilon):

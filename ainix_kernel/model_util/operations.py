@@ -1,5 +1,6 @@
 """Useful operations on torch tensors which are not in the Pytorch lib"""
-from typing import Tuple
+import datetime
+from typing import Tuple, Optional
 
 import torch
 from torch import nn
@@ -67,17 +68,28 @@ class MultilabelKindaCategoricalCrossEntropy(torch.nn.Module):
     pass  # not implemented
 
 
-def avg_pool(data):
+def avg_pool(data, input_lens: Optional[torch.LongTensor] = None):
     """
-
+    A 1d avg pool for sequence data
     Args:
         data: of dim (batch, seq_len, hidden_size)
+        input_lens: Optional long tensor of dim (batch,) that represents the
+            original lengths without padding. Tokens past these lengths will not
+            be included in the average.
 
     Returns:
         Tensor (batch, hidden_size)
 
     """
-    return torch.sum(data, dim=1) / float(data.shape[1])
+    if input_lens is not None:
+        return torch.stack([
+            torch.sum(data[i, :l, :], dim=0) / l for i, l in enumerate(input_lens)
+        ])
+    else:
+        return torch.sum(data, dim=1) / float(data.shape[1])
+
+    #lens_mask = torch.zeros()
+#    return torch.sum(data, dim=1) / float(data.shape[1])
 
 
 def fastgelu(x):
