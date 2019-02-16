@@ -54,7 +54,7 @@ def make_model(model_name, example_store):
     elif model_name == "SeaCR-OracleCompare":
         return seacr.make_default_seacr_with_oracle_comparer(example_store)
     elif model_name == "EncDec":
-        return encdecmodel.get_default_encdec_model(example_store, standard_size=8)
+        return encdecmodel.get_default_encdec_model(example_store, standard_size=16)
     elif model_name == "EncDecRetrieval":
         return encdecmodel.get_default_encdec_model(
             example_store, replacer=None, use_retrieval_decoder=True)
@@ -198,7 +198,7 @@ def test_basic_classify(model_name, basic_classify_tc):
         y_strings=["baz"],
     )
     model = make_model(model_name, example_store)
-    do_train(model, example_store, epochs=1000)
+    do_train(model, example_store, epochs=100)
     print("---Done Train")
     assert_train_acc(model, example_store)
 

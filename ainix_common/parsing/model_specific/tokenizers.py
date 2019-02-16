@@ -345,7 +345,7 @@ def add_pad_arbitrary(token_seqs: List[List[T]], pad_with: T) -> Tuple[List[List
 
 
 def add_str_pads(token_seqs: List[List[str]], pad_with=parse_constants.PAD):
-    return add_str_pads(token_seqs, pad_with)
+    return add_pad_arbitrary(token_seqs, pad_with)
 
 
 def add_pads_to_mod_tokens(

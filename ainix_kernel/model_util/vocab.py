@@ -74,12 +74,12 @@ class BasicVocab(Vocab):
         self.default_device = default_device
         self._finish_init()
 
-
-
     def _finish_init(self):
         """Finishes initing an object. Used to calculate stuff that needs to happen
         both for initing and when restoring from a saved_state"""
         # stoi is simply a reverse dict for itos
+        if self.unk_index is None:
+            raise ValueError("need an unk index")
         self.stoi = defaultdict(lambda x: self.unk_index)
         self.stoi.update({tok: i for i, tok in enumerate(self.itos)})
 

@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 import torch
 
@@ -7,13 +7,14 @@ from ainix_common.parsing.stringparser import AstUnparser, StringParser
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_kernel.model_util import vocab, vectorizers
-from ainix_common.parsing.model_specific import tokenizers
+from ainix_common.parsing.model_specific import tokenizers, parse_constants
 from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer, AstValTokenizer, \
     ModifiedWordPieceTokenizer, get_default_pieced_tokenizer_word_list
-from ainix_kernel.model_util.vocab import Vocab
+from ainix_kernel.model_util.vocab import Vocab, BasicVocab
 from ainix_kernel.models.EncoderDecoder import encoders, decoders
 from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder, TreeRNNDecoder
-from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder, StringQueryEncoder
+from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder, StringQueryEncoder, \
+    RNNSeqEncoder
 from ainix_kernel.models.LM.cookiemonster import make_default_cookie_monster_base, \
     PretrainPoweredQueryEncoder
 from ainix_kernel.models.model_types import StringTypeTranslateCF, TypeTranslatePredictMetadata
@@ -162,10 +163,15 @@ class EncDecModel(StringTypeTranslateCF):
 
 
 # Factory methods for different versions
-def _get_default_tokenizers() -> Tuple[tokenizers.Tokenizer, tokenizers.Tokenizer]:
+def _get_default_tokenizers() -> Tuple[
+    Tuple[tokenizers.Tokenizer, Optional[Vocab]],
+    tokenizers.Tokenizer
+]:
     """Returns tuple (default x tokenizer, default y tokenizer)"""
-    word_piece_tok, _ = get_default_pieced_tokenizer_word_list()
-    return word_piece_tok, AstValTokenizer()
+    word_piece_tok, word_list = get_default_pieced_tokenizer_word_list()
+    x_vocab = BasicVocab(word_list + parse_constants.ALL_SPECIALS)
+    return (word_piece_tok, x_vocab), AstValTokenizer()
+    #return NonLetterTokenizer(), AstValTokenizer()
 
 
 def make_default_query_encoder(
@@ -179,6 +185,16 @@ def make_default_query_encoder(
     return PretrainPoweredQueryEncoder(
         x_tokenizer, query_vocab, base_enc, output_size
     )
+    #x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
+    #internal_encoder = RNNSeqEncoder(
+    #   input_dims = x_vectorizer.feature_len(),
+    #   hidden_size = output_size,
+    #   summary_size = output_size,
+    #   memory_tokens_size = output_size,
+    #   num_layers = 1,
+    #   variable_lengths = True
+    #)
+    #return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
 
 
 def get_default_encdec_model(
@@ -187,8 +203,9 @@ def get_default_encdec_model(
     replacer: Replacer = None,
     use_retrieval_decoder: bool = False
 ):
-    x_tokenizer, y_tokenizer = _get_default_tokenizers()
-    x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer)
+    (x_tokenizer, x_vocab), y_tokenizer = _get_default_tokenizers()
+    if x_vocab is None:
+        x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer)
     hidden_size = standard_size
     tc = examples.type_context
     encoder = make_default_query_encoder(x_tokenizer, x_vocab, hidden_size)

@@ -126,12 +126,10 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
         self.hidden_size_base = hidden_size_base
         self.embedder = base_embedder
         self.conv1 = Conv1dSame(hidden_size_base, hidden_size_base, 3, tokens_before_channels=True)
-        #self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
-        #                          variable_lengths=True, num_layers=2)
+        self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
+                                  variable_lengths=True, num_layers=2)
         #self.rnn3 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
         #                          variable_lengths=True)
-        self.torch_models = nn.ModuleList([
-            self.embedder, self.conv1])#, self.rnn2])
 
     def forward(
         self,
@@ -144,7 +142,7 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
             torch.stack((token_inds, case_mod_inds, whitespace_mod_inds)))
         start_shape = x.shape
         x = self.conv1(x)
-        #x = self.rnn2(x, input_lens)
+        x = self.rnn2(x, input_lens)
         #x = self.rnn3(x, input_lens)
         assert x.shape[0] == start_shape[0] and x.shape[1] == start_shape[1]
         return x
