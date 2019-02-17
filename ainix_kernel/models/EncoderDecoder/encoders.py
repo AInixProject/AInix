@@ -44,6 +44,8 @@ class QueryEncoder(nn.Module, ABC):
 
 
 class StringQueryEncoder(QueryEncoder):
+    """NOTE this code somewhat legacy and needs to be refactored to work better
+    with the QueryEncoder in cookiemonster.py"""
     def __init__(
         self,
         tokenizer: tokenizers.StringTokenizer,
@@ -68,7 +70,7 @@ class StringQueryEncoder(QueryEncoder):
     def forward(self, queries: Sequence[Sequence[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
         vectorized, tokenized, input_lens = self._vectorize_query(queries)
         summary, memory = self.internal_encoder(vectorized, input_lens)
-        return summary, memory
+        return summary, memory, tokenized
 
     def get_tokenizer(self) -> tokenizers.StringTokenizer:
         return self.tokenizer

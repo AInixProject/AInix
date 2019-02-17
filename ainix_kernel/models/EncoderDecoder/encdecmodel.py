@@ -44,10 +44,10 @@ class EncDecModel(StringTypeTranslateCF):
     ) -> Tuple[ObjectChoiceNode, TypeTranslatePredictMetadata]:
         if self.modules.training:
             raise ValueError("Should be in eval mode to predict")
-        query_summary, encoded_tokens = self.query_encoder([x_string])
+        query_summary, encoded_tokens, actual_tokens = self.query_encoder([x_string])
         root_type = self.type_context.get_type_by_name(y_type_name)
         out_node, predict_data = self.decoder.forward_predict(
-            query_summary, encoded_tokens, root_type)
+            query_summary, encoded_tokens, actual_tokens, root_type)
         out_node.freeze()
         return out_node, predict_data
 
@@ -70,9 +70,9 @@ class EncDecModel(StringTypeTranslateCF):
             raise ValueError("Not in train mode. Call set_in_eval_mode")
         self.optimizer.zero_grad()
         xs, ys, teacher_force_paths, example_ids = zip(*batch)
-        query_summary, encoded_tokens = self.query_encoder(xs)
+        query_summary, encoded_tokens, actual_tokens = self.query_encoder(xs)
         loss = self.decoder.forward_train(
-            query_summary, encoded_tokens, ys, teacher_force_paths, example_ids)
+            query_summary, encoded_tokens, actual_tokens, ys, teacher_force_paths, example_ids)
         loss.backward()
         self.optimizer.step(None)
         return loss
@@ -110,8 +110,9 @@ class EncDecModel(StringTypeTranslateCF):
         x_string: str,
         force_path: ObjectChoiceNode
     ) -> List[torch.Tensor]:
-        query_summary, encoded_tokens = self.query_encoder([x_string])
-        return self.decoder.get_latent_select_states(query_summary, encoded_tokens, force_path)
+        query_summary, encoded_tokens, actual_tokens = self.query_encoder([x_string])
+        return self.decoder.get_latent_select_states(
+            query_summary, encoded_tokens, actual_tokens, force_path)
 
     def get_save_state_dict(self) -> dict:
         # TODO (DNGros): actually handle serialization rather than just letting pickling handle it

@@ -63,6 +63,7 @@ class RetrievalActionSelector(ActionSelector):
         self,
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         type_to_select: AInixType
     ) -> Tuple['ActionResult', TypeTranslatePredictMetadata]:
         nearest_datas, similarities = self.latent_store.get_n_nearest_latents(
@@ -105,7 +106,7 @@ class RetrievalActionSelector(ActionSelector):
         choose_copy = choice_ind == COPY_IND
         if choose_copy:
             pred_start, pred_end, cp_log_conf = self.span_predictor.inference_predict_span(
-                latent_vec, memory_tokens)[0]
+                latent_vec, memory_tokens, valid_for_copy_mask)[0]
             metad = TypeTranslatePredictMetadata.create_leaf_value(
                 cp_log_conf + log_total_conf, example_retr_exp)
             return CopyAction(pred_start, pred_end), metad
@@ -119,6 +120,7 @@ class RetrievalActionSelector(ActionSelector):
         self,
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         types_to_select: List[AInixType],
         expected: AstObjectChoiceSet,
         num_of_parents_with_copy_option: int,
@@ -173,7 +175,7 @@ class RetrievalActionSelector(ActionSelector):
             #loss += bce_loss
         if expected.copy_is_known_choice():
             span_pred_loss = self.span_predictor.train_predict_span(
-                latent_vec, memory_tokens, types_to_select, expected)
+                latent_vec, memory_tokens, valid_for_copy_mask, types_to_select, expected)
             loss += get_copy_depth_discount(num_of_parents_with_copy_option) * \
                     span_pred_loss * self.copy_boost
         # Do regularization loss

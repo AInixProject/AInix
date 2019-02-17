@@ -25,6 +25,7 @@ class ActionSelector(MultiforwardTorchModule, ABC):
         self,
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         type_to_select: AInixType
     ) -> Tuple['ActionResult', TypeTranslatePredictMetadata]:
         # for beam will could also have a max_return_count and extra_min_prob_return for 2nd val
@@ -36,6 +37,7 @@ class ActionSelector(MultiforwardTorchModule, ABC):
         self,
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         types_to_select: List[AInixType],
         expected: AstObjectChoiceSet,
         num_of_parents_with_copy_option: int,
@@ -108,6 +110,7 @@ class PathForceSpySelector(ActionSelector):
         self,
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         type_to_select: AInixType
     ) -> Tuple[ActionResult, TypeTranslatePredictMetadata]:
         cur = self.path_stack.pop().cur_node
@@ -134,6 +137,7 @@ class PathForceSpySelector(ActionSelector):
         self,
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         types_to_select: List[AInixType],
         expected: AstObjectChoiceSet,
         num_of_parents_with_copy_option: int,

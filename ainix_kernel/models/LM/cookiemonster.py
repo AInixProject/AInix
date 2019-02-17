@@ -19,7 +19,7 @@ from torch.optim import Adam
 
 from ainix_common.parsing.model_specific import tokenizers
 from ainix_common.parsing.model_specific.tokenizers import CasingModifier, WhitespaceModifier, \
-    ModifiedWordPieceTokenizer
+    ModifiedWordPieceTokenizer, ModifiedStringToken
 from ainix_kernel.model_util.lm_task_processor.lm_set_process import LMBatch
 from ainix_kernel.model_util.operations import pack_picks, avg_pool, GELUActivation
 from ainix_kernel.model_util.usefulmodules import Conv1dSame
@@ -237,14 +237,17 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
     def _vectorize_query(self, queries: Sequence[str]):
         """Converts a batch of string queries into dense vectors"""
         tokens = self.tokenizer.tokenize_batch(queries, take_only_tokens=True)
-        toks, case, ws, origional_lens = torchify_batch_modded_tokens(
+        tok_inds, case, ws, origional_lens = torchify_batch_modded_tokens(
             tokens, self.query_vocab, self.device)
-        hidden = self.initial_encoder(toks, case, ws, origional_lens)
+        hidden = self.initial_encoder(tok_inds, case, ws, origional_lens)
         return hidden, tokens, origional_lens
 
-    def forward(self, queries: Sequence[str]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        queries: Sequence[str]
+    ) -> Tuple[torch.Tensor, torch.Tensor, List[List[ModifiedStringToken]]]:
         vectorized, tokenized, input_lens = self._vectorize_query(queries)
-        return self._sumarize(vectorized, input_lens), vectorized
+        return self._sumarize(vectorized, input_lens), vectorized, tokenized
 
     def _sumarize(self, hidden, input_lens):
         hidden = self.pre_summary(hidden)

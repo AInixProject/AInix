@@ -53,13 +53,14 @@ class SimpleActionSelector(ActionSelector):
         self,
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         type_to_select: AInixType
     ) -> Tuple[ActionResult, TypeTranslatePredictMetadata]:
         copy_probs = self._predict_whether_copy(latent_vec)
         do_copy = copy_probs[0] > 0.5
         if do_copy:
             pred_start, pred_end, log_conf = self.span_predictor.inference_predict_span(
-                latent_vec, memory_tokens)[0]
+                latent_vec, memory_tokens, valid_for_copy_mask)[0]
             full_copy_log_conf = math.log(copy_probs[0]) + log_conf
             metad = TypeTranslatePredictMetadata.create_leaf_value(full_copy_log_conf)
             return CopyAction(pred_start, pred_end), metad
@@ -76,6 +77,7 @@ class SimpleActionSelector(ActionSelector):
         self,
         latent_vec: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         types_to_select: List[AInixType],
         expected: AstObjectChoiceSet,
         num_of_parents_with_copy_option: int,
@@ -96,7 +98,7 @@ class SimpleActionSelector(ActionSelector):
         loss += self._train_loss_from_choose_whether_copy(
             latent_vec, types_to_select, expected)
         span_pred_loss = self.span_predictor.train_predict_span(
-            latent_vec, memory_tokens, types_to_select, expected)
+            latent_vec, memory_tokens, valid_for_copy_mask, types_to_select, expected)
         loss += get_copy_depth_discount(num_of_parents_with_copy_option) * span_pred_loss
 
         return loss
@@ -197,10 +199,12 @@ class CopySpanPredictor(MultiforwardTorchModule):
     def inference_predict_span(
         self,
         select_on_vec: torch.Tensor,
-        memory_tokens: torch.Tensor
+        memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor
     ) -> List[Tuple[int, int, float]]:
         """Given a copy is valid, finds the most likely (start, end, log_confidence) span"""
-        start_preds, end_preds = self._get_copy_span_weights(select_on_vec, memory_tokens)
+        start_preds, end_preds = self._get_copy_span_weights(
+            select_on_vec, memory_tokens, valid_for_copy_mask)
         starts = torch.argmax(start_preds, dim=1)
         ends = torch.argmax(end_preds, dim=1)
         confidences = F.log_softmax(start_preds, dim=1)[:, starts] + \
@@ -213,6 +217,7 @@ class CopySpanPredictor(MultiforwardTorchModule):
         self,
         vectors_to_select_on: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         types_to_select: List[AInixType],
         current_gt_set: AstObjectChoiceSet
     ) -> torch.Tensor:
@@ -223,7 +228,7 @@ class CopySpanPredictor(MultiforwardTorchModule):
         correct_starts = torch.LongTensor([si])
         correct_ends = torch.LongTensor([ei])
         start_predictions, end_predictions = self._get_copy_span_weights(
-            vectors_to_select_on, memory_tokens)
+            vectors_to_select_on, memory_tokens, valid_for_copy_mask)
 
         start_loss = F.cross_entropy(
             start_predictions,
@@ -238,7 +243,8 @@ class CopySpanPredictor(MultiforwardTorchModule):
     def _get_copy_span_weights(
         self,
         select_on_vec: torch.Tensor,
-        memory_tokens: torch.Tensor
+        memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Given a copy is valid, predicts the probability over each token in
         of it being a start or end of a copy.
@@ -248,21 +254,26 @@ class CopySpanPredictor(MultiforwardTorchModule):
                 Should be of size (batch, hidden_size)
             memory_tokens: the hidden states of each token to predict on.
                 Should be of dim (batch, num_tokens, hidden_dim)
+            valid_for_copy_mask: Tensor of dim (batch, num_tokens). For places
+                which is a valid start or end to a copy. For example spaces
+                or specials might not be a valid thing start or end on.
         Returns:
             start_weights: A prediction whether each token is the start of the span.
                 Of dim (batch, num_tokens). NOTE: this is not normalized (should pass
                 through softmax or log softmax to get actual probability)
             end_weights: Same as start_weights, but for the INCLUSIVE end of the span
         """
+        # Make a big negative value for anything we don't want to take
+        mask_addition = (1.0 - valid_for_copy_mask.float()) * -10000.0
+
         copy_vec = self.copy_relevant_linear(select_on_vec)
         start_vec = self.copy_start_vec_predictor(copy_vec)
-        # TODO (DNGros): when batch, should pass in the lengths so can mask right
         start_predictions = attend.get_attend_weights(
             start_vec.unsqueeze(0), memory_tokens, normalize='identity').squeeze(0)
         end_vec = self.copy_end_vec_predictor(copy_vec)
         end_predictions = attend.get_attend_weights(
             end_vec.unsqueeze(0), memory_tokens, normalize='identity').squeeze(0)
-        return start_predictions, end_predictions
+        return start_predictions + mask_addition, end_predictions + mask_addition
 
 
 #object_chooser: 'ObjectnodeChooser',

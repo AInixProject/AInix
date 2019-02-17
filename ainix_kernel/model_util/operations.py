@@ -82,6 +82,7 @@ def avg_pool(data, input_lens: Optional[torch.LongTensor] = None):
 
     """
     if input_lens is not None:
+        # TODO: is there a way to do this without list comprehension??
         return torch.stack([
             torch.sum(data[i, :l, :], dim=0) / l for i, l in enumerate(input_lens)
         ])

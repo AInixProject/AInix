@@ -6,7 +6,8 @@ from torch import nn
 import attr
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet, \
     ObjectNode, AstNode, ObjectNodeSet, CopyNode
-from ainix_common.parsing.model_specific.tokenizers import StringTokenizer
+from ainix_common.parsing.model_specific import parse_constants
+from ainix_common.parsing.model_specific.tokenizers import StringTokenizer, ModifiedStringToken
 from ainix_common.parsing.stringparser import AstUnparser, StringParser
 from ainix_common.parsing.typecontext import AInixType, AInixObject, TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
@@ -41,6 +42,7 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
         self,
         query_summary: torch.Tensor,
         query_encoded_tokens: torch.Tensor,
+        actual_tokens: List[List[ModifiedStringToken]],
         root_type: AInixType
     ) -> Tuple[ObjectChoiceNode, TypeTranslatePredictMetadata]:
         """
@@ -51,6 +53,9 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
                 vector summary representation of all queries in a batch.
             query_encoded_tokens: Tensor of dim (batch, query_len, hidden_size)
                 which is an contextual embedding of all tokens in the query.
+            actual_tokens: a list of the actual tokens before they were encoded.
+                This is used for stuff like knowing what is a valid start or
+                end of a copy.
             root_type: Root type to output
 
         Returns:
@@ -62,6 +67,7 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
         self,
         query_summary: torch.Tensor,
         query_encoded_tokens: torch.Tensor,
+        actual_tokens: List[List[ModifiedStringToken]],
         y_asts: List[AstObjectChoiceSet],
         teacher_force_paths: List[ObjectChoiceNode],
         example_ids: List[int]
@@ -74,6 +80,9 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
                 vector summary representation of all queries in a batch.
             query_encoded_tokens: Tensor of dim (batch, query_len, hidden_size)
                 which is an contextual embedding of all tokens in the query.
+            actual_tokens: a list of the actual tokens before they were encoded.
+                This is used for stuff like knowing what is a valid start or
+                end of a copy.
             y_asts: the ground truth set
             teacher_force_paths: The path to take down this the ground truth set
             example_ids: The ids we are training on. Needed for stuff like
@@ -102,6 +111,7 @@ class TreeDecoder(MultiforwardTorchModule, ABC):
         self,
         query_summary: torch.Tensor,
         memory_encoding: torch.Tensor,
+        actual_tokens: List[List[ModifiedStringToken]],
         force_path: ObjectChoiceNode
     ) -> List[torch.Tensor]:
         raise NotImplemented()
@@ -196,6 +206,7 @@ class TreeRNNDecoder(TreeDecoder):
         last_hidden: torch.Tensor,
         parent_node_features: Optional[torch.Tensor],
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         cur_depth: int,
         override_action_selector: ActionSelector = None
     ) -> Tuple[torch.Tensor, TypeTranslatePredictMetadata]:
@@ -212,7 +223,7 @@ class TreeRNNDecoder(TreeDecoder):
 
         use_selector = override_action_selector or self.action_selector
         predicted_action, my_metad = use_selector.infer_predict(
-            outs, memory_tokens, current_leaf.type_to_choose)
+            outs, memory_tokens, valid_for_copy_mask,current_leaf.type_to_choose)
         if isinstance(predicted_action, CopyAction):
             current_leaf.set_choice(CopyNode(
                 current_leaf.type_to_choose, predicted_action.start, predicted_action.end))
@@ -220,7 +231,8 @@ class TreeRNNDecoder(TreeDecoder):
             new_node = ObjectNode(predicted_action.implementation)
             current_leaf.set_choice(new_node)
             hiddens, child_metad = self._inference_object_step(
-                new_node, outs, hiddens, memory_tokens, cur_depth + 1, override_action_selector)
+                new_node, outs, hiddens, memory_tokens, valid_for_copy_mask,
+                cur_depth + 1, override_action_selector)
             my_metad = my_metad.concat(child_metad)
         else:
             raise ValueError()
@@ -230,6 +242,7 @@ class TreeRNNDecoder(TreeDecoder):
         self,
         last_hidden: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         parent_node_features: Optional[torch.Tensor],
         expected: AstObjectChoiceSet,
         teacher_force_path: ObjectChoiceNode,
@@ -246,6 +259,7 @@ class TreeRNNDecoder(TreeDecoder):
         loss = self.action_selector.forward_train(
             latent_vec=outs,
             memory_tokens=memory_tokens,
+            valid_for_copy_mask=valid_for_copy_mask,
             types_to_select=[teacher_force_path.type_to_choose],
             expected=expected,
             num_of_parents_with_copy_option=num_parents_with_a_copy_option,
@@ -258,7 +272,7 @@ class TreeRNNDecoder(TreeDecoder):
         assert next_expected_set is not None, "Teacher force path not in expected ast set!"
         next_object_node = teacher_force_path.next_node_not_copy
         hiddens, child_loss = self._train_objectnode_step(
-            outs, hiddens, memory_tokens, next_expected_set, next_object_node,
+            outs, hiddens, memory_tokens, valid_for_copy_mask, next_expected_set, next_object_node,
             num_parents_with_a_copy_option + (1 if expected.copy_is_known_choice() else 0),
             example_id)
         return hiddens, loss + child_loss
@@ -269,6 +283,7 @@ class TreeRNNDecoder(TreeDecoder):
         my_features: torch.Tensor,
         last_hidden: Optional[torch.Tensor],
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         cur_depth,
         override_selector: ActionSelector = None
     ) -> Tuple[torch.Tensor, TypeTranslatePredictMetadata]:
@@ -284,8 +299,8 @@ class TreeRNNDecoder(TreeDecoder):
                 continue
             current_leaf.set_arg_value(arg.name, new_node)
             latest_hidden, child_metad = self._inference_objectchoice_step(
-                new_node, latest_hidden, my_features, memory_tokens, cur_depth + 1,
-                override_selector)
+                new_node, latest_hidden, my_features, memory_tokens, valid_for_copy_mask,
+                cur_depth + 1, override_selector)
             metad = metad.concat(child_metad)
         return latest_hidden, metad
 
@@ -294,6 +309,7 @@ class TreeRNNDecoder(TreeDecoder):
         my_features: torch.Tensor,
         last_hidden: torch.Tensor,
         memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
         expected: ObjectNodeSet,
         teacher_force_path: ObjectNode,
         num_of_parents_with_a_copy_option: int,
@@ -307,7 +323,7 @@ class TreeRNNDecoder(TreeDecoder):
             next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
             next_force_path = teacher_force_path.get_choice_node_for_arg(arg.name)
             latest_hidden, arg_loss = self._train_objectchoice_step(
-                latest_hidden, memory_tokens, my_features, next_choice_set,
+                latest_hidden, memory_tokens, valid_for_copy_mask, my_features, next_choice_set,
                 next_force_path, num_of_parents_with_a_copy_option, example_id)
             child_loss += arg_loss
         return latest_hidden, child_loss
@@ -317,6 +333,7 @@ class TreeRNNDecoder(TreeDecoder):
         self,
         query_summary: torch.Tensor,
         memory_encoding: torch.Tensor,
+        actual_tokens: List[List[ModifiedStringToken]],
         root_type: AInixType,
         override_action_selector: ActionSelector = None
     ) -> Tuple[ObjectChoiceNode, TypeTranslatePredictMetadata]:
@@ -324,8 +341,10 @@ class TreeRNNDecoder(TreeDecoder):
             raise ValueError("Expect to not being in training mode during inference.")
         # TODO (DNGros): make steps this not mutate state and iterative
         prediction_root_node = ObjectChoiceNode(root_type)
+        valid_for_copy_mask = get_valid_for_copy_mask(actual_tokens)
         last_hidden, metad = self._inference_objectchoice_step(
-            prediction_root_node, query_summary, None, memory_encoding, 0, override_action_selector)
+            prediction_root_node, query_summary, None, memory_encoding, valid_for_copy_mask,
+            0, override_action_selector)
         return prediction_root_node, metad
 
     @add_hooks
@@ -333,6 +352,7 @@ class TreeRNNDecoder(TreeDecoder):
         self,
         query_summary: torch.Tensor,
         memory_encoding: torch.Tensor,
+        actual_tokens: List[List[ModifiedStringToken]],
         y_asts: List[AstObjectChoiceSet],
         teacher_force_paths: List[ObjectChoiceNode],
         example_ids: List[int]
@@ -340,14 +360,15 @@ class TreeRNNDecoder(TreeDecoder):
         if not self.training:
             raise ValueError("Expect to be in training mode")
 
+        valid_for_copy_mask = get_valid_for_copy_mask(actual_tokens)
         # Temp hack while can't batch. Just loop through
         batch_loss = 0
         for i in range(len(y_asts)):
             if y_asts[i] is None or teacher_force_paths[i] is None:
                 raise ValueError("If training expect path to be previded")
             last_hidden, loss = self._train_objectchoice_step(
-                query_summary[i:i+1], memory_encoding[i:i+1], None, y_asts[i],
-                teacher_force_paths[i], 0, example_ids[i]
+                query_summary[i:i+1], memory_encoding[i:i+1], valid_for_copy_mask[i:i+1],
+                None, y_asts[i], teacher_force_paths[i], 0, example_ids[i]
             )
             batch_loss += loss
         return batch_loss
@@ -356,6 +377,7 @@ class TreeRNNDecoder(TreeDecoder):
         self,
         query_summary: torch.Tensor,
         memory_encoding: torch.Tensor,
+        actual_tokens: List[List[ModifiedStringToken]],
         force_path: ObjectChoiceNode
     ) -> List[torch.Tensor]:
         was_in_traing = self.training
@@ -366,6 +388,7 @@ class TreeRNNDecoder(TreeDecoder):
             self.forward_predict(
                 query_summary=query_summary,
                 memory_encoding=memory_encoding,
+                actual_tokens=actual_tokens,
                 root_type=force_path.type_to_choose,
                 override_action_selector=spy_selector
             )
@@ -415,6 +438,14 @@ class TreeRNNDecoder(TreeDecoder):
         # the custom loading. Need to figure that out when we do that.
         instance.load_state_dict(state_dict['my_model_state'])
         return instance
+
+
+def get_valid_for_copy_mask(tokens: List[List[ModifiedStringToken]]):
+    return torch.tensor([
+        [0 if tok.token_string in parse_constants.ALL_SPECIALS else 1
+         for tok in batch]
+        for batch in tokens
+    ])
 
 
 def make_action_selector_from_dict(
