@@ -1,3 +1,4 @@
+"""Code to pretrain an encoder on a BERT-like task."""
 import argparse
 import collections
 import torch

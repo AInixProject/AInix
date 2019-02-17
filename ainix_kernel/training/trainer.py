@@ -188,7 +188,9 @@ if __name__ == "__main__":
 
     replacers = get_all_replacers()
 
-    model = get_default_encdec_model(index, standard_size=64)
+    model = get_default_encdec_model(
+        index, standard_size=128,
+        pretrain_checkpoint="../../checkpoints/lmchkp_iter88000_total_3.56_ns0.56_lm3.00.pt")
 
     #t model = get_default_encdec_model(
     #    index, standard_size=64, replacer=replacers, use_retrieval_decoder=True)
@@ -198,7 +200,7 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    epochs = 30
+    epochs = 40
     trainer.train(epochs, eval_every_n_epochs=5, intermitted_save_path="./checkpoints/chkp")
 
     print("Lets eval")

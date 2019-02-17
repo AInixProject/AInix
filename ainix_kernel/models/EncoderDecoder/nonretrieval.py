@@ -206,7 +206,11 @@ class CopySpanPredictor(MultiforwardTorchModule):
         start_preds, end_preds = self._get_copy_span_weights(
             select_on_vec, memory_tokens, valid_for_copy_mask)
         starts = torch.argmax(start_preds, dim=1)
-        ends = torch.argmax(end_preds, dim=1)
+        # condition end after start
+        # TODO figure out how to batch this
+        assert len(select_on_vec) == 1, "No batch support 😞"
+        ends_after_start = end_preds[0][starts[0]:].unsqueeze(0)
+        ends = starts + torch.argmax(ends_after_start, dim=1)
         confidences = F.log_softmax(start_preds, dim=1)[:, starts] + \
                       F.log_softmax(end_preds, dim=1)[:, ends]
         out = [(int(s), int(e), float(conf[0])) for s, e, conf in zip(starts, ends, confidences)]

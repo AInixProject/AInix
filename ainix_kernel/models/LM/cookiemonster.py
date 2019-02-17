@@ -284,6 +284,33 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         instance.other_models.load_state_dict(state_dict['other_models_state'])
         return instance
 
+    @classmethod
+    def create_with_pretrained_checkpoint(
+        cls,
+        pretrained_checkpoint_path: str,
+        tokenizer: ModifiedWordPieceTokenizer,
+        query_vocab: Vocab,
+        summary_size: int,
+        device: torch.device = torch.device("cpu"),
+        freeze_base = False
+    ) -> 'PretrainPoweredQueryEncoder':
+        """
+        Creates a new instance using the base encoder from a encoder that was
+        trained in the pretraining task.
+        Args:
+            pretrained_checkpoint_path: A path which when loaded gets the save
+                state dict from a CookieMonsterForPretraining
+            See __init__ for other args...
+        """
+        pretrainer_model = torch.load(pretrained_checkpoint_path)
+        initial_encoder = pretrainer_model['model']['base_encoder'].to(device)
+        if freeze_base:
+            for param in initial_encoder.parameters():
+                param.requires_grad = False
+        return cls(
+            tokenizer, query_vocab, initial_encoder, summary_size, device
+        )
+
 
 def make_default_cookie_monster_base(
     vocab: Vocab,

@@ -178,38 +178,36 @@ def _get_default_tokenizers() -> Tuple[
 def make_default_query_encoder(
     x_tokenizer: tokenizers.Tokenizer,
     query_vocab: Vocab,
-    output_size=64
+    output_size=64,
+    pretrain_checkpoint: str = None
 ) -> QueryEncoder:
     """Factory for making a default QueryEncoder"""
     base_enc = make_default_cookie_monster_base(
         query_vocab, output_size)
-    return PretrainPoweredQueryEncoder(
-        x_tokenizer, query_vocab, base_enc, output_size
-    )
-    #x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
-    #internal_encoder = RNNSeqEncoder(
-    #   input_dims = x_vectorizer.feature_len(),
-    #   hidden_size = output_size,
-    #   summary_size = output_size,
-    #   memory_tokens_size = output_size,
-    #   num_layers = 1,
-    #   variable_lengths = True
-    #)
-    #return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
+    if pretrain_checkpoint is None:
+        return PretrainPoweredQueryEncoder(
+            x_tokenizer, query_vocab, base_enc, output_size
+        )
+    else:
+        return PretrainPoweredQueryEncoder.create_with_pretrained_checkpoint(
+            pretrain_checkpoint,
+            x_tokenizer, query_vocab, output_size, freeze_base=True
+        )
 
 
 def get_default_encdec_model(
     examples: ExamplesStore,
     standard_size=16,
     replacer: Replacer = None,
-    use_retrieval_decoder: bool = False
+    use_retrieval_decoder: bool = False,
+    pretrain_checkpoint: str = None
 ):
     (x_tokenizer, x_vocab), y_tokenizer = _get_default_tokenizers()
     if x_vocab is None:
         x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer)
     hidden_size = standard_size
     tc = examples.type_context
-    encoder = make_default_query_encoder(x_tokenizer, x_vocab, hidden_size)
+    encoder = make_default_query_encoder(x_tokenizer, x_vocab, hidden_size, pretrain_checkpoint)
     if not use_retrieval_decoder:
         decoder = decoders.get_default_nonretrieval_decoder(tc, hidden_size)
     else:
