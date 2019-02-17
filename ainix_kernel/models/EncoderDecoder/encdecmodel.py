@@ -57,7 +57,7 @@ class EncDecModel(StringTypeTranslateCF):
         y_ast: AstObjectChoiceSet,
         teacher_force_path: ObjectChoiceNode,
         example_id: int
-    ) -> torch.Tensor:
+    ) -> float:
         return self.train_batch([(x_string, y_ast, teacher_force_path, example_id)])
 
     def train_batch(
@@ -75,7 +75,7 @@ class EncDecModel(StringTypeTranslateCF):
             query_summary, encoded_tokens, actual_tokens, ys, teacher_force_paths, example_ids)
         loss.backward()
         self.optimizer.step(None)
-        return loss
+        return float(loss)
 
     @classmethod
     def make_examples_store(cls, type_context: TypeContext, is_training: bool) -> ExamplesStore:
@@ -213,6 +213,7 @@ def get_default_encdec_model(
     else:
         parser = StringParser(tc)
         unparser = AstUnparser(tc, x_tokenizer)
+        assert replacer is not None
         decoder = decoders.get_default_retrieval_decoder(
             tc, hidden_size, examples, replacer, parser, unparser)
     model = EncDecModel(examples.type_context, encoder, decoder)

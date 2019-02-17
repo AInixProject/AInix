@@ -18,6 +18,7 @@ class MovingAverage:
         self.cum_sum = 0
 
     def add(self, val):
+        assert not isinstance(val, torch.Tensor)
         self.cum_sum += val
         if len(self.vals) == self.vals.maxlen:
             self.cum_sum -= self.vals[0]

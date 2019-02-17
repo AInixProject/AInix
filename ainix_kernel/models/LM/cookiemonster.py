@@ -69,7 +69,7 @@ class CookieMonsterForPretraining(BertlikeLangModel):
     def train_batch(
         self,
         batch: LMBatch
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> Tuple[float, float, float]:
         self.optimizer.zero_grad()
         lm_predictions, next_sent_pred = self._predict(batch, for_loss_input=True)
         next_sent_loss = self._get_next_sentence_pred_loss(next_sent_pred, batch.is_sequential)
@@ -77,7 +77,7 @@ class CookieMonsterForPretraining(BertlikeLangModel):
         total_loss = next_sent_loss + mask_task_loss
         total_loss.backward()
         self.optimizer.step()
-        return next_sent_loss, mask_task_loss, total_loss
+        return float(next_sent_loss), float(mask_task_loss), float(total_loss)
 
     def _get_next_sentence_pred_loss(self, pred_no_sigmoid, expected) -> torch.Tensor:
         return F.binary_cross_entropy_with_logits(pred_no_sigmoid, expected.float())
@@ -125,9 +125,10 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
         super().__init__()
         self.hidden_size_base = hidden_size_base
         self.embedder = base_embedder
+        self.after_embed_dropout = nn.Dropout(p=0.1)
         self.conv1 = Conv1dSame(hidden_size_base, hidden_size_base, 3, tokens_before_channels=True)
         self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
-                                  variable_lengths=True, num_layers=2)
+                                  variable_lengths=True, num_layers=2, input_dropout_p=0.1)
         #self.rnn3 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
         #                          variable_lengths=True)
 
@@ -141,6 +142,7 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
         x = self.embedder.embed(
             torch.stack((token_inds, case_mod_inds, whitespace_mod_inds)))
         start_shape = x.shape
+        x = self.after_embed_dropout(x)
         x = self.conv1(x)
         x = self.rnn2(x, input_lens)
         #x = self.rnn3(x, input_lens)
