@@ -10,7 +10,7 @@ from ainix_common.parsing.ast_components import AstObjectChoiceSet
 from ainix_common.parsing.stringparser import StringParser
 from ainix_kernel.indexing.examplestore import ExamplesStore
 from ainix_common.parsing.model_specific.tokenizers import Tokenizer, ModifiedWordPieceTokenizer, \
-    ModifiedStringToken
+    ModifiedStringToken, add_pads_to_mod_tokens
 from typing import Hashable, TypeVar, Generic
 import numpy as np
 import typing
@@ -74,12 +74,12 @@ class BasicVocab(Vocab):
         self.default_device = default_device
         self._finish_init()
 
-
-
     def _finish_init(self):
         """Finishes initing an object. Used to calculate stuff that needs to happen
         both for initing and when restoring from a saved_state"""
         # stoi is simply a reverse dict for itos
+        if self.unk_index is None:
+            raise ValueError("need an unk index")
         self.stoi = defaultdict(lambda x: self.unk_index)
         self.stoi.update({tok: i for i, tok in enumerate(self.itos)})
         self.default_device = torch.device("cpu")  # this probably ain't right
@@ -123,14 +123,11 @@ class BasicVocab(Vocab):
         return indices
 
     def get_save_state_dict(self):
-        return {"itos": self.itos, 'unk_index': self.unk_index, "version": 0}
+        return {"itos": list(self.itos), 'unk_index': self.unk_index, "version": 0}
 
     @classmethod
     def create_from_save_state_dict(cls, save_state: dict) -> 'BasicVocab':
-        instance = cls.__new__(cls)
-        instance.itos = save_state['itos']
-        instance.unk_index = save_state['unk_index']
-        instance._finish_init()
+        instance = cls(save_state['itos'])
         return instance
 
 
@@ -379,6 +376,7 @@ def are_indices_valid(
         return torch.from_numpy(valid_func(indices.numpy()))
 
 
+
 def torchify_moded_tokens(
     tokens: List[ModifiedStringToken],
     vocab: Vocab,
@@ -400,4 +398,19 @@ def torchify_moded_tokens(
             torch.tensor([t.whitespace_modifier.value for t in tokens], device=device))
 
 
-
+def torchify_batch_modded_tokens(
+    tokens: List[List[ModifiedStringToken]],
+    vocab: Vocab,
+    device = torch.device("cpu")
+) -> typing.Tuple[torch.LongTensor, torch.LongTensor, torch.LongTensor, torch.LongTensor]:
+    """Same a torchify_moded_tokens, except also returns a long tensor of size
+    (batch,) which is the length of each before padding"""
+    tokens, input_lens = add_pads_to_mod_tokens(tokens)
+    token_inds, case_mods, whitespace_inds = zip(*[
+        torchify_moded_tokens(t, vocab, device) for t in tokens])
+    return (
+        torch.stack(token_inds),
+        torch.stack(case_mods),
+        torch.stack(whitespace_inds),
+        torch.tensor(input_lens, device=device)
+    )

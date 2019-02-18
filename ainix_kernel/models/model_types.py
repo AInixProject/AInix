@@ -128,15 +128,6 @@ class Model(ABC):
         model"""
         raise NotImplemented
 
-    @classmethod
-    def create_from_save_state_dict(
-            cls,
-            state_dict: dict,
-            new_type_context: TypeContext,
-            new_example_store: ExamplesStore
-    ):
-        raise NotImplemented
-
 
 class StringTypeTranslateCF(Model, Pretrainable):
     """Translates a string to another type without taking any prior context
@@ -191,6 +182,15 @@ class StringTypeTranslateCF(Model, Pretrainable):
     @abstractmethod
     def get_string_tokenizer(self) -> tokenizers.StringTokenizer:
         pass
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        state_dict: dict,
+        new_type_context: TypeContext,
+        new_example_store: ExamplesStore
+    ):
+        raise NotImplemented
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -267,3 +267,10 @@ class BertlikeLangModel(Model):
         batch: LMBatch
     ):
         raise NotImplemented()
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        state_dict: dict,
+    ):
+        raise NotImplemented

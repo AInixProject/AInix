@@ -54,7 +54,7 @@ def make_model(model_name, example_store):
     elif model_name == "SeaCR-OracleCompare":
         return seacr.make_default_seacr_with_oracle_comparer(example_store)
     elif model_name == "EncDec":
-        return encdecmodel.get_default_encdec_model(example_store)
+        return encdecmodel.get_default_encdec_model(example_store, standard_size=16)
     elif model_name == "EncDecRetrieval":
         return encdecmodel.get_default_encdec_model(
             example_store, replacer=None, use_retrieval_decoder=True)
@@ -186,19 +186,20 @@ def test_basic_classify(model_name, basic_classify_tc):
     adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
                              "FooBarBazType", ALL_TRAIN_SPLIT)
     adder.add_examples(
-        x_strings=["woof", "bow wo", "bark"],
+        x_strings=["a", "b", "c"],
         y_strings=["foo"]
     )
     adder.add_examples(
-        x_strings=["meow", "prrr"],
+        x_strings=["d", "e"],
         y_strings=["bar"],
     )
     adder.add_examples(
-        x_strings=["moo", "im a cow"],
+        x_strings=["f", "g"],
         y_strings=["baz"],
     )
     model = make_model(model_name, example_store)
     do_train(model, example_store, epochs=100)
+    print("---Done Train")
     assert_train_acc(model, example_store)
 
 
@@ -355,8 +356,8 @@ def test_string_gen(model_name, basic_string_tc):
         #assert_val_acc(model, example_store, expect_fail=True)
         pass
     # Do training and expect it to work
-    do_train(model, example_store, epochs=35, batch_size=1)
-    assert_train_acc(model, example_store, required_accuracy=0.85)
+    do_train(model, example_store, epochs=30, batch_size=1)
+    assert_train_acc(model, example_store, required_accuracy=0.8)
     assert_val_acc(model, example_store, required_accuracy=0.7)
 
 
@@ -394,9 +395,9 @@ def test_copy(model_name, basic_string_tc):
         # Don't expect it to work before training.
         assert_val_acc(model, example_store, expect_fail=True)
     # Do training and expect it to work
-    do_train(model, example_store, epochs=40, batch_size=1)
+    do_train(model, example_store, epochs=50, batch_size=1)
     assert_train_acc(model, example_store, required_accuracy=0.85)
-    assert_val_acc(model, example_store, required_accuracy=0.8)
+    assert_val_acc(model, example_store, required_accuracy=0.75)
     print("PASS NON-SERIALIZED")
-    check_survives_serialization(model, example_store, basic_string_tc, acc=0.8)
+    check_survives_serialization(model, example_store, basic_string_tc, acc=0.75)
 

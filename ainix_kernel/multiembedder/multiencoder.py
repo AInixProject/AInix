@@ -4,6 +4,7 @@ import torch
 from torch import nn
 from torch.nn import LeakyReLU
 
+from ainix_kernel.model_util.operations import GELUActivation
 from ainix_kernel.models.multiforward import add_hooks, MultiforwardTorchModule
 
 
@@ -27,9 +28,10 @@ class Multiembedder(MultiforwardTorchModule):
         vocab_sizes: Tuple[int, ...],
         target_out_len: int,
         additive_portion: float = 0.75,
-        combiner_activation_factory: Callable = lambda: LeakyReLU()
+        combiner_activation_factory: Callable = lambda: GELUActivation()
     ):
         super().__init__()
+        self.vocab_sizes = vocab_sizes
         self.num_categories = len(vocab_sizes)
         self.target_out_len = target_out_len
         assert 0 <= additive_portion <= 1

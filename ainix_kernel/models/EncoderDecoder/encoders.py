@@ -13,7 +13,7 @@ import numpy as np
 
 class QueryEncoder(nn.Module, ABC):
     @abstractmethod
-    def forward(self, queries: Sequence[Sequence[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, queries: Sequence[str]) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Args:
             queries: An iterable representing a batch of query strings to encode
@@ -44,6 +44,8 @@ class QueryEncoder(nn.Module, ABC):
 
 
 class StringQueryEncoder(QueryEncoder):
+    """NOTE this code somewhat legacy and needs to be refactored to work better
+    with the QueryEncoder in cookiemonster.py"""
     def __init__(
         self,
         tokenizer: tokenizers.StringTokenizer,
@@ -57,7 +59,7 @@ class StringQueryEncoder(QueryEncoder):
         self.query_vectorizer = query_vectorizer
         self.internal_encoder = internal_encoder
         
-    def _vectorize_query(self, queries: Sequence[Sequence[str]]):
+    def _vectorize_query(self, queries: Sequence[str]):
         """Converts a batch of string queries into dense vectors"""
         tokenized = self.tokenizer.tokenize_batch(queries, take_only_tokens=True)
         tokenized, input_lens = tokenizers.add_str_pads(tokenized)
@@ -68,7 +70,7 @@ class StringQueryEncoder(QueryEncoder):
     def forward(self, queries: Sequence[Sequence[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
         vectorized, tokenized, input_lens = self._vectorize_query(queries)
         summary, memory = self.internal_encoder(vectorized, input_lens)
-        return summary, memory
+        return summary, memory, tokenized
 
     def get_tokenizer(self) -> tokenizers.StringTokenizer:
         return self.tokenizer
@@ -96,6 +98,27 @@ class StringQueryEncoder(QueryEncoder):
             query_vectorizer=vectorizer_from_save_dict(state_dict['query_vectorizer']),
             internal_encoder=state_dict['internal_encoder']
         )
+
+
+class ModTokensEncoder(nn.Module, ABC):
+    def forward(
+        self,
+        token_inds: torch.LongTensor,
+        case_mod_inds: torch.LongTensor,
+        whitespace_mod_inds: torch.LongTensor,
+        input_lens: Optional[torch.LongTensor] = None
+    ):
+        raise NotImplemented()
+
+    @property
+    @abstractmethod
+    def output_size(self) -> int:
+        raise NotImplemented()
+
+    def get_tokens_input_weights(self) -> torch.Tensor:
+        """For the BERT task the prediction of the tokens shares the weights with
+        base embedding. Get this weight"""
+        raise NotImplemented
 
 
 class VectorSeqEncoder(nn.Module, ABC):
@@ -237,21 +260,5 @@ class RNNSeqEncoder(VectorSeqEncoder):
             return memory_tokens
 
 
-def make_default_query_encoder(
-    x_tokenizer: tokenizers.Tokenizer,
-    query_vocab: Vocab,
-    output_size=64
-) -> QueryEncoder:
-    """Factory for making a default QueryEncoder"""
-    x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
-    internal_encoder = RNNSeqEncoder(
-        input_dims=x_vectorizer.feature_len(),
-        hidden_size=output_size,
-        summary_size=output_size,
-        memory_tokens_size=output_size,
-        num_layers=1,
-        variable_lengths=True
-    )
-    return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
 
 

@@ -1,7 +1,9 @@
 """Useful operations on torch tensors which are not in the Pytorch lib"""
-from typing import Tuple
+import datetime
+from typing import Tuple, Optional
 
 import torch
+from torch import nn
 
 
 def manual_bincount(groups: torch.Tensor, weights: torch.Tensor = None):
@@ -43,6 +45,13 @@ def sparse_groupby_sum(
     return reduced_vals, group_keys
 
 
+def pack_picks(data, picks):
+    """Flattens a iterable of tensors. For each selection, we take indicies from
+    a corresponding part of another and packs it all together"""
+    return torch.cat([data_b[pick_b] if len(pick_b) > 0 else data_b.new()
+                      for data_b, pick_b in zip(data, picks)])
+
+
 class MultilabelKindaCategoricalCrossEntropy(torch.nn.Module):
     """A somewhat funky loss function that sort of seems like a good idea.
     It is designed to accommodate when you have multiple correct labels
@@ -57,6 +66,58 @@ class MultilabelKindaCategoricalCrossEntropy(torch.nn.Module):
     This means the valid labels are not
     """
     pass  # not implemented
+
+
+def avg_pool(data, input_lens: Optional[torch.LongTensor] = None):
+    """
+    A 1d avg pool for sequence data
+    Args:
+        data: of dim (batch, seq_len, hidden_size)
+        input_lens: Optional long tensor of dim (batch,) that represents the
+            original lengths without padding. Tokens past these lengths will not
+            be included in the average.
+
+    Returns:
+        Tensor (batch, hidden_size)
+
+    """
+    if input_lens is not None:
+        # TODO: is there a way to do this without list comprehension??
+        return torch.stack([
+            torch.sum(data[i, :l, :], dim=0) / l for i, l in enumerate(input_lens)
+        ])
+    else:
+        return torch.sum(data, dim=1) / float(data.shape[1])
+
+    #lens_mask = torch.zeros()
+#    return torch.sum(data, dim=1) / float(data.shape[1])
+
+
+def fastgelu(x):
+    """
+    The approximate version from https://github.com/hendrycks/GELUs
+    """
+    return torch.sigmoid(1.702 * x) * x
+
+
+def gelu(x):
+    """
+    GELU activation from https://github.com/hendrycks/GELUs
+    """
+    return 0.5 * x * (1 + torch.tanh(x * 0.7978845608 * (1 + 0.044715 * x * x)))
+
+
+class GELUActivation(nn.Module):
+    def __init__(self, use_aprox: bool = True):
+        super().__init__()
+        self.use_aprox = use_aprox
+
+    def forward(self, x):
+        if self.use_aprox:
+            return fastgelu(x)
+        else:
+            return gelu(x)
+
 
 
 #class BackwardsMask(torch.autograd.Function):

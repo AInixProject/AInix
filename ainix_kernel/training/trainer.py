@@ -46,14 +46,16 @@ class TypeTranslateCFTrainer:
         single_examples_iter = self.data_pair_iterate(train_splits)
         batches_iter = more_itertools.chunked(single_examples_iter, self.batch_size)
         loss = torch.tensor(0.0)
+        examples_seen = 0
         with tqdm(total=train_count, unit='Examples', miniters=train_count/5) as pbar:
             for batch in batches_iter:
                 batch_as_query = [(replaced_x, y_ast_set, this_example_ast, example.example_id) for
                                   example, replaced_x, y_ast_set, this_example_ast, ytxts in batch]
-                loss += self.model.train_batch(batch_as_query)
+                loss += float(self.model.train_batch(batch_as_query))
+                examples_seen += len(batch)
                 pbar.update(len(batch))
         self.model.end_train_epoch()
-        return loss
+        return loss / examples_seen
 
     def train(self, epochs: int, eval_every_n_epochs: int = None, intermitted_save_path = None):
         self.model.start_train_session()
@@ -108,6 +110,8 @@ class TypeTranslateCFTrainer:
             except ModelSafePredictError as e:
                 prediction = None
                 parse_exception = e
+            print("predict", prediction, "expect", y_ast_set, "ytext", y_texts,
+                  "replx", replaced_x_query)
             eval = AstEvaluation(prediction, y_ast_set, y_texts, replaced_x_query,
                                  parse_exception, self.unparser)
             logger.add_evaluation(eval)
@@ -186,9 +190,11 @@ if __name__ == "__main__":
 
     replacers = get_all_replacers()
 
-    model = get_default_encdec_model(index, standard_size=64)
+    model = get_default_encdec_model(
+        index, standard_size=200, use_retrieval_decoder=False, replacer=replacers,
+        pretrain_checkpoint="../../checkpoints/lmchkp_iter152k_200_2rnn_total3.29_ns0.47_lm2.82.pt")
 
-    #model = get_default_encdec_model(
+    #t model = get_default_encdec_model(
     #    index, standard_size=64, replacer=replacers, use_retrieval_decoder=True)
 
     #model = make_rulebased_seacr(index)
@@ -196,7 +202,7 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    epochs = 30
+    epochs = 40
     trainer.train(epochs, eval_every_n_epochs=5, intermitted_save_path="./checkpoints/chkp")
 
     print("Lets eval")
