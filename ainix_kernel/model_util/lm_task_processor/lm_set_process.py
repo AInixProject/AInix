@@ -171,7 +171,7 @@ class CookieMonsterDataset(Dataset):
                                    device=self.device),
             mask_expected_ind=self.vocab.token_seq_to_indices(
                 [real_token.token_string for ind, real_token in restore_map]),
-            mask_expected_case=[real_token.casing_modifier for ind, real_token in restore_map]
+            mask_expected_case=[real_token.casing_modifier.value for ind, real_token in restore_map]
         )
         return out
 

@@ -191,7 +191,7 @@ if __name__ == "__main__":
     replacers = get_all_replacers()
 
     model = get_default_encdec_model(
-        index, standard_size=200, use_retrieval_decoder=False, replacer=replacers,
+        index, standard_size=200, use_retrieval_decoder=True, replacer=replacers,
         pretrain_checkpoint="../../checkpoints/lmchkp_iter120000_total_3.38_lm2.90.pt")
 
     #t model = get_default_encdec_model(

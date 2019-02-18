@@ -7,9 +7,11 @@ from ainix_common.parsing.model_specific import tokenizers, parse_constants
 from ainix_kernel.model_util.lm_task_processor.lm_set_process import CookieMonsterDataset, \
     CookieMonsterBatchIterator
 from ainix_kernel.model_util.vocab import BasicVocab
-from ainix_kernel.models.LM.cookiemonster import make_default_cookie_monster
+from ainix_kernel.models.LM.cookiemonster import make_default_cookie_monster, \
+    CookieMonsterForPretraining
 from ainix_kernel.models.model_types import BertlikeLangModel
 from tqdm import tqdm
+import psutil
 
 
 class MovingAverage:
@@ -62,6 +64,17 @@ class BertlikeTrainer:
                              f"lm{self.lm_loss_avg.get()}.pt"
                 print(f"serializing to {s_path}")
                 serialize_func(s_path, iteration*self.batch_iter.batch_size)
+            if iteration % 10_000 == 0:
+                abort_on_low_mem()
+
+
+def abort_on_low_mem():
+    mem = psutil.virtual_memory().available
+    print(f"total mem {psutil.virtual_memory().total}")
+    print(f"Free mem {mem}")
+    if mem < 2_000_000_000:
+        print("Bailing due to low memory")
+        raise ValueError()
 
 
 if __name__ == "__main__":
@@ -80,6 +93,8 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", default=1, type=int,
                         help="Number of epochs. Note that since pairs of are dynamically generated"
                              "there are actually many more possible examples")
+    parser.add_argument("--restore_from", default=None, type=str,
+                        help="A path to restore from")
     args = parser.parse_args()
 
     tokenizer, vocab_list = tokenizers.get_default_pieced_tokenizer_word_list()
@@ -91,7 +106,14 @@ if __name__ == "__main__":
         args.files,
         tokenizer, vocab, max_docs_to_load=9e9, use_cuda=use_cuda
     )
-    model = make_default_cookie_monster(vocab, hidden_size_base=args.hiddensize, use_cuda=use_cuda)
+    if args.restore_from is None:
+        model = make_default_cookie_monster(
+            vocab, hidden_size_base=args.hiddensize, use_cuda=use_cuda)
+    else:
+        restore = torch.load(args.restore_from)
+        model = CookieMonsterForPretraining.create_from_save_state_dict(restore['model'])
+        if use_cuda:
+            model.cuda()
 
     def serialize_func(path, seen_instances):
         ser = {

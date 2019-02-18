@@ -16,6 +16,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.optim import Adam
+import math
 
 from ainix_common.parsing.model_specific import tokenizers
 from ainix_common.parsing.model_specific.tokenizers import CasingModifier, WhitespaceModifier, \
@@ -77,6 +78,16 @@ class CookieMonsterForPretraining(BertlikeLangModel):
         total_loss = next_sent_loss + mask_task_loss
         total_loss.backward()
         self.optimizer.step()
+        if math.isnan(float(total_loss)):
+            # This wierdly happened onece, so adding a checks and prints of debug info
+            # for if happens again.
+            print("\nUnexpected NAN???")
+            print("ns loss", next_sent_loss)
+            print("mask loss", mask_task_loss)
+            print("batch", batch)
+            print("lm_pred", lm_predictions)
+            print("next_set_pred", next_sent_pred)
+            raise ValueError("Unexpected NAN")
         return float(next_sent_loss), float(mask_task_loss), float(total_loss)
 
     def _get_next_sentence_pred_loss(self, pred_no_sigmoid, expected) -> torch.Tensor:
