@@ -213,7 +213,6 @@ def get_default_encdec_model(
     else:
         parser = StringParser(tc)
         unparser = AstUnparser(tc, x_tokenizer)
-        assert replacer is not None
         decoder = decoders.get_default_retrieval_decoder(
             tc, hidden_size, examples, replacer, parser, unparser)
     model = EncDecModel(examples.type_context, encoder, decoder)
