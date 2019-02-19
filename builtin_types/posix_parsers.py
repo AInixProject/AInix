@@ -1,3 +1,9 @@
+"""
+AInix parser implementations to process POSIX/GNU style commands.
+
+https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html
+
+"""
 from ainix_common.parsing import parse_primitives
 from typing import List
 
@@ -171,7 +177,7 @@ def ProgramObjectParser(
                 shortname_match = get_arg_with_short_name(remaining_args, char)
                 if shortname_match:
                     requires_value = shortname_match.type is not None
-                    use_start_idx, use_end_idx = 0, 0
+                    use_start_idx, use_end_idx = end_idx, end_idx
                     if requires_value:
                         remaining_chars = ci < len(word[1:]) - 1
                         if remaining_chars:
@@ -219,7 +225,21 @@ def ProgramObjectParser(
                                  "argument was also specified as multiword. Parse is ambigious")
             if is_multiword:
                 already_seen_multiword_positional = True
-                words_to_consume = len(lex_result) - lex_index - len(sorted_pos_args[1:])
+                # We can potentially consume all the remaining words, except we have to leave
+                # room any other positional args there might be.
+                max_words_to_consume = len(lex_result) - lex_index - len(sorted_pos_args[1:])
+                if not parameter_end_seen:
+                    # If we haven't seen a "--" then we need to scan forwards to make sure we
+                    # don't accidentally count a option flag as one of this positional arg.
+                    words_to_consume = 1
+                    while words_to_consume < max_words_to_consume:
+                        lookahead_word, _ = lex_result[lex_index + words_to_consume]
+                        if lookahead_word.startswith("-"):
+                            # If we see an option arg, stop consuming words for this pos arg here
+                            break
+                        words_to_consume += 1
+                else:
+                    words_to_consume = max_words_to_consume
             else:
                 words_to_consume = 1
             _, use_end_idx = lex_result[lex_index+words_to_consume-1][1]

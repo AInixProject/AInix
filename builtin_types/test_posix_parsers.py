@@ -11,6 +11,20 @@ from ainix_common.parsing.parse_primitives import AInixParseError, ObjectNodeArg
 from ainix_common.parsing import loader
 
 
+def _make_flag(short_name: str) -> AInixArgument:
+    """Shorthand for constructing a flag argument"""
+    return AInixArgument(MagicMock(), short_name, None, arg_data={SHORT_NAME: short_name},
+                         parent_object_name=short_name + "fooparent")
+
+
+def _make_positional(name="p1", position: int = 0,
+                     multiword: bool = False, required: bool =False) -> AInixArgument:
+    """Shorthand for constructing a positional argument"""
+    return AInixArgument(MagicMock(), name, "FooType",
+                         arg_data={POSITION: position, MULTIWORD_POS_ARG: multiword},
+                         required=required)
+
+
 @pytest.fixture(scope="function")
 def type_context():
     context = TypeContext()
@@ -160,6 +174,7 @@ def test_prog_object_parser_argval(type_context):
     result = gen_result(parser.parse_string("-a hello", argval))
     assert result.get_arg_present("a") is not None
     assert result.get_arg_present("a").slice_string == "hello"
+    assert result.remaining_start_i == len("-a hello")
 
     # Combined style
     result = gen_result(parser.parse_string("-afoo", argval))
@@ -210,15 +225,39 @@ def test_prog_object_parser_2posarg(type_context):
 
 
 def test_prog_object_parser_posarg_multword(type_context):
-    fooType = AInixType(type_context, "FooType")
     argval = AInixObject(
         type_context, "FooProgram", "Program",
-        [AInixArgument(type_context, "p1", fooType.name,
-                       arg_data={POSITION: 0, MULTIWORD_POS_ARG: True}, required=True)])
+        [_make_positional(required=True, multiword=True)])
     parser = type_context.get_object_parser_by_name("ProgramObjectParser")
     result = gen_result(parser.parse_string("hello yo there", argval))
     assert result.get_arg_present("p1") is not None
     assert result.get_arg_present("p1").slice_string == "hello yo there"
+    assert result.remaining_start_i == len("hello yo there")
+
+
+def test_prog_object_parser_posarg_multword_and_nonpos(type_context):
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [_make_positional(required=True, multiword=True),
+         _make_flag("a")])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    result = gen_result(parser.parse_string("hello yo -a", argval))
+    assert result.get_arg_present("p1") is not None
+    assert result.get_arg_present("p1").slice_string == "hello yo"
+    assert result.get_arg_present("a") is not None
+    assert result.remaining_start_i == len("hello yo -a")
+
+
+def test_prog_object_parser_posarg_multword_and_nonpos2(type_context):
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [_make_positional(required=True, multiword=True),
+         _make_flag("a")])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    result = gen_result(parser.parse_string("hello -a", argval))
+    assert result.get_arg_present("p1") is not None
+    assert result.get_arg_present("p1").slice_string == "hello"
+    assert result.get_arg_present("a") is not None
 
 
 def test_prog_object_parser_2posarg_multword(type_context):
@@ -336,10 +375,10 @@ def test_string_parse_e2e_multiword3(type_context):
     )
     type_context.finalize_data()
     parser = StringParser(type_context)
-    ast = parser.create_parse_tree("hello foo baz -a", "Program")
+    ast = parser.create_parse_tree("hello foo bar -a", "Program")
     unparser = AstUnparser(type_context)
     to_string = unparser.to_string(ast)
-    assert to_string.total_string == "hello -a foo baz"
+    assert to_string.total_string == "hello -a foo bar"
 
 
 def test_command_operator_parser(type_context):
