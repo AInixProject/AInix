@@ -171,7 +171,6 @@ def ProgramObjectParser(
         single_dash = not parameter_end_seen and len(word) >= 2 and \
                       word[0] == "-" and word[1] != "-"
         double_dash = not parameter_end_seen and len(word) >= 3 and word[:2] == "--"
-        # TODO (DNGros): handle args that consume multiple words
         if single_dash:
             for ci, char in enumerate(word[1:]):
                 shortname_match = get_arg_with_short_name(remaining_args, char)
@@ -179,6 +178,7 @@ def ProgramObjectParser(
                     requires_value = shortname_match.type is not None
                     use_start_idx, use_end_idx = end_idx, end_idx
                     if requires_value:
+                        # TODO (DNGros): handle args that consume multiple words
                         remaining_chars = ci < len(word[1:]) - 1
                         if remaining_chars:
                             # Assume rest of chars are the value

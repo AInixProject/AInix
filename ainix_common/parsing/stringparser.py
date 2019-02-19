@@ -228,7 +228,10 @@ class StringParser:
         """Converts the result we get from a type parser into a string metadata
         result."""
         si, endi = result.get_next_slice()
-        ei = max(si, child_metadata.original_start_offset + child_metadata.remaining_right_starti)
+        #ei = max(si, child_metadata.original_start_offset + child_metadata.remaining_right_starti)
+        if child_metadata.original_start_offset != 0:
+            raise ValueError("Is this ever non 0???")
+        ei = max(endi, si + child_metadata.remaining_right_starti)
         return ParseDelegationReturnMetadata(True, result.string, 0, result.type, ei)
 
     def _parse_object_choice_node(
@@ -371,7 +374,7 @@ class AstUnparser:
         self,
         node: ObjectNode,
         parser: ObjectParser,
-        result_builder: '_UnparseResultBuilder',
+        result_builder: '_unparseresultbuilder',
         left_offset: int,
         child_nums_here: Tuple[int, ...]
     ) -> str:
