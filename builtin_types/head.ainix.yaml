@@ -7,9 +7,11 @@ defines:
       children:
           - name: n
             required: False
+            type: Number
             arg_data: {short_name: "n"}
           - name: c
             required: False
+            type: Number
             arg_data: {short_name: "c"}
           - name: file_list
             required: True

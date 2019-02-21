@@ -6,6 +6,7 @@ from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoice
 from ainix_common.parsing.copy_tools import make_copy_version_of_tree, add_copies_to_ast_set
 from ainix_common.parsing.loader import TypeContextDataLoader
 from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer
+from ainix_common.parsing.parse_primitives import AInixParseError
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing import exampleloader
@@ -113,3 +114,12 @@ def test_touch_set(all_the_stuff_context):
         other_copy, x_str)
     assert other_result.total_string == string
     assert cset.is_node_known_valid(other_copy)
+
+
+@pytest.mark.parametrize('string',
+                         ('asdf', "echo 'hi' | od -c"))
+def test_fails(all_the_stuff_context, string):
+    tc = all_the_stuff_context
+    parser = StringParser(tc)
+    with pytest.raises(AInixParseError):
+        ast = parser.create_parse_tree(string, "CommandSequence")

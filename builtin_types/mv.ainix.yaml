@@ -17,6 +17,9 @@ defines:
           - name: v
             required: False
             arg_data: {short_name: "v"}
+          - name: T
+            required: False
+            arg_data: {short_name: "T"}
           - name: srcs
             required: True
             type: PathList

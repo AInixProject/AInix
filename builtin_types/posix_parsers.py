@@ -44,6 +44,8 @@ def CmdSeqParser(
 ):
     if string == "":
         raise parse_primitives.AInixParseError("Unable to parse empty string")
+    if "`" in string or "$(" in string:
+        raise parse_primitives.AInixParseError("Subcommand calls not supported")
     operator_index = _get_location_of_operator(string)
     if operator_index is None:
         result.set_arg_present("ProgramArg", 0, len(string))
@@ -61,7 +63,7 @@ def _get_location_of_operator(string: str):
         if c == "|" and not inside_double_quotes and not inside_single_quotes:
             return i
         if c == "'" and not inside_double_quotes and not last_was_slash_escape:
-            inside_single_quotes = not inside_double_quotes
+            inside_single_quotes = not inside_single_quotes
         if c == '"' and not inside_single_quotes and not last_was_slash_escape:
             inside_double_quotes = not inside_double_quotes
         last_was_slash_escape = c == "\\" and not last_was_slash_escape
@@ -112,7 +114,8 @@ def get_arg_with_short_name(arg_list, short_name: str):
     assert len(short_name) == 1, "unexpectedly long short_name"
     matches = [a for a in arg_list if a.arg_data.get(SHORT_NAME, None) == short_name]
     if not matches:
-        return None
+        raise parse_primitives.AInixParseError(
+            f"Unexpected short_name -{short_name}")
     if len(matches) > 1:
         raise parse_primitives.AInixParseError(
             "Program has multiple args with same short_name", matches)
@@ -132,6 +135,7 @@ def _get_arg_with_long_name(
 ):
     exact_matches = [arg for arg in arg_list
                      if arg.arg_data.get('long_name', None) == long_name]
+    # TODO (DNGros): implement equal sign syntax (like --lines=3)
     if exact_matches:
         if len(exact_matches) > 1:
             raise parse_primitives.AInixParseError("Program has multiple args "
@@ -140,7 +144,8 @@ def _get_arg_with_long_name(
         return exact_matches[0]
     else:
         # TODO (DNGros): implment "non-ambigious abbriviations" for args
-        return None
+        raise parse_primitives.AInixParseError(
+            f"Unexpected long arg '{long_name}'.")
 
 
 def _get_next_slice_of_lex_result(lex_result, current_index):
@@ -180,24 +185,23 @@ def ProgramObjectParser(
         if single_dash:
             for ci, char in enumerate(word[1:]):
                 shortname_match = get_arg_with_short_name(remaining_args, char)
-                if shortname_match:
-                    requires_value = shortname_match.type is not None
-                    use_start_idx, use_end_idx = end_idx, end_idx
-                    if requires_value:
-                        # TODO (DNGros): handle args that consume multiple words
-                        remaining_chars = ci < len(word[1:]) - 1
-                        if remaining_chars:
-                            # Assume rest of chars are the value
-                            use_start_idx = start_idx + (ci+1) + 1  # +1 for the dash
-                            use_end_idx = end_idx
-                        else:
-                            next_slice = _get_next_slice_of_lex_result(
-                                lex_result, lex_index)
-                            use_start_idx, use_end_idx = next_slice
-                        lex_index += 1
-                    result.set_arg_present(shortname_match.name,
-                                           use_start_idx, use_end_idx, True)
-                    remaining_args.remove(shortname_match)
+                requires_value = shortname_match.type is not None
+                use_start_idx, use_end_idx = end_idx, end_idx
+                if requires_value:
+                    # TODO (DNGros): handle args that consume multiple words
+                    remaining_chars = ci < len(word[1:]) - 1
+                    if remaining_chars:
+                        # Assume rest of chars are the value
+                        use_start_idx = start_idx + (ci+1) + 1  # +1 for the dash
+                        use_end_idx = end_idx
+                    else:
+                        next_slice = _get_next_slice_of_lex_result(
+                            lex_result, lex_index)
+                        use_start_idx, use_end_idx = next_slice
+                    lex_index += 1
+                result.set_arg_present(shortname_match.name,
+                                       use_start_idx, use_end_idx, True)
+                remaining_args.remove(shortname_match)
             lex_index += 1
         elif double_dash:
             long_name_match = _get_arg_with_long_name(

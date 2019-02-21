@@ -63,6 +63,16 @@ def test_cmd_seq_parser(type_context):
     assert result.get_arg_present("CompoundOp").slice_string == "| foo | go"
 
 
+def test_cmd_seq_parser2(type_context):
+    cmd_seq_obj = type_context.get_object_by_name("CommandSequenceObj")
+    instance = type_context.get_object_parser_by_name("CmdSeqParser")
+    result = gen_result(instance.parse_string("woo 'hi' | foo | go", cmd_seq_obj))
+    assert result.get_arg_present("ProgramArg").slice == (0, 8)
+    assert result.get_arg_present("ProgramArg").slice_string == "woo 'hi'"
+    assert result.get_arg_present("CompoundOp").slice == (9, 19)
+    assert result.get_arg_present("CompoundOp").slice_string == "| foo | go"
+
+
 def test_cmd_seq_parser_quotes(type_context):
     cmd_seq_obj = type_context.get_object_by_name("CommandSequenceObj")
     instance = type_context.get_object_parser_by_name("CmdSeqParser")
