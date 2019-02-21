@@ -248,6 +248,19 @@ def test_prog_object_parser_posarg_multword_and_nonpos(type_context):
     assert result.remaining_start_i == len("hello yo -a")
 
 
+def test_prog_object_parser_posarg_multword_and_nonpos_escape(type_context):
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [_make_positional(required=True, multiword=True),
+         _make_flag("a")])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    result = gen_result(parser.parse_string("-- hello yo -a", argval))
+    assert result.get_arg_present("p1") is not None
+    assert result.get_arg_present("p1").slice_string == "hello yo -a"
+    assert result.get_arg_present("a") is None
+    assert result.remaining_start_i == len("-- hello yo -a")
+
+
 def test_prog_object_parser_posarg_multword_and_nonpos2(type_context):
     argval = AInixObject(
         type_context, "FooProgram", "Program",

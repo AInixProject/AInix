@@ -172,6 +172,8 @@ def ProgramObjectParser(
         word, (start_idx, end_idx) = lex_result[lex_index]
         if word == "--":
             parameter_end_seen = True
+            lex_index += 1
+            continue
         single_dash = not parameter_end_seen and len(word) >= 2 and \
                       word[0] == "-" and word[1] != "-"
         double_dash = not parameter_end_seen and len(word) >= 3 and word[:2] == "--"
