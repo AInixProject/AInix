@@ -102,20 +102,26 @@ VisitorReturnType = Generator[
 ]
 
 
-def _visit_str_match(node, string, left_offset) -> ParseDelegationReturnMetadata:
+def _visit_str_match(
+    node,
+    string,
+    left_offset,
+    result: ObjectParserResult
+) -> ParseDelegationReturnMetadata:
     """A grammar visitor for the literal string matches"""
     look_for = node.value[1:-1]
     does_start_with = string.startswith(look_for)
     if does_start_with:
+        result.remaining_start_i += len(look_for)
         return ParseDelegationReturnMetadata(does_start_with, string, left_offset,
                                              node, len(look_for))
     else:
         return ParseDelegationReturnMetadata(False, string, left_offset, node, None)
 
 
-def _visit_sufix(node, string, left_offset, run_data) -> VisitorReturnType:
+def _visit_sufix(node, string, left_offset, run_data, result) -> VisitorReturnType:
     """A grammar visitor for the suffixes"""
-    visitv = yield from gen_grammar_visitor(node[0], string, left_offset, run_data)
+    visitv = yield from gen_grammar_visitor(node[0], string, left_offset, run_data, result)
     expression, acceptables = visitv
     if len(node) > 1:
         sufix = node[1]
@@ -131,7 +137,8 @@ def gen_grammar_visitor(
     node: ParseTreeNode,
     string: str,
     left_offset: int,
-    run_data: ObjectParserRun
+    run_data: ObjectParserRun,
+    result: ObjectParserResult
 ) -> VisitorReturnType:
     """A custom visitor on the PEG grammer which does the delegation as necessary.
     It is a corroutine which yields delegations as needed. It returns metadata about
@@ -153,9 +160,10 @@ def gen_grammar_visitor(
             parse_return = parse_return.add_fail(f"Stack Message: Fail on arg '{node.value}'")
         return parse_return, v(parse_return)
     elif node.rule_name == "str_match":
-        return _visit_str_match(node, string, left_offset), v()
+        return _visit_str_match(node, string, left_offset, result), v()
     elif node.rule_name == "sufix":
-        out_return, things_to_accept = yield from _visit_sufix(node, string, left_offset, run_data)
+        out_return, things_to_accept = yield from _visit_sufix(
+            node, string, left_offset, run_data, result)
         return out_return, things_to_accept
     else:
         remaining_string = string
@@ -164,7 +172,7 @@ def gen_grammar_visitor(
         if isinstance(node, arpeggio.NonTerminal):
             for child in node:
                 visitv = yield from gen_grammar_visitor(
-                    child, remaining_string, new_left_offset, run_data)
+                    child, remaining_string, new_left_offset, run_data, result)
                 parse_return, new_acceptables = visitv
                 if not parse_return.parse_success:
                     #print("FAIL on", child, string)
@@ -194,22 +202,23 @@ def create_object_parser_from_grammar(
 
 
 def _create_object_parser_func_from_grammar(
-        grammar: str
+    grammar: str
 ) -> ObjectParseFuncType:
     grammar_ast = parse_grammar(grammar)
 
     def out_func(run_data: ObjectParserRun, string: str, result: ObjectParserResult):
         nonlocal grammar_ast
-        visitv = yield from gen_grammar_visitor(grammar_ast, string, 0, run_data)
+        visitv = yield from gen_grammar_visitor(grammar_ast, string, 0, run_data, result)
         parse_return, acceptables = visitv
         if not parse_return.parse_success:
-            raise UnparseableObjectError(f"Error parseing string {string} with grammar {grammar}."
+            raise UnparseableObjectError(f"Error parseing string '{string}' with grammar {grammar}."
                                          f"Clunky 'stack trace' (can be made better):\n"
                                          f"{parse_return.fail_reason}")
         for acceptable_delegation in acceptables:
             result.accept_delegation(acceptable_delegation)
-        result.remaining_start_i = parse_return.remaining_right_starti + \
-                                   parse_return.original_start_offset
+        result.remaining_start_i = max(parse_return.remaining_right_starti + \
+                                       parse_return.original_start_offset,
+                                       result.remaining_start_i)
 
     return out_func
 

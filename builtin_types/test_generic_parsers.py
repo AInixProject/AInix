@@ -26,7 +26,7 @@ def test_max_munch():
                for rep in ("fo", "bar", "f", "foo", "foot", 'baz')]
 
     parser = StringParser(tc)
-    ast = parser.create_parse_tree("foobar", foo_type)
+    ast = parser.create_parse_tree("foobar", foo_type, allow_partial_consume=True)
     assert ast.next_node_not_copy.implementation.name == "foo"
 
     #with pytest.raises(parse_primitives.AInixParseError):

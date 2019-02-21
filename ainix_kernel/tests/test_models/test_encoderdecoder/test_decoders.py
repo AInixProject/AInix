@@ -25,7 +25,7 @@ def test_get_latents():
     ast = parser.create_parse_tree("TWO foo bar", "ToySimpleStrs")
 
     latents = decoder.get_latent_select_states(
-        torch.Tensor(1, 4), torch.Tensor(1, 3, 4), ast)
+        torch.Tensor(1, 4), torch.Tensor(1, 3, 4), MagicMock(), ast)
 
     assert len(latents) == 3
     assert latents == [out_v for _ in range(3)]

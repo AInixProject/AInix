@@ -5,7 +5,7 @@ https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html
 
 """
 from ainix_common.parsing import parse_primitives
-from typing import List
+from typing import List, Tuple
 
 from ainix_common.parsing.parse_primitives import AInixParseError
 from ainix_common.parsing.typecontext import AInixArgument
@@ -48,7 +48,8 @@ def CmdSeqParser(
     if operator_index is None:
         result.set_arg_present("ProgramArg", 0, len(string))
     else:
-        result.set_arg_present("ProgramArg", 0, operator_index)
+        prog_arg_str = string[:operator_index].rstrip()
+        result.set_arg_present("ProgramArg", 0, len(prog_arg_str))
         result.set_arg_present("CompoundOp", operator_index, len(string))
 
 
@@ -88,10 +89,13 @@ def ProgramTypeParser(
         run.all_type_implementations, "invoke_name", first_word)
     if matching_programs:
         result.set_valid_implementation(matching_programs[0])
-        first_space_index = string.find(" ")
-        if first_space_index == -1:
-            first_space_index = len(string)
-        result.set_next_slice(first_space_index, len(string))
+        next_start_ind = string.find(" ")
+        if next_start_ind == -1:
+            next_start_ind = len(string)
+        else:
+            while next_start_ind < len(string) and string[next_start_ind] == " ":
+                next_start_ind += 1
+        result.set_next_slice(next_start_ind, len(string))
     else:
         raise parse_primitives.AInixParseError("Unable to find program", first_word)
 
@@ -190,7 +194,7 @@ def ProgramObjectParser(
                             use_start_idx, use_end_idx = next_slice
                         lex_index += 1
                     result.set_arg_present(shortname_match.name,
-                                           use_start_idx, use_end_idx)
+                                           use_start_idx, use_end_idx, True)
                     remaining_args.remove(shortname_match)
             lex_index += 1
         elif double_dash:
@@ -243,7 +247,7 @@ def ProgramObjectParser(
             else:
                 words_to_consume = 1
             _, use_end_idx = lex_result[lex_index+words_to_consume-1][1]
-            result.set_arg_present(arg_to_do.name, start_idx, use_end_idx)
+            result.set_arg_present(arg_to_do.name, start_idx, use_end_idx, True)
             remaining_args.remove(arg_to_do)
             lex_index += words_to_consume
 
@@ -312,7 +316,7 @@ def CommandOperatorParser(
     canidates.sort(reverse=True)
     matching_str, matching_impl = canidates[0]
     result.set_valid_implementation(matching_impl)
-    result.set_next_slice(len(matching_str) + amount_lstriped, len(string))
+    result.set_next_slice(len(matching_str) + amount_lstriped, len(string), True)
 
 
 def CommandOperatorUnparserFunc(result: parse_primitives.TypeToStringResult):

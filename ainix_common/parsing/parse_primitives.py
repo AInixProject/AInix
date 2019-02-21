@@ -204,9 +204,7 @@ class TypeParserResult:
 
     def get_next_string(self):
         si, ei = self._next_slice
-        # TODO This striping is probably a bad idea. Refactor so does that in StringParser instead.
-        # so that way left offsets dont get screwed up
-        return self.string[si:ei].strip()
+        return self.string[si:ei]
 
     def get_next_slice(self) -> Tuple[int, int]:
         """Gets the slice of the input string used to parse the implementation
@@ -223,10 +221,13 @@ class TypeParserResult:
     def set_valid_implementation_name(self, impl_name: str):
         self._implementation = self.type.type_context.get_object_by_name(impl_name)
 
-    def set_next_slice(self, start_idx, end_idx):
+    def set_next_slice(self, start_idx, end_idx, strip_slice: bool = False):
         """Sets the slice of the input string used to parse the implementation
         that we chose"""
-        self._next_slice = (int(start_idx), int(end_idx))
+        si, ei = int(start_idx), int(end_idx)
+        if strip_slice:
+            si, ei = _strip_slice_of_string(self.string, si, ei)
+        self._next_slice = (si, ei)
 
     @property
     def next_parser(self) -> 'ObjectParser':
@@ -561,6 +562,16 @@ class ObjectParseArgData:
     set_from_delegation: ParseDelegationReturnMetadata = None
 
 
+def _strip_slice_of_string(base_string, start_i, end_i) -> Tuple[int, int]:
+    """Given a slice of a string, returns a new slice into that string with
+    left and right whitespace stripped out"""
+    while start_i < len(base_string) and base_string[start_i] == " ":
+        start_i += 1
+    while end_i > start_i and base_string[end_i - 1] == " ":
+        end_i -= 1
+    return start_i, end_i
+
+
 class ObjectParserResult:
     def __init__(self, object_to_parse: 'typecontext.AInixObject', string: str):
         self._object = object_to_parse
@@ -568,18 +579,26 @@ class ObjectParserResult:
             {arg.name: None for arg in object_to_parse.children}
         self._sibling_result = None
         self.string = string
-        self.remaining_start_i = 0
+        self._remaining_start_i = 0
 
     def _get_slice_string(self, start_idx: int, end_idx: int) -> str:
-        return self.string[start_idx:end_idx].strip()
+        return self.string[start_idx:end_idx]
 
     def get_arg_present(self, name) -> Optional[ObjectParseArgData]:
         if name not in self._result_dict and self._object.get_arg_by_name("name") is None:
             raise ValueError(f"Arg name {name} not present in {self._object}")
         return self._result_dict.get(name, None)
 
-    def set_arg_present(self, arg_name: str, start_idx: int, end_idx: int):
+    def set_arg_present(
+        self,
+        arg_name: str,
+        start_idx: int,
+        end_idx: int,
+        strip_slice: bool = False
+    ):
         si, ei = int(start_idx), int(end_idx)
+        if strip_slice:
+            si, ei = _strip_slice_of_string(self.string, si, ei)
         if arg_name not in self._result_dict:
             raise AInixParseError(f"Invalid argument name {arg_name} for parse "
                                   f"result of {self._object.name}. Valid options"
@@ -587,6 +606,17 @@ class ObjectParserResult:
         self._result_dict[arg_name] = ObjectParseArgData(
             (si, ei), self._get_slice_string(si, ei))
         self.remaining_start_i = max(self.remaining_start_i, ei)
+
+    @property
+    def remaining_start_i(self):
+        return self._remaining_start_i
+
+    @remaining_start_i.setter
+    def remaining_start_i(self, new_remaining_i: int):
+        if new_remaining_i < self.remaining_start_i:
+            raise ValueError("Don't really expect you set remaining to be less than already"
+                             "is. Idk.. maybe this fine...")
+        self._remaining_start_i = new_remaining_i
 
     def accept_delegation(self, delegation_return: ParseDelegationReturnMetadata):
         if not isinstance(delegation_return.what_parsed, typecontext.AInixArgument):

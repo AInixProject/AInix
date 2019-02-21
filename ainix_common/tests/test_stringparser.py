@@ -66,7 +66,7 @@ def test_no_arg():
     AInixObject(tc, "FooO", "FooType")
     tc.finalize_data()
     parser = StringParser(tc)
-    ast = parser.create_parse_tree("a", "FooType")
+    ast = parser.create_parse_tree("a", "FooType", allow_partial_consume=True)
 
 
 def test_no_arg_delegate():
@@ -81,7 +81,7 @@ def test_no_arg_delegate():
     o = AInixObject(tc, "FooO", "FooType")
     tc.finalize_data()
     parser = StringParser(tc)
-    ast = parser.create_parse_tree("a", "FooType")
+    ast = parser.create_parse_tree("a", "FooType", allow_partial_consume=True)
     assert ast.next_node_not_copy.implementation == o
 
 
@@ -92,7 +92,7 @@ def test_no_arg_max_munch():
     o = AInixObject(tc, "FooO", "FooType")
     tc.finalize_data()
     parser = StringParser(tc)
-    ast = parser.create_parse_tree("a", "FooType")
+    ast = parser.create_parse_tree("a", "FooType", allow_partial_consume=True)
     assert ast.next_node_not_copy.implementation == o
 
 
@@ -417,18 +417,20 @@ def test_unparse_no_arg():
                      ).name)
     bo = AInixObject(tc, "bo", "bt", [],
                      preferred_object_parser_name=create_object_parser_from_grammar(
-                         tc, "bar_par", '"here"'
+                         tc, "bar_par", '" here"'
                      ).name)
     tc.finalize_data()
     parser = StringParser(tc)
+    #parser._parse_object_node(fo, "foohere", )
+
     ast = parser.create_parse_tree("foo here", "ft")
     unparser = AstUnparser(tc)
     result = unparser.to_string(ast)
-    assert result.total_string == "foohere"
+    assert result.total_string == "foo here"
     pointers = list(ast.depth_first_iter())
     noargs = ast.next_node_not_copy.get_choice_node_for_arg("arg1")
     assert noargs == pointers[2].cur_node
-    assert result.pointer_to_string(pointers[2]) == "here"
+    assert result.pointer_to_string(pointers[2]) == " here"
     for pointer in ast.depth_first_iter():
         assert (pointer.get_child_nums_here(), pointer.cur_node) in \
                result.child_path_and_node_to_span
@@ -446,7 +448,7 @@ def test_unparse_no_arg_no_str():
     bo = AInixObject(tc, "bo", "bt", [])
     tc.finalize_data()
     parser = StringParser(tc)
-    ast = parser.create_parse_tree("fooasdf", "ft")
+    ast = parser.create_parse_tree("fooasdf", "ft", allow_partial_consume=True)
     unparser = AstUnparser(tc)
     result = unparser.to_string(ast)
     assert result.total_string == "foo"
@@ -547,6 +549,7 @@ def test_unparse_optional_arg_cust_parser():
     ):
         if not string.startswith("foo"):
             raise AInixParseError("That's not a foo string!")
+        result.remaining_start_i = len("foo")
         deleg = yield run.left_fill_arg(arg1, (len("foo"), len(string)))
         if deleg.parse_success:
             result.accept_delegation(deleg)
@@ -556,11 +559,15 @@ def test_unparse_optional_arg_cust_parser():
     ):
         result.add_string("foo")
         result.add_arg_tostring(arg1)
-
+    fo_obj_parser = ObjectParser(tc, 'pname', cust_foo_func, unparser)
     fo = AInixObject(tc, "fo", "ft", [arg1],
-                     ObjectParser(tc, 'pname', cust_foo_func, unparser).name)
+                     fo_obj_parser.name)
     tc.finalize_data()
     parser = StringParser(tc)
+    node, metad = parser._parse_object_node(fo, "foo", fo_obj_parser, 0)
+    assert metad.parse_success
+    assert metad.remaining_right_starti == 3
+
     ast = parser.create_parse_tree("foo", "ft")
     unparser = AstUnparser(tc)
     result = unparser.to_string(ast)

@@ -112,7 +112,7 @@ def test_word_parts_2():
         tc, [('foo', True), ("bar", True), ("fo", True), ("!", False)])
     tc.finalize_data()
     parser = StringParser(tc)
-    ast = parser.create_parse_tree("fooBarBaz", WORD_PART_TYPE_NAME)
+    ast = parser.create_parse_tree("fooBarBaz", WORD_PART_TYPE_NAME, allow_partial_consume=True)
     word_part_o = ast.next_node_not_copy
     assert word_part_o.implementation.name == _name_for_word_part("foo")
     mod_type_choice = word_part_o.get_choice_node_for_arg(WORD_PART_MODIFIER_ARG_NAME)

@@ -18,20 +18,20 @@ def test_nearest_example():
     print(other_parsed_rep)
 
     index = ExamplesIndex(type_context, backend=ExamplesIndex.get_default_ram_backend())
-    index.add_example(Example("what is the meaning of life", "42",
+    index.add_example(Example(0, "what is the meaning of life", "42",
                               index.DEFAULT_X_TYPE, type_name, 1,
                               "sdff", DataSplits.TRAIN.value, parsed_rep))
-    index.add_example(Example("what is the meaning of the universe", "forty two",
+    index.add_example(Example(1, "what is the meaning of the universe", "forty two",
                               index.DEFAULT_X_TYPE, type_name, 1,
                               "bdffg", DataSplits.TRAIN.value, parsed_rep))
-    index.add_example(Example("what... is the airspeed of an unladen swallow?",
+    index.add_example(Example(2, "what... is the airspeed of an unladen swallow?",
                               "African or European?", index.DEFAULT_X_TYPE,
                               other_type_name, 1,
                               "sfasdf", DataSplits.TRAIN.value, other_parsed_rep))
-    index.add_example(Example("what is the meaning of everything else", "four two",
+    index.add_example(Example(3, "what is the meaning of everything else", "four two",
                               index.DEFAULT_X_TYPE, type_name, 1,
                               "sdfasdf", DataSplits.TRAIN.value, parsed_rep))
-    index.add_example(Example("what... is your quest?",
+    index.add_example(Example(4, "what... is your quest?",
                               "To seek the Holy Grail", index.DEFAULT_X_TYPE,
                               other_type_name, 1, "sdfanb",
                               DataSplits.TRAIN.value, other_parsed_rep))
@@ -60,20 +60,20 @@ def test_get_all_docs():
     other_parsed_rep = ainix_common.parsing.ast_components.indexable_repr_classify_type(other_type.name)
 
     index = ExamplesIndex(type_context, backend=ExamplesIndex.get_default_ram_backend())
-    index.add_example(Example("what is the meaning of life", "42",
+    index.add_example(Example(0, "what is the meaning of life", "42",
                               index.DEFAULT_X_TYPE, type_name, 1, "sdf",
                               DataSplits.TRAIN.value, parsed_rep))
-    index.add_example(Example("what is the meaning of the universe", "forty two",
+    index.add_example(Example(1, "what is the meaning of the universe", "forty two",
                               index.DEFAULT_X_TYPE, type_name, 1, "sdfnb",
                               DataSplits.TEST.value, parsed_rep))
-    index.add_example(Example("what... is the airspeed of an unladen swallow?",
+    index.add_example(Example(2, "what... is the airspeed of an unladen swallow?",
                               "African or European?", index.DEFAULT_X_TYPE,
                               other_type_name, 1, "basdf",
                               DataSplits.VALIDATION.value, other_parsed_rep))
-    index.add_example(Example("what is the meaning of everything else", "four two",
+    index.add_example(Example(3, "what is the meaning of everything else", "four two",
                               index.DEFAULT_X_TYPE, type_name, 1, "sdbf",
                               DataSplits.TRAIN.value, parsed_rep))
-    index.add_example(Example("what... is your quest?",
+    index.add_example(Example(4, "what... is your quest?",
                               "To seek the Holy Grail", index.DEFAULT_X_TYPE,
                               other_type_name, 1, "nwand",
                               DataSplits.VALIDATION.value, other_parsed_rep))
@@ -83,19 +83,19 @@ def test_get_all_docs():
     assert len(list(index.get_all_examples((DataSplits.VALIDATION, DataSplits.TRAIN)))) == 4
 
 
-BUILTIN_TYPES_PATH = "../../../builtin_types"
+BUILTIN_TYPES_PATH = "builtin_types"
 
 
 @pytest.fixture(scope="function")
 def base_type_context():
     type_context = TypeContext()
-    loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", type_context)
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", type_context, 4)
     return type_context
 
 
 @pytest.fixture(scope="function")
 def numbers_context(base_type_context):
-    loader.load_path(f"{BUILTIN_TYPES_PATH}/numbers.ainix.yaml", base_type_context)
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/numbers.ainix.yaml", base_type_context, 4)
     base_type_context.finalize_data()
     return base_type_context
 

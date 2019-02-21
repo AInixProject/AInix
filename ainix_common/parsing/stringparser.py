@@ -52,7 +52,8 @@ class StringParser:
         self,
         string: str,
         root_type_name: str,
-        root_parser_name: str = None
+        root_parser_name: str = None,
+        allow_partial_consume: bool = False
     ) -> ObjectChoiceNode:
         """Converts a string into a AST tree
 
@@ -62,6 +63,9 @@ class StringParser:
                 choose on at the root of the tree.
             root_parser_name: An optional TypeParser name which overrides the
                 default parser for the root_type_name.
+            allow_partial_consume: Ordinarily we expect the parsing to fully consume
+                the input string. This acts a sanity check for some parsers.
+                However, for some tests we might be ok with not consuming everything.
         """
         #print(f"stringparser PARSE {string}")
         root_parser = _get_root_parser(self._type_context, root_type_name, root_parser_name)
@@ -71,9 +75,10 @@ class StringParser:
         root_type = self._type_context.get_type_by_name(root_type_name)
         new_node, string_metadata = self._parse_object_choice_node(
             string, root_parser, root_type)
-        if string_metadata.remaining_right_starti != len(string):
-            raise AInixParseError(f"Error. Expect to fully the input string {string}. However, "
-                                  f"only consumed {string[:string_metadata.remaining_right_starti]}")
+        if string_metadata.remaining_right_starti != len(string) and not allow_partial_consume:
+            raise AInixParseError(
+                f"Error. Expect to fully consume input string '{string}'. However, "
+                f"only consumed {string[:string_metadata.remaining_right_starti]}")
         return new_node
 
     def _parse_object_node(
@@ -81,6 +86,7 @@ class StringParser:
         implementation: typecontext.AInixObject,
         string: str,
         parser: ainix_common.parsing.parse_primitives.ObjectParser,
+        origional_offset: int
     ) -> Tuple[ObjectNode, ParseDelegationReturnMetadata]:
         """Parses a string into a ObjectNode"""
         object_parse, delegation_to_node_map = self._run_object_parser_with_delegations(
@@ -91,7 +97,7 @@ class StringParser:
             arg_name_to_node[arg.name], arg_metadata = \
                 self._make_node_for_arg(arg, arg_present_data, delegation_to_node_map)
         my_return_metadata = ParseDelegationReturnMetadata(
-            True, string, 0, implementation, object_parse.remaining_start_i)
+            True, string, origional_offset, implementation, object_parse.remaining_start_i)
         return ObjectNode(implementation, pmap(arg_name_to_node)), my_return_metadata
 
     def _delegate_object_arg_parse(
@@ -180,6 +186,7 @@ class StringParser:
             if arg_is_present:
                 arg_has_substructure_to_parse = arg.type_name is not None
                 if arg_has_substructure_to_parse:
+                    # TODO (DNGros): add back in stripping for slice_string?
                     inner_arg_node, arg_string_metadata = self._parse_object_choice_node(
                         arg_data.slice_string, arg.type_parser, arg.type)
                     arg_map = pmap({typecontext.OPTIONAL_ARGUMENT_NEXT_ARG_NAME: inner_arg_node})
@@ -228,10 +235,10 @@ class StringParser:
         """Converts the result we get from a type parser into a string metadata
         result."""
         si, endi = result.get_next_slice()
-        #ei = max(si, child_metadata.original_start_offset + child_metadata.remaining_right_starti)
-        if child_metadata.original_start_offset != 0:
-            raise ValueError("Is this ever non 0???")
-        ei = max(endi, si + child_metadata.remaining_right_starti)
+        ei = max(si, child_metadata.original_start_offset + child_metadata.remaining_right_starti)
+        #if child_metadata.original_start_offset != 0:
+        #    raise ValueError("Is this ever non 0???")
+        #ei = max(endi, si + child_metadata.remaining_right_starti)
         return ParseDelegationReturnMetadata(True, result.string, 0, result.type, ei)
 
     def _parse_object_choice_node(
@@ -247,7 +254,10 @@ class StringParser:
             next_object_node, child_string_metadata = delegation_map[result._accepted_delegation]
         else:
             next_object_node, child_string_metadata = self._parse_object_node(
-                result.get_implementation(),  result.get_next_string(), result.next_parser
+                result.get_implementation(),
+                result.get_next_string(),
+                result.next_parser,
+                result.get_next_slice()[0]
             )
         metadata = self._object_choice_result_to_string_metadata(result, child_string_metadata)
         return ObjectChoiceNode(type, next_object_node), metadata
@@ -281,7 +291,8 @@ class StringParser:
             node, return_metadata = self._parse_object_node(
                 delegation.implementation,
                 delegation.string_to_parse,
-                delegation.next_parser
+                delegation.next_parser,
+                delegation.slice_to_parse[0]
             )
             return node, return_metadata
         except AInixParseError as e:

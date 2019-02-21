@@ -62,13 +62,13 @@ def make_model(model_name, example_store):
         raise ValueError("Unrecognized model type ", type)
 
 # A bunch of type contexts to test on
-BUILTIN_TYPES_PATH = "../../../builtin_types"
+BUILTIN_TYPES_PATH = "builtin_types"
 
 
 @pytest.fixture(scope="function")
 def base_tc():
     tc = TypeContext()
-    loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", tc)
+    loader.load_path(f"{BUILTIN_TYPES_PATH}/generic_parsers.ainix.yaml", tc, 4)
     return tc
 
 
@@ -251,7 +251,7 @@ def test_classify_seq(model_name, basic_string_tc):
         y_strings=["foo"],
     )
     model = make_model(model_name, example_store)
-    do_train(model, example_store, epochs=200)
+    do_train(model, example_store, epochs=300)
     assert_train_acc(model, example_store)
     check_survives_serialization(model, example_store, basic_string_tc, only_test_train=True)
 
@@ -356,7 +356,7 @@ def test_string_gen(model_name, basic_string_tc):
         #assert_val_acc(model, example_store, expect_fail=True)
         pass
     # Do training and expect it to work
-    do_train(model, example_store, epochs=30, batch_size=1)
+    do_train(model, example_store, epochs=40, batch_size=1)
     assert_train_acc(model, example_store, required_accuracy=0.8)
     assert_val_acc(model, example_store, required_accuracy=0.7)
 

@@ -146,8 +146,14 @@ def test_replacer_no_group():
         _ = replacer.create_replace_sampling("hello [-[BAD]-]")
 
 
+def _load_replacer_relative(path: str):
+    import os
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), path)
+    return Replacement.from_tsv()
+
+
 def test_file_replacer():
-    replacements = Replacement.from_tsv("../../../training/augmenting/data/FILENAME.tsv")
+    replacements = _load_replacer_relative("../../../training/augmenting/data/FILENAME.tsv")
     tc = TypeContext()
     loader = TypeContextDataLoader(tc, up_search_limit=4)
     loader.load_path("builtin_types/generic_parsers.ainix.yaml")
@@ -167,7 +173,7 @@ def test_file_replacer():
 
 
 def test_dir_replacer():
-    replacements = Replacement.from_tsv("../../../training/augmenting/data/DIRNAME.tsv")
+    replacements = _load_replacer_relative("../../../training/augmenting/data/DIRNAME.tsv")
     tc = TypeContext()
     loader = TypeContextDataLoader(tc, up_search_limit=4)
     loader.load_path("builtin_types/generic_parsers.ainix.yaml")

@@ -51,13 +51,13 @@ def test_cmd_seq_parser(type_context):
     assert result.get_arg_present("CompoundOp") is None
 
     result = gen_result(instance.parse_string("woo | foo", cmd_seq_obj))
-    assert result.get_arg_present("ProgramArg").slice == (0, 4)
+    assert result.get_arg_present("ProgramArg").slice == (0, 3)
     assert result.get_arg_present("ProgramArg").slice_string == "woo"
     assert result.get_arg_present("CompoundOp").slice == (4, 9)
     assert result.get_arg_present("CompoundOp").slice_string == "| foo"
 
     result = gen_result(instance.parse_string("woo | foo | go", cmd_seq_obj))
-    assert result.get_arg_present("ProgramArg").slice == (0, 4)
+    assert result.get_arg_present("ProgramArg").slice == (0, 3)
     assert result.get_arg_present("ProgramArg").slice_string == "woo"
     assert result.get_arg_present("CompoundOp").slice == (4, 14)
     assert result.get_arg_present("CompoundOp").slice_string == "| foo | go"
@@ -67,13 +67,13 @@ def test_cmd_seq_parser_quotes(type_context):
     cmd_seq_obj = type_context.get_object_by_name("CommandSequenceObj")
     instance = type_context.get_object_parser_by_name("CmdSeqParser")
     result = gen_result(instance.parse_string('hello "pi |" | foo', cmd_seq_obj))
-    assert result.get_arg_present("ProgramArg").slice == (0, 13)
+    assert result.get_arg_present("ProgramArg").slice == (0, 12)
     assert result.get_arg_present("ProgramArg").slice_string == 'hello "pi |"'
     assert result.get_arg_present("CompoundOp").slice == (13, 18)
     assert result.get_arg_present("CompoundOp").slice_string == "| foo"
 
     result = gen_result(instance.parse_string(r'he "\"pi\" |" | foo', cmd_seq_obj))
-    assert result.get_arg_present("ProgramArg").slice == (0, 14)
+    assert result.get_arg_present("ProgramArg").slice == (0, 13)
     assert result.get_arg_present("ProgramArg").slice_string == r'he "\"pi\" |"'
     assert result.get_arg_present("CompoundOp").slice == (14, 19)
     assert result.get_arg_present("CompoundOp").slice_string == "| foo"
@@ -364,7 +364,7 @@ def test_command_operator_parser(type_context):
     s = "| wc -l"
     result: TypeParserResult = gen_result(instance.parse_string(s))
     assert result.get_implementation().name == "PipeObj"
-    assert result.get_next_slice() == (1, len(s))
+    assert result.get_next_slice() == (2, len(s))
 
 
 def test_command_operator_parser_left_space(type_context):
@@ -372,7 +372,7 @@ def test_command_operator_parser_left_space(type_context):
     s = "  && wc -l"
     result: TypeParserResult = gen_result(instance.parse_string(s))
     assert result.get_implementation().name == "AndObj"
-    assert result.get_next_slice() == (4, len(s))
+    assert result.get_next_slice() == (5, len(s))
 
 
 def test_string_parse_e2e_sequence(type_context):

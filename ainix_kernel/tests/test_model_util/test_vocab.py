@@ -24,14 +24,14 @@ def toy_context() -> TypeContext:
 
 @pytest.fixture()
 def string_vocab() -> Vocab:
-    builder = CounterVocabBuilder(specials=[])
+    builder = CounterVocabBuilder(specials=[parse_constants.UNK])
     builder.add_sequence(["foo", "bar", "baz"])
     builder.add_sequence(["foo", "moo"])
     return builder.produce_vocab()
 
 
 def test_vocab(string_vocab):
-    assert len(string_vocab) == 4
+    assert len(string_vocab) == 5
     assert string_vocab.token_to_index("foo") == 0
     assert string_vocab.index_to_token(0) == "foo"
 
