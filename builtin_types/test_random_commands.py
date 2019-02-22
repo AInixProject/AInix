@@ -117,6 +117,14 @@ def test_touch_set(all_the_stuff_context):
 
 
 @pytest.mark.parametrize('string',
+                         ('split -l 100 data.csv',))
+def test_not_fail(all_the_stuff_context, string):
+    tc = all_the_stuff_context
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree(string, "CommandSequence")
+
+
+@pytest.mark.parametrize('string',
                          ('asdf', "echo 'hi' | od -c"))
 def test_fails(all_the_stuff_context, string):
     tc = all_the_stuff_context

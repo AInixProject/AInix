@@ -40,6 +40,7 @@ def stuff(data: Tuple[str, str]):
             print("success ", (cm, nl))
             parsable_data.append((nl, cm))
         except AInixParseError as e:
+            print("fail ", (cm, nl))
             pass
     print(len(parsable_data))
 

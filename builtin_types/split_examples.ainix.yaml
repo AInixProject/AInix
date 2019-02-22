@@ -1,0 +1,10 @@
+---
+defines:
+  - define_new: example_set
+    y_type: CommandSequence
+    examples:
+    - x:
+      - split up [-[FILENAME]-] into chunks of 10 lines
+      - split [-[FILENAME]-] into different files with 10 lines each
+      y: split -l 10 [-[FILENAME]-]
+...

@@ -1,0 +1,32 @@
+---
+defines:
+    - define_new: object
+      name: split
+      type: Program
+      type_data: {invoke_name: "split"}
+      children:
+          - name: l
+            required: False
+            type: Number
+            arg_data: {short_name: "l", long_name: "lines"}
+          - name: n
+            required: False
+            type: Number
+            arg_data: {short_name: "c"}
+          - name: C
+            required: False
+            type: Number
+            arg_data: {short_name: "C"}
+          - name: a
+            required: False
+            type: Number
+            arg_data: {short_name: "a"}
+          - name: b
+            required: True
+            type: Path
+            arg_data: {position: 0, multiword_pos_arg: False}
+          - name: prefix
+            required: False
+            type: GenericWord
+            arg_data: {position: 1, multiword_pos_arg: False}
+...
