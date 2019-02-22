@@ -12,7 +12,7 @@ defines:
           - name: n
             required: False
             type: Number
-            arg_data: {short_name: "c"}
+            arg_data: {short_name: "n"}
           - name: C
             required: False
             type: Number
