@@ -6,12 +6,15 @@ defines:
     - how many lines are in [-[1=FILENAME]-]
     - how many lines are in [-[1=FILENAME]-]?
     - how many lines [-[1=FILENAME]-]
+    - how many lines "[-[1=FILENAME]-]"
     - count the number of lines in [-[1=FILENAME]-]
+    - Counts lines of [-[1=FILENAME]-]
     - count the number of lines [-[1=FILENAME]-]
     - get the line count of [-[1=FILENAME]-]
     - how many lines in [-[1=FILENAME]-]
     - line count of [-[1=FILENAME]-]
     - get line count of [-[1=FILENAME]-]
+    - '[-[1=FILENAME]-] line count'
     y:
     - wc -l [-[$1]-]
   - x:
@@ -48,9 +51,8 @@ defines:
     - echo [-[$1]-] | wc -c
   - x:
     - how many letters are in "[-[1=ENGWORD]-][-[2=ENGWORD]-]"
+    - Get letter count of "[-[1=ENGWORD]-][-[2=ENGWORD]-]"
+    - how many letters are in [-[1=ENGWORD]-][-[2=ENGWORD]-]
+    - count number of letters in "[-[1=ENGWORD]-][-[2=ENGWORD]-]"
     y:
     - echo [-[$1]-][-[$2]-] | wc -c
-  - x:
-    - count the number of letters in "loopdado"
-    y:
-    - echo loopdado | wc -c

@@ -15,16 +15,25 @@ defines:
     y:
     - mkdir .cache
   - x:
+      - make a hidden directory named [-[ENGWORD]-]
+    y:
+      - mkdir .[-[ENGWORD]-]
+  - x:
     - make a directory named [-[ENGWORD]-] in ~
     y:
     - mkdir ~/[-[ENGWORD]-]
+  - x:
+      - make a directory named "[-[1=ENGWORD]-]" inside the "[-[2=ENGWORD]-]" dir
+    y:
+      - mkdir [-[$1]-]/[-[$2]-]
+      - mkdir -p [-[$1]-]/[-[$2]-]
   - x:
       - create new directories named [-[1=ENGWORD]-]/[-[2=ENGWORD]-]
       - make a directory named [-[1=ENGWORD]-]/[-[2=ENGWORD]-]
     y:
       - mkdir -p [-[$1]-]/[-[$2]-]
   - x:
-    - make a directory named [-[ENGWORD]-] printing each directory created
+    - make a directory named "[-[ENGWORD]-]" printing each directory created
     - verbose mkdir [-[ENGWORD]-]
     y:
     - mkdir -v [-[ENGWORD]-]
