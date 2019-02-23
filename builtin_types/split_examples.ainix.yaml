@@ -6,5 +6,10 @@ defines:
     - x:
       - split up [-[FILENAME]-] into chunks of 10 lines
       - split [-[FILENAME]-] into different files with 10 lines each
-      y: split -l 10 [-[FILENAME]-]
+      y:
+      - split -l 10 [-[FILENAME]-]
+    - x:
+      - split [-[FILENAME]-] into files with 100 lines with prefix "splitfile"
+      y:
+      - split -l 100 [-[FILENAME]-] splitfile
 ...

@@ -13,7 +13,8 @@ from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_
 import more_itertools
 from ainix_kernel.specialtypes import allspecials
 from ainix_kernel.training.model_specific_training import update_latent_store_from_examples
-from ainix_kernel.training.train_contexts import ALL_EXAMPLE_NAMES, load_all_examples
+from ainix_kernel.training.train_contexts import ALL_EXAMPLE_NAMES, load_all_examples, \
+    load_tellia_examples
 from ainix_kernel.util.serialization import serialize
 from tqdm import tqdm
 from ainix_common.parsing.loader import TypeContextDataLoader
@@ -110,8 +111,8 @@ class TypeTranslateCFTrainer:
             except ModelSafePredictError as e:
                 prediction = None
                 parse_exception = e
-            print("predict", prediction, "expect", y_ast_set, "ytext", y_texts,
-                  "replx", replaced_x_query)
+            #print("predict", prediction, "expect", y_ast_set, "ytext", y_texts,
+            #      "replx", replaced_x_query)
             eval = AstEvaluation(prediction, y_ast_set, y_texts, replaced_x_query,
                                  parse_exception, self.unparser)
             logger.add_evaluation(eval)
@@ -181,7 +182,8 @@ if __name__ == "__main__":
     type_context.finalize_data()
 
     #exampleloader.load_path(f"../../builtin_types/why_not_work_examples.ainix.yaml", index)
-    index = load_all_examples(type_context)
+    #index = load_all_examples(type_context)
+    index = load_tellia_examples(type_context)
 
     print("num docs", index.backend.index.doc_count())
 

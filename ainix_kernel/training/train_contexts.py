@@ -16,3 +16,10 @@ def load_all_examples(tc: TypeContext) -> ExamplesStore:
     for f in ALL_EXAMPLE_NAMES:
         exampleloader.load_path(f"{dirname}/../../builtin_types/{f}_examples.ainix.yaml", index)
     return index
+
+def load_tellia_examples(tc: TypeContext) -> ExamplesStore:
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    index = ainix_kernel.indexing.exampleindex.ExamplesIndex(tc)
+    exampleloader.load_path(
+        f"{dirname}/../../builtin_types/otherdata/tellina/tellina.ainix.yaml", index)
+    return index

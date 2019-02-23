@@ -85,14 +85,14 @@ def merge_command_sets(examples: List[Tuple[str, str]]):
 
 def convert_to_exampleset_dict(valid_maps, y_type: str = "CommandSequence") -> dict:
     return {
-       "defines": {
+       "defines": [{
            "define_new": "example_set",
            "y_type": y_type,
            "examples": [
                {"x": xs, "y": ys}
                for xs, ys in valid_maps
            ]
-       }
+       }]
     }
 
 

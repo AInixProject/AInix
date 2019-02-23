@@ -46,6 +46,10 @@ def CmdSeqParser(
         raise parse_primitives.AInixParseError("Unable to parse empty string")
     if "`" in string or "$(" in string:
         raise parse_primitives.AInixParseError("Subcommand calls not supported")
+    if "### " in string:
+        raise parse_primitives.AInixParseError(
+            "Hackily give up on something that looks like comment at the end"
+            "which sometimes apears in the tellina dataset.")
     operator_index = _get_location_of_operator(string)
     if operator_index is None:
         result.set_arg_present("ProgramArg", 0, len(string))
@@ -162,6 +166,7 @@ SHORT_NAME = "short_name"
 LONG_NAME = "long_name"
 POSITION = "position"
 MULTIWORD_POS_ARG = "multiword_pos_arg"
+
 
 def ProgramObjectParser(
     run: parse_primitives.ObjectParserRun,
