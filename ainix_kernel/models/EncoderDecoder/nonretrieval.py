@@ -229,6 +229,8 @@ class CopySpanPredictor(MultiforwardTorchModule):
             return 0
 
         si, ei = current_gt_set.earliest_known_copy()
+        if si is None or ei is None:
+            raise ValueError("No copy in the gt??")
         correct_starts = torch.LongTensor([si])
         correct_ends = torch.LongTensor([ei])
         start_predictions, end_predictions = self._get_copy_span_weights(

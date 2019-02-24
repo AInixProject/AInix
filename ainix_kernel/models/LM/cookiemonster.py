@@ -239,6 +239,7 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         self.initial_encoder = initial_encoder
         self.device = device
         self.pre_summary = nn.Sequential(
+            nn.Dropout(p=0.15),
             nn.Linear(self.initial_encoder.output_size, summary_size),
         )
         self.post_summary_linear = nn.Linear(summary_size, summary_size)

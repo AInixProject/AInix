@@ -182,8 +182,8 @@ if __name__ == "__main__":
     type_context.finalize_data()
 
     #exampleloader.load_path(f"../../builtin_types/why_not_work_examples.ainix.yaml", index)
-    #index = load_all_examples(type_context)
-    index = load_tellia_examples(type_context)
+    index = load_all_examples(type_context)
+    #index = load_tellia_examples(type_context)
 
     print("num docs", index.backend.index.doc_count())
 
@@ -204,8 +204,8 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    epochs = 40
-    trainer.train(epochs, eval_every_n_epochs=5, intermitted_save_path="./checkpoints/chkp")
+    epochs = 15
+    trainer.train(epochs, eval_every_n_epochs=2, intermitted_save_path="./checkpoints/chkp")
 
     print("Lets eval")
     print("-----------")

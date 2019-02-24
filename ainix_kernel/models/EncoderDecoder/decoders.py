@@ -131,6 +131,7 @@ class TreeRNNCell(nn.Module):
         self.rnn = nn.LSTMCell(ast_node_embed_size, hidden_size)
         # self.rnn = nn.GRUCell(ast_node_embed_size, hidden_size)
         self.root_node_features = nn.Parameter(torch.rand(hidden_size))
+        self.dropout = nn.Dropout(p=0.1)
 
     def forward(
         self,
@@ -157,6 +158,7 @@ class TreeRNNCell(nn.Module):
             parent_node_features = self.root_node_features.expand(num_of_batches, -1)
         out, next_hidden = self.rnn(type_to_predict_features,
                                     (parent_node_features, last_hidden))
+        next_hidden = self.dropout(next_hidden)
         #out = self.rnn(type_to_predict_features, last_hidden)
         return out, next_hidden
         #return out, out

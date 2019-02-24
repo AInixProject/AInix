@@ -306,3 +306,9 @@ defines:
             y:
             - -100
             - -1e2
+          - x:
+            - one twenty five
+            - one hundred twenty five
+            - one two five
+            y:
+            - 125

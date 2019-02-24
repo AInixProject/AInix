@@ -936,6 +936,10 @@ class AstObjectChoiceSet(AstSet):
         weight: float,
         probability_valid: float
     ):
+        if child.start is None:
+            raise ValueError("Cannot add copy node with None start")
+        if child.end is None:
+            raise ValueError("Cannot add copy node with None end")
         span = (child.start, child.end)
         existing_data = self._copy_options.get(span)
         if existing_data is not None:

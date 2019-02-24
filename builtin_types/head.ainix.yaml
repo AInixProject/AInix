@@ -14,7 +14,7 @@ defines:
             type: Number
             arg_data: {short_name: "c"}
           - name: file_list
-            required: True
+            required: False
             type: PathList
             arg_data: {position: 0, multiword_pos_arg: True}
 ...

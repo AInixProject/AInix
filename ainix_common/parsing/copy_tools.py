@@ -37,6 +37,8 @@ def string_in_tok_list(string: str, metadata: StringTokensMetadata) -> Optional[
                 i += 1
             else:
                 return None
+        if mapping[i - 1] is None:
+            return None
         return i - 1
 
     for potential_start in range(len(joinable_toks)):

@@ -35,6 +35,7 @@ defines:
     - how many things are here
     - ls count number of results
     - ls -1 | count the number of lines
+    - ls -1 | count num of outputs
     - ls but only one per line | wc -l
     - print each file or directory here but only one per line | wc -l
     - ls and count the number of lines of the output
