@@ -238,14 +238,15 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         self.query_vocab = query_vocab
         self.initial_encoder = initial_encoder
         self.device = device
-        self.pre_summary = nn.Sequential(
-            nn.Dropout(p=0.15),
-            nn.Linear(self.initial_encoder.output_size, summary_size),
-        )
-        self.post_summary_linear = nn.Linear(summary_size, summary_size)
+        #self.pre_summary = nn.Sequential(
+        #    nn.Dropout(p=0.15),
+        #    nn.Linear(self.initial_encoder.output_size, summary_size),
+        #)
+        #self.post_summary_linear = nn.Linear(summary_size, summary_size)
         # To avoid storing redunant copies of the weights we store a list of
         # models that we need to save the weights of during serialization
-        self.other_models = nn.ModuleList([self.pre_summary, self.post_summary_linear])
+        #self.other_models = nn.ModuleList([self.pre_summary, self.post_summary_linear])
+        self.other_models = nn.ModuleList([])
         self.summary_size = summary_size
 
     def _vectorize_query(self, queries: Sequence[str]):
@@ -264,9 +265,9 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         return self._sumarize(vectorized, input_lens), vectorized, tokenized
 
     def _sumarize(self, hidden, input_lens):
-        hidden = self.pre_summary(hidden)
+        #hidden = self.pre_summary(hidden)
         hidden = avg_pool(hidden, input_lens)
-        hidden = self.post_summary_linear(hidden)
+        #hidden = self.post_summary_linear(hidden)
         return hidden
 
     def get_tokenizer(self) -> tokenizers.ModifiedWordPieceTokenizer:
