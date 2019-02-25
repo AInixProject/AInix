@@ -17,6 +17,7 @@ from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore, Example, DataSplits
 from ainix_kernel.model_util.attending import attend
 from ainix_kernel.model_util.vocab import Vocab, BasicVocab
+from ainix_kernel.models.EncoderDecoder.decoders import get_valid_for_copy_mask
 from ainix_kernel.models.EncoderDecoder.encdecmodel import make_default_query_encoder, \
     get_default_tokenizers
 from ainix_kernel.models.EncoderDecoder.encoders import StringQueryEncoder
@@ -28,7 +29,7 @@ import torch.nn.functional as F
 
 import attr
 
-REPLACEMENT_SAMPLES = 30
+REPLACEMENT_SAMPLES = 50
 
 
 class FullRetModel(StringTypeTranslateCF):
@@ -60,8 +61,9 @@ class FullRetModel(StringTypeTranslateCF):
         top_sims, top_inds = torch.topk(sims, 5)
         example_ref: _ExampleRef = self.example_refs[int(top_inds[0])]
         ref_ast = example_ref.reference_ast
+        valid_for_copy_mask = get_valid_for_copy_mask(tokens)
         ast_with_new_copies = self._apply_copy_changes(
-            ref_ast, example_ref.copy_refs, memory)
+            ref_ast, example_ref.copy_refs, memory, valid_for_copy_mask)
         metad = TypeTranslatePredictMetadata(
             (math.log(float(top_sims[0])), ),
             (ExampleRetrieveExplanation((example_ref.example_id, ), None, None), )
@@ -72,14 +74,16 @@ class FullRetModel(StringTypeTranslateCF):
         self,
         ref_ast: ObjectChoiceNode,
         copy_refs: List['_CopyNodeReference'],
-        embedded_tokens: torch.Tensor
+        embedded_tokens: torch.Tensor,
+        valid_for_copy_mask
     ) -> ObjectChoiceNode:
         latest_tree = ref_ast
         extra_feat_info = make_extra_feats_info(embedded_tokens[0])
         for copy_ref in copy_refs:
             copy_node_pointer = latest_tree.get_node_along_path(copy_ref.path_to_this_copy)
             new_copy_node = self._figure_out_new_copy_node(
-                copy_ref, embedded_tokens, copy_node_pointer.cur_node.copy_type, extra_feat_info)
+                copy_ref, embedded_tokens, copy_node_pointer.cur_node.copy_type, extra_feat_info,
+                valid_for_copy_mask)
             latest_tree = copy_node_pointer.change_here(new_copy_node).get_root().cur_node
             extra_feat_info = update_extra_feats_info(
                 extra_feat_info, new_copy_node.start, new_copy_node.end)
@@ -90,20 +94,22 @@ class FullRetModel(StringTypeTranslateCF):
         copy_ref: '_CopyNodeReference',
         embedded_tokens: torch.Tensor,
         copy_type,
-        extra_copy_info
+        extra_copy_info,
+        valid_for_copy_mask: torch.Tensor
     ) -> CopyNode:
         assert len(embedded_tokens) == 1, "no batch yet :("
-        # TODO valid for copy mask
+        mask_addition = (1.0 - valid_for_copy_mask.float()) * -10000.0
+
         extra_vals = torch.cat(
             (embedded_tokens[0], get_extra_feat_vec(embedded_tokens[0], extra_copy_info)), dim=-1)
         extra_vals.unsqueeze(0)
         start_attens = attend.get_attend_weights(
             copy_ref.start_atten_vec.unsqueeze(0).unsqueeze(0),
-            extra_vals.unsqueeze(0), normalize='identity')
+            extra_vals.unsqueeze(0), normalize='identity') + mask_addition
         starts = torch.argmax(start_attens, dim=2)
         end_attens = attend.get_attend_weights(
             copy_ref.end_atten_vec.unsqueeze(0).unsqueeze(0),
-            extra_vals.unsqueeze(0), normalize='identity')
+            extra_vals.unsqueeze(0), normalize='identity') + mask_addition
         ends = torch.argmax(end_attens, dim=2)
         return CopyNode(copy_type, int(starts[0, 0]), int(ends[0, 0]))
 
