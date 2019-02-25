@@ -11,11 +11,12 @@ from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoice
 from ainix_common.parsing.copy_tools import make_copy_version_of_tree, get_paths_to_all_copies
 from ainix_common.parsing.model_specific import tokenizers, parse_constants
 from ainix_common.parsing.model_specific.tokenizers import get_default_pieced_tokenizer_word_list, \
-    AstValTokenizer
+    AstValTokenizer, ModifiedStringToken, WhitespaceModifier
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore, Example, DataSplits
 from ainix_kernel.model_util.attending import attend
+from ainix_kernel.model_util.operations import get_kernel_around
 from ainix_kernel.model_util.vocab import Vocab, BasicVocab
 from ainix_kernel.models.EncoderDecoder.decoders import get_valid_for_copy_mask
 from ainix_kernel.models.EncoderDecoder.encdecmodel import make_default_query_encoder, \
@@ -30,6 +31,10 @@ import torch.nn.functional as F
 import attr
 
 REPLACEMENT_SAMPLES = 50
+START_COPY_KERNEL_WEIGHTS = torch.tensor([0.25, 1, 0.05])
+END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, 1, 0.25])
+#                     ^ Weight current token the most and the before and after less.
+COPY_KERNEL_SIZE = len(START_COPY_KERNEL_WEIGHTS)
 
 
 class FullRetModel(StringTypeTranslateCF):
@@ -63,7 +68,7 @@ class FullRetModel(StringTypeTranslateCF):
         ref_ast = example_ref.reference_ast
         valid_for_copy_mask = get_valid_for_copy_mask(tokens)
         ast_with_new_copies = self._apply_copy_changes(
-            ref_ast, example_ref.copy_refs, memory, valid_for_copy_mask)
+            ref_ast, example_ref.copy_refs, memory, valid_for_copy_mask, tokens[0])
         metad = TypeTranslatePredictMetadata(
             (math.log(float(top_sims[0])), ),
             (ExampleRetrieveExplanation((example_ref.example_id, ), None, None), )
@@ -75,10 +80,11 @@ class FullRetModel(StringTypeTranslateCF):
         ref_ast: ObjectChoiceNode,
         copy_refs: List['_CopyNodeReference'],
         embedded_tokens: torch.Tensor,
-        valid_for_copy_mask
+        valid_for_copy_mask,
+        original_tokens
     ) -> ObjectChoiceNode:
         latest_tree = ref_ast
-        extra_feat_info = make_extra_feats_info(embedded_tokens[0])
+        extra_feat_info = make_extra_feats_info(embedded_tokens[0], original_tokens)
         for copy_ref in copy_refs:
             copy_node_pointer = latest_tree.get_node_along_path(copy_ref.path_to_this_copy)
             new_copy_node = self._figure_out_new_copy_node(
@@ -102,16 +108,21 @@ class FullRetModel(StringTypeTranslateCF):
 
         extra_vals = torch.cat(
             (embedded_tokens[0], get_extra_feat_vec(embedded_tokens[0], extra_copy_info)), dim=-1)
-        extra_vals.unsqueeze(0)
-        start_attens = attend.get_attend_weights(
-            copy_ref.start_atten_vec.unsqueeze(0).unsqueeze(0),
-            extra_vals.unsqueeze(0), normalize='identity') + mask_addition
-        starts = torch.argmax(start_attens, dim=2)
-        end_attens = attend.get_attend_weights(
-            copy_ref.end_atten_vec.unsqueeze(0).unsqueeze(0),
-            extra_vals.unsqueeze(0), normalize='identity') + mask_addition
-        ends = torch.argmax(end_attens, dim=2)
-        return CopyNode(copy_type, int(starts[0, 0]), int(ends[0, 0]))
+        extra_vals = extra_vals.unsqueeze(0)
+        extra_valsBCT = extra_vals.transpose(1, 2)
+        start_attens = self._apply_kernel(extra_valsBCT, copy_ref.start_avgs,
+                                          START_COPY_KERNEL_WEIGHTS)
+        start_attens += mask_addition
+        assert start_attens.shape[1] == embedded_tokens.shape[1]
+        starts = torch.argmax(start_attens, dim=1)
+        end_attens = self._apply_kernel(extra_valsBCT, copy_ref.end_avgs, END_COPY_KERNEL_WEIGHTS)
+        end_attens += mask_addition
+        ends = torch.argmax(end_attens, dim=1)
+        return CopyNode(copy_type, int(starts[0]), int(ends[0]))
+
+    def _apply_kernel(self, valsBCT, kernel, k_weight):
+        return F.conv1d(valsBCT, kernel.unsqueeze(0) * k_weight,
+                        padding=COPY_KERNEL_SIZE // 2).squeeze(1)
 
     def train(
         self,
@@ -137,8 +148,10 @@ class FullRetModel(StringTypeTranslateCF):
 @attr.s(auto_attribs=True)
 class _CopyNodeReference:
     path_to_this_copy: Tuple[int, ...]
-    start_atten_vec: torch.Tensor
-    end_atten_vec: torch.Tensor
+    # Avgs are in shape (hidden_channel, kernel_size)
+    # This is so it can more easily go into F.conv1d
+    start_avgs: torch.Tensor
+    end_avgs: torch.Tensor
 
 
 @attr.s(auto_attribs=True)
@@ -202,7 +215,7 @@ def _preproc_example(
             raise RuntimeError("Should have found match?")
         # Pull out the average start and end vector for every copy in the representive_ast
         copy_refs = []
-        all_extra_feats = [make_extra_feats_info(m) for m in memories]
+        all_extra_feats = [make_extra_feats_info(m, toks) for m, toks in zip(memories, tokens)]
         for copy_path in most_common_paths:
             starts, ends = [], []
             for i, (ast_with_copies, this_ast_paths, embedded_toks, extra_feats) in \
@@ -214,14 +227,17 @@ def _preproc_example(
                 embedded_with_extra = torch.cat(
                     (embedded_toks, get_extra_feat_vec(embedded_toks, extra_feats)),
                     dim=-1)
-                starts.append(embedded_with_extra[actual_node.start])
-                ends.append(embedded_with_extra[actual_node.end])
+                # TODO: Ahhh, should avoid repeatedly transposing
+                embedded_with_extraBCT = embedded_with_extra.transpose(0, 1).unsqueeze(0)
+                starts.append(
+                    get_kernel_around(embedded_with_extraBCT, actual_node.start).squeeze())
+                ends.append(get_kernel_around(embedded_with_extraBCT, actual_node.end).squeeze())
                 all_extra_feats[i] = update_extra_feats_info(
                     extra_feats, actual_node.start, actual_node.end)
             copy_refs.append(_CopyNodeReference(
                 path_to_this_copy=copy_path,
-                start_atten_vec=torch.mean(torch.stack(starts), dim=0),
-                end_atten_vec=torch.mean(torch.stack(ends), dim=0)
+                start_avgs=torch.mean(torch.stack(starts), dim=0),
+                end_avgs=torch.mean(torch.stack(ends), dim=0)
             ))
     else:
         copy_refs = tuple()
@@ -233,32 +249,45 @@ def _preproc_example(
     )
 
 
-def make_extra_feats_info(curr_embed):
+def make_extra_feats_info(curr_embed, original_tokens: List[ModifiedStringToken]):
+    unpadded_len = len(original_tokens)
     return (
         torch.zeros((curr_embed.shape[0])),
         torch.zeros((curr_embed.shape[0])),
-        torch.zeros((curr_embed.shape[0]))
+        torch.zeros((curr_embed.shape[0])),
+        torch.tensor([1. if i < unpadded_len and
+                            original_tokens[i].whitespace_modifier ==
+                            WhitespaceModifier.AFTER_SPACE_OR_SOS else 0.
+                     for i in range(curr_embed.shape[0])]),
+        torch.tensor([1. if i == unpadded_len - 1 or (i < unpadded_len and
+                           original_tokens[i + 1].whitespace_modifier ==
+                           WhitespaceModifier.AFTER_SPACE_OR_SOS) else 0.
+                      for i in range(curr_embed.shape[0])])
     )
 
 
 def update_extra_feats_info(old_extra_feat_info, added_start, added_end):
-    has_been_copy_start, has_been_copy_end, has_been_part_of_copy = old_extra_feat_info
+    (has_been_copy_start, has_been_copy_end, has_been_part_of_copy,
+        is_word_start, is_word_end) = old_extra_feat_info
     has_been_copy_start[added_start] = 1
     has_been_part_of_copy[added_start:added_end + 1] = 1
     has_been_copy_end[added_end] = 1
-    return has_been_copy_start, has_been_copy_end, has_been_part_of_copy
+    return has_been_copy_start, has_been_copy_end, has_been_part_of_copy, is_word_start, is_word_end
 
 
 def get_extra_feat_vec(
     curr_embed,
     extra_feat_info
 ):
-    has_been_copy_start, has_been_copy_end, has_been_part_of_copy = extra_feat_info
+    (has_been_copy_start, has_been_copy_end, has_been_part_of_copy,
+     is_word_start, is_word_end) = extra_feat_info
     scale = torch.mean(torch.sum(torch.abs(curr_embed), dim=1))
     extra = torch.transpose(torch.stack((
         (has_been_copy_start * 2 - 1) * scale * 0.1,
         (has_been_copy_end * 2 - 1) * scale * .1,
-        (has_been_part_of_copy * 2 - 1) * scale * .1
+        (has_been_part_of_copy * 2 - 1) * scale * .1,
+        (is_word_start * 2 - 1) * scale * .05,
+        (is_word_end * 2 - 1) * scale * .05,
     )), 0, 1)
     return extra
 

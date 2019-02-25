@@ -8,7 +8,7 @@ import os
 
 ALL_EXAMPLE_NAMES = (
     "numbers",
-    "pwd", "ls", "cat", "head", "cp", "wc",
+    "pwd", "ls", "cat", "head", "cp", "wc", "cd",
     "mkdir", "echo", "mv", "touch", "sleep", "split")
 
 

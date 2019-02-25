@@ -151,3 +151,68 @@ def test_avg_pool4(use_cuda):
             [6., 3., 5.]
         ], device=dvc)
     )
+
+
+def test_get_kernel_around0():
+    assert torch_epsilon_eq(
+        get_kernel_around(
+            torch.tensor([[
+                [1., 5, 7, 4, 6], [3., 6, 7, 2, 6]
+            ]]),
+            index=2,
+            tokens_before_channels=False
+        ),
+        torch.tensor([[
+            [5., 7, 4], [6, 7, 2]
+        ]])
+    )
+
+
+def test_get_kernel_around():
+    a, b, c = [3., 5], [1., 6], [1., 8]
+    assert torch_epsilon_eq(
+        get_kernel_around(
+            torch.tensor([[
+                [1., 2], a, b, c, [3, 5]
+            ]]),
+            index=2,
+            tokens_before_channels=True
+        ),
+        torch.tensor([
+            [a, b, c]
+        ])
+    )
+
+
+def test_get_kernel_around_batched():
+    a, b, c, d = [3., 5], [1., 6], [1., 8], [1., 7.]
+    assert torch_epsilon_eq(
+        get_kernel_around(
+            torch.tensor([
+                [[1., 2], a, b, c, [3, 5]],
+                [a, a, d, c, c]
+            ]),
+            index=2,
+            tokens_before_channels=True
+        ),
+        torch.tensor([
+            [a, b, c],
+            [a, d, c]
+        ])
+    )
+
+
+def test_get_kernel_around_pad():
+    a, b, c = [3., 5], [1., 6], [1., 8]
+    assert torch_epsilon_eq(
+        get_kernel_around(
+            torch.tensor([[
+                c, a, b, c, a
+            ]]),
+            index=0,
+            tokens_before_channels=True
+        ),
+        torch.tensor([
+            [[0, 0], c, a]
+        ])
+    )

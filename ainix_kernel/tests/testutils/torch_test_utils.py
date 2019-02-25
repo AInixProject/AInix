@@ -14,10 +14,14 @@ def torch_epsilon_eq(val, expected, epsilon=1e-12, print_error=True):
     if isinstance(expected, list):
         expected = torch.Tensor(expected) \
             if not isinstance(val, torch.LongTensor) else torch.LongTensor(expected)
-    difs = torch.abs(torch.add(val, -expected))
-    eqs = torch.lt(difs, epsilon)
-    if torch.all(eqs):
-        return True
+    try:
+        difs = torch.abs(torch.add(val, -expected))
+    except RuntimeError as e:
+        print(e)
+    else:
+        eqs = torch.lt(difs, epsilon)
+        if torch.all(eqs):
+            return True
     if print_error:
         print("Epsilon equals failure.")
         print(f"Expected:\n {expected}")

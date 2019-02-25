@@ -4,6 +4,7 @@ from typing import Tuple, Optional
 
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 
 def manual_bincount(groups: torch.Tensor, weights: torch.Tensor = None):
@@ -117,6 +118,34 @@ class GELUActivation(nn.Module):
             return fastgelu(x)
         else:
             return gelu(x)
+
+
+def get_kernel_around(tokens, index, k=3, tokens_before_channels=False):
+    """Gets a window around a certain index"""
+    if tokens_before_channels:
+        tokens = tokens.transpose(1, 2)  # B x T x C -> B x C x T
+    assert k % 2 == 1
+    tokens = F.pad(tokens, (k // 2, k // 2))
+    start_offset = index  #  - (k // 2) + (k // 2) Evens out because of padding.
+    kernels = tokens[:, :, start_offset:start_offset+k]
+    if tokens_before_channels:
+        kernels = kernels.transpose(1, 2)  # B x C x T -> B x T x C
+    return kernels
+
+
+
+#def token_trigram_stack(tokens: torch.Tensor):
+#    """
+#
+#    Args:
+#        tokens: Tensor of dim (batch, seq_len, hidden).
+#
+#    Returns:
+#
+#    """
+#    before_token = tokens[:, :-1]
+#    before_token = torch.cat(before_token, torch.zeros(tokens.shape[2]))
+#    after_token = tokens[:, 1:]
 
 
 
