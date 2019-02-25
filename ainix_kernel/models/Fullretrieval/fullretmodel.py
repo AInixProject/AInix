@@ -187,61 +187,57 @@ def _preproc_example(
     summary = torch.mean(summaries, dim=0)
     ast_parses = [parser.create_parse_tree(y, "CommandSequence") for y in ys]
 
-    if needs_replacement:
-        ast_as_copies = [
-            make_copy_version_of_tree(
-                ast, unparser,
-                # Really should not have to retokenize, but whatever. It's memoized I think
-                token_metadata=embedder.get_tokenizer().tokenize(rx)[1]
-            )
-            for ast, rx in zip(ast_parses, xs)
-        ]
-        paths_to_copies = [
-            get_paths_to_all_copies(ast)
-            for ast in ast_as_copies
-        ]
-        # With different replacements there are potentially different copy situations.
-        # So let's take the most common one.
-        # The 0th index of a call to most_common(1) is the most common. Then take [0] to get
-        # actual path, not just the count of times it appears.
-        most_common_paths = collections.Counter(paths_to_copies).most_common(1)[0][0]
-        # Our representive ast will the ast we will return in this summary matches, with
-        # just with all the copy nodes swapped out as appropriate
-        for ast, paths in zip(ast_as_copies, paths_to_copies):
-            if paths == most_common_paths:
-                representive_ast = ast
-                break
-        else:
-            raise RuntimeError("Should have found match?")
-        # Pull out the average start and end vector for every copy in the representive_ast
-        copy_refs = []
-        all_extra_feats = [make_extra_feats_info(m, toks) for m, toks in zip(memories, tokens)]
-        for copy_path in most_common_paths:
-            starts, ends = [], []
-            for i, (ast_with_copies, this_ast_paths, embedded_toks, extra_feats) in \
-                    enumerate(zip(ast_as_copies, paths_to_copies, memories, all_extra_feats)):
-                if this_ast_paths != most_common_paths:
-                    continue
-                actual_node = ast_with_copies.get_node_along_path(copy_path).cur_node
-                assert isinstance(actual_node, CopyNode)
-                embedded_with_extra = torch.cat(
-                    (embedded_toks, get_extra_feat_vec(embedded_toks, extra_feats)),
-                    dim=-1)
-                # TODO: Ahhh, should avoid repeatedly transposing
-                embedded_with_extraBCT = embedded_with_extra.transpose(0, 1).unsqueeze(0)
-                starts.append(
-                    get_kernel_around(embedded_with_extraBCT, actual_node.start).squeeze())
-                ends.append(get_kernel_around(embedded_with_extraBCT, actual_node.end).squeeze())
-                all_extra_feats[i] = update_extra_feats_info(
-                    extra_feats, actual_node.start, actual_node.end)
-            copy_refs.append(_CopyNodeReference(
-                path_to_this_copy=copy_path,
-                start_avgs=torch.mean(torch.stack(starts), dim=0),
-                end_avgs=torch.mean(torch.stack(ends), dim=0)
-            ))
+    ast_as_copies = [
+        make_copy_version_of_tree(
+            ast, unparser,
+            # Really should not have to retokenize, but whatever. It's memoized I think
+            token_metadata=embedder.get_tokenizer().tokenize(rx)[1]
+        )
+        for ast, rx in zip(ast_parses, xs)
+    ]
+    paths_to_copies = [
+        get_paths_to_all_copies(ast)
+        for ast in ast_as_copies
+    ]
+    # With different replacements there are potentially different copy situations.
+    # So let's take the most common one.
+    # The 0th index of a call to most_common(1) is the most common. Then take [0] to get
+    # actual path, not just the count of times it appears.
+    most_common_paths = collections.Counter(paths_to_copies).most_common(1)[0][0]
+    # Our representive ast will the ast we will return in this summary matches, with
+    # just with all the copy nodes swapped out as appropriate
+    for ast, paths in zip(ast_as_copies, paths_to_copies):
+        if paths == most_common_paths:
+            representive_ast = ast
+            break
     else:
-        copy_refs = tuple()
-        representive_ast = ast_parses[0]
+        raise RuntimeError("Should have found match?")
+    # Pull out the average start and end vector for every copy in the representive_ast
+    copy_refs = []
+    all_extra_feats = [make_extra_feats_info(m, toks) for m, toks in zip(memories, tokens)]
+    for copy_path in most_common_paths:
+        starts, ends = [], []
+        for i, (ast_with_copies, this_ast_paths, embedded_toks, extra_feats) in \
+                enumerate(zip(ast_as_copies, paths_to_copies, memories, all_extra_feats)):
+            if this_ast_paths != most_common_paths:
+                continue
+            actual_node = ast_with_copies.get_node_along_path(copy_path).cur_node
+            assert isinstance(actual_node, CopyNode)
+            embedded_with_extra = torch.cat(
+                (embedded_toks, get_extra_feat_vec(embedded_toks, extra_feats)),
+                dim=-1)
+            # TODO: Ahhh, should avoid repeatedly transposing
+            embedded_with_extraBCT = embedded_with_extra.transpose(0, 1).unsqueeze(0)
+            starts.append(
+                get_kernel_around(embedded_with_extraBCT, actual_node.start).squeeze())
+            ends.append(get_kernel_around(embedded_with_extraBCT, actual_node.end).squeeze())
+            all_extra_feats[i] = update_extra_feats_info(
+                extra_feats, actual_node.start, actual_node.end)
+        copy_refs.append(_CopyNodeReference(
+            path_to_this_copy=copy_path,
+            start_avgs=torch.mean(torch.stack(starts), dim=0),
+            end_avgs=torch.mean(torch.stack(ends), dim=0)
+        ))
 
     return (
         summary,
