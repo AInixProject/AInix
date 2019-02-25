@@ -35,10 +35,12 @@ if __name__ == "__main__":
     model = full_ret_from_example_store(index, replacers, pretrained_checkpoint_path)
     unparser = AstUnparser(type_context, model.get_string_tokenizer())
 
-    ast, metad = model.predict("copy foo.txt to parent dir", "CommandSequence", True)
+
     while True:
         q = input("Query: ")
         ast, metad = model.predict(q, "CommandSequence", False)
         unparse_result = unparser.to_string(ast, q)
         print(unparse_result.total_string)
         print(math.exp(sum(metad.log_confidences)))
+        print(index.get_example_by_id(
+            metad.example_retrieve_explanations[0].reference_example_ids[0]))

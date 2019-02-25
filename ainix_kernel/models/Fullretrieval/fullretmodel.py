@@ -20,7 +20,8 @@ from ainix_kernel.model_util.vocab import Vocab, BasicVocab
 from ainix_kernel.models.EncoderDecoder.encdecmodel import make_default_query_encoder, \
     get_default_tokenizers
 from ainix_kernel.models.EncoderDecoder.encoders import StringQueryEncoder
-from ainix_kernel.models.model_types import StringTypeTranslateCF, TypeTranslatePredictMetadata
+from ainix_kernel.models.model_types import StringTypeTranslateCF, TypeTranslatePredictMetadata, \
+    ExampleRetrieveExplanation
 from ainix_kernel.training.augmenting.replacers import Replacer
 import numpy as np
 import torch.nn.functional as F
@@ -40,6 +41,7 @@ class FullRetModel(StringTypeTranslateCF):
     ):
         self.embedder = embedder
         self.summaries = summaries
+        assert not self.summaries.requires_grad
         self.dataset_splits = dataset_splits
         self.example_refs = example_refs
         self.not_train_mask = self.dataset_splits != DataSplits.TRAIN.value
@@ -60,7 +62,10 @@ class FullRetModel(StringTypeTranslateCF):
         ref_ast = example_ref.reference_ast
         ast_with_new_copies = self._apply_copy_changes(
             ref_ast, example_ref.copy_refs, memory)
-        metad = TypeTranslatePredictMetadata((math.log(float(top_sims[0])), ), None)
+        metad = TypeTranslatePredictMetadata(
+            (math.log(float(top_sims[0])), ),
+            (ExampleRetrieveExplanation((example_ref.example_id, ), None, None), )
+        )
         return ast_with_new_copies, metad
 
     def _apply_copy_changes(
@@ -70,28 +75,35 @@ class FullRetModel(StringTypeTranslateCF):
         embedded_tokens: torch.Tensor
     ) -> ObjectChoiceNode:
         latest_tree = ref_ast
+        extra_feat_info = make_extra_feats_info(embedded_tokens[0])
         for copy_ref in copy_refs:
             copy_node_pointer = latest_tree.get_node_along_path(copy_ref.path_to_this_copy)
             new_copy_node = self._figure_out_new_copy_node(
-                copy_ref, embedded_tokens, copy_node_pointer.cur_node.copy_type)
+                copy_ref, embedded_tokens, copy_node_pointer.cur_node.copy_type, extra_feat_info)
             latest_tree = copy_node_pointer.change_here(new_copy_node).get_root().cur_node
+            extra_feat_info = update_extra_feats_info(
+                extra_feat_info, new_copy_node.start, new_copy_node.end)
         return latest_tree
 
     def _figure_out_new_copy_node(
         self,
         copy_ref: '_CopyNodeReference',
         embedded_tokens: torch.Tensor,
-        copy_type
+        copy_type,
+        extra_copy_info
     ) -> CopyNode:
         assert len(embedded_tokens) == 1, "no batch yet :("
         # TODO valid for copy mask
+        extra_vals = torch.cat(
+            (embedded_tokens[0], get_extra_feat_vec(embedded_tokens[0], extra_copy_info)), dim=-1)
+        extra_vals.unsqueeze(0)
         start_attens = attend.get_attend_weights(
             copy_ref.start_atten_vec.unsqueeze(0).unsqueeze(0),
-            embedded_tokens, normalize='identity')
+            extra_vals.unsqueeze(0), normalize='identity')
         starts = torch.argmax(start_attens, dim=2)
         end_attens = attend.get_attend_weights(
             copy_ref.end_atten_vec.unsqueeze(0).unsqueeze(0),
-            embedded_tokens, normalize='identity')
+            extra_vals.unsqueeze(0), normalize='identity')
         ends = torch.argmax(end_attens, dim=2)
         return CopyNode(copy_type, int(starts[0, 0]), int(ends[0, 0]))
 
@@ -184,16 +196,22 @@ def _preproc_example(
             raise RuntimeError("Should have found match?")
         # Pull out the average start and end vector for every copy in the representive_ast
         copy_refs = []
+        all_extra_feats = [make_extra_feats_info(m) for m in memories]
         for copy_path in most_common_paths:
             starts, ends = [], []
-            for ast_with_copies, this_ast_paths, embedded_toks in zip(
-                    ast_as_copies, paths_to_copies, memories):
+            for i, (ast_with_copies, this_ast_paths, embedded_toks, extra_feats) in \
+                    enumerate(zip(ast_as_copies, paths_to_copies, memories, all_extra_feats)):
                 if this_ast_paths != most_common_paths:
                     continue
                 actual_node = ast_with_copies.get_node_along_path(copy_path).cur_node
                 assert isinstance(actual_node, CopyNode)
-                starts.append(embedded_toks[actual_node.start])
-                ends.append(embedded_toks[actual_node.end])
+                embedded_with_extra = torch.cat(
+                    (embedded_toks, get_extra_feat_vec(embedded_toks, extra_feats)),
+                    dim=-1)
+                starts.append(embedded_with_extra[actual_node.start])
+                ends.append(embedded_with_extra[actual_node.end])
+                all_extra_feats[i] = update_extra_feats_info(
+                    extra_feats, actual_node.start, actual_node.end)
             copy_refs.append(_CopyNodeReference(
                 path_to_this_copy=copy_path,
                 start_atten_vec=torch.mean(torch.stack(starts), dim=0),
@@ -207,6 +225,36 @@ def _preproc_example(
         summary,
         _ExampleRef(example.example_id, representive_ast, tuple(copy_refs))
     )
+
+
+def make_extra_feats_info(curr_embed):
+    return (
+        torch.zeros((curr_embed.shape[0])),
+        torch.zeros((curr_embed.shape[0])),
+        torch.zeros((curr_embed.shape[0]))
+    )
+
+
+def update_extra_feats_info(old_extra_feat_info, added_start, added_end):
+    has_been_copy_start, has_been_copy_end, has_been_part_of_copy = old_extra_feat_info
+    has_been_copy_start[added_start] = 1
+    has_been_part_of_copy[added_start:added_end + 1] = 1
+    has_been_copy_end[added_end] = 1
+    return has_been_copy_start, has_been_copy_end, has_been_part_of_copy
+
+
+def get_extra_feat_vec(
+    curr_embed,
+    extra_feat_info
+):
+    has_been_copy_start, has_been_copy_end, has_been_part_of_copy = extra_feat_info
+    scale = torch.mean(torch.sum(torch.abs(curr_embed), dim=1))
+    extra = torch.transpose(torch.stack((
+        (has_been_copy_start * 2 - 1) * scale * 0.1,
+        (has_been_copy_end * 2 - 1) * scale * .1,
+        (has_been_part_of_copy * 2 - 1) * scale * .1
+    )), 0, 1)
+    return extra
 
 
 def full_ret_from_example_store(
@@ -223,21 +271,22 @@ def full_ret_from_example_store(
     unparser = AstUnparser(example_store.type_context, embedder.get_tokenizer())
     processed_x_raws = set()
     summaries, example_refs, example_splits = [], [], []
-    for example in tqdm(list(example_store.get_all_examples())):
-        if example.xquery in processed_x_raws:
-            continue
-        # Get the most prefered y text
-        all_y_examples = example_store.get_examples_from_y_set(example.y_set_id)
-        all_y_examples = [e for e in all_y_examples if e.xquery == example.xquery]
-        all_y_examples.sort(key=lambda e: e.weight)
-        highest_rated_version_of_this_example = all_y_examples[0]
-        assert highest_rated_version_of_this_example.xquery == example.xquery
-        assert highest_rated_version_of_this_example.split == example.split
-        new_summary, new_example_ref = _preproc_example(
-            highest_rated_version_of_this_example, replacers, embedder, parser, unparser)
-        summaries.append(new_summary)
-        example_refs.append(new_example_ref)
-        example_splits.append(example.split)
+    with torch.no_grad():
+        for example in tqdm(list(example_store.get_all_examples())):
+            if example.xquery in processed_x_raws:
+                continue
+            # Get the most prefered y text
+            all_y_examples = example_store.get_examples_from_y_set(example.y_set_id)
+            all_y_examples = [e for e in all_y_examples if e.xquery == example.xquery]
+            all_y_examples.sort(key=lambda e: e.weight)
+            highest_rated_version_of_this_example = all_y_examples[0]
+            assert highest_rated_version_of_this_example.xquery == example.xquery
+            assert highest_rated_version_of_this_example.split == example.split
+            new_summary, new_example_ref = _preproc_example(
+                highest_rated_version_of_this_example, replacers, embedder, parser, unparser)
+            summaries.append(new_summary)
+            example_refs.append(new_example_ref)
+            example_splits.append(example.split)
     return FullRetModel(
         embedder=embedder,
         summaries=torch.stack(summaries),
