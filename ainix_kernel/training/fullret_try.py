@@ -8,8 +8,9 @@ from ainix_common.parsing.typecontext import TypeContext
 from ainix_kernel.models.Fullretrieval.fullretmodel import full_ret_from_example_store
 from ainix_kernel.specialtypes import allspecials
 from ainix_kernel.training.augmenting.replacers import get_all_replacers
+from ainix_kernel.training.evaluate import EvaluateLogger, print_ast_eval_log
 from ainix_kernel.training.train_contexts import ALL_EXAMPLE_NAMES, load_all_examples
-
+from ainix_kernel.training.trainer import TypeTranslateCFTrainer
 
 if __name__ == "__main__":
     pretrained_checkpoint_path = "../../checkpoints/" \
@@ -35,10 +36,14 @@ if __name__ == "__main__":
     model = full_ret_from_example_store(index, replacers, pretrained_checkpoint_path)
     unparser = AstUnparser(type_context, model.get_string_tokenizer())
 
+    tran_trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
+    logger = EvaluateLogger()
+    tran_trainer.evaluate(logger, dump_each=True)
+    print_ast_eval_log(logger)
 
     while True:
         q = input("Query: ")
-        ast, metad = model.predict(q, "CommandSequence", False)
+        ast, metad = model.predict(q, "CommandSequence", True)
         unparse_result = unparser.to_string(ast, q)
         print(unparse_result.total_string)
         print(math.exp(sum(metad.log_confidences)))
