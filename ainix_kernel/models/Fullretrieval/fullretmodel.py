@@ -27,7 +27,7 @@ import torch.nn.functional as F
 
 import attr
 
-REPLACEMENT_SAMPLES = 10
+REPLACEMENT_SAMPLES = 30
 
 
 class FullRetModel(StringTypeTranslateCF):
@@ -83,16 +83,17 @@ class FullRetModel(StringTypeTranslateCF):
         embedded_tokens: torch.Tensor,
         copy_type
     ) -> CopyNode:
+        assert len(embedded_tokens) == 1, "no batch yet :("
         # TODO valid for copy mask
         start_attens = attend.get_attend_weights(
-            copy_ref.start_atten_vec, embedded_tokens, normalize='identity')
-        starts = torch.argmax(start_attens, dim=1)
+            copy_ref.start_atten_vec.unsqueeze(0).unsqueeze(0),
+            embedded_tokens, normalize='identity')
+        starts = torch.argmax(start_attens, dim=2)
         end_attens = attend.get_attend_weights(
-            copy_ref.end_atten_vec, embedded_tokens, normalize='identity')
-        ends = torch.argmax(end_attens, dim=1)
-        return CopyNode(copy_type, int(starts[0]), int(ends[0]))
-
-
+            copy_ref.end_atten_vec.unsqueeze(0).unsqueeze(0),
+            embedded_tokens, normalize='identity')
+        ends = torch.argmax(end_attens, dim=2)
+        return CopyNode(copy_type, int(starts[0, 0]), int(ends[0, 0]))
 
     def train(
         self,
@@ -112,7 +113,7 @@ class FullRetModel(StringTypeTranslateCF):
         raise NotImplemented()
 
     def get_string_tokenizer(self) -> tokenizers.StringTokenizer:
-        pass
+        return self.embedder.get_tokenizer()
 
 
 @attr.s(auto_attribs=True)

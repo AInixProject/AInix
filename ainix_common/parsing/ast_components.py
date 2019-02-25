@@ -524,6 +524,22 @@ class CopyNode(ObjectNodeLike):
     def end(self) -> int:
         return self._end
 
+    @end.setter
+    def end(self, end):
+        if self._is_frozen:
+            raise ValueError("Cannot mutate a frozen node")
+        self._end = end
+
+    @start.setter
+    def start(self, start):
+        if self._is_frozen:
+            raise ValueError("Cannot mutate a frozen node")
+        self._start = start
+
+    @property
+    def copy_type(self) -> 'ainix_common.parsing.typecontext.AInixType':
+        return self._copy_type
+
     def get_nth_child(self, n: int, none_if_out_of_bounds=False) -> Optional['AstNode']:
         return None
 
@@ -554,6 +570,24 @@ class CopyNode(ObjectNodeLike):
 
     def is_of_type(self, type_: ainix_common.parsing.typecontext.AInixType) -> bool:
         return type_ == self._copy_type
+
+    def path_clone(
+        self,
+        unfreeze_path: List['AstNode'] = None,
+        parent_pointer: 'AstIterPointer' = None,
+        parent_child_ind: int = None
+    ):
+        on_unfreeze_path = unfreeze_path is not None and id(self) == id(unfreeze_path[0])
+        if on_unfreeze_path:
+            assert len(unfreeze_path) == 1, "Should be the end of the line"
+        if self._is_frozen and not on_unfreeze_path:
+            return self, None
+        new_node = CopyNode(self.copy_type)
+        new_node.start = self.start
+        new_node.end = self.end
+        me_pointer = AstIterPointer(new_node, parent_pointer, parent_child_ind)
+        return new_node, me_pointer
+
 
 
 @attr.s(auto_attribs=True, frozen=True)
