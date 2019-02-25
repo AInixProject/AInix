@@ -290,3 +290,17 @@ def test_multi_copy():
         "right": ObjectChoiceNode(bt, CopyNode(bt, 1, 1))
     })))
     assert cset.is_node_known_valid(copy_both)
+
+
+def test_get_copy_paths():
+    tc = get_toy_strings_context()
+    parser = StringParser(tc)
+    unparser = AstUnparser(tc)
+    ast = parser.create_parse_tree("TWO foo bar", "ToySimpleStrs")
+    unpar_res = unparser.to_string(ast)
+    assert unpar_res.total_string == "TWO foo bar"
+    tokenizer = SpaceTokenizer()
+    in_str = "Hello there foo cow"
+    tokens, metadata = tokenizer.tokenize(in_str)
+    result = make_copy_version_of_tree(ast, unparser, metadata)
+    assert get_paths_to_all_copies(result) == ((0, 0, 0),)

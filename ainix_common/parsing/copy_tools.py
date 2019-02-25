@@ -132,3 +132,10 @@ def make_copy_version_of_tree(
         cur_pointer = cur_pointer.dfs_get_next()
     return last_pointer.get_root().cur_node
 
+
+def get_paths_to_all_copies(ast: ObjectChoiceNode) -> Tuple[Tuple[int, ...]]:
+    all_copy_paths = []
+    for pointer in ast.depth_first_iter():
+        if isinstance(pointer.cur_node, CopyNode):
+            all_copy_paths.append(pointer.get_child_nums_here())
+    return tuple(all_copy_paths)

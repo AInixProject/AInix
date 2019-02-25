@@ -51,6 +51,7 @@ if __name__ == "__main__":
         pretrained_checkpoint_path,
         x_tokenizer, query_vocab, output_size, freeze_base=True
     )
+    model.eval()
 
 
     type_context = TypeContext()

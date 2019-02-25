@@ -1,6 +1,6 @@
 from ainix_kernel.model_util import vocab
 from ainix_kernel.models.EncoderDecoder.encoders import *
-from ainix_kernel.models.EncoderDecoder.encdecmodel import _get_default_tokenizers, \
+from ainix_kernel.models.EncoderDecoder.encdecmodel import get_default_tokenizers, \
     make_default_query_encoder
 from ainix_kernel.tests.testutils.torch_test_utils import torch_train_tester, \
     eps_eq_at, torch_epsilon_eq
@@ -13,7 +13,7 @@ import pytest
 def test_default_encoder(batch_size):
     torch.manual_seed(0)
     random.seed(0)
-    (x_tokenizer, x_vocab), _ = _get_default_tokenizers()
+    (x_tokenizer, x_vocab), _ = get_default_tokenizers()
     if x_vocab is None:
         vocab_builder = vocab.CounterVocabBuilder()
         vocab_builder.add_sequence(["a", "b", "c", "d"] + parse_constants.ALL_SPECIALS)

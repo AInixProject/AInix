@@ -2,15 +2,16 @@ from abc import ABC, abstractmethod
 import attr
 from ainix_common.parsing.typecontext import TypeContext, AInixType
 from typing import List, Generator, Tuple
-from enum import Enum
+import enum
 import hashlib
 import math
 
 
-class DataSplits(Enum):
-    TRAIN = "TRAIN"
-    VALIDATION = "VALIDATION"
-    TEST = "TEST"
+@enum.unique
+class DataSplits(enum.IntEnum):
+    TRAIN = 0
+    VALIDATION = 1
+    TEST = 2
 
 
 DEFAULT_SPLITS = ((.7, DataSplits.TRAIN), (.3, DataSplits.VALIDATION))
@@ -50,7 +51,7 @@ class Example:
     ytype: str
     weight: float
     y_set_id: str
-    split: str = None
+    split: int = None
     yindexable: str = None
 
 

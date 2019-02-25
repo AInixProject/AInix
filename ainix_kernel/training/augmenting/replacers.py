@@ -100,6 +100,9 @@ class Replacer:
         no_brackets = [match[3:-3] for match in matches]
         return no_brackets
 
+    def check_if_string_has_replacement_spots(self, string: str) -> bool:
+        """Test whether a string has places that could be replaced"""
+        return len(self.get_bracketless_matches(string)) > 0
 
 def _split_replacement_assignment(no_brackets: str):
     """Separates the name and the value of a replacement item"""

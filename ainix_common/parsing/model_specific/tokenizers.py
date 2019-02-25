@@ -198,7 +198,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
         parse_constants.EOS,
         CasingModifier.CASELESS, WhitespaceModifier.AFTER_SPACE_OR_SOS)
 
-    @functools.lru_cache(maxsize=10)
+    @functools.lru_cache(maxsize=50)
     def tokenize(
         self,
         to_tokenize: str

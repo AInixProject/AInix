@@ -2,7 +2,7 @@ import collections
 
 import ainix_common.parsing.typecontext
 from typing import Optional, Generator, \
-    Tuple, MutableMapping, Mapping, List, MutableSet
+    Tuple, MutableMapping, Mapping, List, MutableSet, Sequence
 from abc import ABC, abstractmethod
 import attr
 from pyrsistent import pmap
@@ -94,6 +94,13 @@ class AstNode(ABC):
         while cur:
             yield cur
             cur = cur.dfs_get_next()
+
+    def get_node_along_path(self, path: Sequence[int]) -> 'AstIterPointer':
+        """Allows to pass in a sequence of nth childs to follow"""
+        cur = AstIterPointer(self, None, None)
+        for n in path:
+            cur = AstIterPointer(cur.cur_node.get_nth_child(n), cur, n)
+        return cur
 
     @abstractmethod
     def freeze(self):

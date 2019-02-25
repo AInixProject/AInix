@@ -44,7 +44,7 @@ class ExamplesIndex(ExamplesStore):
             yindexable=IndexBackendFields.SPACE_STORED_TEXT,
             y_set_id=IndexBackendFields.ID,
             weight=IndexBackendFields.ONE_INTERVAL_NUM,
-            split=IndexBackendFields.KEYWORD
+            split=IndexBackendFields.ID
         )
 
     @staticmethod
@@ -92,6 +92,7 @@ class ExamplesIndex(ExamplesStore):
         doc_copy = copy.deepcopy(doc)
         doc_copy['weight'] = float(doc_copy['weight'])
         doc_copy['example_id'] = int(doc_copy['example_id'])
+        doc_copy['split'] = int(doc_copy['split'])
         return Example(**doc_copy)
 
     def get_example_by_id(self, id: int) -> Example:
@@ -130,7 +131,7 @@ class ExamplesIndex(ExamplesStore):
             y_type_indexable_rep = ast_components.indexable_repr_classify_type(choose_type_name)
             query &= Term("yindexable", y_type_indexable_rep)
         if filter_splits:
-            query &= Or([Term("split", split.value) for split in filter_splits])
+            query &= Or([Term("split", str(split.value)) for split in filter_splits])
         query_result = self.backend.query(query, max_results)
         yield from (self._dict_to_example(hit.doc) for hit in query_result)
 
@@ -142,7 +143,7 @@ class ExamplesIndex(ExamplesStore):
         if filter_splits is None or len(filter_splits) == 0:
             query = Every()
         else:
-            query = Or([Term("split", split.value) for split in filter_splits])
+            query = Or([Term("split", str(split.value)) for split in filter_splits])
         yield from (self._dict_to_example(hit.doc)
                     for hit in self.backend.query(query, max_results=None, score=False))
 

@@ -164,7 +164,7 @@ class EncDecModel(StringTypeTranslateCF):
 
 
 # Factory methods for different versions
-def _get_default_tokenizers() -> Tuple[
+def get_default_tokenizers() -> Tuple[
     Tuple[tokenizers.Tokenizer, Optional[Vocab]],
     tokenizers.Tokenizer
 ]:
@@ -202,7 +202,7 @@ def get_default_encdec_model(
     use_retrieval_decoder: bool = False,
     pretrain_checkpoint: str = None
 ):
-    (x_tokenizer, x_vocab), y_tokenizer = _get_default_tokenizers()
+    (x_tokenizer, x_vocab), y_tokenizer = get_default_tokenizers()
     if x_vocab is None:
         x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer)
     hidden_size = standard_size
