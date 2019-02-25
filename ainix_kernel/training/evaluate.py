@@ -36,7 +36,6 @@ class AstEvaluation(Evaluation):
 
     def print_vals(self, unparser: AstUnparser):
         y_texts_v = list(self.y_texts)[0] if len(self.y_texts) == 1 else self.y_texts
-        print("---")
         print(self.x_text)
         if self.correct:
             if self.correct and not self.in_ast_set:

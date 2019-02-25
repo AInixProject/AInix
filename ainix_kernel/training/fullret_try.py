@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     tran_trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
     logger = EvaluateLogger()
-    tran_trainer.evaluate(logger, dump_each=True)
+    tran_trainer.evaluate(logger, dump_each=True, num_replace_samples=3)
     print_ast_eval_log(logger)
 
     while True:

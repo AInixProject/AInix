@@ -97,11 +97,24 @@ class TypeTranslateCFTrainer:
         self,
         logger: EvaluateLogger,
         filter_splits: Optional[Tuple[DataSplits]] = (DataSplits.VALIDATION,),
-        dump_each = False
+        dump_each: bool = False,
+        num_replace_samples = 1
     ):
         self.model.set_in_eval_mode()
-        for data in self.data_pair_iterate(filter_splits):
+        # Kinda hacky approximation of sampling replacements multiple times
+        # just iterate overy everything multiple times
+        dups = [list(self.data_pair_iterate(filter_splits)) for _ in range(num_replace_samples)]
+        dups = flatten_list(dups)
+        dups.sort(key=lambda d: d[0].example_id)
+
+        last_x = None
+        last_eval_result = None
+        last_example_id = None
+        for data in dups:
             example, replaced_x_query, y_ast_set, this_example_ast, y_texts = data
+            if last_x == replaced_x_query:
+                logger.add_evaluation(last_eval_result)
+                continue
             parse_exception = None
             try:
                 prediction, metad = self.model.predict(replaced_x_query, example.ytype, True)
@@ -115,9 +128,14 @@ class TypeTranslateCFTrainer:
             #      "replx", replaced_x_query)
             eval = AstEvaluation(prediction, y_ast_set, y_texts, replaced_x_query,
                                  parse_exception, self.unparser)
+            last_x = replaced_x_query
+            last_eval_result = eval
             logger.add_evaluation(eval)
             if dump_each:
+                if example.example_id != last_example_id:
+                    print("---")
                 eval.print_vals(self.unparser)
+                last_example_id = example.example_id
 
         self.model.set_in_train_mode()
 
@@ -225,3 +243,8 @@ if __name__ == "__main__":
     print("done.")
     print("done time", datetime.datetime.now())
     print(datetime.datetime.now() - train_time)
+
+
+def flatten_list(lists):
+    """https://stackoverflow.com/questions/952914/how-to-make-a-flat-list-out-of-list-of-lists"""
+    return [item for sublist in lists for item in sublist]
