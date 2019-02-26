@@ -30,10 +30,18 @@ defines:
   - x:
     - create a file name [-[FILENAME]-] in ..
     - make an empty file name [-[FILENAME]-] in my parent directory
+    - make a file called [-[FILENAME]-] in parent dir
     y:
     - touch ../[-[FILENAME]-]
   - x:
     - set the last modified time of [-[1=FILENAME]-] to be the same as [-[2=FILENAME]-]
     - touch [-[1=FILENAME]-] using last modified and access times of [-[2=FILENAME]-]
+    - make [-[1=FILENAME]-] and [-[2=FILENAME]-] have the same timestamp
     y:
     - touch -r [-[$2]-] [-[$1]-]
+  - x:
+    - touch [-[1=FILENAME]-] but only update the modified time, not the access time
+    - set the modified time of [-[1=FILENAME]-] to now
+    - change the modified time of [-[1=FILENAME]-] to now
+    y:
+    - touch -m [-[$1]-]

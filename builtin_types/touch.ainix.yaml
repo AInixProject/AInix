@@ -8,6 +8,9 @@ defines:
       - name: r
         required: False
         arg_data: {short_name: "r"}
+      - name: m
+        required: False
+        arg_data: {short_name: "m"}
       - name: file_list
         required: True
         type: PathList
