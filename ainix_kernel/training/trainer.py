@@ -178,6 +178,10 @@ class TypeTranslateCFTrainer:
             yield (example, this_example_replaced_x, y_ast_set, ast_for_this_example, y_texts)
 
 
+def flatten_list(lists):
+    """https://stackoverflow.com/questions/952914/how-to-make-a-flat-list-out-of-list-of-lists"""
+    return [item for sublist in lists for item in sublist]
+
 # A bunch of code for running the thing which really shouldn't be here.
 
 
@@ -245,6 +249,3 @@ if __name__ == "__main__":
     print(datetime.datetime.now() - train_time)
 
 
-def flatten_list(lists):
-    """https://stackoverflow.com/questions/952914/how-to-make-a-flat-list-out-of-list-of-lists"""
-    return [item for sublist in lists for item in sublist]
