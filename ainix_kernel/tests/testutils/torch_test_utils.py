@@ -27,7 +27,7 @@ def torch_epsilon_eq(val, expected, epsilon=1e-12, print_error=True):
         print("Epsilon equals failure.")
         print(f"Expected:\n {expected}")
         print(f"Got:\n {val}")
-        if difs:
+        if difs is not None:
             print(f"Difs:\n {difs}")
     return False
 

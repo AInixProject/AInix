@@ -20,7 +20,7 @@ def get_word_lens_of_moded_tokens(
 
     By default it will pad with a value 0
     to be the same as the longest token length, unless you specify a pading length.
-    Altertatively if the tokens already includes parsing_contants.PAD, the len there
+    Alternatively if the tokens already includes parsing_contants.PAD, the len there
     will be set as 0.
     """
     pad_to_len = max(map(len, token_batch)) if pad_to_len is None else pad_to_len
