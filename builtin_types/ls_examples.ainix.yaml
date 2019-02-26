@@ -28,7 +28,6 @@ defines:
             - ls order with decreasing file size
             - list filese here sorted by files size decending
             - ls sorted smallest to biggest
-            - ls -l sorted by size
             - display files in order of size
             - display files biggest files first
             - list files sort by the largest file size first
@@ -36,6 +35,11 @@ defines:
             - list my files long format sorted by size
             y:
             - "ls -lS"
+            - 'ls -S'
+          - x:
+            - ls -l sorted by size
+            y:
+            - 'ls -lS'
           - x:
             - list all files with stuff like file size
             - list all files in long format
@@ -62,6 +66,10 @@ defines:
           - x:
             - list files here sorted by modified data
             - ls sorted newest to oldest
+            y:
+            - "ls -lt"
+            - "ls -t"
+          - x:
             - ls -l sorted by change data
             - ls -l sorted by modification data
             - ls -l sorted by mod data
@@ -147,6 +155,7 @@ defines:
           - x:
             - list only text files
             - list all text files here
+            - what text files are here?
             y:
             - "ls *.txt"
           - x:

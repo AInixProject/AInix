@@ -7,10 +7,9 @@ defines:
     - create a file named [-[FILENAME]-]
     - create an empty file named [-[FILENAME]-]
     - add empty file named [-[FILENAME]-] here
-    - set the last mod time of [-[FILENAME]-] to now
+    - set the last mod time and access time of [-[FILENAME]-] to now
     - set the last accessed and modified time of [-[FILENAME]-] to now
-    - reset the last modified time of [-[FILENAME]-] to now
-    - set last mod time of [-[FILENAME]-] to current time
+    - reset the modified time and access time of [-[FILENAME]-] to now
     y:
     - touch [-[FILENAME]-]
   - x:
@@ -40,8 +39,15 @@ defines:
     y:
     - touch -r [-[$2]-] [-[$1]-]
   - x:
-    - touch [-[1=FILENAME]-] but only update the modified time, not the access time
     - set the modified time of [-[1=FILENAME]-] to now
     - change the modified time of [-[1=FILENAME]-] to now
+    - reset the last mod time of [-[1=FILENAME]-] to now.
+    y:
+    - touch -m [-[$1]-]
+    - touch [-[$1]-]
+  - x:
+    - touch [-[1=FILENAME]-] but only update the modified time, not the access time
+    - touch [-[1=FILENAME]-] but don't change access time.
+    - touch [-[1=FILENAME]-] but only change modified time
     y:
     - touch -m [-[$1]-]

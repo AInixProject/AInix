@@ -296,7 +296,7 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         # setting it to a smaller value (~3 in this case).
         # The function used is somewhat arbitrary. One was just created that roughly
         # had the desired properties. It could probably be simplified
-        equivalent_to_toks = 1 + (word_lens - 1) * 0.3 + (1 - 1/word_lens)
+        equivalent_to_toks = 1 + (word_lens - 1) * 0.4 + (1 - 1/word_lens)
         weights = 1.0 / equivalent_to_toks
         assert weights.requires_grad == originally_wanted_grad  # sanity check
         return weights
@@ -349,7 +349,7 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
                 state dict from a CookieMonsterForPretraining
             See __init__ for other args...
         """
-        pretrainer_model = torch.load(pretrained_checkpoint_path)
+        pretrainer_model = torch.load(pretrained_checkpoint_path, map_location=device)
         initial_encoder = pretrainer_model['model']['base_encoder'].to(device)
         if freeze_base:
             for param in initial_encoder.parameters():
