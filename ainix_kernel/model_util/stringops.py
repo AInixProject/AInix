@@ -8,6 +8,7 @@ from ainix_common.parsing.model_specific.tokenizers import ModifiedStringToken, 
     CasingModifier
 import numpy as np
 
+
 def get_word_lens_of_moded_tokens(
     token_batch: List[List[ModifiedStringToken]],
     pad_to_len: int = None
@@ -29,7 +30,7 @@ def get_word_lens_of_moded_tokens(
         word_lens = np.zeros((pad_to_len,))
         cur_len = 0
         word_start_pointer = None
-        for i in range(pad_to_len):
+        for i in range(len(tokens)):
             cur = tokens[i]
             is_pad = cur.token_string == parse_constants.PAD
             new_word_start = cur.whitespace_modifier == WhitespaceModifier.AFTER_SPACE_OR_SOS
@@ -44,7 +45,7 @@ def get_word_lens_of_moded_tokens(
         else:
             # Reached the end without seeing a pad.
             # We need to set the length for the last word
-            word_lens[word_start_pointer:] = cur_len
+            word_lens[word_start_pointer:len(tokens)] = cur_len
         all_lens.append(word_lens)
     return torch.tensor(all_lens).float()
 

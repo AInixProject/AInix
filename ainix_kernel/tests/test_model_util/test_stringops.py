@@ -44,3 +44,19 @@ def test_word_lens_tokens_with_pad():
             [1, 1, 0, 0]
         ]
     )
+
+
+def test_word_lens_tokens_with_pad2():
+    v = get_word_lens_of_moded_tokens([
+        [mtok("my"), mtok("nme"), mtok("'s", False)],
+        [mtok("my"), mtok("nme"), mtok("'s", False), mtok(".")],
+        [mtok("my"), mtok("nme")]
+    ])
+    assert torch_epsilon_eq(
+        v,
+        [
+            [1, 2, 2, 0],
+            [1, 2, 2, 1],
+            [1, 1, 0, 0]
+        ]
+    )
