@@ -23,9 +23,10 @@ defines:
     - go back to where I was
     - go back to directory was in before last cd
     y:
-    - cd -
+    - 'cd -'
   - x:
-    - go to tmp directory
+    - go to my tmp directory
+    - change directory to my tmp dir
     y:
     - cd /tmp
   - x:
@@ -40,3 +41,8 @@ defines:
     - go into pictures dir
     y:
     - cd pictures
+  - x:
+    - change directory to [-[DIRNAME]-] dir
+    - go to [-[DIRNAME]-] directory
+    y:
+    - cd [-[DIRNAME]-]

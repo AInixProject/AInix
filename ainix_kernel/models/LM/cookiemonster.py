@@ -23,6 +23,7 @@ from ainix_common.parsing.model_specific.tokenizers import CasingModifier, White
     ModifiedWordPieceTokenizer, ModifiedStringToken
 from ainix_kernel.model_util.lm_task_processor.lm_set_process import LMBatch
 from ainix_kernel.model_util.operations import pack_picks, avg_pool, GELUActivation
+from ainix_kernel.model_util.stringops import get_word_lens_of_moded_tokens
 from ainix_kernel.model_util.usefulmodules import Conv1dSame
 from ainix_kernel.model_util.vocab import Vocab, torchify_moded_tokens, BasicVocab, \
     torchify_batch_modded_tokens
@@ -262,13 +263,44 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         queries: Sequence[str]
     ) -> Tuple[torch.Tensor, torch.Tensor, List[List[ModifiedStringToken]]]:
         vectorized, tokenized, input_lens = self._vectorize_query(queries)
-        return self._sumarize(vectorized, input_lens), vectorized, tokenized
+        return self._sumarize(vectorized, input_lens, tokenized), vectorized, tokenized
 
-    def _sumarize(self, hidden, input_lens):
+    def _sumarize(self, hidden, input_lens, tokens):
         #hidden = self.pre_summary(hidden)
-        hidden = avg_pool(hidden, input_lens)
+        #hidden = avg_pool(hidden, input_lens)
+        #return hidden
         #hidden = self.post_summary_linear(hidden)
-        return hidden
+
+        # Average pool the tokens.
+        # Count the tokens of long words less so that way a single long word like
+        # a file name does not dominate the sumamry
+        word_lens = get_word_lens_of_moded_tokens(tokens)
+        weights = self._word_lens_to_weights(word_lens)
+
+        # Now do weighted sum
+        weights = weights.unsqueeze(2).expand(-1, -1, hidden.shape[-1])
+        avgs = torch.sum((hidden * weights), dim=1) / torch.sum(weights, dim=1)
+
+        return avgs
+
+    def _word_lens_to_weights(self, word_lens):
+        originally_wanted_grad = word_lens.requires_grad  # for sanity check
+        # Pretend that pads are really long
+        word_lens = word_lens.clone()
+        word_lens[word_lens == 0] = 100000
+        # As words get longer, it should approach treating all the tokens in that
+        # word as one token. However, if we have just two or so tokens in a word,
+        # then we won't quite equally split them
+        # equivalent_to_toks is a calculates how many tokens a len is worth.
+        # unweighted a word with 5 len would count as 5 tokens. However, we are
+        # setting it to a smaller value (~3 in this case).
+        # The function used is somewhat arbitrary. One was just created that roughly
+        # had the desired properties. It could probably be simplified
+        equivalent_to_toks = 1 + (word_lens - 1) * 0.3 + (1 - 1/word_lens)
+        weights = 1.0 / equivalent_to_toks
+        assert weights.requires_grad == originally_wanted_grad  # sanity check
+        return weights
+
 
     def get_tokenizer(self) -> tokenizers.ModifiedWordPieceTokenizer:
         return self.tokenizer
