@@ -4,10 +4,11 @@ import torch
 from torch import nn
 from typing import Tuple, Type, Sequence, List, Union, Optional
 
+from ainix_common.parsing.model_specific.tokenizers import ModifiedStringToken, WhitespaceModifier
 from ainix_kernel.model_util import vectorizers
 from ainix_kernel.model_util.vectorizers import VectorizerBase, vectorizer_from_save_dict
 from ainix_kernel.model_util.vocab import Vocab, BasicVocab
-from ainix_common.parsing.model_specific import tokenizers
+from ainix_common.parsing.model_specific import tokenizers, parse_constants
 import numpy as np
 
 
@@ -258,7 +259,5 @@ class RNNSeqEncoder(VectorSeqEncoder):
             return summaries, memory_tokens
         else:
             return memory_tokens
-
-
 
 

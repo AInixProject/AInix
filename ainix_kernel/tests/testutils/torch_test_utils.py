@@ -14,6 +14,7 @@ def torch_epsilon_eq(val, expected, epsilon=1e-12, print_error=True):
     if isinstance(expected, list):
         expected = torch.Tensor(expected) \
             if not isinstance(val, torch.LongTensor) else torch.LongTensor(expected)
+    difs = None
     try:
         difs = torch.abs(torch.add(val, -expected))
     except RuntimeError as e:
@@ -26,6 +27,8 @@ def torch_epsilon_eq(val, expected, epsilon=1e-12, print_error=True):
         print("Epsilon equals failure.")
         print(f"Expected:\n {expected}")
         print(f"Got:\n {val}")
+        if difs:
+            print(f"Difs:\n {difs}")
     return False
 
 
