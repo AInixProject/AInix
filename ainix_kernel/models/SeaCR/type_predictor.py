@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Iterable
 import torch
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
-from ainix_kernel.indexing.examplestore import Example, DataSplits
+from ainix_kernel.indexing.examplestore import XValue, DataSplits
 from ainix_kernel.models.SeaCR.comparer import ComparerResult
 from ainix_kernel.models.model_types import ModelCantPredictException
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet
@@ -63,7 +63,7 @@ class SearchingTypePredictor(TypePredictor):
         x_query: str,
         current_root: ObjectChoiceNode,
         current_leaf: ObjectChoiceNode,
-        example: Example,
+        example: XValue,
         current_depth: int
     ) -> 'ComparerResult':
         example_ast = self.parser.create_parse_tree(example.ytext, example.ytype)
@@ -75,7 +75,7 @@ class SearchingTypePredictor(TypePredictor):
         x_query: str,
         current_root: ObjectChoiceNode,
         current_leaf: ObjectChoiceNode,
-        example_to_compare: Example,
+        example_to_compare: XValue,
         ground_truth_set: AstObjectChoiceSet,
         current_depth: int
     ) -> Optional[torch.Tensor]:
@@ -106,7 +106,7 @@ class SearchingTypePredictor(TypePredictor):
         x_query,
         current_leaf: ObjectChoiceNode,
         use_only_training_data: bool
-    ) -> List[Example]:
+    ) -> List[XValue]:
         type_name = current_leaf.get_type_to_choose_name()
         split_filter = (DataSplits.TRAIN,) if use_only_training_data else None
         return list(self.index.get_nearest_examples(
@@ -115,7 +115,7 @@ class SearchingTypePredictor(TypePredictor):
 
     def _pick_best_choice_from_many_examples(
         self,
-        examples: Iterable[Example],
+        examples: Iterable[XValue],
         x_query,
         current_root,
         current_leaf,

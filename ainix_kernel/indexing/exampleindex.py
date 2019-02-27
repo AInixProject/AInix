@@ -1,5 +1,7 @@
-"""NOTE: this code is needs to refactored since our aproach is very different
-now."""
+"""
+NOTE: This code is no longer used and should be eventually be refactored / removed.
+      It is actually probably broken.
+"""
 from typing import List, Generator, Dict, Tuple
 import attr
 from ainix_kernel.indexing.whooshbackend import WhooshIndexBackend
@@ -10,8 +12,8 @@ from ainix_common.parsing.typecontext import TypeContext
 from whoosh.query import Term, Or, Every
 from whoosh.analysis.tokenizers import RegexTokenizer
 from whoosh.analysis.filters import LowercaseFilter
-from ainix_kernel.indexing.examplestore import ExamplesStore, Example, \
-    get_split_from_example, SPLIT_TYPE, DEFAULT_SPLITS, DataSplits
+from ainix_kernel.indexing.examplestore import ExamplesStore, XValue, \
+    get_split_from_example, SPLIT_PROPORTIONS_TYPE, DEFAULT_SPLITS, DataSplits
 from ainix_common.util.strings import id_generator
 import ainix_kernel.indexing.index
 import copy
@@ -63,38 +65,38 @@ class ExamplesIndex(ExamplesStore):
         ast = self.parser.create_parse_tree(y_string, y_type)
         return ast.indexable_repr()
 
-    def add_example(self, example: Example) -> None:
+    def add_example(self, example: XValue) -> None:
         self.backend.add_documents([attr.asdict(example)])
         self.example_count += 1
 
-    def add_many_to_many_with_weighted(
+    def add_yset(
         self,
         x_values: List[str],
         y_values: List[str],
         x_type: str,
         y_type: str,
-        weights: List[float],
-        splits: SPLIT_TYPE = DEFAULT_SPLITS
+        y_preferences: List[float],
+        splits: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS
     ) -> None:
         y_group = id_generator(size=10)
         for x in x_values:
             split = get_split_from_example(x, y_type, splits)
-            for y, weight in zip(y_values, weights):
-                new_example = Example(self.example_count, x, y, x_type, y_type, weight, y_group,
-                                      split=split.value,
-                                      yindexable=self._get_yparsed_rep(y, y_type))
+            for y, weight in zip(y_values, y_preferences):
+                new_example = XValue(self.example_count, x, y, x_type, y_type, weight, y_group,
+                                     split=split.value,
+                                     yindexable=self._get_yparsed_rep(y, y_type))
                 self.add_example(new_example)
 
-    def _dict_to_example(self, doc: Dict) -> Example:
+    def _dict_to_example(self, doc: Dict) -> XValue:
         """Takes the dictionary form of an object and returns an example object"""
         # make a copy of the dict so we can mutate alter its keys without
         # mutating the input dict (this might be overkill....)
         doc_copy = copy.deepcopy(doc)
         doc_copy['weight'] = float(doc_copy['weight'])
         doc_copy['example_id'] = int(doc_copy['example_id'])
-        return Example(**doc_copy)
+        return XValue(**doc_copy)
 
-    def get_example_by_id(self, id: int) -> Example:
+    def get_example_by_id(self, id: int) -> XValue:
         query = Term("example_id", id)
         hits = list(self.backend.query(query))
         assert len(hits) == 1
@@ -107,7 +109,7 @@ class ExamplesIndex(ExamplesStore):
         choose_type_name: str = None,
         filter_splits=None,
         max_results=10
-    ) -> Generator[Example, None, None]:
+    ) -> Generator[XValue, None, None]:
         """
         Args:
             filter_splits:
@@ -137,7 +139,7 @@ class ExamplesIndex(ExamplesStore):
     def get_all_examples(
         self,
         filter_splits: Tuple[DataSplits, ...] = None
-    ) -> Generator[Example, None, None]:
+    ) -> Generator[XValue, None, None]:
         """Yields all examples in the index"""
         if filter_splits is None or len(filter_splits) == 0:
             query = Every()
@@ -146,7 +148,7 @@ class ExamplesIndex(ExamplesStore):
         yield from (self._dict_to_example(hit.doc)
                     for hit in self.backend.query(query, max_results=None, score=False))
 
-    def get_examples_from_y_set(self, y_set_id: str) -> List[Example]:
+    def get_y_values_for_y_set(self, y_set_id: str) -> List[XValue]:
         query = Term("y_set_id", y_set_id)
         return [self._dict_to_example(hit.doc)
                 for hit in self.backend.query(query, None, False)]

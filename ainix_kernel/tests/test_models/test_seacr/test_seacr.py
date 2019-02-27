@@ -35,7 +35,7 @@ def test_only_one_option(base_type_context):
     base_type_context.finalize_data()
     # Create an index
     index = ExamplesIndex(base_type_context, ExamplesIndex.get_default_ram_backend())
-    index.add_many_to_many_default_weight(["example"], ["y"], index.DEFAULT_X_TYPE, "FooType")
+    index.add_yset_default_weight(["example"], ["y"], index.DEFAULT_X_TYPE, "FooType")
     # Create a expected value
     parser = StringParser(base_type_context)
     expected = parser.create_parse_tree("string", foo_type.name)
@@ -50,7 +50,7 @@ def test_predict_digit(numbers_type_context):
     index = ExamplesIndex(numbers_type_context, ExamplesIndex.get_default_ram_backend())
     x_y = [("one", "1"), ("two", "2"), ("three", "3")]
     for x, y in x_y:
-        index.add_many_to_many_default_weight([x], [y], index.DEFAULT_X_TYPE, "BaseTen")
+        index.add_yset_default_weight([x], [y], index.DEFAULT_X_TYPE, "BaseTen")
     # Create a expected value
     parser = StringParser(numbers_type_context)
     expected = parser.create_parse_tree("2", "BaseTen")
@@ -66,7 +66,7 @@ def test_digit_list_1(numbers_type_context):
     type = "IntBase"
     x_y = [("one", "1"), ("two", "2"), ("three", "3")]
     for x, y in x_y:
-        index.add_many_to_many_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
+        index.add_yset_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
     # Create a expected value
     parser = StringParser(numbers_type_context)
     expected = parser.create_parse_tree("2", type)
@@ -85,7 +85,7 @@ def test_digit_list_2(numbers_type_context):
     type = "IntBase"
     x_y = [("ten", "10"), ("twenty", "20"), ("thirty", "30")]
     for x, y in x_y:
-        index.add_many_to_many_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
+        index.add_yset_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
     # Create a expected value
     parser = StringParser(numbers_type_context)
     expected = parser.create_parse_tree("20", type)
@@ -103,7 +103,7 @@ def test_full_number(numbers_type_context):
     type = "Number"
     x_y = [("one", "1"), ("two", "2"), ("three", "3"), ("ten", "10"), ("negative one", "-1")]
     for x, y in x_y:
-        index.add_many_to_many_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
+        index.add_yset_default_weight([x], [y], index.DEFAULT_X_TYPE, type)
     # Create a expected value
     parser = StringParser(numbers_type_context)
     expected = parser.create_parse_tree("-1", type)

@@ -7,7 +7,7 @@ from typing import Tuple, List, Sequence
 
 from ainix_common.parsing.ast_components import ObjectChoiceNode
 from ainix_common.parsing.stringparser import StringParser, UnparseResult
-from ainix_kernel.indexing.examplestore import ExamplesStore, Example
+from ainix_kernel.indexing.examplestore import ExamplesStore, XValue
 from ainix_kernel.models.model_types import ExampleRetrieveExplanation
 import attr
 from intervaltree import Interval, IntervalTree

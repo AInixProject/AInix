@@ -40,5 +40,5 @@ def update_latent_store_from_examples(
             c = l.detach()
             assert not c.requires_grad
             latent_store.set_latent_for_example(c, n.type_to_choose.ind,
-                                                example.example_id, dfs_depth)
+                                                example.id, dfs_depth)
     model.set_in_train_mode()
