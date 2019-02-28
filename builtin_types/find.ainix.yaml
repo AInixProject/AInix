@@ -1,0 +1,67 @@
+---
+defines:
+    - define_new: object
+      name: find
+      type: Program
+      type_data:
+          invoke_name: "find"
+          ignore_invalid_flags: True
+      children:
+          - name: startpoints
+            required: False
+            type: Path
+            # This really should be multiword, but that would break parsing
+            # as the expression is multiword. Find treats everything up until it
+            # sees a "-" as a path. See man page...
+            arg_data: {position: 0, multiword_pos_arg: False}
+          - name: expression
+            required: True
+            type: FindExpression
+            arg_data: {position: 1, multiword_pos_arg: True}
+    - define_new: type
+      name: FindExpression
+    - define_new: object
+      name: find_expression_object
+      type: FindExpression
+      children:
+          - name: current_find_value
+            type: FindValue
+            required: True
+          #- name: next_expression
+          #  type: FindExpression
+          #  required: False
+      preferred_object_parser:
+        #grammar: |
+        #  current_find_value next_expression?
+          grammar: |
+            current_find_value
+    # A find value encompeses both "Options" and "Tests"
+    - define_new: type
+      name: FindValue
+    - define_new: object
+      name: find_option_name
+      type: FindValue
+      children:
+          - name: namepattern
+            type: QuotedFile
+            required: True
+      preferred_object_parser:
+          grammar: |
+              "-name " namepattern
+    - define_new: type
+      name: QuotedFile
+    - define_new: object
+      name: double_quoted_file
+      type: QuotedFile
+      children:
+          - name: file
+            type: Path
+            required: True
+      preferred_object_parser:
+          grammar: |
+              '"' file '"'
+
+
+
+
+...

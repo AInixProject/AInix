@@ -29,8 +29,8 @@ if __name__ == "__main__":
         loader.load_path(f"builtin_types/{f}.ainix.yaml")
     type_context.finalize_data()
 
-    #index = load_all_examples(type_context)
-    index = load_tellia_examples(type_context)
+    index = load_all_examples(type_context)
+    #index = load_tellia_examples(type_context)
 
     print("num docs", index.get_doc_count())
     print("num train", len(list(index.get_all_examples((DataSplits.TRAIN, )))))

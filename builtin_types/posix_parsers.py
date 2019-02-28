@@ -114,11 +114,15 @@ def ProgramTypeUnparser(result: parse_primitives.TypeToStringResult):
 ####
 
 
+class InvalidShortFlag(AInixParseError):
+    pass
+
+
 def get_arg_with_short_name(arg_list, short_name: str):
     assert len(short_name) == 1, "unexpectedly long short_name"
     matches = [a for a in arg_list if a.arg_data.get(SHORT_NAME, None) == short_name]
     if not matches:
-        raise parse_primitives.AInixParseError(
+        raise InvalidShortFlag(
             f"Unexpected short_name -{short_name}")
     if len(matches) > 1:
         raise parse_primitives.AInixParseError(
@@ -166,6 +170,7 @@ SHORT_NAME = "short_name"
 LONG_NAME = "long_name"
 POSITION = "position"
 MULTIWORD_POS_ARG = "multiword_pos_arg"
+IGNORE_INVALID_FLAGS = "ignore_invalid_flags"
 
 
 def ProgramObjectParser(
@@ -178,6 +183,7 @@ def ProgramObjectParser(
     already_seen_multiword_positional = False
     lex_result = lex_bash(string)
     lex_index = 0
+    ignore_this_word_dash = False
     while lex_index < len(lex_result):
         word, (start_idx, end_idx) = lex_result[lex_index]
         if word == "--":
@@ -185,11 +191,20 @@ def ProgramObjectParser(
             lex_index += 1
             continue
         single_dash = not parameter_end_seen and len(word) >= 2 and \
-                      word[0] == "-" and word[1] != "-"
+                      word[0] == "-" and word[1] != "-" and not ignore_this_word_dash
         double_dash = not parameter_end_seen and len(word) >= 3 and word[:2] == "--"
         if single_dash:
             for ci, char in enumerate(word[1:]):
-                shortname_match = get_arg_with_short_name(remaining_args, char)
+                try:
+                    shortname_match = get_arg_with_short_name(remaining_args, char)
+                except InvalidShortFlag as e:
+                    if run.get_type_data(IGNORE_INVALID_FLAGS, False):
+                        ignore_this_word_dash = True
+                        # We want to get out to the word while loop
+                        # we will break and decrement the lex_index so stay where we are
+                        lex_index -= 1
+                        break
+                    raise e
                 requires_value = shortname_match.type is not None
                 use_start_idx, use_end_idx = end_idx, end_idx
                 if requires_value:
@@ -261,6 +276,7 @@ def ProgramObjectParser(
             result.set_arg_present(arg_to_do.name, start_idx, use_end_idx, True)
             remaining_args.remove(arg_to_do)
             lex_index += words_to_consume
+            ignore_this_word_dash = False
 
     remaining_required_args = [a for a in remaining_args if a.required]
     if remaining_required_args:

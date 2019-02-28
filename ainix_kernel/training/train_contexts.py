@@ -7,9 +7,10 @@ from ainix_kernel.indexing.examplestore import ExamplesStore
 import os
 
 ALL_EXAMPLE_NAMES = (
-    "numbers",
+    "find", "numbers",
     "pwd", "ls", "cat", "head", "cp", "wc", "cd",
-    "mkdir", "echo", "mv", "touch", "sleep", "split")
+    "mkdir", "echo", "mv", "touch", "sleep", "split"
+    )
 
 
 def load_all_examples(tc: TypeContext) -> ExamplesStore:

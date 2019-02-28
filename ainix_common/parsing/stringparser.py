@@ -213,6 +213,9 @@ class StringParser:
         """Will run a specified object parser. If the parser asks to delegate
         the parsing of any its parsing, it will handle that and pass back the
         results."""
+        if parser is None:
+            raise ValueError(f"Attempt to parse object {implementation.name} but"
+                             f"no parser given.")
         parser_gen = parser.parse_string(string, implementation)
         delegation_to_node: Dict[ParseDelegationReturnMetadata, ObjectChoiceNode] = {}
         last_delegation_result = None

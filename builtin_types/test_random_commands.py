@@ -117,11 +117,23 @@ def test_touch_set(all_the_stuff_context):
 
 
 @pytest.mark.parametrize('string',
-                         ('split -l 100 data.csv',))
+                         ('split -l 100 data.csv',
+                          'find . -name "foo"'))
 def test_not_fail(all_the_stuff_context, string):
     tc = all_the_stuff_context
     parser = StringParser(tc)
     ast = parser.create_parse_tree(string, "CommandSequence")
+
+
+@pytest.mark.parametrize('string',
+                         ('-name "foo"',))
+def test_not_fail_find_expr(all_the_stuff_context, string):
+    tc = all_the_stuff_context
+    parser = StringParser(tc)
+    ast = parser.create_parse_tree(string, "FindExpression")
+    unparser = AstUnparser(tc, NonLetterTokenizer())
+    result = unparser.to_string(ast)
+    assert result.total_string == string
 
 
 @pytest.mark.parametrize('string',

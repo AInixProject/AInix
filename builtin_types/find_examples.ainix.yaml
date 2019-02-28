@@ -1,0 +1,8 @@
+defines:
+- define_new: example_set
+  y_type: CommandSequence
+  examples:
+  - x:
+    - recursively find all fines named foo.txt
+    y:
+    - 'find . -name "foo"'

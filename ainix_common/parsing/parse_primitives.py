@@ -543,6 +543,13 @@ class ObjectParserRun:
     def get_arg_by_name(self, name: str):
         return self._object.get_arg_by_name(name)
 
+    def get_type_data(self, key: str, default = None):
+        if key in self._object.type_data:
+            return self._object.type_data[key]
+        if default is not None:
+            return default
+        raise KeyError(f"'{key}' is not a valid type data key in {self._object.name}")
+
     def left_fill_arg(
         self,
         arg: 'typecontext.AInixArgument',
