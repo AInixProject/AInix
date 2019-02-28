@@ -363,5 +363,5 @@ def make_latent_store_from_examples(
         ast = parser.create_parse_tree(y, example.ytype)
         _, token_metadata = unparser.input_str_tokenizer.tokenize(x)
         ast_with_copies = copy_tools.make_copy_version_of_tree(ast, unparser, token_metadata)
-        builder.add_example(example.example_id, ast_with_copies)
+        builder.add_example(example.id, ast_with_copies)
     return builder.produce_result()

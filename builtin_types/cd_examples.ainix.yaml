@@ -12,7 +12,6 @@ defines:
     - cd ~
   - x:
     - go up one directory
-    - cd up one directory
     - cd to parent dir
     - go up to parent directory
     - cd up one directory

@@ -3,7 +3,7 @@ import torch
 from typing import Tuple, Generator, List, Set, Optional
 
 from ainix_common.parsing.copy_tools import add_copies_to_ast_set
-from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, Example
+from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, XValue
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException, \
     ModelSafePredictError
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
@@ -15,6 +15,7 @@ from ainix_kernel.specialtypes import allspecials
 from ainix_kernel.training.model_specific_training import update_latent_store_from_examples
 from ainix_kernel.training.train_contexts import ALL_EXAMPLE_NAMES, load_all_examples, \
     load_tellia_examples
+from ainix_kernel.util.sampling import WeightedRandomChooser
 from ainix_kernel.util.serialization import serialize
 from tqdm import tqdm
 from ainix_common.parsing.loader import TypeContextDataLoader
@@ -50,7 +51,7 @@ class TypeTranslateCFTrainer:
         examples_seen = 0
         with tqdm(total=train_count, unit='Examples', miniters=train_count/5) as pbar:
             for batch in batches_iter:
-                batch_as_query = [(replaced_x, y_ast_set, this_example_ast, example.example_id) for
+                batch_as_query = [(replaced_x, y_ast_set, this_example_ast, example.id) for
                                   example, replaced_x, y_ast_set, this_example_ast, ytxts in batch]
                 loss += float(self.model.train_batch(batch_as_query))
                 examples_seen += len(batch)
@@ -78,7 +79,7 @@ class TypeTranslateCFTrainer:
             if eval_every_n_epochs and epoch + 1 != epochs and epoch % eval_every_n_epochs == 0:
                 print("Pausing to do an eval")
                 logger = EvaluateLogger()
-                self.evaluate(logger, dump_each=True)
+                self.evaluate(logger, dump_each=True, num_replace_samples=5)
                 print_ast_eval_log(logger)
                 if intermitted_save_path:
                     if self.loader is None:
@@ -105,7 +106,7 @@ class TypeTranslateCFTrainer:
         # just iterate overy everything multiple times
         dups = [list(self.data_pair_iterate(filter_splits)) for _ in range(num_replace_samples)]
         dups = flatten_list(dups)
-        dups.sort(key=lambda d: d[0].example_id)
+        dups.sort(key=lambda d: d[0].id)
 
         last_x = None
         last_eval_result = None
@@ -117,7 +118,8 @@ class TypeTranslateCFTrainer:
                 continue
             parse_exception = None
             try:
-                prediction, metad = self.model.predict(replaced_x_query, example.ytype, True)
+                prediction, metad = self.model.predict(
+                    replaced_x_query, self.example_store.get_x_val_y_type(example), True)
             except ModelCantPredictException as e:
                 prediction = None
                 parse_exception = e
@@ -132,10 +134,10 @@ class TypeTranslateCFTrainer:
             last_eval_result = eval
             logger.add_evaluation(eval)
             if dump_each:
-                if example.example_id != last_example_id:
+                if example.id != last_example_id:
                     print("---")
                 eval.print_vals(self.unparser)
-                last_example_id = example.example_id
+                last_example_id = example.id
 
         self.model.set_in_train_mode()
 
@@ -143,39 +145,40 @@ class TypeTranslateCFTrainer:
         self,
         filter_splits: Tuple[DataSplits]
     ) -> Generator[
-        Tuple[Example, str, AstObjectChoiceSet, ObjectChoiceNode, Set[str]], None, None
+        Tuple[XValue, str, AstObjectChoiceSet, ObjectChoiceNode, Set[str]], None, None
     ]:
         """Will yield one epoch of examples as a tuple of the example and the
         Ast set that represents all valid y_values for that example"""
-        # Temporary hack for shuffling
-        # TODO (DNGros): Make suffle up to a buffer or something
         all_ex_list = list(self.example_store.get_all_examples(filter_splits))
         random.shuffle(all_ex_list)
-        #
         for example in all_ex_list:  #self.example_store.get_all_examples(splits):
-            all_y_examples = self.example_store.get_examples_from_y_set(example.y_set_id)
-            y_type = self.type_context.get_type_by_name(example.ytype)
+            all_y_examples = self.example_store.get_y_values_for_y_set(example.y_set_id)
+            y_type = self.type_context.get_type_by_name(all_y_examples[0].y_type)
             y_ast_set = AstObjectChoiceSet(y_type, None)
-            ast_for_this_example = None
             parsed_ast = None
-            replacement_sample = self.replacer.create_replace_sampling(example.xquery)
+            replacement_sample = self.replacer.create_replace_sampling(example.x_text)
             y_texts = set()
+            individual_asts = []
+            individual_asts_preferences = []
             for y_example in all_y_examples:
-                replaced_y = replacement_sample.replace_x(y_example.ytext)
+                replaced_y = replacement_sample.replace_x(y_example.y_text)
                 if replaced_y not in y_texts:
                     parsed_ast = self.string_parser.create_parse_tree(
                         replaced_y, y_type.name)
-                    if y_example.ytext == example.ytext:
-                        ast_for_this_example = parsed_ast
-                    y_ast_set.add(parsed_ast, True, y_example.weight, 1.0)
+                    individual_asts.append(parsed_ast)
+                    individual_asts_preferences.append(y_example.y_preference)
+                    y_ast_set.add(parsed_ast, True, y_example.y_preference, 1.0)
                     y_texts.add(replaced_y)
             # handle copies
-            this_example_replaced_x = replacement_sample.replace_x(example.xquery)
+            this_example_replaced_x = replacement_sample.replace_x(example.x_text)
             tokens, metadata = self.str_tokenizer.tokenize(this_example_replaced_x)
+            # TODO figure how to weight the copy node??
             add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
-                                  metadata, example.weight)
+                                  metadata, copy_node_weight=1)
             y_ast_set.freeze()
-            yield (example, this_example_replaced_x, y_ast_set, ast_for_this_example, y_texts)
+            teacher_force_path_ast = WeightedRandomChooser(
+                individual_asts, individual_asts_preferences).sample()
+            yield (example, this_example_replaced_x, y_ast_set, teacher_force_path_ast, y_texts)
 
 
 def flatten_list(lists):
@@ -204,10 +207,11 @@ if __name__ == "__main__":
     type_context.finalize_data()
 
     #exampleloader.load_path(f"../../builtin_types/why_not_work_examples.ainix.yaml", index)
-    index = load_all_examples(type_context)
-    #index = load_tellia_examples(type_context)
 
-    print("num docs", index.backend.index.doc_count())
+    #index = load_all_examples(type_context)
+    index = load_tellia_examples(type_context)
+
+    print("num docs", index.get_doc_count())
 
     from ainix_kernel.models.EncoderDecoder.encdecmodel import \
         get_default_encdec_model
@@ -234,7 +238,8 @@ if __name__ == "__main__":
     print("TRAIN")
     print("-----------")
     logger = EvaluateLogger()
-    trainer.evaluate(logger, filter_splits=(DataSplits.TRAIN,), dump_each=True)
+    trainer.evaluate(logger, filter_splits=(DataSplits.TRAIN,), dump_each=True,
+                     num_replace_samples=5)
     print_ast_eval_log(logger)
     print("-----------")
     print("Validation")

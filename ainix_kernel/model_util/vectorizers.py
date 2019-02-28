@@ -6,7 +6,7 @@ from collections import Counter
 
 import attr
 from ainix_common.parsing.ast_components import ObjectChoiceNode
-from ainix_kernel.indexing.examplestore import Example
+from ainix_kernel.indexing.examplestore import XValue
 from ainix_common.parsing.model_specific.tokenizers import Tokenizer
 from ainix_kernel.model_util.vocab import Vocab
 import torch
@@ -121,7 +121,7 @@ class AverageProcFuncReturnVal:
 
 
 AVERAGING_PROCESSING_FUNC_TYPE = \
-    Callable[[Example, ObjectChoiceNode], AverageProcFuncReturnVal]
+    Callable[[XValue, ObjectChoiceNode], AverageProcFuncReturnVal]
 
 
 class TorchAveragingPretrainer(Pretrainer):
@@ -138,7 +138,7 @@ class TorchAveragingPretrainer(Pretrainer):
         self._sums = self._counts.reshape(-1, 1) * self._average_store
         self.process_func = process_func
 
-    def pretrain_example(self, example: Example, y_ast: ObjectChoiceNode):
+    def pretrain_example(self, example: XValue, y_ast: ObjectChoiceNode):
         # TODO (DNGros): There are probably more numerically stable ways of
         # doing a running average. Maybe look into those eventually...
         super().pretrain_example(example, y_ast)
@@ -198,7 +198,7 @@ def make_xquery_avg_pretrain_func(
 ) -> AVERAGING_PROCESSING_FUNC_TYPE:
     """A a closure that produces a pretrain averaging function that applies some
     function onto the xquery string of the examples"""
-    def out_func(example: Example, y_ast: ObjectChoiceNode) -> AverageProcFuncReturnVal:
+    def out_func(example: XValue, y_ast: ObjectChoiceNode) -> AverageProcFuncReturnVal:
         x_vectorized = x_vec_func(example.xquery)
         y_ast_indicies = ast_vocab.token_seq_to_indices(
             ast_tokenizer.tokenize(y_ast), as_torch=False)

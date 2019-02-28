@@ -14,7 +14,7 @@ from ainix_common.parsing.model_specific.tokenizers import get_default_pieced_to
     AstValTokenizer, ModifiedStringToken, WhitespaceModifier
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext
-from ainix_kernel.indexing.examplestore import ExamplesStore, Example, DataSplits
+from ainix_kernel.indexing.examplestore import ExamplesStore, XValue, DataSplits, YValue
 from ainix_kernel.model_util.attending import attend
 from ainix_kernel.model_util.operations import get_kernel_around
 from ainix_kernel.model_util.vocab import Vocab, BasicVocab
@@ -71,7 +71,11 @@ class FullRetModel(StringTypeTranslateCF):
             ref_ast, example_ref.copy_refs, memory, valid_for_copy_mask, tokens[0])
         metad = TypeTranslatePredictMetadata(
             (math.log(float(top_sims[0])), ),
-            (ExampleRetrieveExplanation((example_ref.example_id, ), None, None), )
+            (ExampleRetrieveExplanation(
+                tuple([self.example_refs[int(ind)].x_val_id for ind in top_inds]),
+                tuple([math.log(float(sim)) for sim in top_sims]),
+                None),
+            )
         )
         return ast_with_new_copies, metad
 
@@ -156,13 +160,15 @@ class _CopyNodeReference:
 
 @attr.s(auto_attribs=True)
 class _ExampleRef:
-    example_id: int
+    x_val_id: int
+    y_val_id: int
     reference_ast: ObjectChoiceNode
     copy_refs: Tuple[_CopyNodeReference, ...]
 
 
 def _preproc_example(
-    example: Example,
+    xval: XValue,
+    yval: YValue,
     replacers: Replacer,
     embedder: StringQueryEncoder,
     parser: StringParser,
@@ -176,7 +182,7 @@ def _preproc_example(
             this in the model
     """
     # Sample a bunch of replacements and get their summary
-    x, y = example.xquery, example.ytext
+    x, y = xval.x_text, yval.y_text
     needs_replacement = replacers.check_if_string_has_replacement_spots(x)
     xs, ys = [], []
     for _ in range(REPLACEMENT_SAMPLES if needs_replacement else 1):
@@ -241,7 +247,7 @@ def _preproc_example(
 
     return (
         summary,
-        _ExampleRef(example.example_id, representive_ast, tuple(copy_refs))
+        _ExampleRef(xval.id, yval.id, representive_ast, tuple(copy_refs))
     )
 
 
@@ -300,24 +306,17 @@ def full_ret_from_example_store(
     embedder.eval()
     parser = StringParser(example_store.type_context)
     unparser = AstUnparser(example_store.type_context, embedder.get_tokenizer())
-    processed_x_raws = set()
     summaries, example_refs, example_splits = [], [], []
     with torch.no_grad():
-        for example in tqdm(list(example_store.get_all_examples())):
-            if example.xquery in processed_x_raws:
-                continue
+        for xval in tqdm(list(example_store.get_all_examples())):
             # Get the most prefered y text
-            all_y_examples = example_store.get_examples_from_y_set(example.y_set_id)
-            all_y_examples = [e for e in all_y_examples if e.xquery == example.xquery]
-            all_y_examples.sort(key=lambda e: e.weight)
-            highest_rated_version_of_this_example = all_y_examples[0]
-            assert highest_rated_version_of_this_example.xquery == example.xquery
-            assert highest_rated_version_of_this_example.split == example.split
+            all_y_examples = example_store.get_y_values_for_y_set(xval.y_set_id)
+            most_preferable_y = all_y_examples[0]
             new_summary, new_example_ref = _preproc_example(
-                highest_rated_version_of_this_example, replacers, embedder, parser, unparser)
+                xval, most_preferable_y, replacers, embedder, parser, unparser)
             summaries.append(new_summary)
             example_refs.append(new_example_ref)
-            example_splits.append(example.split)
+            example_splits.append(xval.split)
     return FullRetModel(
         embedder=embedder,
         summaries=torch.stack(summaries),

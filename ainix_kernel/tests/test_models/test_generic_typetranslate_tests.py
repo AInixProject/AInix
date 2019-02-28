@@ -12,7 +12,8 @@ from typing import List
 import pytest
 
 from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
-from ainix_kernel.indexing.examplestore import Example, DataSplits, SPLIT_TYPE, ExamplesStore
+from ainix_kernel.indexing.examplestore import XValue, DataSplits, SPLIT_PROPORTIONS_TYPE, \
+    ExamplesStore, BasicExampleStore, default_preferences
 from ainix_kernel.models.EncoderDecoder import encdecmodel
 from ainix_kernel.models.SeaCR import seacr
 from ainix_kernel.indexing.exampleindex import ExamplesIndex
@@ -38,8 +39,7 @@ def make_example_store(model_name, type_context):
     if model_name in ("SeaCR-Rulebased", "SeaCR", "SeaCR-OracleCompare", "SeaCR-NoSearch"):
         return ExamplesIndex(type_context, ExamplesIndex.get_default_ram_backend())
     if model_name in ("EncDec", "EncDecRetrieval"):
-        # TODO (DNGros): avoid the whoosh stuff
-        return ExamplesIndex(type_context, ExamplesIndex.get_default_ram_backend())
+        return BasicExampleStore(type_context)
     else:
         raise ValueError("Unrecognized model type ", type)
 
@@ -96,8 +96,8 @@ def basic_string_tc(basic_classify_tc):
     return tc
 
 
-ALL_TRAIN_SPLIT: SPLIT_TYPE = ((1, DataSplits.TRAIN),)
-ALL_VAL_SPLIT: SPLIT_TYPE = ((1, DataSplits.VALIDATION),)
+ALL_TRAIN_SPLIT: SPLIT_PROPORTIONS_TYPE = ((1, DataSplits.TRAIN),)
+ALL_VAL_SPLIT: SPLIT_PROPORTIONS_TYPE = ((1, DataSplits.VALIDATION),)
 
 
 class ExampleAddHelper:
@@ -107,7 +107,7 @@ class ExampleAddHelper:
         example_store: ExamplesStore,
         default_x_type: str,
         default_y_type: str,
-        default_insert_splits: SPLIT_TYPE
+        default_insert_splits: SPLIT_PROPORTIONS_TYPE
     ):
         self.example_store = example_store
         self.default_x_type = default_x_type
@@ -120,13 +120,14 @@ class ExampleAddHelper:
         y_strings: List[str],
         x_type: str = None,
         y_type: str = None,
-        insert_splits: SPLIT_TYPE = None
+        insert_splits: SPLIT_PROPORTIONS_TYPE = None
     ):
-        self.example_store.add_many_to_many_default_weight(
-            x_values=x_strings,
-            y_values=y_strings,
+        self.example_store.add_yset(
+            x_texts=x_strings,
+            y_texts=y_strings,
             x_type=x_type or self.default_x_type,
             y_type=y_type or self.default_y_type,
+            y_preferences=default_preferences(len(y_strings)),
             splits=insert_splits or self.default_insert_splits
         )
 
@@ -183,7 +184,7 @@ def check_survives_serialization(
 def test_basic_classify(model_name, basic_classify_tc):
     basic_classify_tc.finalize_data()
     example_store = make_example_store(model_name, basic_classify_tc)
-    adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
+    adder = ExampleAddHelper(example_store, ExamplesStore.DEFAULT_X_TYPE,
                              "FooBarBazType", ALL_TRAIN_SPLIT)
     adder.add_examples(
         x_strings=["a", "b", "c"],
@@ -208,7 +209,7 @@ def test_basic_classify_serialize(model_name, basic_classify_tc):
     # TODO don't require retraining each time.
     basic_classify_tc.finalize_data()
     example_store = make_example_store(model_name, basic_classify_tc)
-    adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
+    adder = ExampleAddHelper(example_store, ExamplesStore.DEFAULT_X_TYPE,
                              "FooBarBazType", ALL_TRAIN_SPLIT)
     adder.add_examples(
         x_strings=["woof", "bow wo", "bark"],
@@ -232,7 +233,7 @@ def test_classify_seq(model_name, basic_string_tc):
     """Tests to see if model can learn to generate string of varying length"""
     basic_string_tc.finalize_data()
     example_store = make_example_store(model_name, basic_string_tc)
-    adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
+    adder = ExampleAddHelper(example_store, ExamplesStore.DEFAULT_X_TYPE,
                              "FooStringType", ALL_TRAIN_SPLIT)
     adder.add_examples(
         x_strings=["woof", "bow wo", "bark"],
@@ -263,7 +264,7 @@ def test_non_bow(model_name, basic_classify_tc):
     beyond a bag-of-words assumption"""
     basic_classify_tc.finalize_data()
     example_store = make_example_store(model_name, basic_classify_tc)
-    adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
+    adder = ExampleAddHelper(example_store, ExamplesStore.DEFAULT_X_TYPE,
                              "FooBarBazType", ALL_TRAIN_SPLIT)
     # start with bob
     adder.add_examples(
@@ -282,11 +283,12 @@ def test_non_bow(model_name, basic_classify_tc):
     )
     model = make_model(model_name, example_store)
     print("train_len", len(list(
-        example_store.get_all_examples(filter_splits=(DataSplits.TRAIN,)))))
+        example_store.get_all_examples(only_from_splits=(DataSplits.TRAIN,)))))
     print("val_len", len(list(
-        example_store.get_all_examples(filter_splits=(DataSplits.VALIDATION,)))))
+        example_store.get_all_examples(only_from_splits=(DataSplits.VALIDATION,)))))
     print("val examples", [x.xquery for x in
-        example_store.get_all_examples(filter_splits=(DataSplits.VALIDATION,))])
+                           example_store.get_all_examples(
+                               only_from_splits=(DataSplits.VALIDATION,))])
     if "Oracle" not in model_name:
         # Don't expect it to work before training.
         assert_train_acc(model, example_store, expect_fail=True)
@@ -300,7 +302,7 @@ def test_string_gen(model_name, basic_string_tc):
     """Tests to see if model can learn to generate string of varying length"""
     basic_string_tc.finalize_data()
     example_store = make_example_store(model_name, basic_string_tc)
-    adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
+    adder = ExampleAddHelper(example_store, ExamplesStore.DEFAULT_X_TYPE,
                              "FooStringType",
                              #ALL_TRAIN_SPLIT)
                              ((0.8, DataSplits.TRAIN), (0.2, DataSplits.VALIDATION)))
@@ -365,7 +367,7 @@ def test_string_gen(model_name, basic_string_tc):
 def test_copy(model_name, basic_string_tc):
     basic_string_tc.finalize_data()
     example_store = make_example_store(model_name, basic_string_tc)
-    adder = ExampleAddHelper(example_store, ExamplesIndex.DEFAULT_X_TYPE,
+    adder = ExampleAddHelper(example_store, ExamplesStore.DEFAULT_X_TYPE,
                              "FooStringType", ALL_TRAIN_SPLIT)
     for x, y in [
         ('hello there "foo bar baz foo"', "foo bar baz foo"),

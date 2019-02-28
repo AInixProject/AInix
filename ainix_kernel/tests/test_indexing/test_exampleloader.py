@@ -17,7 +17,7 @@ def test_example():
     f = io.StringIO(test_string)
     mock_index = MagicMock()
     load_yaml(f, mock_index)
-    mock_index.add_many_to_many_default_weight.assert_called_once_with(
+    mock_index.add_yset_default_weight.assert_called_once_with(
         ["Hello"], ["Bonjour"],
         mock_index.DEFAULT_X_TYPE, "fooType", DEFAULT_SPLITS)
 
@@ -38,6 +38,6 @@ def test_example_2():
     f = io.StringIO(test_string)
     mock_index = MagicMock()
     load_yaml(f, mock_index)
-    mock_index.add_many_to_many_default_weight.assert_called_once_with(
+    mock_index.add_yset_default_weight.assert_called_once_with(
         ["Hello"], ["Bonjour", "Salut"],
         mock_index.DEFAULT_X_TYPE, "fooType", DEFAULT_SPLITS)

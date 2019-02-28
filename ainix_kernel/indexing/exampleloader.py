@@ -5,7 +5,8 @@ For that use ainix_common.parsing.loader"""
 # how to make this DRYer...
 import yaml
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, \
-    DEFAULT_SPLITS, SPLIT_TYPE
+    DEFAULT_SPLITS, SPLIT_PROPORTIONS_TYPE, default_preferences
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -16,7 +17,7 @@ from typing import Dict, IO, Tuple
 def load_path(
     path : str,
     index: ExamplesStore,
-    splits: SPLIT_TYPE = DEFAULT_SPLITS
+    splits: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS
 ) -> None:
     """Loads a *.ainix.yaml file and registers and definesgT
     or objects with the supplied type_context"""
@@ -29,7 +30,7 @@ def load_path(
 def load_yaml(
     filelike: IO,
     index: ExamplesStore,
-    splits: SPLIT_TYPE = DEFAULT_SPLITS
+    splits: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS
 ) -> None:
     doc = yaml.safe_load(filelike)
     _load(doc, index, splits)
@@ -38,7 +39,7 @@ def load_yaml(
 def _load(
     parsed_doc: Dict,
     index: ExamplesStore,
-    splits: SPLIT_TYPE = DEFAULT_SPLITS
+    splits: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS
 ) -> None:
     """
     Args:
@@ -68,7 +69,7 @@ def _load_single_example(
     xtype: str,
     ytype: str,
     load_index: ExamplesStore,
-    splits: SPLIT_TYPE
+    splits: SPLIT_PROPORTIONS_TYPE
 ):
     x = example_dict['x']
     if not isinstance(x, list):
@@ -78,10 +79,10 @@ def _load_single_example(
         y = [y]
     x = list(map(str, x))
     y = list(map(str, y))
-    load_index.add_many_to_many_default_weight(x, y, xtype, ytype, splits)
+    load_index.add_yset(x, y, xtype, ytype, default_preferences(len(y)), splits)
 
 
-def _load_example_set(define: Dict, load_index: ExamplesStore, splits: SPLIT_TYPE):
+def _load_example_set(define: Dict, load_index: ExamplesStore, splits: SPLIT_PROPORTIONS_TYPE):
     y_type = define['y_type']
     x_type = define.get('x_type', load_index.DEFAULT_X_TYPE)
     examples = define['examples']

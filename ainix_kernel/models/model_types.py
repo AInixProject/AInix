@@ -6,7 +6,7 @@ import math
 from abc import ABC, abstractmethod, abstractclassmethod
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet
 from ainix_common.parsing.typecontext import TypeContext
-from ainix_kernel.indexing.examplestore import Example, ExamplesStore
+from ainix_kernel.indexing.examplestore import XValue, ExamplesStore
 from typing import Iterable, List, Tuple, Sequence, Optional
 from ainix_common.parsing.model_specific import tokenizers
 from pyrsistent import pvector
@@ -52,7 +52,7 @@ class Pretrainer(ABC):
         self._is_open = True
 
     @abstractmethod
-    def pretrain_example(self, example: Example, y_ast: ObjectChoiceNode):
+    def pretrain_example(self, example: XValue, y_ast: ObjectChoiceNode):
         """Give an example to update parameters on. You should not give an example
         which this model has already been pretrained on."""
         if not self._is_open:
@@ -86,7 +86,7 @@ class RecusivePretrainer(Pretrainer):
             if subpretrainer is not None:
                 self._open_pretrainers.append(subpretrainer)
 
-    def pretrain_example(self, example: Example, y_ast: ObjectChoiceNode):
+    def pretrain_example(self, example: XValue, y_ast: ObjectChoiceNode):
         for pretrainer in self._open_pretrainers:
             pretrainer.pretrain_example(example, y_ast)
 
