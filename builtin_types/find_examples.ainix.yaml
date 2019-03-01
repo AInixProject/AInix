@@ -12,13 +12,13 @@ defines:
     - what are all the directories anywhere on this path?
     y:
     - 'find . -type d'
-  #- x:
-  #  - recursively find all files that start with "[-[ENGWORD]-]"
-  #  - Starting here, find all files which start with "[-[ENGWORD-]"
-  #  y:
-  #  - 'find . -name "[-[ENGWORD]-]*" -type f'
-  #- x:
-  #  - recursively find all files that end with "[-[ENGWORD]-]"
-  #  - Starting here, find all files which end with "[-[ENGWORD]-]"
-  #  y:
-  #  - 'find . -name "*[-[ENGWORD]-]" -type f'
+  - x:
+    - recursively find all files that start with "[-[ENGWORD]-]"
+    - Starting here, find all files which start with "[-[ENGWORD]-]"
+    y:
+    - 'find . -name "[-[ENGWORD]-]*" -type f'
+  - x:
+    - recursively find all files that end with "[-[ENGWORD]-]"
+    - Starting here, find all files which end with "[-[ENGWORD]-]"
+    y:
+    - 'find . -name "*[-[ENGWORD]-]" -type f'

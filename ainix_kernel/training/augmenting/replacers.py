@@ -138,6 +138,7 @@ class ReplacementSampling:
 
     def replace_y(self, in_y_str: str) -> str:
         if len(self.var_to_x_y_vals) == 0:
+            self._verify_no_replacers_left(in_y_str)
             return in_y_str
         vars_used = set()
         new_str, latest_vars_used = self._fill_in_var_retrieves(in_y_str, False)
@@ -183,7 +184,9 @@ class ReplacementSampling:
 
     def _verify_no_replacers_left(self, string):
         if len(Replacer.get_bracketless_matches(string)) != 0:
-            raise ReplacementError(f"Still replacers remaining. {string}")
+            raise ReplacementError(f"Still replacers remaining. {string}"
+                                   f"Note, if this is a Y, there may be an issue with the"
+                                   f"X string (for example misplaced brackets or something)")
 
 
 class Replacement:

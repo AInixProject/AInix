@@ -183,7 +183,8 @@ def _preproc_example(
     """
     # Sample a bunch of replacements and get their summary
     x, y = xval.x_text, yval.y_text
-    needs_replacement = replacers.check_if_string_has_replacement_spots(x)
+    needs_replacement = replacers.check_if_string_has_replacement_spots(x) or \
+                        replacers.check_if_string_has_replacement_spots(y)
     xs, ys = [], []
     for _ in range(REPLACEMENT_SAMPLES if needs_replacement else 1):
         xreplaced, yreplaced = replacers.strings_replace(x, y)
