@@ -221,9 +221,9 @@ defines:
             y:
             - "ls -i -1"
           - x:
-            - list inode numbers of *.h
+            - list inode numbers of *.[-[EXTENSION]-]
             y:
-            - "ls -i *.h"
+            - "ls -i *.[-[EXTENSION]-]"
           - x:
             - list all files in pictures
             y:

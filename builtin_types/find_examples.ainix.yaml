@@ -20,5 +20,51 @@ defines:
   - x:
     - recursively find all files that end with "[-[ENGWORD]-]"
     - Starting here, find all files which end with "[-[ENGWORD]-]"
+    - find files that end with "[-[ENGWORD]-]" starting here
     y:
     - 'find . -name "*[-[ENGWORD]-]" -type f'
+  - x:
+    - find all files that start with the letter "[-[LETTER]-]"
+    - recursively find files that start with "[-[LETTER]-]"
+    y:
+    # TODO: once user queries are supported, ask if care about case?
+    - 'find . -name "[-[LETTER]-]*" -type f'
+  - x:
+      - recursively find files that contain "[-[ENGWORD]-]" in their name
+    y:
+      - 'find . -name "*[-[ENGWORD]-]*" -type f'
+  - x:
+      - recursively find files with "[-[LETTER]-][-[ENGWORD]-]" in name
+    y:
+      - 'find . -name "*[-[LETTER]-][-[ENGWORD]-]*" -type f'
+  - x:
+      - recursively find all directories that end with "[-[ENGWORD]-]" starting here
+    y:
+      - 'find . -name "*[-[ENGWORD]-]" -type d'
+  - x:
+      - recursively find all python files
+    y:
+      - 'find . -name "*.py" -type f'
+  - x:
+      - recursively find all php files
+    y:
+      - 'find . -name "*.php" -type f'
+  - x:
+      - recursively find all javascript
+      - recursively find all js here
+      - find all javascript files starting here
+    y:
+      - 'find . -name "*.js" -type f'
+  - x:
+      - recursively find all [-[EXTENSION]-] files starting here
+      - recursively find all [-[EXTENSION]-] files
+      - find all [-[EXTENSION]-] files
+      - find all "[-[EXTENSION]-]" files
+    y:
+      - 'find . -name "*.[-[EXTENSION]-]" -type f'
+  - x:
+      - recursively find all .[-[EXTENSION]-] files starting here
+      - recursively find all ".[-[EXTENSION]-]" files starting here
+      - find all .[-[EXTENSION]-] files
+    y:
+      - 'find . -name "*[-[EXTENSION]-]" -type f'
