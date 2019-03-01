@@ -118,7 +118,9 @@ def test_touch_set(all_the_stuff_context):
 
 @pytest.mark.parametrize('string',
                          ('split -l 100 data.csv',
-                          'find . -name "foo"'))
+                          'find . -name "foo"',
+                          'find . -name "bar" -type f',
+                          'find . -name "df*"'))
 def test_not_fail(all_the_stuff_context, string):
     tc = all_the_stuff_context
     parser = StringParser(tc)
@@ -137,9 +139,25 @@ def test_not_fail_find_expr(all_the_stuff_context, string):
 
 
 @pytest.mark.parametrize('string',
-                         ('asdf', "echo 'hi' | od -c"))
-def test_fails(all_the_stuff_context, string):
+                         ('-type f -fakes fo',))
+def test_fail_find_expr(all_the_stuff_context, string):
     tc = all_the_stuff_context
     parser = StringParser(tc)
     with pytest.raises(AInixParseError):
+        ast = parser.create_parse_tree(string, "FindExpression")
+
+
+@pytest.mark.parametrize('string',
+                         ('asdf', "echo 'hi' | od -c",
+                          "find . -fake foo",
+                          "find . -name foo -fake foo",
+                          "find . -type f -fake grep"))
+def test_fails(all_the_stuff_context, string):
+    tc = all_the_stuff_context
+    parser = StringParser(tc)
+    try:
         ast = parser.create_parse_tree(string, "CommandSequence")
+        print(ast.dump_str())
+        pytest.fail("Expected fail")
+    except AInixParseError:
+        pass

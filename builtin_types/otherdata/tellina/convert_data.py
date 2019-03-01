@@ -46,6 +46,7 @@ def get_parsable_commands(data: Tuple[str, str]) -> List[Tuple[str, str]]:
         try:
             ast = parser.create_parse_tree(cm, "CommandSequence")
             parsable_data.append((nl, cm))
+            print(f"PASS {cm}")
         except AInixParseError as e:
             pass
     return parsable_data

@@ -197,9 +197,17 @@ class StringParser:
                 object_choice = ObjectNode(arg.not_present_object, pmap({}))
             return ObjectChoiceNode(arg.present_choice_type, object_choice), arg_string_metadata
         else:
-            return self._parse_object_choice_node(
+            inner_arg_node, arg_string_metadata = self._parse_object_choice_node(
                 arg_data.slice_string, arg.type_parser, arg.type
             )
+            if arg_string_metadata.remaining_right_starti != len(arg_data.slice_string):
+                # I don't know if we actually want to error here???
+                raise AInixParseError(
+                    f"Expected to fully consume string arg delegation {arg_data.slice_string}"
+                    f"but only consumed {arg_string_metadata.remaining_right_starti} out of"
+                    f"{len(arg_data.slice_string)}")
+            return inner_arg_node, arg_string_metadata
+
 
     def _run_object_parser_with_delegations(
         self,

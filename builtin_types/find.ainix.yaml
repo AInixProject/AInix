@@ -27,17 +27,17 @@ defines:
           - name: current_find_value
             type: FindValue
             required: True
-          #- name: next_expression
-          #  type: FindExpression
-          #  required: False
+          - name: next_expression
+            type: FindExpression
+            required: False
       preferred_object_parser:
-        #grammar: |
-        #  current_find_value next_expression?
-          grammar: |
-            current_find_value
+        grammar: |
+          current_find_value (" " next_expression)?
     # A find value encompeses both "Options" and "Tests"
     - define_new: type
       name: FindValue
+      default_type_parser: max_munch_type_parser
+    # -name
     - define_new: object
       name: find_option_name
       type: FindValue
@@ -60,8 +60,30 @@ defines:
       preferred_object_parser:
           grammar: |
               '"' file '"'
-
-
-
-
+    # -type
+    - define_new: object
+      name: find_option_type
+      type: FindValue
+      children:
+      - name: findtype
+        type: FindTypeLetter
+        required: True
+      preferred_object_parser:
+            grammar: |
+                  "-type " findtype
+    - define_new: type
+      name: FindTypeLetter
+      default_type_parser: max_munch_type_parser
+    - define_new: object
+      name: find_type_letter_f
+      type: FindTypeLetter
+      preferred_object_parser:
+            grammar: |
+                  "f"
+    - define_new: object
+      name: find_type_letter_d
+      type: FindTypeLetter
+      preferred_object_parser:
+            grammar: |
+                  "d"
 ...

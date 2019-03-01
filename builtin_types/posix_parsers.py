@@ -184,6 +184,7 @@ def ProgramObjectParser(
     lex_result = lex_bash(string)
     lex_index = 0
     ignore_this_word_dash = False
+    ignore_invalid_flags = run.get_type_data(IGNORE_INVALID_FLAGS, False)
     while lex_index < len(lex_result):
         word, (start_idx, end_idx) = lex_result[lex_index]
         if word == "--":
@@ -198,7 +199,7 @@ def ProgramObjectParser(
                 try:
                     shortname_match = get_arg_with_short_name(remaining_args, char)
                 except InvalidShortFlag as e:
-                    if run.get_type_data(IGNORE_INVALID_FLAGS, False):
+                    if ignore_invalid_flags:
                         ignore_this_word_dash = True
                         # We want to get out to the word while loop
                         # we will break and decrement the lex_index so stay where we are
@@ -258,7 +259,7 @@ def ProgramObjectParser(
                 # We can potentially consume all the remaining words, except we have to leave
                 # room any other positional args there might be.
                 max_words_to_consume = len(lex_result) - lex_index - len(sorted_pos_args[1:])
-                if not parameter_end_seen:
+                if not parameter_end_seen and not ignore_invalid_flags:
                     # If we haven't seen a "--" then we need to scan forwards to make sure we
                     # don't accidentally count a option flag as one of this positional arg.
                     words_to_consume = 1

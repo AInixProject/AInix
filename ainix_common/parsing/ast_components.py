@@ -393,7 +393,6 @@ class ObjectNode(ObjectNodeLike):
     def dump_str(self, indent=0):
         indent_str = "  " * indent
         s = indent_str + "<ObjectNode obj " + self._implementation.name + "> {\n"
-        s += indent_str + "  next_type_choices: {\n"
         for arg in self.implementation.children:
             if arg.name in self._arg_name_to_node:
                 s += self._arg_name_to_node[arg.name].dump_str(indent + 2)
