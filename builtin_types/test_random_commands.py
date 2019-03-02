@@ -75,7 +75,7 @@ def test_cp(all_the_stuff_context, string):
 def test_touch_set(all_the_stuff_context):
     tc = all_the_stuff_context
     parser = StringParser(tc)
-    string = "touch script_window.hpp"
+    string = "touch out.txt"
     ast = parser.create_parse_tree(string, "Program")
     unparser = AstUnparser(tc, NonLetterTokenizer())
     result = unparser.to_string(ast)
@@ -87,7 +87,7 @@ def test_touch_set(all_the_stuff_context):
     assert cset.is_node_known_valid(new_ast)
 
     tokenizer = NonLetterTokenizer()
-    x_str = 'set the last mod time of script_window.hpp to now'
+    x_str = 'set the last mod time of out.txt to now'
     _, tok_metadata = tokenizer.tokenize(x_str)
     ast_copies = make_copy_version_of_tree(ast, unparser, tok_metadata)
     add_copies_to_ast_set(ast, cset, unparser, tok_metadata)
@@ -99,6 +99,7 @@ def test_touch_set(all_the_stuff_context):
     touch_o = tc.get_object_by_name("touch")
     file_list = tc.get_type_by_name("PathList")
     r_arg = touch_o.get_arg_by_name("r")
+    m_arg = touch_o.get_arg_by_name("m")
     other_copy = ObjectChoiceNode(
         tc.get_type_by_name("Program"),
         ObjectNode(
@@ -106,6 +107,8 @@ def test_touch_set(all_the_stuff_context):
             pmap({
                 "r": ObjectChoiceNode(r_arg.present_choice_type,
                                       ObjectNode(r_arg.not_present_object, pmap())),
+                "m": ObjectChoiceNode(m_arg.present_choice_type,
+                                      ObjectNode(m_arg.not_present_object, pmap())),
                 "file_list": ObjectChoiceNode(file_list, CopyNode(file_list, 12, 14))
             })
         )

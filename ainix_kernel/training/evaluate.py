@@ -32,6 +32,8 @@ class AstEvaluation(Evaluation):
             warnings.warn(f"The prediction is not in ground truth but value "
                           f"matches a y string. "
                           f"Prediction text {self.predicted_y} actuals {self.y_texts}")
+            print(self.prediction.dump_str())
+            self.ground_truth.is_node_known_valid(self.prediction)
         self._fill_stats()
 
     def print_vals(self, unparser: AstUnparser):
