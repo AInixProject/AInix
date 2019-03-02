@@ -229,13 +229,13 @@ defines:
             y:
             - "ls pictures"
           - x:
-            - ls *.txt sorted by file size
+            - ls *.[-[EXTENSION]-] sorted by file size
             y:
-            - "ls -lS *.txt"
+            - "ls -lS *.[-[EXTENSION]-]"
           - x:
-            - get the inode numbers of *.java
+            - get the inode numbers of *.[-[EXTENSION]-]
             y:
-            - "ls -i *.java"
+            - "ls -i *.[-[EXTENSION]-]"
           - x:
             - ls all files in pictures and home
             y:

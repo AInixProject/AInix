@@ -5,6 +5,7 @@ defines:
   - x:
     - recursively find all files and dirs named [-[ENGWORD]-].txt
     - print files and directories named "[-[ENGWORD]-].txt" recursive
+    - recursively search for files and dirs named [-[ENGWORD]-].txt
     y:
     - 'find . -name "[-[ENGWORD]-].txt"'
   - x:
@@ -68,3 +69,33 @@ defines:
       - find all .[-[EXTENSION]-] files
     y:
       - 'find . -name "*[-[EXTENSION]-]" -type f'
+  - x:
+      - find all hidden files starting here
+      - recursively list all hidden files here
+      - recursively find all hidden files
+    y:
+      - 'find . -name ".*" -type f'
+  - x:
+      - find all hidden files starting in [-[DIRNAME]-]
+    y:
+      - 'find [-[DIRNAME]-] -name ".*" -type f'
+  - x:
+      - find all hidden files starting in my tmp directory
+    y:
+      - 'find \tmp -name ".*" -type f'
+  - x:
+      - find all files starting here which belong to [-[USERNAME]-]
+      - recursively find files that belong to [-[USERNAME]-]
+      - what files here belong to [-[USERNAME]-]?
+    y:
+      - 'find . -type f -user [-[USERNAME]-]'
+  - x:
+      - search for all files in the whole system that belong to [-[USERNAME]-]
+      - starting from root find all files that belong to [-[USERNAME]-]
+    y:
+      - 'find / -type f -user [-[USERNAME]-]'
+  - x:
+        - find all files here which belong to group [-[GROUPNAME]-]
+        - look for files with group name [-[GROUPNAME]-]
+    y:
+        - 'find / -type f -user [-[GROUPNAME]-]'

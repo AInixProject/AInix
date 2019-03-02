@@ -86,4 +86,59 @@ defines:
       preferred_object_parser:
             grammar: |
                   "d"
+    # -empty
+    - define_new: object
+      name: find_option_empty
+      type: FindValue
+      preferred_object_parser:
+          grammar: |
+              "-empty"
+    # -user
+    - define_new: object
+      name: find_option_user
+      type: FindValue
+      children:
+          - name: username
+            type: Username
+            required: True
+      preferred_object_parser:
+          grammar: |
+              "-user " username
+    - define_new: type
+      name: Username
+    - define_new: object
+      name: username_object
+      type: Username
+      children:
+          - name: value
+            # TODO (DNGros): after adding type unions adjust so only letters
+            type: GenericWord
+            required: True
+      preferred_object_parser:
+          grammar: |
+              value
+    # -user
+    - define_new: object
+      name: find_option_group
+      type: FindValue
+      children:
+          - name: groupname
+            type: Groupname
+            required: True
+      preferred_object_parser:
+          grammar: |
+              "-group " groupname
+    - define_new: type
+      name: Groupname
+    - define_new: object
+      name: groupname_object
+      type: Groupname
+      children:
+          - name: value
+            # TODO (DNGros): after adding type unions adjust so only letters
+            type: GenericWord
+            required: True
+      preferred_object_parser:
+          grammar: |
+              value
 ...

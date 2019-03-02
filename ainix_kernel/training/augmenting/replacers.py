@@ -236,7 +236,7 @@ def get_all_replacers() -> Replacer:
     dirname, filename = os.path.split(os.path.abspath(__file__))
     repl_groups = [
         ReplacementGroup(fn, Replacement.from_tsv(f"{dirname}/data/{fn}.tsv"))
-        for fn in ('FILENAME', "DIRNAME", "ENGWORD", "LETTER", "EXTENSION")
+        for fn in ('FILENAME', "DIRNAME", "ENGWORD", "LETTER", "EXTENSION", "USERNAME", "GROUPNAME")
     ]
     replacer = Replacer(repl_groups)
     return replacer
