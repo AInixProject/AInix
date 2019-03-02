@@ -55,4 +55,10 @@ defines:
     - move [-[FILENAME]-] up two dirs
     y:
     - mv [-[FILENAME]-] ../..
+  - x:
+    - make [-[ENGWORD]-].[-[EXTENSION]-] a hidden file
+    - change [-[ENGWORD]-].[-[EXTENSION]-] to be a hidden file
+    - convert [-[ENGWORD]-].[-[EXTENSION]-] to a dot file
+    y:
+    - mv [-[ENGWORD]-].[-[EXTENSION]-] .[-[ENGWORD]-].[-[EXTENSION]-]
   y_type: CommandSequence
