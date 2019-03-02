@@ -94,7 +94,7 @@ def test_touch_set(all_the_stuff_context):
     assert cset.is_node_known_valid(ast_copies)
     assert cset.is_node_known_valid(ast)
 
-    # Scary complicated reconstruction of something that broke it
+    # Scary complicated reconstruction of something that broke it.
     # could be made into a simpler unit test in copy_tools
     touch_o = tc.get_object_by_name("touch")
     file_list = tc.get_type_by_name("PathList")
