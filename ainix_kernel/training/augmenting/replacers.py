@@ -59,6 +59,9 @@ class Replacer:
         # Go through and find variable assignments
         var_to_val_map = {}
         for match in no_brackets:
+            if match.startswith("$"):
+                # This is a var use, not a declaration
+                continue
             if "=" in match:
                 var_name, val = _split_replacement_assignment(match)
             else:

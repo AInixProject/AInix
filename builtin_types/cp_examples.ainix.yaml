@@ -29,9 +29,9 @@ defines:
     y:
     - cp -r [-[$1]-] [-[$2]-]
   - x:
-    - copy everything in pictures dir to piccopy
+    - copy everything in [-[1=ENGWORD]-]s dir to [-[$1]-]copy
     y:
-    - cp -r pictures/* piccopy
+    - cp -r [-[$1]-]/* [-[$1]-]copy
   - x:
     - cp all files in src to current directory
     y:

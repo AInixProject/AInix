@@ -128,6 +128,23 @@ def test_replacer8():
     rg.sample_replacement.assert_called_once_with(["TEST", '-t', "foo"], None)
 
 
+def test_replacer9():
+    """Test variable reuse replacer in x"""
+    replacement = Replacement("foo", "bar", 1)
+    random.seed(1)
+    repls = []
+    for i in range(100):
+        repls.append(Replacement(str(i), str(i), 1))
+    rg = ReplacementGroup('TEST', repls)
+    replacer = Replacer([rg])
+    nl, cmd = replacer.strings_replace("hello [-[1=TEST]-] [-[$1]-]", "run [-[$1]-] [-[$1]-]")
+    nlwords = nl.split()
+    chosen = nlwords[1]
+    assert chosen == nlwords[2]
+    cmwords = cmd.split()
+    assert chosen == cmwords[1] == cmwords[2]
+
+
 def test_replacer_bad():
     """Test reusing same thing multiple times in cmd"""
     replacement = Replacement("foo", "bar", 1)

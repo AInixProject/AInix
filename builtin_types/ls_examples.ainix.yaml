@@ -3,22 +3,31 @@ defines:
       y_type: CommandSequence
       examples:
           - x:
-            - list all files
-            - print all files and directories here
-            - list all files here
-            - list my files
-            - list what is here
-            - list files and dirs here
             - list
-            - print the contents of this directory
+            - list files with no extra info
+            y:
+            - ls
+          - x:
+            - print all files and directories here
             - what files are here
             - list all files here please
             - list all files and directories here
             - list all files and dirs in this dir
+            - print the contents of this directory
             - display a list of files and or directories only
             - what files and dirs are here?
+            - list all files
+            - list all files here
+            - list my files
+            - list what is here
+            - list files and dirs here
             y:
             - ls
+            - ls -l
+            - ls -lS
+            - ls -S
+            - ls -t
+            - ls -lt
           - x:
             - ls sorted by file size
             - ls biggest files first
@@ -64,16 +73,16 @@ defines:
             y:
             - "ls -a"
           - x:
-            - list files here sorted by modified data
+            - list files here sorted by modified date
             - ls sorted newest to oldest
             y:
             - "ls -lt"
             - "ls -t"
           - x:
-            - ls -l sorted by change data
-            - ls -l sorted by modification data
+            - ls -l sorted by change date
+            - ls -l sorted by modification date
             - ls -l sorted by mod data
-            - ls -l sort by mod data
+            - ls -l sort by mod date
             - ls -l sort the list by modification time which the newest first
             y:
             - "ls -lt"
@@ -169,9 +178,10 @@ defines:
             y:
             - "ls /"
           - x:
-            - list file size
+            - list files with file size
             y:
             - "ls -s"
+            - "ls -ls"
           - x:
             - ls -a with inode index number
             y:
@@ -196,11 +206,16 @@ defines:
           - x:
             - list files here ordering by last mod time with oldest files first
             - ls order files based on last modified time in dec-ending order
+            y:
+            - "ls -lrt"
+            - "ls -rt"
+          - x:
             - ls -l sorted by last modified time oldest first
             - ls -lt in reverse
             - ls -lr by modified date
             y:
             - "ls -lrt"
+            - "ls -rt"
           - x:
             - what is the oldest file (by last modified time) in current directory
             - what is the oldest file here

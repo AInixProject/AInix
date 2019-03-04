@@ -47,12 +47,7 @@ defines:
     y:
       - 'find . -name "*.py" -type f'
   - x:
-      - recursively find all php files
-    y:
-      - 'find . -name "*.php" -type f'
-  - x:
-      - recursively find all javascript
-      - recursively find all js here
+      - recursively find all javascript files
       - find all javascript files starting here
     y:
       - 'find . -name "*.js" -type f'

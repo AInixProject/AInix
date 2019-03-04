@@ -24,6 +24,11 @@ defines:
     y:
     - cat *
   - x:
+    - print a combination of the contents of all files that start with "[-[ENGWORD]-]"
+    - concatenate [-[ENGWORD]-]* together
+    y:
+    - cat [-[ENGWORD]-]*
+  - x:
     - concatenate all csv files here together
     - concat all comma separated files here
     y:
