@@ -160,6 +160,8 @@ class TypeTranslateCFTrainer:
             y_texts = set()
             individual_asts = []
             individual_asts_preferences = []
+            this_example_replaced_x = replacement_sample.replace_x(example.x_text)
+            this_x_tokens, this_x_metadata = self.str_tokenizer.tokenize(this_example_replaced_x)
             for y_example in all_y_examples:
                 replaced_y = replacement_sample.replace_x(y_example.y_text)
                 if replaced_y not in y_texts:
@@ -169,12 +171,10 @@ class TypeTranslateCFTrainer:
                     individual_asts_preferences.append(y_example.y_preference)
                     y_ast_set.add(parsed_ast, True, y_example.y_preference, 1.0)
                     y_texts.add(replaced_y)
-            # handle copies
-            this_example_replaced_x = replacement_sample.replace_x(example.x_text)
-            tokens, metadata = self.str_tokenizer.tokenize(this_example_replaced_x)
-            # TODO figure how to weight the copy node??
-            add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
-                                  metadata, copy_node_weight=1)
+                    # handle copies
+                    # TODO figure how to weight the copy node??
+                    add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
+                                          this_x_metadata, copy_node_weight=1)
             y_ast_set.freeze()
             teacher_force_path_ast = WeightedRandomChooser(
                 individual_asts, individual_asts_preferences).sample()

@@ -73,12 +73,13 @@ def test_cp(all_the_stuff_context, string):
 
 
 def test_touch_set(all_the_stuff_context):
+    x_str = 'set the last mod time of out.txt to now'
     tc = all_the_stuff_context
     parser = StringParser(tc)
     string = "touch out.txt"
     ast = parser.create_parse_tree(string, "Program")
     unparser = AstUnparser(tc, NonLetterTokenizer())
-    result = unparser.to_string(ast)
+    result = unparser.to_string(ast, x_str)
     assert result.total_string == string
 
     cset = AstObjectChoiceSet(tc.get_type_by_name("Program"))
@@ -87,7 +88,6 @@ def test_touch_set(all_the_stuff_context):
     assert cset.is_node_known_valid(new_ast)
 
     tokenizer = NonLetterTokenizer()
-    x_str = 'set the last mod time of out.txt to now'
     _, tok_metadata = tokenizer.tokenize(x_str)
     ast_copies = make_copy_version_of_tree(ast, unparser, tok_metadata)
     add_copies_to_ast_set(ast, cset, unparser, tok_metadata)
