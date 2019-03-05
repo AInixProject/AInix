@@ -13,6 +13,10 @@ TASK_SPLITTER = "<TASK_SPLITTER>"
 # A task token is a generic token to represent something special should be
 # done here. In the language modeling task it takes the place of a <MASK> token.
 TASK_TOK = "<TASK_TOK>"
+# Sometime long strings of things like filenames might get merged together
+# into one token called the MERGED_TOK. The actual content of really long
+# file name usually isn't important and just creates noise
+MERGED_TOK = "<MERGED_TOK>"
 
-ALL_SPECIALS = [SOS, EOS, UNK, SPACE, PAD, TASK_SPLITTER, TASK_TOK]
+ALL_SPECIALS = [SOS, EOS, UNK, SPACE, PAD, TASK_SPLITTER, TASK_TOK, MERGED_TOK]
 TOKEN_SPECIALS = [PAD, TASK_SPLITTER, TASK_TOK]

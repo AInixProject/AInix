@@ -21,7 +21,6 @@ import functools
 from enum import IntEnum, unique
 
 
-
 class Tokenizer(ABC):
     def __init__(self):
         self._vectorized_tokenize = np.vectorize(self.tokenize)
@@ -171,10 +170,11 @@ class NonLetterTokenizer(StringTokenizer):
 
 # TODO (DNGros): This should be unified with the tokenizer in generic_strings.
 class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
-    def __init__(self, vocab: List[str]):
+    def __init__(self, vocab: List[str], merge_long_files = False):
         super().__init__()
         self.trie: pygtrie.CharTrie[str, CasingModifier] = pygtrie.CharTrie()
         self.vocab_list = list(vocab)
+        self.merge_long_files = merge_long_files
         for tok in vocab:
             assert tok.lower() == tok, "Vocab should be all lower case"
             tok_upper = tok.upper()
@@ -258,6 +258,8 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
         assert len(outs_strs) == len(actual_to_joinable_ind)
         metadata = StringTokensMetadata(
             joinable_tokens, joinable_tokens_to_actual, actual_to_joinable_ind)
+        if self.merge_long_files:
+            out_strs, metadata = merge_tokens(outs_strs, metadata)
         return outs_strs, metadata
 
     def get_save_state_dict(self):
@@ -276,6 +278,65 @@ def apply_case_mod(string: str, case_mod: CasingModifier):
     else:
         raise ValueError()
 
+
+MOD_TOK_FOR_MERGE = ModifiedStringToken(
+    parse_constants.MERGED_TOK, CasingModifier.CASELESS, WhitespaceModifier.NOT_AFTER_SPACE)
+
+
+def merge_tokens(
+    modtokens: List[ModifiedStringToken],
+    metad: StringTokensMetadata
+):
+    """Looks for things that look like file names and merges their center tokens
+    so that way the files don't contain so many tokens and create noise"""
+    word_start_pointer = None
+    new_mod_tokens = []
+    new_joinable_toks = []
+    new_actual_pos_to_joinable_pos = []
+    new_joinable_toks_to_actual_pos = []
+    for i in range(len(modtokens) + 1):
+        # We iterate through the len + 1 in order to still hit the new_word_start
+        # condition for the last word in the string
+        cur = modtokens[i] if i < len(modtokens) else None
+        new_word_start = cur is None or \
+                         cur.whitespace_modifier == WhitespaceModifier.AFTER_SPACE_OR_SOS
+        if new_word_start:
+            if word_start_pointer is not None:
+                join_start = metad.actual_pos_to_joinable_pos[word_start_pointer]
+                join_end = metad.actual_pos_to_joinable_pos[i-1]
+                if join_start is not None and join_end is not None:
+                    joinable_toks = metad.joinable_tokens[join_start:join_end+1]
+                    joined_str = "".join(joinable_toks).strip()
+                    long_enough_to_merge = i - word_start_pointer > 4
+                    possible = True
+                else:
+                    possible = False
+                if possible and long_enough_to_merge and looks_like_a_file(joined_str):
+                    new_mod_tokens.extend(
+                        [modtokens[word_start_pointer], MOD_TOK_FOR_MERGE, modtokens[i-1]])
+                    new_joinable_toks.extend([
+                        joinable_toks[join_start],
+                        "".join(joinable_toks[join_start + 1:join_end-1]),
+                        joinable_toks[join_end]
+                    ])
+                    new_actual_pos_to_joinable_pos.extend([
+                        len(new_joinable_toks) - 3,
+                        len(new_joinable_toks) - 2,
+                        len(new_joinable_toks) - 1,
+                    ])
+                    new_joinable_toks_to_actual_pos.extend([
+                        len(new_mod_tokens) - 3,
+                        len(new_mod_tokens) - 2,
+                        len(new_mod_tokens) - 1
+                    ])
+
+            word_start_pointer = i
+    return (
+        new_mod_tokens,
+        StringTokensMetadata(
+            new_joinable_toks, new_joinable_toks_to_actual_pos, new_actual_pos_to_joinable_pos
+        )
+    )
 
 
 class SpaceTokenizer(StringTokenizer):
@@ -377,3 +438,29 @@ def get_default_pieced_tokenizer_word_list() -> Tuple[StringTokenizerWithMods, L
         vocab_str = f.read()
     vocab = vocab_str.split("\n")
     return ModifiedWordPieceTokenizer(vocab), vocab
+
+
+common_exts = (".sh", ".py", ".txt", ".tar.gz", ".png", ".tmp", ".xml", ".zip",
+               ".csv", ".cpp", ".h", 'html', '.go', '.sql', '.json', '.java')
+
+
+def looks_like_a_file(string: str):
+    """A super hacky heuristic function to guess if a string looks like a path"""
+    return string == "abbbbc"
+    if string.startswith("s/"):
+        # Could be a sed expression
+        return False
+    non_filey_chars = ("?", "@", "!", "(", ")", "//")
+    for c in non_filey_chars:
+        if c in string:
+            return False
+    for ext in common_exts:
+        if string.endswith(ext) and (len(string) - len(ext)) >= 3:
+            return True
+    if string.startswith("./") or string.startswith("../"):
+        return True
+    if string.count("/") >= 3:
+        return True
+    return False
+
+

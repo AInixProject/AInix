@@ -1,6 +1,7 @@
 from ainix_common.parsing.model_specific.tokenizers import *
 from ainix_common.parsing.model_specific import parse_constants
 import pytest
+import unittest.mock
 
 
 def test_non_letter():
@@ -156,3 +157,22 @@ def test_mod_word_piece_tokenizer_unk():
     assert metad.joinable_tokens == ["d", "ab"]
     assert metad.actual_pos_to_joinable_pos == [None, 0, 1, None]
     assert metad.joinable_tokens_pos_to_actual == [1, 2]
+
+
+#@unittest.mock.patch.object(looks_like_a_file,
+#                            lambda x: x == "abbbbc")
+def test_mod_word_piece_tokeizer_merge1():
+    tokenizer = ModifiedWordPieceTokenizer(["a", "b", "c"], merge_long_files=True)
+    moded_tokens, metad = tokenizer.tokenize("abbbbc")
+    assert moded_tokens == [
+        ModifiedWordPieceTokenizer.SOS_TOK,
+        ModifiedStringToken("a", CasingModifier.LOWER,
+                            WhitespaceModifier.AFTER_SPACE_OR_SOS),
+        MOD_TOK_FOR_MERGE,
+        ModifiedStringToken("c", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
+        ModifiedWordPieceTokenizer.EOS_TOK
+    ]
+    assert metad.joinable_tokens == ["a", "bbbb", "c"]
+    assert metad.actual_pos_to_joinable_pos == [None, 0, 1, None]
+    assert metad.joinable_tokens_pos_to_actual == [1, 2]
+
