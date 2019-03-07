@@ -242,3 +242,23 @@ def test_mod_word_piece_tokeizer_merge4():
     assert metad.joinable_tokens == ["a", "1234", "c", " ", "b", "a", " ", "a", "12", "c"]
     assert metad.actual_pos_to_joinable_pos == [None, 0, 1, 2, 4, 5, 7, 8, 9, None]
     assert metad.joinable_tokens_pos_to_actual == [1, 2, 3, None, 4, 5, None, 6, 7, 8]
+
+
+def test_looks_like_file1():
+    assert looks_like_a_file("foo/bar/baz")
+
+
+def test_looks_like_file2():
+    assert looks_like_a_file("foo.txt")
+
+
+def test_looks_like_file3():
+    assert not looks_like_a_file("good/great")
+
+
+def test_looks_like_file4():
+    assert not looks_like_a_file("foo")
+
+
+def test_looks_like_file5():
+    assert not looks_like_a_file("s/foo/bar")

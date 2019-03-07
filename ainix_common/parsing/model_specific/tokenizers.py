@@ -459,7 +459,7 @@ def looks_like_a_file(string: str):
             return True
     if string.startswith("./") or string.startswith("../"):
         return True
-    if string.count("/") >= 3:
+    if string.count("/") >= 2:
         return True
     return False
 
