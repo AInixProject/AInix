@@ -162,8 +162,8 @@ def test_mod_word_piece_tokenizer_unk():
 #@unittest.mock.patch.object(looks_like_a_file,
 #                            lambda x: x == "abbbbc")
 def test_mod_word_piece_tokeizer_merge1():
-    tokenizer = ModifiedWordPieceTokenizer(["a", "b", "c"], merge_long_files=True)
-    moded_tokens, metad = tokenizer.tokenize("abbbbc")
+    tokenizer = ModifiedWordPieceTokenizer(["a", "1", "2", "3", "4", "c"], merge_long_files=True)
+    moded_tokens, metad = tokenizer.tokenize("a1234c")
     assert moded_tokens == [
         ModifiedWordPieceTokenizer.SOS_TOK,
         ModifiedStringToken("a", CasingModifier.LOWER,
@@ -172,7 +172,7 @@ def test_mod_word_piece_tokeizer_merge1():
         ModifiedStringToken("c", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
         ModifiedWordPieceTokenizer.EOS_TOK
     ]
-    assert metad.joinable_tokens == ["a", "bbbb", "c"]
-    assert metad.actual_pos_to_joinable_pos == [None, 0, 1, None]
-    assert metad.joinable_tokens_pos_to_actual == [1, 2]
+    assert metad.joinable_tokens == ["a", "1234", "c"]
+    assert metad.actual_pos_to_joinable_pos == [None, 0, 1, 2, None]
+    assert metad.joinable_tokens_pos_to_actual == [1, 2, 3]
 

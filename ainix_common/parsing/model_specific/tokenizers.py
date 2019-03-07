@@ -259,7 +259,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
         metadata = StringTokensMetadata(
             joinable_tokens, joinable_tokens_to_actual, actual_to_joinable_ind)
         if self.merge_long_files:
-            out_strs, metadata = merge_tokens(outs_strs, metadata)
+            merge_tokens(outs_strs, metadata)
         return outs_strs, metadata
 
     def get_save_state_dict(self):
@@ -286,15 +286,16 @@ MOD_TOK_FOR_MERGE = ModifiedStringToken(
 def merge_tokens(
     modtokens: List[ModifiedStringToken],
     metad: StringTokensMetadata
-):
+) -> None:
     """Looks for things that look like file names and merges their center tokens
-    so that way the files don't contain so many tokens and create noise"""
+    so that way the files don't contain so many tokens and create noise.
+
+    This mutates the input deleting the middle tokens of filenames replacing
+    them with just one <MERGE_TOK> token.
+    """
     word_start_pointer = None
-    new_mod_tokens = []
-    new_joinable_toks = []
-    new_actual_pos_to_joinable_pos = []
-    new_joinable_toks_to_actual_pos = []
-    for i in range(len(modtokens) + 1):
+    i = 0
+    while i < len(modtokens) + 1:
         # We iterate through the len + 1 in order to still hit the new_word_start
         # condition for the last word in the string
         cur = modtokens[i] if i < len(modtokens) else None
@@ -304,39 +305,38 @@ def merge_tokens(
             if word_start_pointer is not None:
                 join_start = metad.actual_pos_to_joinable_pos[word_start_pointer]
                 join_end = metad.actual_pos_to_joinable_pos[i-1]
-                if join_start is not None and join_end is not None:
-                    joinable_toks = metad.joinable_tokens[join_start:join_end+1]
-                    joined_str = "".join(joinable_toks).strip()
-                    long_enough_to_merge = i - word_start_pointer > 4
-                    possible = True
-                else:
-                    possible = False
-                if possible and long_enough_to_merge and looks_like_a_file(joined_str):
-                    new_mod_tokens.extend(
-                        [modtokens[word_start_pointer], MOD_TOK_FOR_MERGE, modtokens[i-1]])
-                    new_joinable_toks.extend([
-                        joinable_toks[join_start],
-                        "".join(joinable_toks[join_start + 1:join_end-1]),
-                        joinable_toks[join_end]
-                    ])
-                    new_actual_pos_to_joinable_pos.extend([
-                        len(new_joinable_toks) - 3,
-                        len(new_joinable_toks) - 2,
-                        len(new_joinable_toks) - 1,
-                    ])
-                    new_joinable_toks_to_actual_pos.extend([
-                        len(new_mod_tokens) - 3,
-                        len(new_mod_tokens) - 2,
-                        len(new_mod_tokens) - 1
-                    ])
-
+                if join_start is None or join_end is None:
+                    word_start_pointer = i
+                    i += 1
+                    continue
+                joinable_toks = metad.joinable_tokens[join_start:join_end+1]
+                joined_str = "".join(joinable_toks).strip()
+                long_enough_to_merge = i - word_start_pointer > 4
+                if long_enough_to_merge and looks_like_a_file(joined_str):
+                    # We set the 2nd token in the word to be the merge
+                    modtokens[word_start_pointer + 1] = MOD_TOK_FOR_MERGE
+                    metad.joinable_tokens[word_start_pointer] = "".join(
+                        metad.joinable_tokens[join_start + 1: join_end])
+                    for _ in range(word_start_pointer + 2, i - 1):
+                        # Delete everything after the 2nd token (the <MERGE_TOK>) but before
+                        # the last token in the word. We always delete at word_start + 2 as that
+                        # keeps shifting as we delete.
+                        del modtokens[word_start_pointer + 2]
+                        del metad.actual_pos_to_joinable_pos[word_start_pointer + 2]
+                        del metad.joinable_tokens[join_start + 2]
+                        del metad.joinable_tokens_pos_to_actual[join_start + 2]
+                    # Iterate through and decrease the mapping inds of everything in front of what
+                    # we deleted.
+                    num_we_deleted = i - word_start_pointer - 3
+                    for dec_ind in range(word_start_pointer + 2, len(modtokens)):
+                        if metad.actual_pos_to_joinable_pos[dec_ind] is not None:
+                            metad.actual_pos_to_joinable_pos[dec_ind] -= num_we_deleted
+                    for dec_ind in range(join_start + 2,
+                                         len(metad.joinable_tokens_pos_to_actual)):
+                        if metad.joinable_tokens_pos_to_actual[dec_ind] is not None:
+                            metad.joinable_tokens_pos_to_actual[dec_ind] -= num_we_deleted
             word_start_pointer = i
-    return (
-        new_mod_tokens,
-        StringTokensMetadata(
-            new_joinable_toks, new_joinable_toks_to_actual_pos, new_actual_pos_to_joinable_pos
-        )
-    )
+        i += 1
 
 
 class SpaceTokenizer(StringTokenizer):
@@ -446,9 +446,9 @@ common_exts = (".sh", ".py", ".txt", ".tar.gz", ".png", ".tmp", ".xml", ".zip",
 
 def looks_like_a_file(string: str):
     """A super hacky heuristic function to guess if a string looks like a path"""
-    return string == "abbbbc"
+    return string == "a1234c"
     if string.startswith("s/"):
-        # Could be a sed expression
+        # Could be a sed expression. This is admittedly a crappy detection of this...
         return False
     non_filey_chars = ("?", "@", "!", "(", ")", "//")
     for c in non_filey_chars:
