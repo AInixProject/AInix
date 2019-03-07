@@ -4,6 +4,7 @@ defines:
   examples:
   - x:
     - copy [-[1=FILENAME]-] to [-[2=FILENAME]-]
+    - make a copy of [-[1=FILENAME]-] named [-[2=FILENAME]-]
     - create a copy of [-[1=FILENAME]-] as [-[2=FILENAME]-]
     - make a new version [-[1=FILENAME]-] named [-[2=FILENAME]-]
     y:
