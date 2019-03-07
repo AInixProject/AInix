@@ -43,9 +43,8 @@ class BertlikeTrainer:
         self.batch_iter = CookieMonsterBatchIterator(dataset, batch_size)
         self.serialize_callback = serialize_callback
 
-    def train(self, iterations: int, intermitted_save_path="./checkpoints/lmchkp"):
+    def train(self, iterations: int, intermitted_save_path="./checkpoints/lmchkp", window=400):
         self.model.start_train_session()
-        window = 400
         self.total_loss_avg = MovingAverage(window)
         self.next_sent_loss_avg = MovingAverage(window)
         self.lm_loss_avg = MovingAverage(window)
@@ -129,5 +128,5 @@ if __name__ == "__main__":
     print(args.epochs)
     iters = len(dataset) * args.epochs
     print(f"Doing {iters} or about {iters / len(dataset)} epochs")
-    trainer.train(int(iters / batch_size))
+    trainer.train(int(iters / batch_size), window=int(len(dataset) / batch_size / 20))
     serialize_func(f"lm_saved_model_{args.hiddensize}.pt", iters)
