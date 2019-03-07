@@ -176,3 +176,69 @@ def test_mod_word_piece_tokeizer_merge1():
     assert metad.actual_pos_to_joinable_pos == [None, 0, 1, 2, None]
     assert metad.joinable_tokens_pos_to_actual == [1, 2, 3]
 
+
+@unittest.mock.patch("ainix_common.parsing.model_specific.tokenizers.looks_like_a_file",
+                     lambda x: x == "a1234c")
+def test_mod_word_piece_tokeizer_merge2():
+    tokenizer = ModifiedWordPieceTokenizer(
+        ["a", "1", "2", "3", "4", "c", "b"], merge_long_files=True)
+    moded_tokens, metad = tokenizer.tokenize("a1234c ba")
+    assert moded_tokens == [
+        ModifiedWordPieceTokenizer.SOS_TOK,
+        ModifiedStringToken("a", CasingModifier.LOWER,
+                            WhitespaceModifier.AFTER_SPACE_OR_SOS),
+        MOD_TOK_FOR_MERGE,
+        ModifiedStringToken("c", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
+        ModifiedStringToken("b", CasingModifier.LOWER, WhitespaceModifier.AFTER_SPACE_OR_SOS),
+        ModifiedStringToken("a", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
+        ModifiedWordPieceTokenizer.EOS_TOK
+    ]
+    assert metad.joinable_tokens == ["a", "1234", "c", " ", "b", "a"]
+    assert metad.actual_pos_to_joinable_pos == [None, 0, 1, 2, 4, 5, None]
+    assert metad.joinable_tokens_pos_to_actual == [1, 2, 3, None, 4, 5]
+
+
+@unittest.mock.patch("ainix_common.parsing.model_specific.tokenizers.looks_like_a_file",
+                     lambda x: x == "a1234c")
+def test_mod_word_piece_tokeizer_merge3():
+    tokenizer = ModifiedWordPieceTokenizer(
+        ["a", "1", "2", "3", "4", "c", "b"], merge_long_files=True)
+    moded_tokens, metad = tokenizer.tokenize("ab a1234c")
+    assert moded_tokens == [
+        ModifiedWordPieceTokenizer.SOS_TOK,
+        ModifiedStringToken("a", CasingModifier.LOWER, WhitespaceModifier.AFTER_SPACE_OR_SOS),
+        ModifiedStringToken("b", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
+        ModifiedStringToken("a", CasingModifier.LOWER,
+                            WhitespaceModifier.AFTER_SPACE_OR_SOS),
+        MOD_TOK_FOR_MERGE,
+        ModifiedStringToken("c", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
+        ModifiedWordPieceTokenizer.EOS_TOK
+    ]
+    assert metad.joinable_tokens == ["a", "b", " ", "a", "1234", "c"]
+    assert metad.actual_pos_to_joinable_pos == [None, 0, 1, 3, 4, 5, None]
+    assert metad.joinable_tokens_pos_to_actual == [1, 2, None, 3, 4, 5]
+
+
+@unittest.mock.patch("ainix_common.parsing.model_specific.tokenizers.looks_like_a_file",
+                     lambda x: x == "a1234c" or x == "a12c")
+def test_mod_word_piece_tokeizer_merge4():
+    tokenizer = ModifiedWordPieceTokenizer(
+        ["a", "1", "2", "3", "4", "c", "b"], merge_long_files=True)
+    moded_tokens, metad = tokenizer.tokenize("a1234c ba a12c")
+    assert moded_tokens == [
+        ModifiedWordPieceTokenizer.SOS_TOK,
+        ModifiedStringToken("a", CasingModifier.LOWER,
+                            WhitespaceModifier.AFTER_SPACE_OR_SOS),
+        MOD_TOK_FOR_MERGE,
+        ModifiedStringToken("c", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
+        ModifiedStringToken("b", CasingModifier.LOWER, WhitespaceModifier.AFTER_SPACE_OR_SOS),
+        ModifiedStringToken("a", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
+        ModifiedStringToken("a", CasingModifier.LOWER,
+                            WhitespaceModifier.AFTER_SPACE_OR_SOS),
+        MOD_TOK_FOR_MERGE,
+        ModifiedStringToken("c", CasingModifier.LOWER, WhitespaceModifier.NOT_AFTER_SPACE),
+        ModifiedWordPieceTokenizer.EOS_TOK
+    ]
+    assert metad.joinable_tokens == ["a", "1234", "c", " ", "b", "a", " ", "a", "12", "c"]
+    assert metad.actual_pos_to_joinable_pos == [None, 0, 1, 2, 4, 5, 7, 8, 9, None]
+    assert metad.joinable_tokens_pos_to_actual == [1, 2, 3, None, 4, 5, None, 6, 7, 8]

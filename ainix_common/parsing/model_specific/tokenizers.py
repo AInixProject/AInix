@@ -311,11 +311,11 @@ def merge_tokens(
                     continue
                 joinable_toks = metad.joinable_tokens[join_start:join_end+1]
                 joined_str = "".join(joinable_toks).strip()
-                long_enough_to_merge = i - word_start_pointer > 4
+                long_enough_to_merge = i - word_start_pointer > 3
                 if long_enough_to_merge and looks_like_a_file(joined_str):
                     # We set the 2nd token in the word to be the merge
                     modtokens[word_start_pointer + 1] = MOD_TOK_FOR_MERGE
-                    metad.joinable_tokens[word_start_pointer] = "".join(
+                    metad.joinable_tokens[join_start + 1] = "".join(
                         metad.joinable_tokens[join_start + 1: join_end])
                     for _ in range(word_start_pointer + 2, i - 1):
                         # Delete everything after the 2nd token (the <MERGE_TOK>) but before
@@ -335,6 +335,7 @@ def merge_tokens(
                                          len(metad.joinable_tokens_pos_to_actual)):
                         if metad.joinable_tokens_pos_to_actual[dec_ind] is not None:
                             metad.joinable_tokens_pos_to_actual[dec_ind] -= num_we_deleted
+                    i -= num_we_deleted
             word_start_pointer = i
         i += 1
 
