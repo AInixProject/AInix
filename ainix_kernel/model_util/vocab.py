@@ -82,7 +82,7 @@ class BasicVocab(Vocab):
             raise ValueError("need an unk index")
         self.stoi = defaultdict(lambda x: self.unk_index)
         self.stoi.update({tok: i for i, tok in enumerate(self.itos)})
-        self.default_device = torch.device("cpu")  # this probably ain't right
+        #self.default_device = torch.device("cpu")  # this probably ain't right
 
         self.vectorized_stoi = np.vectorize(self.token_to_index)
 
