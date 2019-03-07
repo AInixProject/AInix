@@ -170,7 +170,7 @@ class NonLetterTokenizer(StringTokenizer):
 
 # TODO (DNGros): This should be unified with the tokenizer in generic_strings.
 class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
-    def __init__(self, vocab: List[str], merge_long_files = False):
+    def __init__(self, vocab: List[str], merge_long_files: bool = True):
         super().__init__()
         self.trie: pygtrie.CharTrie[str, CasingModifier] = pygtrie.CharTrie()
         self.vocab_list = list(vocab)

@@ -244,6 +244,16 @@ def test_mod_word_piece_tokeizer_merge4():
     assert metad.joinable_tokens_pos_to_actual == [1, 2, 3, None, 4, 5, None, 6, 7, 8]
 
 
+def test_mod_word_piece_tokeizer_merge_e2e():
+    tokenizer, vocab = get_default_pieced_tokenizer_word_list()
+    moded_tokens, metad = tokenizer.tokenize("move the/bar/fodsa.txt to new/ahgw/files")
+    print(metad.joinable_tokens)
+    expected = ["move", " ", "the", "/bar/fodsa.", "txt", " ",
+                "to", " ", "new", "/ahgw/", "files"]
+    print(expected)
+    assert metad.joinable_tokens == expected
+
+
 def test_looks_like_file1():
     assert looks_like_a_file("foo/bar/baz")
 
