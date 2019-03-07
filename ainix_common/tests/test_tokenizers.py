@@ -159,8 +159,8 @@ def test_mod_word_piece_tokenizer_unk():
     assert metad.joinable_tokens_pos_to_actual == [1, 2]
 
 
-#@unittest.mock.patch.object(looks_like_a_file,
-#                            lambda x: x == "abbbbc")
+@unittest.mock.patch("ainix_common.parsing.model_specific.tokenizers.looks_like_a_file",
+                     lambda x: x == "a1234c")
 def test_mod_word_piece_tokeizer_merge1():
     tokenizer = ModifiedWordPieceTokenizer(["a", "1", "2", "3", "4", "c"], merge_long_files=True)
     moded_tokens, metad = tokenizer.tokenize("a1234c")

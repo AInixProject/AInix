@@ -446,7 +446,6 @@ common_exts = (".sh", ".py", ".txt", ".tar.gz", ".png", ".tmp", ".xml", ".zip",
 
 def looks_like_a_file(string: str):
     """A super hacky heuristic function to guess if a string looks like a path"""
-    return string == "a1234c"
     if string.startswith("s/"):
         # Could be a sed expression. This is admittedly a crappy detection of this...
         return False
