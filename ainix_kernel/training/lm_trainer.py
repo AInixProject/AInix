@@ -44,6 +44,7 @@ class BertlikeTrainer:
         self.serialize_callback = serialize_callback
 
     def train(self, iterations: int, intermitted_save_path="./checkpoints/lmchkp", window=400):
+        print("window=", window)
         self.model.start_train_session()
         self.total_loss_avg = MovingAverage(window)
         self.next_sent_loss_avg = MovingAverage(window)
@@ -57,7 +58,7 @@ class BertlikeTrainer:
             if iteration % window == 0:
                 print(f"Iter {iteration} total loss {self.total_loss_avg.get()}. "
                       f"Next Sent {self.next_sent_loss_avg.get()}. LM {self.lm_loss_avg.get()}")
-            if iteration > 0 and iteration % (window*20) == 0 and intermitted_save_path:
+            if iteration > 0 and iteration % (window*10) == 0 and intermitted_save_path:
                 s_path = f"{intermitted_save_path}_iter{iteration}_total_" + \
                          f"{self.total_loss_avg.get()}_ns{self.next_sent_loss_avg.get()}_" \
                              f"lm{self.lm_loss_avg.get()}.pt"
@@ -128,5 +129,5 @@ if __name__ == "__main__":
     print(args.epochs)
     iters = len(dataset) * args.epochs
     print(f"Doing {iters} or about {iters / len(dataset)} epochs")
-    trainer.train(int(iters / batch_size), window=int(len(dataset) / batch_size / 20))
+    trainer.train(int(iters / batch_size), window=int(len(dataset) / batch_size / 10))
     serialize_func(f"lm_saved_model_{args.hiddensize}.pt", iters)
