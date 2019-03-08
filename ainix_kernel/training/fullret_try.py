@@ -16,8 +16,7 @@ from ainix_kernel.training.trainer import TypeTranslateCFTrainer
 
 if __name__ == "__main__":
     pretrained_checkpoint_path = "../../checkpoints/" \
-                                 "lmchkp_iter69120_total_3.064549811805288_" \
-                                 "ns0.4479941391230871_lm2.6165556764851012.pt"
+        "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt"
 
     type_context = TypeContext()
     loader = TypeContextDataLoader(type_context, up_search_limit=4)
