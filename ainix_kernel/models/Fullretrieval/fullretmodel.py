@@ -2,7 +2,7 @@ import collections
 import math
 
 import torch
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Dict, Callable
 
 from tqdm import tqdm
 
@@ -13,7 +13,7 @@ from ainix_common.parsing.model_specific import tokenizers, parse_constants
 from ainix_common.parsing.model_specific.tokenizers import get_default_pieced_tokenizer_word_list, \
     AstValTokenizer, ModifiedStringToken, WhitespaceModifier
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
-from ainix_common.parsing.typecontext import TypeContext
+from ainix_common.parsing.typecontext import TypeContext, AInixType
 from ainix_kernel.indexing.examplestore import ExamplesStore, XValue, DataSplits, YValue
 from ainix_kernel.model_util.attending import attend
 from ainix_kernel.model_util.operations import get_kernel_around
@@ -27,10 +27,11 @@ from ainix_kernel.models.model_types import StringTypeTranslateCF, TypeTranslate
 from ainix_kernel.training.augmenting.replacers import Replacer
 import numpy as np
 import torch.nn.functional as F
+import sklearn
 
 import attr
 
-REPLACEMENT_SAMPLES = 50
+REPLACEMENT_SAMPLES = 1
 START_COPY_KERNEL_WEIGHTS = torch.tensor([0.25, 1, 0.05])
 END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, 1, 0.25])
 #                         ^ Weight current token the most and the before and after less.
@@ -43,7 +44,8 @@ class FullRetModel(StringTypeTranslateCF):
         embedder: StringQueryEncoder,
         summaries: torch.Tensor,
         dataset_splits: torch.Tensor,
-        example_refs: np.ndarray
+        example_refs: np.ndarray,
+        nb_models: Dict[str, 'NBObjectChoiceModel']
     ):
         self.embedder = embedder
         self.summaries = summaries
@@ -51,6 +53,7 @@ class FullRetModel(StringTypeTranslateCF):
         self.dataset_splits = dataset_splits
         self.example_refs = example_refs
         self.not_train_mask = self.dataset_splits != DataSplits.TRAIN.value
+        self.nb_models = nb_models
 
     def predict(
         self,
@@ -172,7 +175,8 @@ def _preproc_example(
     replacers: Replacer,
     embedder: StringQueryEncoder,
     parser: StringParser,
-    unparser: AstUnparser
+    unparser: AstUnparser,
+    nb_update_fn: Callable
 ) -> Tuple[torch.Tensor, _ExampleRef]:
     """Processedes an example for storing in the lookup model.
 
@@ -246,6 +250,9 @@ def _preproc_example(
             end_avgs=torch.mean(torch.stack(ends), dim=0)
         ))
 
+    if nb_update_fn:
+        nb_update_fn(summary, representive_ast)
+
     return (
         summary,
         _ExampleRef(xval.id, yval.id, representive_ast, tuple(copy_refs))
@@ -295,6 +302,70 @@ def get_extra_feat_vec(
     return extra
 
 
+class NBObjectChoiceModel:
+    """Naive bayes for modeling an object choice"""
+    def __init__(self, type_to_choose: AInixType):
+        self._type_to_choose = type_to_choose
+        self._type_context = self._type_to_choose.type_context
+        self._model = sklearn.naive_bayes.GaussianNB()
+        self._object_name_to_ind: Dict[str, int] = {}
+        self._num_classes_seen = 0
+        # This should not be like this. Only store params for instances that actually appear!
+        #self._hacky_all_classes_list = \
+        #    list(range(len(self._type_context.get_implementations(self._type_to_choose)) + 1))
+        self.all_xs = None
+        self.all_ys = []
+
+    def _get_class_ind_for_node(self, node: ObjectChoiceNode, add_if_not_present: bool):
+        name_str = "~COPY~" if node.copy_was_chosen else node.get_chosen_impl_name()
+        if name_str not in self._object_name_to_ind:
+            if add_if_not_present:
+                self._object_name_to_ind[name_str] = self._num_classes_seen
+                self._num_classes_seen += 1
+            else:
+                return None
+        return self._object_name_to_ind[name_str]
+
+    def add_examples(self, features, nodes: List[ObjectChoiceNode]):
+        ys = [self._get_class_ind_for_node(node, True) for node in nodes]
+        if self.all_xs is None:
+            self.all_xs = features.data.numpy()
+        else:
+            self.all_xs = np.append(self.all_xs, features.data.numpy(), 0)
+        self.all_ys.extend(ys)
+
+    def finalize(self):
+        # This method shouldn't exist!
+        self._model.fit(self.all_xs, self.all_ys)
+        self._ind_to_obj_name = [0] * len(self._object_name_to_ind)
+        for v, i in self._object_name_to_ind.items():
+            self._ind_to_obj_name[i] = v
+
+
+
+def get_nb_learner():
+    type_name_to_nb_model: Dict[str, NBObjectChoiceModel] = {}
+
+    def update_fn(new_summary, ast: ObjectChoiceNode):
+        for pointer in ast.depth_first_iter():
+            node = pointer.cur_node
+            if isinstance(node, ObjectChoiceNode):
+                type_name = node.type_to_choose.name
+                if type_name not in type_name_to_nb_model:
+                    type_name_to_nb_model[type_name] = NBObjectChoiceModel(node.type_to_choose)
+                new_summary_and_depth = torch.cat(
+                    (new_summary, torch.tensor([float(pointer.get_depth())])))
+                type_name_to_nb_model[type_name].add_examples(
+                    new_summary_and_depth.unsqueeze(0), [node])
+
+    def finalize_fn():
+        for model in type_name_to_nb_model.values():
+            model.finalize()
+        return type_name_to_nb_model
+
+    return update_fn, finalize_fn
+
+
 def full_ret_from_example_store(
     example_store: ExamplesStore,
     replacers: Replacer,
@@ -308,13 +379,15 @@ def full_ret_from_example_store(
     parser = StringParser(example_store.type_context)
     unparser = AstUnparser(example_store.type_context, embedder.get_tokenizer())
     summaries, example_refs, example_splits = [], [], []
+    nb_update_fn, finalize_nb_fn = get_nb_learner()
     with torch.no_grad():
         for xval in tqdm(list(example_store.get_all_examples())):
             # Get the most prefered y text
             all_y_examples = example_store.get_y_values_for_y_set(xval.y_set_id)
             most_preferable_y = all_y_examples[0]
             new_summary, new_example_ref = _preproc_example(
-                xval, most_preferable_y, replacers, embedder, parser, unparser)
+                xval, most_preferable_y, replacers, embedder, parser, unparser,
+                nb_update_fn if xval.split == DataSplits.TRAIN else None)
             summaries.append(new_summary)
             example_refs.append(new_example_ref)
             example_splits.append(xval.split)
@@ -322,5 +395,6 @@ def full_ret_from_example_store(
         embedder=embedder,
         summaries=torch.stack(summaries),
         dataset_splits=torch.tensor(example_splits),
-        example_refs=np.array(example_refs)
+        example_refs=np.array(example_refs),
+        nb_models=finalize_nb_fn()
     )

@@ -641,6 +641,15 @@ class AstIterPointer:
         out = tuple(reversed(out))  # appended on bottom up. Switch to top down
         return out
 
+    def get_depth(self) -> int:
+        depth = 0
+        cur = self
+        while cur and cur.parent_child_ind is not None:
+            depth += 1
+            cur = cur.parent
+        return depth
+
+
     def change_here(
         self,
         new_val: 'AstNode',

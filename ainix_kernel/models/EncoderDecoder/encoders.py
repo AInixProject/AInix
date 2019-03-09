@@ -68,7 +68,10 @@ class StringQueryEncoder(QueryEncoder):
         indices = self.query_vocab.token_seq_to_indices(np.array(tokenized))
         return self.query_vectorizer.forward(indices), tokenized, torch.LongTensor(input_lens)
 
-    def forward(self, queries: Sequence[Sequence[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        queries: Sequence[Sequence[str]]
+    ) -> Tuple[torch.Tensor, torch.Tensor, np.ndarray]:
         vectorized, tokenized, input_lens = self._vectorize_query(queries)
         summary, memory = self.internal_encoder(vectorized, input_lens)
         return summary, memory, tokenized
