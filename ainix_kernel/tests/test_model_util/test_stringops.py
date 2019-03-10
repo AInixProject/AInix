@@ -78,3 +78,13 @@ def test_get_all_words2():
         ("ab", (1, 3)),
         ("124", (3, 6))
     ]
+
+
+def test_get_all_words3():
+    tokenizer = ModifiedWordPieceTokenizer(
+        ["foo", "bar", "baz", "the", "a", "b", "c"])
+    assert get_all_words(*tokenizer.tokenize("foo a ab")) == [
+        ("foo", (1, 2)),
+        ("a", (2, 3)),
+        ("ab", (3, 5)),
+    ]

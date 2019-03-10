@@ -53,7 +53,15 @@ def get_word_lens_of_moded_tokens(
 def get_all_words(
     tokens: List[ModifiedStringToken],
     metad: StringTokensMetadata
-) -> Tuple[str, Tuple[int, int]]:
+) -> List[Tuple[str, Tuple[int, int]]]:
+    """Get's all the whitespace sperated words in a tokenization.
+    Returns:
+        A list of tuples with values:
+            word: the string word
+            start, end: a tuple of the start and end index of a slice into
+                the tokens that make up that word. End index is python style
+                exclusive.
+    """
     word_start_i = None
     words = []
     for i, tok in enumerate(tokens):
