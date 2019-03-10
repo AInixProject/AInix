@@ -1,3 +1,5 @@
+import numpy as np
+
 import torch
 
 from sklearn.naive_bayes import GaussianNB
@@ -42,12 +44,24 @@ if __name__ == "__main__":
     print(program_nb._model.sigma_)
     print(program_nb._model.theta_)
 
+    #program_nb._model.sigma_ *= 100
+
     while True:
         q = input("Query: ")
         summary, mem, tokens = model.embedder([q])
         summary_and_depth = torch.cat(
             (summary, torch.tensor([[2.0]])), dim=1)
+        s1 = summary_and_depth[0].data.numpy()
+        std_devs = np.sqrt(program_nb._model.sigma_)
+        diffs_from_mean = program_nb._model.theta_ - s1
+        num_std_devs_diff = diffs_from_mean / std_devs
+        variance = program_nb._model.theta_
+        exp_power = -(diffs_from_mean**2 / (2*variance))
+        exp_term = np.exp(exp_power)
+        scaleing = (1/np.sqrt(2*np.pi*variance))
+        density = scaleing * exp_term
         #print(program_nb._model.predict(summary.data.numpy()))
-        pred = program_nb._model.predict_proba(summary_and_depth.data.numpy())
+        #pred = program_nb._model.predict_proba(summary_and_depth.data.numpy())
+        pred = program_nb.logit_model.predict_proba(summary_and_depth.data.numpy())
 
         print([f'{program_nb._ind_to_obj_name[i]}: {p:.3f}' for i, p in enumerate(pred[0])])

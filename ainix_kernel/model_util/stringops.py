@@ -1,11 +1,11 @@
 """Operations on string-like things which is useful in models"""
-from typing import List
+from typing import List, Tuple
 
 import torch
 
 from ainix_common.parsing.model_specific import parse_constants
 from ainix_common.parsing.model_specific.tokenizers import ModifiedStringToken, WhitespaceModifier, \
-    CasingModifier
+    CasingModifier, StringTokensMetadata
 import numpy as np
 
 
@@ -50,4 +50,21 @@ def get_word_lens_of_moded_tokens(
     return torch.tensor(all_lens).float()
 
 
-
+def get_all_words(
+    tokens: List[ModifiedStringToken],
+    metad: StringTokensMetadata
+) -> Tuple[str, Tuple[int, int]]:
+    word_start_i = None
+    words = []
+    for i, tok in enumerate(tokens):
+        if tok.whitespace_modifier == WhitespaceModifier.AFTER_SPACE_OR_SOS:
+            join_start_i = metad.actual_pos_to_joinable_pos[word_start_i] if word_start_i else None
+            join_end_i = metad.actual_pos_to_joinable_pos[i-1]
+            if join_start_i is not None and join_end_i is not None:
+                joinable_toks = metad.joinable_tokens[join_start_i:join_end_i+1]
+                joined_str = "".join(joinable_toks).strip()
+                words.append((joined_str, (word_start_i, i)))
+            if tok.token_string == parse_constants.PAD:
+                break
+            word_start_i = i
+    return words

@@ -28,14 +28,23 @@ from ainix_kernel.training.augmenting.replacers import Replacer
 import numpy as np
 import torch.nn.functional as F
 import sklearn
+import sklearn.linear_model
+import sklearn.naive_bayes
 
 import attr
 
-REPLACEMENT_SAMPLES = 1
+REPLACEMENT_SAMPLES = 10
 START_COPY_KERNEL_WEIGHTS = torch.tensor([0.25, 1, 0.05])
 END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, 1, 0.25])
 #                         ^ Weight current token the most and the before and after less.
 COPY_KERNEL_SIZE = len(START_COPY_KERNEL_WEIGHTS)
+
+
+def logit(ps):
+    return np.log(ps/(1-ps))
+
+def sigmoid(x):
+    return 1/(1+np.exp(-x))
 
 
 class FullRetModel(StringTypeTranslateCF):
@@ -66,9 +75,26 @@ class FullRetModel(StringTypeTranslateCF):
         sims = F.cosine_similarity(summary, self.summaries)
         if use_only_train_data:
             sims[self.not_train_mask] = -1
-        top_sims, top_inds = torch.topk(sims, 5)
-        example_ref: _ExampleRef = self.example_refs[int(top_inds[0])]
+        top_sims, top_inds = torch.topk(sims, 10)
+
+        logit_ratings = []
+        for sim, top_ind in zip(top_sims, top_inds):
+            this_example_ref: _ExampleRef = self.example_refs[int(top_ind)]
+            this_ref_ast = this_example_ref.reference_ast
+            rating = self.logit_rate_tree(summary[0], this_ref_ast)
+            #print(rating)
+            logit_ratings.append(rating)
+        print(logit_ratings)
+        print(top_sims)
+        #scores = (logit(np.array(logit_ratings)) + logit(top_sims.data.numpy()) * 6) / 7
+        #scores = sigmoid(scores)
+        scores = top_sims.data.numpy()
+        print(scores)
+        max_score_ind = np.argmax(scores)
+        example_ref = self.example_refs[top_inds[max_score_ind]]
         ref_ast = example_ref.reference_ast
+
+
         valid_for_copy_mask = get_valid_for_copy_mask(tokens)
         ast_with_new_copies = self._apply_copy_changes(
             ref_ast, example_ref.copy_refs, memory, valid_for_copy_mask, tokens[0])
@@ -81,6 +107,22 @@ class FullRetModel(StringTypeTranslateCF):
             )
         )
         return ast_with_new_copies, metad
+
+    def logit_rate_tree(self, summary, ast: ObjectChoiceNode):
+        log_sum = 0
+        nodes_seen = 0
+        for pointer in ast.depth_first_iter():
+            node = pointer.cur_node
+            if not isinstance(node, ObjectChoiceNode):
+                continue
+            model = self.nb_models[node.type_to_choose.name]
+            summary_and_depth = torch.cat(
+                (summary, torch.tensor([float(pointer.get_depth())])))
+            p = model.get_probability_of_node(summary_and_depth.unsqueeze(0), node)
+            log_sum += math.log(p)
+            nodes_seen += 1
+        return math.exp(log_sum / math.pow(nodes_seen, 0.7))
+
 
     def _apply_copy_changes(
         self,
@@ -315,8 +357,13 @@ class NBObjectChoiceModel:
         #    list(range(len(self._type_context.get_implementations(self._type_to_choose)) + 1))
         self.all_xs = None
         self.all_ys = []
+        self.logit_model = sklearn.linear_model.LogisticRegression()
 
-    def _get_class_ind_for_node(self, node: ObjectChoiceNode, add_if_not_present: bool):
+    def _get_class_ind_for_node(
+        self,
+        node: ObjectChoiceNode,
+        add_if_not_present: bool
+    ) -> Optional[int]:
         name_str = "~COPY~" if node.copy_was_chosen else node.get_chosen_impl_name()
         if name_str not in self._object_name_to_ind:
             if add_if_not_present:
@@ -337,10 +384,25 @@ class NBObjectChoiceModel:
     def finalize(self):
         # This method shouldn't exist!
         self._model.fit(self.all_xs, self.all_ys)
+        if len(set(self.all_ys)) > 1:
+            self.logit_model.fit(self.all_xs, self.all_ys)
+        else:
+            self.logit_model = None
+
         self._ind_to_obj_name = [0] * len(self._object_name_to_ind)
         for v, i in self._object_name_to_ind.items():
             self._ind_to_obj_name[i] = v
+        self.all_xs = None
+        self.all_ys = None
 
+    def get_probability_of_node(self, feature, node):
+        """Gets the probability of a node being chosen given features"""
+        class_ind = self._get_class_ind_for_node(node, add_if_not_present=False)
+        if class_ind is None:
+            return 0
+        if self._num_classes_seen == 1:
+            return 1
+        return self.logit_model.predict_proba(feature)[0][class_ind]
 
 
 def get_nb_learner():

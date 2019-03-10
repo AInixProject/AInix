@@ -1,3 +1,4 @@
+from ainix_common.parsing.model_specific.tokenizers import ModifiedWordPieceTokenizer
 from ainix_kernel.model_util.stringops import *
 from ainix_kernel.tests.testutils.torch_test_utils import torch_epsilon_eq
 from ainix_common.parsing.model_specific.parse_constants import PAD
@@ -60,3 +61,20 @@ def test_word_lens_tokens_with_pad2():
             [1, 1, 0, 0]
         ]
     )
+
+
+def test_get_all_words1():
+    tokenizer = ModifiedWordPieceTokenizer(
+        ["a", "1", "2", "3", "4", "c", "b"], merge_long_files=True)
+    assert get_all_words(*tokenizer.tokenize("ab")) == [
+        ("ab", (1, 3))
+    ]
+
+
+def test_get_all_words2():
+    tokenizer = ModifiedWordPieceTokenizer(
+        ["a", "1", "2", "3", "4", "c", "b"], merge_long_files=True)
+    assert get_all_words(*tokenizer.tokenize("ab 124")) == [
+        ("ab", (1, 3)),
+        ("124", (3, 6))
+    ]
