@@ -217,13 +217,16 @@ defines:
             - "ls -lrt"
             - "ls -rt"
           - x:
-            - what is the oldest file (by last modified time) in current directory
+            - what is the oldest file or directory (by last modified time) in current directory
             - what is the oldest file here
+            - what file here was modified the longest ago?
             y:
             - "ls -rt -1 | head -n 1"
           - x:
             - what file or directory here was last modified most recently
-            - most recently modified file here
+            - most recently modified file or directory here
+            - what is the file or directory here has the most recent last modified time
+            - what is the most recently changed file here
             y:
             - "ls -t -1 | head -n 1"
           - x:

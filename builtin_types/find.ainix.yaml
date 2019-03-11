@@ -141,4 +141,15 @@ defines:
       preferred_object_parser:
           grammar: |
               value
+    # -maxdepth
+    - define_new: object
+      name: find_option_max_depth
+      type: FindValue
+      children:
+          - name: depth
+            type: IntBase
+            required: True
+      preferred_object_parser:
+          grammar: |
+              "-maxdepth " depth
 ...

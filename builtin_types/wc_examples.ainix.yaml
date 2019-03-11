@@ -29,6 +29,12 @@ defines:
     y:
     - wc -c [-[$1]-]
   - x:
+    - how many characters are in [-[1=FILENAME]-]
+    - character count of [-[1=FILENAME]-]
+    - '[-[1=FILENAME]-] character count'
+    y:
+    - 'wc -m [-[$1]-]'
+  - x:
     - count the number of files and directories in current directory without recursion
     - how many files or dirs are here?
     - how many files or directories are here

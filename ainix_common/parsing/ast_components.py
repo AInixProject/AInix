@@ -31,7 +31,7 @@ class AstNode(ABC):
 
     @abstractmethod
     def get_children(self) -> Generator['AstNode', None, None]:
-        """Returns all descendants of this node"""
+        """Yields all direct (non-recursive) children of this node"""
         pass
 
     @abstractmethod
@@ -649,6 +649,9 @@ class AstIterPointer:
             cur = cur.parent
         return depth
 
+    def get_children(self) -> Generator['AstIterPointer', None, None]:
+        for i, child in enumerate(self.cur_node.get_children()):
+            yield AstIterPointer(child, self, i)
 
     def change_here(
         self,
@@ -691,6 +694,14 @@ class AstIterPointer:
         if self.parent.cur_node.is_frozen and not leave_unfrozen:
             new_val_pointer.get_root().cur_node.freeze()
         return new_val_pointer
+
+    def get_nth_child(self, n: int, none_if_out_of_bounds=False) -> Optional['AstIterPointer']:
+        """Like get_nth_child method for AstNode, but returns a pointer"""
+        child = self.cur_node.get_nth_child(n, none_if_out_of_bounds)
+        if none_if_out_of_bounds and child is None:
+            return None
+        return AstIterPointer(child, self, n)
+
 
 
 class AstSet:

@@ -63,7 +63,7 @@ defines:
       - recursively find all ".[-[EXTENSION]-]" files starting here
       - find all .[-[EXTENSION]-] files
     y:
-      - 'find . -name "*[-[EXTENSION]-]" -type f'
+      - 'find . -name "*.[-[EXTENSION]-]" -type f'
   - x:
       - find all hidden files starting here
       - recursively list all hidden files here
@@ -90,7 +90,23 @@ defines:
     y:
       - 'find / -type f -user [-[USERNAME]-]'
   - x:
-        - find all files here which belong to group [-[GROUPNAME]-]
-        - look for files with group name [-[GROUPNAME]-]
+    - find all files here which belong to group [-[GROUPNAME]-]
+    - look for files with group name [-[GROUPNAME]-]
     y:
-        - 'find / -type f -user [-[GROUPNAME]-]'
+    - 'find / -type f -user [-[GROUPNAME]-]'
+  - x:
+    - how many [-[EXTENSION]-] files are here
+    - count the number of [-[EXTENSION]-] files are here
+    - how many .[-[EXTENSION]-] files are here
+    - how many *.[-[EXTENSION]-] files are in this dir
+    y:
+    - 'find . -name "*.[-[EXTENSION]-]" -type f -maxdepth 1 | wc -l'
+    # We don't actually do anything with this warn parameter, but it seems useful
+    warn: 'If any files contain new lines in their name, this might give incorrect results.'
+  - x:
+    - how many files are in this directory nonrecursive
+    - how many files are here
+    - how many files in this directory
+    y:
+    - 'find . -type f -maxdepth 1 | wc -l'
+    warn: 'If any files contain new lines in their name, this might give incorrect results.'

@@ -5,6 +5,7 @@ from typing import Tuple, Optional
 import torch
 from torch import nn
 import torch.nn.functional as F
+import numpy as np
 
 
 def manual_bincount(groups: torch.Tensor, weights: torch.Tensor = None):
@@ -131,6 +132,13 @@ def get_kernel_around(tokens, index, k=3, tokens_before_channels=False):
     if tokens_before_channels:
         kernels = kernels.transpose(1, 2)  # B x C x T -> B x T x C
     return kernels
+
+
+def np_log_prob_inverse(log_p):
+    """1 - p but in log space"""
+    # TODO: How to do this correctly????
+    return np.log(1 - np.exp(log_p))
+
 
 
 

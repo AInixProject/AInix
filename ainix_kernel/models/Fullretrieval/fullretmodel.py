@@ -16,7 +16,7 @@ from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext, AInixType
 from ainix_kernel.indexing.examplestore import ExamplesStore, XValue, DataSplits, YValue
 from ainix_kernel.model_util.attending import attend
-from ainix_kernel.model_util.operations import get_kernel_around
+from ainix_kernel.model_util.operations import get_kernel_around, np_log_prob_inverse
 from ainix_kernel.model_util.vocab import Vocab, BasicVocab
 from ainix_kernel.models.EncoderDecoder.decoders import get_valid_for_copy_mask
 from ainix_kernel.models.EncoderDecoder.encdecmodel import make_default_query_encoder, \
@@ -33,7 +33,7 @@ import sklearn.naive_bayes
 
 import attr
 
-REPLACEMENT_SAMPLES = 10
+REPLACEMENT_SAMPLES = 50
 START_COPY_KERNEL_WEIGHTS = torch.tensor([0.25, 1, 0.05])
 END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, 1, 0.25])
 #                         ^ Weight current token the most and the before and after less.
@@ -54,7 +54,7 @@ class FullRetModel(StringTypeTranslateCF):
         summaries: torch.Tensor,
         dataset_splits: torch.Tensor,
         example_refs: np.ndarray,
-        nb_models: Dict[str, 'NBObjectChoiceModel']
+        choice_models: 'ObjectChoiceModelCollection'
     ):
         self.embedder = embedder
         self.summaries = summaries
@@ -62,7 +62,7 @@ class FullRetModel(StringTypeTranslateCF):
         self.dataset_splits = dataset_splits
         self.example_refs = example_refs
         self.not_train_mask = self.dataset_splits != DataSplits.TRAIN.value
-        self.nb_models = nb_models
+        self.choice_models = choice_models
 
     def predict(
         self,
@@ -81,14 +81,17 @@ class FullRetModel(StringTypeTranslateCF):
         for sim, top_ind in zip(top_sims, top_inds):
             this_example_ref: _ExampleRef = self.example_refs[int(top_ind)]
             this_ref_ast = this_example_ref.reference_ast
-            rating = self.logit_rate_tree(summary[0], this_ref_ast)
+            #print("---")
+            rating = self.choice_models.rate_tree(
+                summary[0], AstIterPointer(this_ref_ast, None, None))
             #print(rating)
             logit_ratings.append(rating)
         print(logit_ratings)
-        print(top_sims)
-        #scores = (logit(np.array(logit_ratings)) + logit(top_sims.data.numpy()) * 6) / 7
+        #print(top_sims)
+        scores = (logit(np.array(logit_ratings)) * 1 + logit(top_sims.data.numpy()) * 5) / 6
         #scores = sigmoid(scores)
-        scores = top_sims.data.numpy()
+        #scores = top_sims.data.numpy()
+        #scores = top_sims.data.numpy()
         print(scores)
         max_score_ind = np.argmax(scores)
         example_ref = self.example_refs[top_inds[max_score_ind]]
@@ -107,21 +110,6 @@ class FullRetModel(StringTypeTranslateCF):
             )
         )
         return ast_with_new_copies, metad
-
-    def logit_rate_tree(self, summary, ast: ObjectChoiceNode):
-        log_sum = 0
-        nodes_seen = 0
-        for pointer in ast.depth_first_iter():
-            node = pointer.cur_node
-            if not isinstance(node, ObjectChoiceNode):
-                continue
-            model = self.nb_models[node.type_to_choose.name]
-            summary_and_depth = torch.cat(
-                (summary, torch.tensor([float(pointer.get_depth())])))
-            p = model.get_probability_of_node(summary_and_depth.unsqueeze(0), node)
-            log_sum += math.log(p)
-            nodes_seen += 1
-        return math.exp(log_sum / math.pow(nodes_seen, 0.7))
 
 
     def _apply_copy_changes(
@@ -344,7 +332,7 @@ def get_extra_feat_vec(
     return extra
 
 
-class NBObjectChoiceModel:
+class ObjectChoiceModel:
     """Naive bayes for modeling an object choice"""
     def __init__(self, type_to_choose: AInixType):
         self._type_to_choose = type_to_choose
@@ -396,7 +384,7 @@ class NBObjectChoiceModel:
         self.all_ys = None
 
     def get_probability_of_node(self, feature, node):
-        """Gets the probability of a node being chosen given features"""
+        """Gets the log probability of a node being chosen given features"""
         class_ind = self._get_class_ind_for_node(node, add_if_not_present=False)
         if class_ind is None:
             return 0
@@ -405,8 +393,50 @@ class NBObjectChoiceModel:
         return self.logit_model.predict_proba(feature)[0][class_ind]
 
 
+class ObjectChoiceModelCollection:
+    def __init__(self, type_name_to_model: Dict[str, ObjectChoiceModel]):
+        self.type_name_to_model = type_name_to_model
+
+    def rate_tree(
+        self,
+        summary,
+        ast_pointer: AstIterPointer,
+        in_domain_prob: float = 1.0
+    ):
+        assert isinstance(ast_pointer.cur_node, ObjectChoiceNode)
+        model = self.type_name_to_model[ast_pointer.cur_node.type_to_choose.name]
+        summary_and_depth = torch.cat(
+            (summary, torch.tensor([float(ast_pointer.get_depth())])))
+        this_p = model.get_probability_of_node(
+            summary_and_depth.unsqueeze(0), ast_pointer.cur_node)
+        # There is a chance we were wrong higher in the tree. For example say ast_pointer
+        # is prediction whether the -l option of "ls" is present, but higher in the tree
+        # we think there is only a 30% chance that "ls" is the right command. 70% of the time then
+        # the prediction we just made (this_log_p) is meaningless because it out of
+        # domain.
+        # To account for this we will only take our prediction scaled to the
+        # probability we are in domain. Otherwise we assume the probability
+        # stays what it was.
+        # TODO figure out log prob inverse stuff
+        #scaled_log_p = np.logaddexp(in_domain_prob + (in_domain_prob + this_log_p),
+        #                            np_log_prob_inverse(in_domain_prob) + in_domain_prob)
+        scaled_p = (in_domain_prob * (in_domain_prob * this_p)) + \
+                   ((1 - in_domain_prob) * in_domain_prob)
+        #print(" " * ast_pointer.get_depth(), ast_pointer.cur_node, this_p, "scaled", scaled_p)
+        object_node_pointer = ast_pointer.get_nth_child(0)
+        child_log_probs = []
+        for child in object_node_pointer.get_children():
+            child_log_probs.append(self.rate_tree(summary, child, scaled_p))
+        if len(child_log_probs) == 0:
+            return in_domain_prob
+        else:
+            # We take the average our children, but this might not be a good idea....
+            # TODO: this can be logadd
+            return sum(child_log_probs) / len(child_log_probs)
+
+
 def get_nb_learner():
-    type_name_to_nb_model: Dict[str, NBObjectChoiceModel] = {}
+    type_name_to_nb_model: Dict[str, ObjectChoiceModel] = {}
 
     def update_fn(new_summary, ast: ObjectChoiceNode):
         for pointer in ast.depth_first_iter():
@@ -414,7 +444,7 @@ def get_nb_learner():
             if isinstance(node, ObjectChoiceNode):
                 type_name = node.type_to_choose.name
                 if type_name not in type_name_to_nb_model:
-                    type_name_to_nb_model[type_name] = NBObjectChoiceModel(node.type_to_choose)
+                    type_name_to_nb_model[type_name] = ObjectChoiceModel(node.type_to_choose)
                 new_summary_and_depth = torch.cat(
                     (new_summary, torch.tensor([float(pointer.get_depth())])))
                 type_name_to_nb_model[type_name].add_examples(
@@ -423,7 +453,7 @@ def get_nb_learner():
     def finalize_fn():
         for model in type_name_to_nb_model.values():
             model.finalize()
-        return type_name_to_nb_model
+        return ObjectChoiceModelCollection(type_name_to_nb_model)
 
     return update_fn, finalize_fn
 
@@ -458,5 +488,5 @@ def full_ret_from_example_store(
         summaries=torch.stack(summaries),
         dataset_splits=torch.tensor(example_splits),
         example_refs=np.array(example_refs),
-        nb_models=finalize_nb_fn()
+        choice_models=finalize_nb_fn()
     )

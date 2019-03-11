@@ -23,6 +23,7 @@ from ainix_common.parsing.model_specific.tokenizers import CasingModifier, White
     ModifiedWordPieceTokenizer, ModifiedStringToken
 from ainix_kernel.model_util.lm_task_processor.lm_set_process import LMBatch
 from ainix_kernel.model_util.operations import pack_picks, avg_pool, GELUActivation
+from ainix_kernel.model_util.stop_words import get_non_stop_word_mask_batched
 from ainix_kernel.model_util.stringops import get_word_lens_of_moded_tokens
 from ainix_kernel.model_util.usefulmodules import Conv1dSame
 from ainix_kernel.model_util.vocab import Vocab, torchify_moded_tokens, BasicVocab, \
@@ -252,20 +253,21 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
 
     def _vectorize_query(self, queries: Sequence[str]):
         """Converts a batch of string queries into dense vectors"""
-        tokens = self.tokenizer.tokenize_batch(queries, take_only_tokens=True)
+        tokens, metads = zip(*self.tokenizer.tokenize_batch(queries))
         tok_inds, case, ws, origional_lens = torchify_batch_modded_tokens(
             tokens, self.query_vocab, self.device)
         hidden = self.initial_encoder(tok_inds, case, ws, origional_lens)
-        return hidden, tokens, origional_lens
+        return hidden, tokens, origional_lens, metads
 
     def forward(
         self,
         queries: Sequence[str]
     ) -> Tuple[torch.Tensor, torch.Tensor, List[List[ModifiedStringToken]]]:
-        vectorized, tokenized, input_lens = self._vectorize_query(queries)
-        return self._sumarize(vectorized, input_lens, tokenized), vectorized, tokenized
+        vectorized, tokenized, input_lens, token_metads = self._vectorize_query(queries)
+        summaries = self._sumarize(vectorized, input_lens, tokenized, token_metads)
+        return summaries, vectorized, tokenized
 
-    def _sumarize(self, hidden, input_lens, tokens):
+    def _sumarize(self, hidden, input_lens, tokens, metads):
         #hidden = self.pre_summary(hidden)
         #hidden = avg_pool(hidden, input_lens)
         #return hidden
@@ -274,11 +276,16 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         # Average pool the tokens.
         # Count the tokens of long words less so that way a single long word like
         # a file name does not dominate the sumamry
-        word_lens = get_word_lens_of_moded_tokens(tokens)
-        weights = self._word_lens_to_weights(word_lens)
+        #word_lens = get_word_lens_of_moded_tokens(tokens)
+        #weights = self._word_lens_to_weights(word_lens)
 
         # Now do weighted sum
-        weights = weights.unsqueeze(2).expand(-1, -1, hidden.shape[-1])
+        #weights = weights.unsqueeze(2).expand(-1, -1, hidden.shape[-1])
+        #avgs = torch.sum((hidden * weights), dim=1) / torch.sum(weights, dim=1)
+
+        stop_word_masks = get_non_stop_word_mask_batched(tokens, metads)
+        #
+        weights = stop_word_masks.unsqueeze(2).expand(-1, -1, hidden.shape[-1])
         avgs = torch.sum((hidden * weights), dim=1) / torch.sum(weights, dim=1)
 
         return avgs

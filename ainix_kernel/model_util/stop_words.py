@@ -1,5 +1,3 @@
-# Adapted from https://github.com/TellinaTool/nl2bash/blob/master/nlp_tools/constants.py
-# and from http://xpo6.com/list-of-english-stop-words/
 import torch
 from typing import List
 
@@ -7,6 +5,8 @@ from ainix_common.parsing.model_specific.tokenizers import ModifiedStringToken, 
     ModifiedWordPieceTokenizer, StringTokensMetadata
 from ainix_kernel.model_util.stringops import get_all_words
 
+# Adapted from https://github.com/TellinaTool/nl2bash/blob/master/nlp_tools/constants.py
+# and from http://xpo6.com/list-of-english-stop-words/
 STOP_WORDS = frozenset({
     "a",
     "an",
@@ -55,8 +55,8 @@ STOP_WORDS = frozenset({
     "he'll",
     "he's",
     "her",
-    "here",
-    "here's",
+    #"here",
+    #"here's",
     "hers",
     "herself",
     "him",
@@ -102,20 +102,35 @@ STOP_WORDS = frozenset({
     
     # Others
     "of",
-    "get"
+    "get",
+    "to"
 })
 
 
 def get_non_stop_word_mask(
     tokens: List[ModifiedWordPieceTokenizer],
     metad: StringTokensMetadata,
-    stop_words = STOP_WORDS
+    stop_words = STOP_WORDS,
+    pad_to_len = None
 ) -> torch.Tensor:
     """For a sequence tokens, gets a tensor of dim (seq_len, ) which
-    is 1 if NOT a stop word and 0 if it is a stop word"""
-    mask = torch.ones((len(tokens),))
+    is 1 if NOT a stop word and 0 if it is a stop word or a pad"""
+    mask = torch.ones((pad_to_len or len(tokens), ))
+    mask[len(tokens):] = 0
     for word, (start_i, end_i) in get_all_words(tokens, metad):
-        if word in stop_words:
-            print(word, start_i, end_i)
+        if word.lower() in stop_words:
             mask[start_i:end_i] = 0
     return mask
+
+
+def get_non_stop_word_mask_batched(
+    token_batch: List[List[ModifiedWordPieceTokenizer]],
+    metad_batch: List[StringTokensMetadata]
+) -> torch.Tensor:
+    if len(token_batch) != len(metad_batch):
+        raise ValueError("Should be equal")
+    pad_to_len = max(map(len, token_batch))
+    return torch.stack(tuple([
+        get_non_stop_word_mask(toks, meta, pad_to_len=pad_to_len)
+        for toks, meta in zip(token_batch, metad_batch)
+    ]))
