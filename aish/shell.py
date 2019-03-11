@@ -83,12 +83,12 @@ class AishShell2(PromptToolkit2Shell):
             elif total_confidence > 0.925:
                 conf_emoji = "✅"
             print(f"predict: "
-                  f"{colorama.Fore.BLUE}{pred_result.unparse.total_string.strip()}"
+                  f"{colorama.Fore.MAGENTA}{pred_result.unparse.total_string.strip()}"
                   f"{colorama.Fore.RESET} "
                   f"(confidence score {pred_result.metad.total_confidence:.2f} {conf_emoji} )")
-            self.do_example_retrieve_explanation(
-                pred_result.metad.example_retrieve_explanations, pred_result.ast,
-                pred_result.unparse)
+            #self.do_example_retrieve_explanation(
+            #    pred_result.metad.example_retrieve_explanations, pred_result.ast,
+            #    pred_result.unparse)
             if total_confidence > PROMPT_CONF_THRESHOLD:
                 pass
             return pred_result.unparse.total_string.strip(), total_confidence
