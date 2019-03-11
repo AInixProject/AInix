@@ -120,6 +120,7 @@ class EncDecModel(StringTypeTranslateCF):
         # the type contexts and vocabs and proper quick pretraining.
         return {
             "version": 0,
+            'name': 'EncoderDecoder',
             "query_encoder": self.query_encoder.get_save_state_dict(),
             "decoder": self.decoder.get_save_state_dict(),
             # TODO figure out a better interface for this

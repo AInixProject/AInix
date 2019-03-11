@@ -22,9 +22,10 @@ from ainix_kernel.models.EncoderDecoder.decoders import get_valid_for_copy_mask
 from ainix_kernel.models.EncoderDecoder.encdecmodel import make_default_query_encoder, \
     get_default_tokenizers
 from ainix_kernel.models.EncoderDecoder.encoders import StringQueryEncoder
+from ainix_kernel.models.LM.cookiemonster import PretrainPoweredQueryEncoder
 from ainix_kernel.models.model_types import StringTypeTranslateCF, TypeTranslatePredictMetadata, \
     ExampleRetrieveExplanation
-from ainix_kernel.training.augmenting.replacers import Replacer
+from ainix_kernel.training.augmenting.replacers import Replacer, get_all_replacers
 import numpy as np
 import torch.nn.functional as F
 import sklearn
@@ -33,7 +34,7 @@ import sklearn.naive_bayes
 
 import attr
 
-REPLACEMENT_SAMPLES = 50
+REPLACEMENT_SAMPLES = 1
 START_COPY_KERNEL_WEIGHTS = torch.tensor([0.25, 1, 0.05])
 END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, 1, 0.25])
 #                         ^ Weight current token the most and the before and after less.
@@ -41,6 +42,8 @@ COPY_KERNEL_SIZE = len(START_COPY_KERNEL_WEIGHTS)
 
 
 def logit(ps):
+    #v = ps/(1-p)
+    #v[v < 0] = 1e-8
     return np.log(ps/(1-ps))
 
 def sigmoid(x):
@@ -86,13 +89,12 @@ class FullRetModel(StringTypeTranslateCF):
                 summary[0], AstIterPointer(this_ref_ast, None, None))
             #print(rating)
             logit_ratings.append(rating)
-        print(logit_ratings)
+        #print(logit_ratings)
         #print(top_sims)
-        scores = (logit(np.array(logit_ratings)) * 1 + logit(top_sims.data.numpy()) * 5) / 6
+        #scores = (logit(np.array(logit_ratings)) * 1 + logit(top_sims.data.numpy()) * 5) / 6
         #scores = sigmoid(scores)
-        #scores = top_sims.data.numpy()
-        #scores = top_sims.data.numpy()
-        print(scores)
+        scores = top_sims.data.numpy()
+        #print(scores)
         max_score_ind = np.argmax(scores)
         example_ref = self.example_refs[top_inds[max_score_ind]]
         ref_ast = example_ref.reference_ast
@@ -110,7 +112,6 @@ class FullRetModel(StringTypeTranslateCF):
             )
         )
         return ast_with_new_copies, metad
-
 
     def _apply_copy_changes(
         self,
@@ -180,6 +181,41 @@ class FullRetModel(StringTypeTranslateCF):
 
     def get_string_tokenizer(self) -> tokenizers.StringTokenizer:
         return self.embedder.get_tokenizer()
+
+    def get_save_state_dict(self):
+        """Returns a dict which can be seriallized and later used to restore this
+        model"""
+        # TODO don't just shove everything into a dict
+        return {
+            'name': 'fullret',
+            'version': 0,
+            'embedder': self.embedder.get_save_state_dict(),
+            'summaries': self.summaries,
+            'self.data': self.dataset_splits,
+            'example_refs': self.example_refs,
+            'not_train_mask': self.dataset_splits,
+            'choice_models': self.choice_models
+        }
+
+    @classmethod
+    def create_from_save_state_dict(
+        cls,
+        state_dict: dict,
+        new_type_context: TypeContext,
+        new_example_store: ExamplesStore
+    ):
+        query_encoder = PretrainPoweredQueryEncoder.create_from_save_state_dict(
+            state_dict['embedder'])
+        parser = StringParser(new_type_context)
+        unparser = AstUnparser(new_type_context, query_encoder.get_tokenizer())
+        replacers = get_all_replacers()
+        return cls(
+            query_encoder,
+            state_dict['summaries'],
+            state_dict['dataset_splits'],
+            example_refs=state_dict['example_refs'],
+            choice_models=state_dict['choice_models']
+        )
 
 
 @attr.s(auto_attribs=True)
@@ -345,7 +381,8 @@ class ObjectChoiceModel:
         #    list(range(len(self._type_context.get_implementations(self._type_to_choose)) + 1))
         self.all_xs = None
         self.all_ys = []
-        self.logit_model = sklearn.linear_model.LogisticRegression()
+        self.logit_model = sklearn.linear_model.LogisticRegression(
+            solver='lbfgs')
 
     def _get_class_ind_for_node(
         self,

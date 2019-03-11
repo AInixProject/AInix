@@ -208,8 +208,8 @@ if __name__ == "__main__":
 
     #exampleloader.load_path(f"../../builtin_types/why_not_work_examples.ainix.yaml", index)
 
-    #index = load_all_examples(type_context)
-    index = load_tellia_examples(type_context)
+    index = load_all_examples(type_context)
+    #index = load_tellia_examples(type_context)
 
     print("num docs", index.get_doc_count())
 
@@ -220,7 +220,8 @@ if __name__ == "__main__":
 
     model = get_default_encdec_model(
         index, standard_size=200, use_retrieval_decoder=False, replacer=replacers,
-        pretrain_checkpoint="../../checkpoints/lmchkp_iter152k_200_2rnn_total3.29_ns0.47_lm2.82.pt")
+        pretrain_checkpoint="../../checkpoints/"
+                            "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt")
 
     #t model = get_default_encdec_model(
     #    index, standard_size=64, replacer=replacers, use_retrieval_decoder=True)

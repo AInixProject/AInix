@@ -22,9 +22,22 @@ def load_all_examples(tc: TypeContext) -> ExamplesStore:
         exampleloader.load_path(f"{dirname}/../../builtin_types/{f}_examples.ainix.yaml", index)
     return index
 
+
 def load_tellia_examples(tc: TypeContext) -> ExamplesStore:
     dirname, filename = os.path.split(os.path.abspath(__file__))
     index = ainix_kernel.indexing.examplestore.BasicExampleStore(tc)
+    exampleloader.load_path(
+        f"{dirname}/../../builtin_types/otherdata/tellina/tellina.ainix.yaml", index)
+    return index
+
+
+def load_all_and_tellina(tc: TypeContext) -> ExamplesStore:
+    dirname, filename = os.path.split(os.path.abspath(__file__))
+    index = ainix_kernel.indexing.examplestore.BasicExampleStore(tc)
+    for f in ALL_EXAMPLE_NAMES:
+        if f in ("numbers",):
+            continue
+        exampleloader.load_path(f"{dirname}/../../builtin_types/{f}_examples.ainix.yaml", index)
     exampleloader.load_path(
         f"{dirname}/../../builtin_types/otherdata/tellina/tellina.ainix.yaml", index)
     return index

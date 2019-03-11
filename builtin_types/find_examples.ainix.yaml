@@ -110,3 +110,11 @@ defines:
     y:
     - 'find . -type f -maxdepth 1 | wc -l'
     warn: 'If any files contain new lines in their name, this might give incorrect results.'
+  - x:
+    - how many empty files are here nonrecursive
+    y:
+    - 'find . -type f -empty -maxdepth 1 | wc -l'
+  - x:
+    - how many empty files are here recursive
+    y:
+    - 'find . -type f -empty | wc -l'

@@ -132,7 +132,7 @@ defines:
             - list long format with readable file size
             - ls -l with human readable file sizes
             - ls -l human readable
-            - ls -l showing gigabyes and mb kb
+            - ls -l showing gigabytes and mb kb
             - display files with file size in human readable form
             y:
             - "ls -lh"
