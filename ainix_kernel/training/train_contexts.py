@@ -9,7 +9,8 @@ import os
 ALL_EXAMPLE_NAMES = (
     "find", "numbers",
     "pwd", "ls", "cat", "head", "cp", "wc", "cd",
-    "mkdir", "echo", "mv", "touch", "sleep", "split"
+    "mkdir", "echo", "mv", "touch", "sleep", "split",
+    'tar'
     )
 
 
