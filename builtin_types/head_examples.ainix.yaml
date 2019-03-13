@@ -24,14 +24,15 @@ defines:
     y:
     - head -c 50 [-[$1]-]
   - x:
-    - print first 13 lines of [-[1=FILENAME]-]
+    - print first 13 bytes of [-[1=FILENAME]-]
+    - print first 13 characters of [-[1=FILENAME]-]
     y:
     - head -c 13 [-[$1]-]
   - x:
-    - first five lines of [-[1=FILENAME]-]
+    - first five characters of [-[1=FILENAME]-]
     y:
     - head -c 5 [-[$1]-]
   - x:
-    - print the first ten lines of [-[1=FILENAME]-]
+    - print the first ten characters of [-[1=FILENAME]-]
     y:
     - head -c 10 [-[$1]-]

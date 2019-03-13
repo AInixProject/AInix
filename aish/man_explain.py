@@ -27,7 +27,7 @@ def print_man_page_explan(query: str, ref_text: str):
             # hackily highlight args not in the query
             arg = striped.split()[0]
             if arg not in ref_text:
-                print(colorama.Fore.BLUE, end="")
+                print(colorama.Fore.MAGENTA, end="")
         print(line)
         print(colorama.Fore.RESET, end="")
 

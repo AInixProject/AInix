@@ -47,6 +47,7 @@ defines:
             - 'ls -S'
           - x:
             - ls -l sorted by size
+            - run ls -l sorted by size
             y:
             - 'ls -lS'
           - x:

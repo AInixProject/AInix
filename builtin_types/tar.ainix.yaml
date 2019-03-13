@@ -1,0 +1,50 @@
+---
+defines:
+  # TODO this isn't right at all. tar actually wants
+  - define_new: object
+    name: tar
+    type: Program
+    type_data: {invoke_name: "tar"}
+    children:
+      # Tar actually excepts a one of kind of thing for the first arg which
+      # is kinda like a subcommand. Instead we'll just pack these in front
+      # So they will be printed first. However, this should be better supported
+      # as it doesn't really capture the mutual exclusision of these...
+      - name: c
+        required: False
+        arg_data: {short_name: "c"}
+      - name: x
+        required: False
+        type: Path
+        arg_data: {short_name: "x"}
+      - name: t
+        required: False
+        type: Path
+        arg_data: {short_name: "t"}
+      - name: z
+        required: False
+        arg_data: {short_name: "z"}
+      - name: j
+        required: False
+        arg_data: {short_name: "j"}
+      - name: f
+        required: False
+        arg_data: {short_name: "f"}
+      - name: C
+        required: False
+        type: Path
+        arg_data: {short_name: "C"}
+      #- name: files_list
+      #  required: False
+      #  type: PathList
+      #  arg_data: {position: 0, multiword_pos_arg: True}
+      - name: archive_name
+        required: True
+        type: Path
+        arg_data: {position: 0, multiword_pos_arg: False}
+      # TODO this should only be true if compressing
+      - name: potential_srcs
+        required: False
+        type: PathList
+        arg_data: {position: 1, multiword_pos_arg: True}
+...

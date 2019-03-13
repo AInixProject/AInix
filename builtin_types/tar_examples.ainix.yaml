@@ -1,0 +1,73 @@
+---
+defines:
+  - define_new: example_set
+    y_type: CommandSequence
+    examples:
+    - x:
+      - Compress all the files here into a tarball named [-[ENGWORD]-].tar.gz
+      - make a tar.gz of everything here into [-[ENGWORD]-].tar.gz
+      - make a tarball of everything here into [-[ENGWORD]-].tar.gz
+      - tarball all files here into [-[ENGWORD]-].tar.gz
+      y:
+      - tar -c -z -f [-[ENGWORD]-].tar.gz *
+    - x:
+        - Compress [-[DIRNAME]-] into a tarball named [-[ENGWORD]-].tar.gz
+        - move [-[DIRNAME]-] into a tarball named [-[ENGWORD]-].tar.gz
+      y:
+        - tar -c -z -f [-[ENGWORD]-].tar.gz [-[DIRNAME]-]
+    - x:
+      - compress all my files here into a archive
+      - compress all my files here
+      - tar all my files here
+      - move all my files here into a tarball
+      y:
+      - tar -c -z -f data.tar.gz *
+    - x:
+      - make a tarball for [-[DIRNAME]-]
+      - make a compressed archive for [-[DIRNAME]-]
+      - move [-[DIRNAME]-] to a tarball
+      y:
+      - tar -c -z -f [-[DIRNAME]-].tar.gz [-[DIRNAME]-]
+    # TODO Replacers of certain extension
+    # why the hell does x break it
+    - x:
+      - extract [-[ENGWORD]-].tar.gz into current directory
+      - extract [-[ENGWORD]-].tar.gz here
+      - extract [-[ENGWORD]-].tar.gz
+      - unzip [-[ENGWORD]-].tar.gz
+      y:
+      - 'tar -x -z -f [-[ENGWORD]-].tar.gz'
+    - x:
+      - extract [-[ENGWORD]-].tar into current directory
+      - extract [-[ENGWORD]-].tar
+      y:
+      - 'tar -x -f [-[ENGWORD]-].tar'
+    - x:
+      - extract [-[1=ENGWORD]-][-[2=ENGWORD]-].tar into current directory
+      y:
+      - 'tar -x -f [-[$1]-][-[$2]-].tar'
+    - x:
+      - Compress all [-[EXTENSION]-] files into [-[ENGWORD]-].tar.gz
+      - move all [-[EXTENSION]-] files into [-[ENGWORD]-].tar.gz
+      y:
+      - tar -c -z -f [-[ENGWORD]-].tar.gz *.[-[EXTENSION]-]
+    - x:
+      - extract [-[1=ENGWORD]-]/[-[2=ENGWORD]-].tar.gz into current directory
+      - extract [-[1=ENGWORD]-]/[-[2=ENGWORD]-].tar.gz
+      y:
+      - tar -x -z -f [-[$1]-]/[-[$2]-].tar.gz
+    - x:
+      - extract [-[ENGWORD]-].tar.gz into [-[DIRNAME]-]
+      - uncompress [-[ENGWORD]-].tar.gz into [-[DIRNAME]-]
+      y:
+      - tar -x -z -f [-[ENGWORD]-].tar.gz -C [-[DIRNAME]-]
+    - x:
+      - get the contents of ./[-[ENGWORD]-].tar without extracting
+      y:
+      - tar -t -v -f ./[-[ENGWORD]-].tar
+    - x:
+      - show what's in ./[-[ENGWORD]-].tar.gz without extracting
+      - show the contents of [-[ENGWORD]-].tar.gz
+      y:
+      - tar -t -v -f ./[-[ENGWORD]-].tar.gz
+...

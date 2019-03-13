@@ -11,6 +11,11 @@ defines:
     y:
     - mkdir [-[ENGWORD]-]
   - x:
+    - make a directory named [-[DIRNAME]-]
+    - make an empty directory named "[-[DIRNAME]-]"
+    y:
+    - mkdir [-[DIRNAME]-]
+  - x:
     - make a hidden directory named cache
     y:
     - mkdir .cache
