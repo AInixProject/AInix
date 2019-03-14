@@ -17,7 +17,8 @@ from ainix_kernel.model_util.vocab import are_indices_valid
 from ainix_kernel.models.EncoderDecoder.actionselector import ActionSelector, ProduceObjectAction, \
     CopyAction
 from ainix_kernel.models.EncoderDecoder.latentstore import LatentStore, COPY_IND, \
-    LatentStoreTrainer, SimilarityMeasure
+    LatentStoreTrainer
+from ainix_kernel.indexing.vectorindexing import SimilarityMeasure
 from ainix_kernel.models.EncoderDecoder.nonretrieval import CopySpanPredictor, \
     get_copy_depth_discount
 import torch.nn.functional as F

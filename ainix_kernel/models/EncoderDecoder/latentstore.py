@@ -2,27 +2,20 @@
 retrieval-based decoder."""
 import math
 from abc import abstractmethod, ABC
-from enum import Enum
 from typing import Dict, Tuple, List, Optional
 import torch
 import attr
-import numpy as np
 
 from ainix_common.parsing import copy_tools
 from ainix_common.parsing.ast_components import ObjectChoiceNode
-from ainix_common.parsing.model_specific.tokenizers import StringTokenizer
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
-from ainix_common.parsing.typecontext import TypeContext, AInixObject, AInixType
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits
 import torch.nn.functional as F
 
+from ainix_kernel.indexing.vectorindexing import SimilarityMeasure
 from ainix_kernel.training.augmenting.replacers import Replacer, seed_from_x_val
 
 COPY_IND = 10000
-
-class SimilarityMeasure(Enum):
-    DOT = "DOT"
-    COS = "COS"
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -103,6 +96,7 @@ class LatentStore(ABC):
         dfs_depth: int
     ):
         raise NotImplemented()
+
 
 class TorchLatentStore(LatentStore):
     def __init__(
@@ -246,7 +240,10 @@ class TorchLatentStoreBuilder(LatentStoreBuilder):
             }
         )
 
-
+# A bunch of code that doesn't work. The idea was that we could avoid the step
+# of a separate calculate step of the latents by updating them during training.
+# However, didn't realize that torch won't let you change values with graident
+# on them...
 
 class LatentStoreTrainer(ABC):
     """A wrapper around a latent store trainer which sorta acts equivolently
@@ -262,12 +259,6 @@ class LatentStoreTrainer(ABC):
     ) -> torch.Tensor:
         """Update a stored latent. Return the actual new value"""
         pass
-
-
-# A bunch of code that doesn't work. The idea was that we could avoid the step
-# of a separate calculate step of the latents by updating them during training.
-# However, didn't realize that torch won't let you change values with graident
-# on them...
 
 class TorchStoreTrainerAdam(LatentStoreTrainer):
     def __init__(

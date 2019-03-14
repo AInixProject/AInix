@@ -169,6 +169,7 @@ def default_preferences(n: int):
 class BasicExampleStore(ExamplesStore):
     """A basic implementation of the ExampleStore interface using builtin python primitives
     an no extra frills."""
+
     def __init__(self, type_context: TypeContext):
         super().__init__(type_context)
         self._x_vals: List[XValue] = []
@@ -240,3 +241,6 @@ class BasicExampleStore(ExamplesStore):
 
     def get_example_by_id(self, id: int) -> XValue:
         return self._x_vals[id]
+
+    def get_non_combined_example_count(self):
+        raise NotImplemented()
