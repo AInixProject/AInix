@@ -109,8 +109,10 @@ def ProgramTypeParser(
 def ProgramTypeUnparser(result: parse_primitives.TypeToStringResult):
     impl = result.implementation
     prog_name = impl.type_data['invoke_name']
-    result.add_string(prog_name + " ")
-    result.add_impl_unparse()
+    result.add_string(prog_name)
+    result.add_impl_unparse(
+        prefix_adder=lambda s: " " if s else ""
+    )
 ####
 
 
@@ -321,6 +323,8 @@ def ProgramObjectUnparser(
         had_prev_args = True
     # Now do all the positional args in order
     for arg in get_all_positional_args(arg_map.implementation.children):
+        if not arg_map.is_argname_present(arg.name):
+            continue
         if had_prev_args:
             result.add_string(" ")
         result.add_arg_tostring(arg)

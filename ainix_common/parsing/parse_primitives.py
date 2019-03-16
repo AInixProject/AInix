@@ -276,11 +276,11 @@ class TypeToStringResult:
     def add_string(self, string: str):
         self._unparse_seq.append(string)
 
-    def add_impl_unparse(self):
+    def add_impl_unparse(self, prefix_adder: Callable[[str], str] = None):
         if self._already_added_impl:
             raise ValueError("Cannot add implementation multiple times in unparse")
         next_parser = _next_parser_of_impl(self._implementation, self._type_of_impl)
-        to_string_del = ImplementationToStringDelegation(next_parser)
+        to_string_del = ImplementationToStringDelegation(next_parser, prefix_adder)
         self._unparse_seq.append(to_string_del)
         self._already_added_impl = True
 
@@ -309,8 +309,16 @@ class ImplementationParseDelegation:
 
 @attr.s(auto_attribs=True, frozen=True)
 class ImplementationToStringDelegation:
-    """Used in an unparse to represent the slot where the implentation goes"""
+    """Used in an unparse to represent the slot where the implentation goes
+
+    Args:
+        next_parser: the next object parser to use
+        prefix_adder: A function is called to optionally return a prefix
+            to the result. It is called with the result of next_parser.
+            The string it returns is added before it.
+    """
     next_parser: 'ObjectParser'
+    prefix_adder: Optional[Callable[[str], str]] = None
 
 
 # Monstrosity that describes the type of a parser_func for Object parsers.

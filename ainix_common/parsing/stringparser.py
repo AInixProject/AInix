@@ -355,6 +355,9 @@ class AstUnparser:
                 impl_string = self._unparse_object_node(
                     node.next_node_not_copy, part_of_out.next_parser, result_builder,
                     new_left_offset, child_nums_here + (0, ))
+                if part_of_out.prefix_adder:
+                    prefix = part_of_out.prefix_adder(impl_string)
+                    impl_string = prefix + impl_string
                 out_string += impl_string
                 new_left_offset += len(impl_string)
             else:

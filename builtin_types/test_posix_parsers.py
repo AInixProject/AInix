@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
@@ -22,7 +24,7 @@ def _make_positional(name="p1", position: int = 0,
     """Shorthand for constructing a positional argument"""
     return AInixArgument(MagicMock(), name, "FooType",
                          arg_data={POSITION: position, MULTIWORD_POS_ARG: multiword},
-                         required=required)
+                         required=required, parent_object_name=str(random.randint(1, 999)))
 
 
 @pytest.fixture(scope="function")
@@ -253,6 +255,27 @@ def test_prog_object_parser_posarg_multword(type_context):
     assert result.remaining_start_i == len("hello yo there")
 
 
+def test_prog_object_parser_posarg_multword_optional(type_context):
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [_make_positional(required=False, multiword=True)])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    result = gen_result(parser.parse_string("hello yo there", argval))
+    assert result.get_arg_present("p1") is not None
+    assert result.get_arg_present("p1").slice_string == "hello yo there"
+    assert result.remaining_start_i == len("hello yo there")
+
+
+def test_prog_object_parser_posarg_multword_optional_not_present(type_context):
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [_make_positional(required=False, multiword=True)])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
+    result = gen_result(parser.parse_string("", argval))
+    assert result.get_arg_present("p1") is None
+    assert result.remaining_start_i == len("")
+
+
 def test_prog_object_parser_posarg_multword_and_nonpos(type_context):
     argval = AInixObject(
         type_context, "FooProgram", "Program",
@@ -341,6 +364,22 @@ def test_string_parse_e2e(type_context):
     assert to_string.total_string == "hello -a"
 
 
+def test_string_parse_e2e2(type_context):
+    twoargs = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"},
+                       parent_object_name="sdf"),
+         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"},
+                       parent_object_name="bw")],
+        type_data={"invoke_name": "hello"}
+    )
+    parser = StringParser(type_context)
+    ast = parser.create_parse_tree("hello", "CommandSequence")
+    unparser = AstUnparser(type_context)
+    to_string = unparser.to_string(ast)
+    assert to_string.total_string == "hello"
+
+
 def test_string_parse_e2e_multiword(type_context):
     fooType = AInixType(type_context, "FooType")
     fo = AInixObject(type_context, "fo", "FooType", [],
@@ -364,6 +403,30 @@ def test_string_parse_e2e_multiword(type_context):
     unparser = AstUnparser(type_context)
     to_string = unparser.to_string(ast)
     assert to_string.total_string == "hello -a foo"
+
+
+def test_string_parse_e2e_multiword3(type_context):
+    fooType = AInixType(type_context, "FooType")
+    fo = AInixObject(type_context, "fo", "FooType", [],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         type_context,
+                         "fooname", '"foo"'
+                     ).name)
+    twoargs = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "a", None, arg_data={"short_name": "a"},
+                       parent_object_name="sdf"),
+         AInixArgument(type_context, "barg", None, arg_data={"short_name": "b"},
+                       parent_object_name="bw"),
+         _make_positional()],
+        type_data={"invoke_name": "hello"}
+    )
+    type_context.finalize_data()
+    parser = StringParser(type_context)
+    ast = parser.create_parse_tree("hello -a", "CommandSequence")
+    unparser = AstUnparser(type_context)
+    to_string = unparser.to_string(ast)
+    assert to_string.total_string == "hello -a"
 
 
 def test_string_parse_e2e_multiword2(type_context):
@@ -424,5 +487,10 @@ def test_string_parse_e2e_sequence(type_context):
 
     no_space = "hello -a|hello -b"
     ast = parser.create_parse_tree(no_space, "CommandSequence")
+    to_string = unparser.to_string(ast)
+    assert to_string.total_string == string
+
+    string = "hello -a | hello"
+    ast = parser.create_parse_tree(string, "CommandSequence")
     to_string = unparser.to_string(ast)
     assert to_string.total_string == string
