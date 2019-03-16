@@ -195,6 +195,7 @@ def ProgramObjectParser(
                       word[0] == "-" and word[1] != "-" and not ignore_this_word_dash
         double_dash = not parameter_end_seen and len(word) >= 3 and word[:2] == "--"
         if single_dash:
+            done_with_chars = False
             for ci, char in enumerate(word[1:]):
                 try:
                     shortname_match = get_arg_with_short_name(remaining_args, char)
@@ -220,9 +221,12 @@ def ProgramObjectParser(
                             lex_result, lex_index)
                         use_start_idx, use_end_idx = next_slice
                     lex_index += 1
+                    done_with_chars = True
                 result.set_arg_present(shortname_match.name,
                                        use_start_idx, use_end_idx, True)
                 remaining_args.remove(shortname_match)
+                if done_with_chars:
+                    break
             lex_index += 1
         elif double_dash:
             long_name_match = _get_arg_with_long_name(

@@ -186,6 +186,14 @@ def test_prog_object_parser_argval(type_context):
     assert result.get_arg_present("a").slice_string == "hello"
     assert result.remaining_start_i == len("-a hello")
 
+
+def test_prog_object_parser_argval_combined_style(type_context):
+    fooType = AInixType(type_context, "FooType")
+    argval = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "a", fooType.name, arg_data={"short_name": "a"},
+                       parent_object_name="sdf")])
+    parser = type_context.get_object_parser_by_name("ProgramObjectParser")
     # Combined style
     result = gen_result(parser.parse_string("-afoo", argval))
     assert result.get_arg_present("a") is not None
