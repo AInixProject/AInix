@@ -3,6 +3,7 @@ import torch
 from typing import Tuple, Generator, List, Set, Optional
 
 from ainix_common.parsing.copy_tools import add_copies_to_ast_set
+from ainix_common.parsing.model_specific.tokenizers import StringTokenizer
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, XValue
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException, \
     ModelSafePredictError
@@ -141,44 +142,60 @@ class TypeTranslateCFTrainer:
 
         self.model.set_in_train_mode()
 
-    def data_pair_iterate(
-        self,
-        filter_splits: Tuple[DataSplits]
-    ) -> Generator[
-        Tuple[XValue, str, AstObjectChoiceSet, ObjectChoiceNode, Set[str]], None, None
-    ]:
-        """Will yield one epoch of examples as a tuple of the example and the
-        Ast set that represents all valid y_values for that example"""
-        all_ex_list = list(self.example_store.get_all_examples(filter_splits))
-        random.shuffle(all_ex_list)
-        for example in all_ex_list:  #self.example_store.get_all_examples(splits):
-            all_y_examples = self.example_store.get_y_values_for_y_set(example.y_set_id)
-            y_type = self.type_context.get_type_by_name(all_y_examples[0].y_type)
-            y_ast_set = AstObjectChoiceSet(y_type, None)
-            parsed_ast = None
-            replacement_sample = self.replacer.create_replace_sampling(example.x_text)
-            y_texts = set()
-            individual_asts = []
-            individual_asts_preferences = []
-            this_example_replaced_x = replacement_sample.replace_x(example.x_text)
-            this_x_tokens, this_x_metadata = self.str_tokenizer.tokenize(this_example_replaced_x)
-            for y_example in all_y_examples:
-                replaced_y = replacement_sample.replace_x(y_example.y_text)
-                if replaced_y not in y_texts:
-                    parsed_ast = self.string_parser.create_parse_tree(
-                        replaced_y, y_type.name)
-                    individual_asts.append(parsed_ast)
-                    individual_asts_preferences.append(y_example.y_preference)
-                    y_ast_set.add(parsed_ast, True, y_example.y_preference, 1.0)
-                    y_texts.add(replaced_y)
-                    # handle copies
-                    # TODO figure how to weight the copy node??
-                    add_copies_to_ast_set(parsed_ast, y_ast_set, self.unparser,
-                                          this_x_metadata, copy_node_weight=1)
-            y_ast_set.freeze()
-            teacher_force_path_ast = WeightedRandomChooser(
-                individual_asts, individual_asts_preferences).sample()
-            yield (example, this_example_replaced_x, y_ast_set, teacher_force_path_ast, y_texts)
+    def data_pair_iterate(self, filter_splits):
+        return iterate_data_pairs(
+            example_store=self.example_store,
+            replacers=self.replacer,
+            string_parser=self.string_parser,
+            str_tokenizer=self.str_tokenizer,
+            unparser=self.unparser,
+            filter_splits=filter_splits
+        )
+
+
+def iterate_data_pairs(
+    example_store: ExamplesStore,
+    replacers: Replacer,
+    string_parser: StringParser,
+    str_tokenizer: StringTokenizer,
+    unparser: AstUnparser,
+    filter_splits: Optional[Tuple[DataSplits]]
+) -> Generator[
+    Tuple[XValue, str, AstObjectChoiceSet, ObjectChoiceNode, Set[str]], None, None
+]:
+    """Will yield one epoch of examples as a tuple of the example and the
+    Ast set that represents all valid y_values for that example"""
+    type_context = example_store.type_context
+    all_ex_list = list(example_store.get_all_examples(filter_splits))
+    random.shuffle(all_ex_list)
+    for example in all_ex_list:  #self.example_store.get_all_examples(splits):
+        all_y_examples = example_store.get_y_values_for_y_set(example.y_set_id)
+        y_type = type_context.get_type_by_name(all_y_examples[0].y_type)
+        y_ast_set = AstObjectChoiceSet(y_type, None)
+        parsed_ast = None
+        replacement_sample = replacers.create_replace_sampling(example.x_text)
+        y_texts = set()
+        individual_asts = []
+        individual_asts_preferences = []
+        this_example_replaced_x = replacement_sample.replace_x(example.x_text)
+        this_x_tokens, this_x_metadata = str_tokenizer.tokenize(this_example_replaced_x)
+        for y_example in all_y_examples:
+            replaced_y = replacement_sample.replace_x(y_example.y_text)
+            if replaced_y not in y_texts:
+                parsed_ast = string_parser.create_parse_tree(
+                    replaced_y, y_type.name)
+                individual_asts.append(parsed_ast)
+                individual_asts_preferences.append(y_example.y_preference)
+                y_ast_set.add(parsed_ast, True, y_example.y_preference, 1.0)
+                y_texts.add(replaced_y)
+                # handle copies
+                # TODO figure how to weight the copy node??
+                add_copies_to_ast_set(parsed_ast, y_ast_set, unparser,
+                                      this_x_metadata, copy_node_weight=1)
+        y_ast_set.freeze()
+        teacher_force_path_ast = WeightedRandomChooser(
+            individual_asts, individual_asts_preferences).sample()
+        yield (example, this_example_replaced_x, y_ast_set, teacher_force_path_ast, y_texts)
 
 
 def flatten_list(lists):

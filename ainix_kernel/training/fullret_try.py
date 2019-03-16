@@ -17,12 +17,7 @@ from ainix_kernel.util.serialization import serialize
 import os
 
 
-def train_the_thing():
-    # bad hacks method thin
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    pretrained_checkpoint_path = f"{dir_path}/../../checkpoints/" \
-                                 "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt"
-
+def get_examples():
     type_context = TypeContext()
     loader = TypeContextDataLoader(type_context, up_search_limit=4)
     loader.load_path("builtin_types/generic_parsers.ainix.yaml")
@@ -42,7 +37,16 @@ def train_the_thing():
     #print("num train", len(list(index.get_all_examples((DataSplits.TRAIN, )))))
 
     replacers = get_all_replacers()
+    return type_context, index, replacers
 
+
+
+def train_the_thing():
+    # bad hacks method thing
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    pretrained_checkpoint_path = f"{dir_path}/../../checkpoints/" \
+                                 "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt"
+    type_context, index, replacers = get_examples()
     model = full_ret_from_example_store(index, replacers, pretrained_checkpoint_path)
     return model, index, replacers, type_context, loader
 
