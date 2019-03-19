@@ -1,44 +1,9 @@
 import math
-import random
-from typing import Tuple, Optional
 
-from ainix_common.parsing.loader import TypeContextDataLoader
 from ainix_common.parsing.stringparser import AstUnparser
-from ainix_common.parsing.typecontext import TypeContext
-from ainix_kernel.indexing.examplestore import DataSplits
 from ainix_kernel.models.Fullretrieval.fullretmodel import full_ret_from_example_store
-from ainix_kernel.specialtypes import allspecials
-from ainix_kernel.training.augmenting.replacers import get_all_replacers
-from ainix_kernel.training.evaluate import EvaluateLogger, print_ast_eval_log
-from ainix_kernel.training.train_contexts import ALL_EXAMPLE_NAMES, load_all_examples, \
-    load_tellia_examples, load_all_and_tellina
-from ainix_kernel.training.trainer import TypeTranslateCFTrainer
-from ainix_kernel.util.serialization import serialize
+from ainix_kernel.training.trainer import TypeTranslateCFTrainer, get_examples
 import os
-
-
-def get_examples():
-    type_context = TypeContext()
-    loader = TypeContextDataLoader(type_context, up_search_limit=4)
-    loader.load_path("builtin_types/generic_parsers.ainix.yaml")
-    loader.load_path("builtin_types/command.ainix.yaml")
-    loader.load_path("builtin_types/paths.ainix.yaml")
-    allspecials.load_all_special_types(type_context)
-
-    for f in ALL_EXAMPLE_NAMES:
-        loader.load_path(f"builtin_types/{f}.ainix.yaml")
-    type_context.finalize_data()
-
-    index = load_all_examples(type_context)
-    #index = load_tellia_examples(type_context)
-    #index = load_all_and_tellina(type_context)
-
-    #print("num docs", index.get_doc_count())
-    #print("num train", len(list(index.get_all_examples((DataSplits.TRAIN, )))))
-
-    replacers = get_all_replacers()
-    return type_context, index, replacers
-
 
 
 def train_the_thing():
@@ -46,7 +11,7 @@ def train_the_thing():
     dir_path = os.path.dirname(os.path.realpath(__file__))
     pretrained_checkpoint_path = f"{dir_path}/../../checkpoints/" \
                                  "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt"
-    type_context, index, replacers = get_examples()
+    type_context, index, replacers, loader = get_examples()
     model = full_ret_from_example_store(index, replacers, pretrained_checkpoint_path)
     return model, index, replacers, type_context, loader
 

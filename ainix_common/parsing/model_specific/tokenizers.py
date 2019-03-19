@@ -463,3 +463,20 @@ def looks_like_a_file(string: str):
     return False
 
 
+def nonascii_untokenize(s: str):
+    s = s.replace(" ", "")
+    s = s.replace(parse_constants.SPACE, " ")
+    s = s.strip()
+    return s
+
+
+def get_tokenizer_by_name(
+    tokenizer_name: str
+) -> Union[StringTokenizer, StringTokenizerWithMods]:
+    if tokenizer_name == "nonascii":
+        return NonLetterTokenizer()
+    elif tokenizer_name == "wordpiece":
+        return get_default_pieced_tokenizer_word_list()[0]
+    else:
+        raise ValueError(f"Unrecognized name {tokenizer_name}")
+

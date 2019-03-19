@@ -155,6 +155,13 @@ class ExamplesStore(ABC):
         function counts that as 6 examples, rather than just three."""
         raise NotImplementedError()
 
+    def get_y_set_hash(self, y_set_id: int) -> str:
+        yvals = self.get_y_values_for_y_set(y_set_id)
+        # TODO (DNGros): figure out why actual value hashing not working...
+        return hex(abs(hash(tuple(
+            [yv.id for yv in yvals]
+        ))))
+
 
 def default_preferences(n: int):
     """Gets a default weight for a value. Each value in the sequence

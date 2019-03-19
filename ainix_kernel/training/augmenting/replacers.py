@@ -30,6 +30,7 @@ import re
 from typing import List, Tuple, Dict, Set
 
 from ainix_kernel.util.sampling import WeightedRandomChooser
+import json
 
 
 class ReplacementError(ValueError):
@@ -190,6 +191,13 @@ class ReplacementSampling:
             raise ReplacementError(f"Still replacers remaining. {string}"
                                    f"Note, if this is a Y, there may be an issue with the"
                                    f"X string (for example misplaced brackets or something)")
+
+    def serialize_to_string(self) -> str:
+        return json.dumps(self.var_to_x_y_vals)
+
+    @classmethod
+    def from_serialized_string(cls, string: str) -> 'ReplacementSampling':
+        return cls(json.loads(string))
 
 
 class Replacement:

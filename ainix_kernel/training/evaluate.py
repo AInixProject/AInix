@@ -15,7 +15,8 @@ class Evaluation(ABC):
 
 class AstEvaluation(Evaluation):
     def __init__(self, prediction: ObjectChoiceNode, ground_truth: AstObjectChoiceSet,
-                 y_texts: Set[str], x_text: str, exception, unparser: AstUnparser):
+                 y_texts: Set[str], x_text: str, exception, unparser: AstUnparser,
+                 know_pred_str: str):
         self.data = {}
         self.prediction = prediction
         self.ground_truth = ground_truth
@@ -23,11 +24,15 @@ class AstEvaluation(Evaluation):
         self.x_text = x_text
         self.p_exception = exception
         if self.prediction is not None:
-            self.predicted_y = unparser.to_string(self.prediction, self.x_text).total_string
+            try:
+                self.predicted_y = unparser.to_string(self.prediction, self.x_text).total_string
+            except RecursionError as e:
+                self.predicted_y = f"UNPARSE RECURSION LIMIT HIT"
         else:
             self.predicted_y = f"EXCEPTION {str(self.p_exception)}"
         self.in_ast_set = self.ground_truth.is_node_known_valid(self.prediction)
         self.correct = self.in_ast_set or self.predicted_y in self.y_texts
+        self.known_pred_str = know_pred_str
         if self.correct and not self.in_ast_set:
             warnings.warn(f"The prediction is not in ground truth but value "
                           f"matches a y string. "
@@ -47,7 +52,8 @@ class AstEvaluation(Evaluation):
         else:
             print(Fore.RED, end='')
             print(" Expected:", y_texts_v)
-        print("Predicted:", self.predicted_y)
+        py = self.known_pred_str if self.known_pred_str is not None else self.predicted_y
+        print("Predicted:", py)
         print(Style.RESET_ALL, end='')
 
     def _fill_stats(self):

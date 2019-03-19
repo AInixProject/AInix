@@ -3,13 +3,14 @@ import torch
 from typing import Tuple, Generator, List, Set, Optional
 
 from ainix_common.parsing.copy_tools import add_copies_to_ast_set
-from ainix_common.parsing.model_specific.tokenizers import StringTokenizer
-from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, XValue
+from ainix_common.parsing.model_specific.tokenizers import StringTokenizer, StringTokensMetadata
+from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, XValue, YValue
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException, \
     ModelSafePredictError
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
-from ainix_kernel.training.augmenting.replacers import Replacer, get_all_replacers
+from ainix_kernel.training.augmenting.replacers import Replacer, get_all_replacers, \
+    ReplacementSampling
 from ainix_kernel.training.evaluate import AstEvaluation, EvaluateLogger, print_ast_eval_log
 import more_itertools
 from ainix_kernel.specialtypes import allspecials
@@ -20,6 +21,8 @@ from ainix_kernel.util.sampling import WeightedRandomChooser
 from ainix_kernel.util.serialization import serialize
 from tqdm import tqdm
 from ainix_common.parsing.loader import TypeContextDataLoader
+from ainix_common.parsing.typecontext import AInixType
+from ainix_common.parsing.typecontext import TypeContext, AInixType
 
 
 class TypeTranslateCFTrainer:
@@ -53,7 +56,7 @@ class TypeTranslateCFTrainer:
         with tqdm(total=train_count, unit='Examples', miniters=train_count/5) as pbar:
             for batch in batches_iter:
                 batch_as_query = [(replaced_x, y_ast_set, this_example_ast, example.id) for
-                                  example, replaced_x, y_ast_set, this_example_ast, ytxts in batch]
+                                  example, replaced_x, y_ast_set, this_example_ast, _, _ in batch]
                 loss += float(self.model.train_batch(batch_as_query))
                 examples_seen += len(batch)
                 pbar.update(len(batch))
@@ -142,8 +145,11 @@ class TypeTranslateCFTrainer:
 
         self.model.set_in_train_mode()
 
-    def data_pair_iterate(self, filter_splits):
-        return iterate_data_pairs(
+    def data_pair_iterate(self, filter_splits)-> Generator[
+        Tuple[XValue, str, AstObjectChoiceSet, ObjectChoiceNode, Set[str], ReplacementSampling],
+        None, None
+    ]:
+        yield from iterate_data_pairs(
             example_store=self.example_store,
             replacers=self.replacer,
             string_parser=self.string_parser,
@@ -151,6 +157,37 @@ class TypeTranslateCFTrainer:
             unparser=self.unparser,
             filter_splits=filter_splits
         )
+
+
+def make_y_ast_set(
+    y_type: AInixType,
+    all_y_examples: List[YValue],
+    replacement_sample: ReplacementSampling,
+    string_parser: StringParser,
+    this_x_metadata: StringTokensMetadata,
+    unparser: AstUnparser
+):
+    y_ast_set = AstObjectChoiceSet(y_type, None)
+    y_texts = set()
+    individual_asts = []
+    individual_asts_preferences = []
+    for y_example in all_y_examples:
+        replaced_y = replacement_sample.replace_x(y_example.y_text)
+        if replaced_y not in y_texts:
+            parsed_ast = string_parser.create_parse_tree(
+                replaced_y, y_type.name)
+            individual_asts.append(parsed_ast)
+            individual_asts_preferences.append(y_example.y_preference)
+            y_ast_set.add(parsed_ast, True, y_example.y_preference, 1.0)
+            y_texts.add(replaced_y)
+            # handle copies
+            # TODO figure how to weight the copy node??
+            add_copies_to_ast_set(parsed_ast, y_ast_set, unparser,
+                                  this_x_metadata, copy_node_weight=1)
+    y_ast_set.freeze()
+    teacher_force_path_ast = WeightedRandomChooser(
+        individual_asts, individual_asts_preferences).sample()
+    return y_ast_set, y_texts, teacher_force_path_ast
 
 
 def iterate_data_pairs(
@@ -161,7 +198,8 @@ def iterate_data_pairs(
     unparser: AstUnparser,
     filter_splits: Optional[Tuple[DataSplits]]
 ) -> Generator[
-    Tuple[XValue, str, AstObjectChoiceSet, ObjectChoiceNode, Set[str]], None, None
+    Tuple[XValue, str, AstObjectChoiceSet, ObjectChoiceNode, Set[str], ReplacementSampling],
+    None, None
 ]:
     """Will yield one epoch of examples as a tuple of the example and the
     Ast set that represents all valid y_values for that example"""
@@ -171,47 +209,23 @@ def iterate_data_pairs(
     for example in all_ex_list:  #self.example_store.get_all_examples(splits):
         all_y_examples = example_store.get_y_values_for_y_set(example.y_set_id)
         y_type = type_context.get_type_by_name(all_y_examples[0].y_type)
-        y_ast_set = AstObjectChoiceSet(y_type, None)
-        parsed_ast = None
         replacement_sample = replacers.create_replace_sampling(example.x_text)
-        y_texts = set()
-        individual_asts = []
-        individual_asts_preferences = []
         this_example_replaced_x = replacement_sample.replace_x(example.x_text)
         this_x_tokens, this_x_metadata = str_tokenizer.tokenize(this_example_replaced_x)
-        for y_example in all_y_examples:
-            replaced_y = replacement_sample.replace_x(y_example.y_text)
-            if replaced_y not in y_texts:
-                parsed_ast = string_parser.create_parse_tree(
-                    replaced_y, y_type.name)
-                individual_asts.append(parsed_ast)
-                individual_asts_preferences.append(y_example.y_preference)
-                y_ast_set.add(parsed_ast, True, y_example.y_preference, 1.0)
-                y_texts.add(replaced_y)
-                # handle copies
-                # TODO figure how to weight the copy node??
-                add_copies_to_ast_set(parsed_ast, y_ast_set, unparser,
-                                      this_x_metadata, copy_node_weight=1)
-        y_ast_set.freeze()
-        teacher_force_path_ast = WeightedRandomChooser(
-            individual_asts, individual_asts_preferences).sample()
-        yield (example, this_example_replaced_x, y_ast_set, teacher_force_path_ast, y_texts)
+        y_ast_set, y_texts, teacher_force_path_ast = make_y_ast_set(
+            y_type, all_y_examples, replacement_sample, string_parser,
+            this_x_metadata, unparser
+        )
+        yield (example, this_example_replaced_x, y_ast_set,
+               teacher_force_path_ast, y_texts, replacement_sample)
 
 
 def flatten_list(lists):
     """https://stackoverflow.com/questions/952914/how-to-make-a-flat-list-out-of-list-of-lists"""
     return [item for sublist in lists for item in sublist]
 
-# A bunch of code for running the thing which really shouldn't be here.
 
-
-if __name__ == "__main__":
-    from ainix_common.parsing.typecontext import TypeContext
-    import ainix_kernel.indexing.exampleindex
-    from ainix_kernel.indexing import exampleloader
-    import datetime
-
-    print("start time", datetime.datetime.now())
+def get_examples():
     type_context = TypeContext()
     loader = TypeContextDataLoader(type_context, up_search_limit=4)
     loader.load_path("builtin_types/generic_parsers.ainix.yaml")
@@ -223,17 +237,28 @@ if __name__ == "__main__":
         loader.load_path(f"builtin_types/{f}.ainix.yaml")
     type_context.finalize_data()
 
-    #exampleloader.load_path(f"../../builtin_types/why_not_work_examples.ainix.yaml", index)
-
     index = load_all_examples(type_context)
     #index = load_tellia_examples(type_context)
+    #index = load_all_and_tellina(type_context)
 
-    print("num docs", index.get_doc_count())
-
-    from ainix_kernel.models.EncoderDecoder.encdecmodel import \
-        get_default_encdec_model
+    #print("num docs", index.get_doc_count())
+    #print("num train", len(list(index.get_all_examples((DataSplits.TRAIN, )))))
 
     replacers = get_all_replacers()
+    return type_context, index, replacers, loader
+
+
+# A bunch of code for running the thing which really shouldn't be here.
+
+if __name__ == "__main__":
+    import ainix_kernel.indexing.exampleindex
+    from ainix_kernel.indexing import exampleloader
+    import datetime
+
+    print("start time", datetime.datetime.now())
+    type_context, index, replacers, loader = get_examples()
+    from ainix_kernel.models.EncoderDecoder.encdecmodel import \
+        get_default_encdec_model
 
     model = get_default_encdec_model(
         index, standard_size=200, use_retrieval_decoder=False, replacer=replacers,
@@ -270,5 +295,3 @@ if __name__ == "__main__":
     print("done.")
     print("done time", datetime.datetime.now())
     print(datetime.datetime.now() - train_time)
-
-
