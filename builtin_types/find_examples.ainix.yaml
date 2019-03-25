@@ -106,6 +106,7 @@ defines:
   - x:
     - how many files are in this directory nonrecursive
     - how many files are here
+    - count number of files here
     - how many files in this directory
     y:
     - 'find . -type f -maxdepth 1 | wc -l'

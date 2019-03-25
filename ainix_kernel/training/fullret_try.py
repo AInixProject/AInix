@@ -2,6 +2,7 @@ import math
 
 from ainix_common.parsing.stringparser import AstUnparser
 from ainix_kernel.models.Fullretrieval.fullretmodel import full_ret_from_example_store
+from ainix_kernel.training.evaluate import EvaluateLogger, print_ast_eval_log
 from ainix_kernel.training.trainer import TypeTranslateCFTrainer, get_examples
 import os
 
@@ -22,9 +23,9 @@ if __name__ == "__main__":
 
     tran_trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
     logger = None
-    #logger = EvaluateLogger()
-    #tran_trainer.evaluate(logger, dump_each=True, num_replace_samples=5)
-    #print_ast_eval_log(logger)
+    logger = EvaluateLogger()
+    tran_trainer.evaluate(logger, dump_each=True, num_replace_samples=5)
+    print_ast_eval_log(logger)
 
     while True:
         q = input("Query: ")

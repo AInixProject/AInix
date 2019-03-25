@@ -274,3 +274,11 @@ class BertlikeLangModel(Model):
         state_dict: dict,
     ):
         raise NotImplemented
+
+
+class BinaryClassifier(Model):
+    pass
+
+
+class ObjectExistenceClassifier(BinaryClassifier):
+    pass

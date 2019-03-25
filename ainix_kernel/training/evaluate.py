@@ -16,7 +16,7 @@ class Evaluation(ABC):
 class AstEvaluation(Evaluation):
     def __init__(self, prediction: ObjectChoiceNode, ground_truth: AstObjectChoiceSet,
                  y_texts: Set[str], x_text: str, exception, unparser: AstUnparser,
-                 know_pred_str: str):
+                 know_pred_str: str = None):
         self.data = {}
         self.prediction = prediction
         self.ground_truth = ground_truth

@@ -77,12 +77,20 @@ class EncDecModel(StringTypeTranslateCF):
         self.optimizer.step(None)
         return float(loss)
 
+    def train_only_decoder(self):
+        self.optimizer.zero_grad()
+        loss = self.decoder.forward_train(
+            query_summary, encoded_tokens, actual_tokens, ys, teacher_force_paths, example_ids)
+        self.optimizer.step(None)
+        return float(loss)
+
     @classmethod
     def make_examples_store(cls, type_context: TypeContext, is_training: bool) -> ExamplesStore:
         raise NotImplemented
 
     def start_train_session(self):
         self.optimizer = torch.optim.Adam(self.modules.parameters())
+        #self.optimizer = torch.optim.SGD(self.modules.parameters(), lr=0.01)
         self.decoder.start_train_session()
         self.set_in_train_mode()
         self.is_in_training_session = True

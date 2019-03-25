@@ -116,7 +116,7 @@ class TypeTranslateCFTrainer:
         last_eval_result = None
         last_example_id = None
         for data in dups:
-            example, replaced_x_query, y_ast_set, this_example_ast, y_texts = data
+            example, replaced_x_query, y_ast_set, this_example_ast, y_texts, rsample = data
             if last_x == replaced_x_query:
                 logger.add_evaluation(last_eval_result)
                 continue
@@ -261,9 +261,10 @@ if __name__ == "__main__":
         get_default_encdec_model
 
     model = get_default_encdec_model(
-        index, standard_size=200, use_retrieval_decoder=False, replacer=replacers,
-        pretrain_checkpoint="../../checkpoints/"
-                            "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt")
+        index, standard_size=64, use_retrieval_decoder=False, replacer=replacers,
+        pretrain_checkpoint=None)
+        #pretrain_checkpoint="../../checkpoints/"
+        #                    "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt")
 
     #t model = get_default_encdec_model(
     #    index, standard_size=64, replacer=replacers, use_retrieval_decoder=True)
