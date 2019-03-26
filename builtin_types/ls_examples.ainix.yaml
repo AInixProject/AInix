@@ -9,6 +9,7 @@ defines:
             - ls
           - x:
             - print all files and directories here
+            - list directory contents
             - what files are here
             - list all files here please
             - list all files and directories here
@@ -42,14 +43,36 @@ defines:
             - list files sort by the largest file size first
             - ls sort files with size
             - list my files long format sorted by size
+            - show my files sorted by size
+            - list files big to small
+            - show files here largest first
             y:
             - "ls -lS"
             - 'ls -S'
           - x:
             - ls -l sorted by size
             - run ls -l sorted by size
+            - ls -l largest files first
             y:
             - 'ls -lS'
+          - x:
+            - list files with smallest first
+            - display files smallest to largest
+            - list files small to big
+            - list files smallest files first
+            - list files here by files size ascending
+            - show files. Sort by file size small first
+            - display files in order of reverse size
+            y:
+            - 'ls -lSr'
+            - 'ls -S -r'
+          - x:
+            - ls -l smallest files first
+            - ls -l sorted by size reversed
+            - list files long format
+            - ls smallest files at top
+            y:
+            - 'ls -lSr'
           - x:
             - list all files with stuff like file size
             - list all files in long format
@@ -274,3 +297,7 @@ defines:
             - ls sort by fsize one line per file
             y:
             - "ls -1 -S"
+          - x:
+            - list with inodes number and long format
+            y:
+            - ls -l -i

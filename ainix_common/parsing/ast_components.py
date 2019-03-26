@@ -703,7 +703,6 @@ class AstIterPointer:
         return AstIterPointer(child, self, n)
 
 
-
 class AstSet:
     def __init__(self, parent: Optional['AstSet']):
         self._parent = parent
@@ -747,6 +746,11 @@ class AstSet:
     @abstractmethod
     def add(self, node: AstNode, known_as_valid: bool,
             weight: float, probability_valid: float) -> None:
+        pass
+
+    @property
+    @abstractmethod
+    def max_weight(self):
         pass
 
 
@@ -830,6 +834,7 @@ class ObjectNodeSet(AstSet):
     ):
         super().__init__(parent)
         self._implementation = implementation
+        self._max_weight = 0
         # TODO (DNGros): becuase of the the way equality works with copy args, I don't
         # think this should work. There are likely subtle bugs with order things are
         # added. Currently the few tests we have pass though. This code needs
@@ -860,6 +865,7 @@ class ObjectNodeSet(AstSet):
     def add(self, node: ObjectNode, known_as_valid: bool, weight: float, probability_valid: float):
         self._verify_impl_of_new_node(node)
         childless_args = node.as_childless_node()
+        self._max_weight = max(self._max_weight, weight)
         if childless_args not in self._arg_data:
             self._arg_data[childless_args] = ArgsSetData(node._implementation, self)
         self._arg_data[childless_args].add_from_other_data(
@@ -879,6 +885,10 @@ class ObjectNodeSet(AstSet):
                     node.get_choice_node_for_arg(arg.name)):
                 return False
         return True
+
+    @property
+    def max_weight(self):
+        return self._max_weight
 
     def __hash__(self):
         super().__hash__()
@@ -1008,6 +1018,11 @@ class AstObjectChoiceSet(AstSet):
             new_data = CopyValData(probability_valid, known_as_valid, weight)
         self._copy_is_a_known_option = self._copy_is_a_known_option or known_as_valid
         self._copy_options[span] = new_data
+        self._max_weight = max(self._max_weight, weight)
+
+    @property
+    def max_weight(self):
+        return self._max_weight
 
     def add(
         self,

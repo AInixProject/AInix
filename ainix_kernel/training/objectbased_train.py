@@ -36,7 +36,6 @@ def do_train(
         encoder_cache, encoder, rsampled_examples, DEFAULT_ENCODER_BATCH_SIZE)
 
 
-
 if __name__ == "__main__":
     argparser = ArgumentParser()
     argparser.add_argument("-rsamples", default=DEFAULT_REPLACE_SAMPLES)
