@@ -21,11 +21,11 @@ if __name__ == "__main__":
     model, index, replacers, type_context, loader = train_the_thing()
     unparser = AstUnparser(type_context, model.get_string_tokenizer())
 
-    #tran_trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
-    #logger = None
-    #logger = EvaluateLogger()
-    #tran_trainer.evaluate(logger, dump_each=True, num_replace_samples=5)
-    #print_ast_eval_log(logger)
+    tran_trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
+    logger = None
+    logger = EvaluateLogger()
+    tran_trainer.evaluate(logger, dump_each=True, num_replace_samples=5)
+    print_ast_eval_log(logger)
 
     while True:
         q = input("Query: ")

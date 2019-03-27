@@ -109,10 +109,11 @@ def ProgramTypeParser(
 def ProgramTypeUnparser(result: parse_primitives.TypeToStringResult):
     impl = result.implementation
     prog_name = impl.type_data['invoke_name']
-    result.add_string(prog_name)
+    result.add_string(prog_name + " ")
     result.add_impl_unparse(
-        prefix_adder=lambda s: " " if s else ""
+        #prefix_adder=lambda s: " " if s else ""
     )
+    result.add_rstrip()
 ####
 
 

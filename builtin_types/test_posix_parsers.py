@@ -2,6 +2,7 @@ import random
 
 import pytest
 
+from ainix_common.parsing.ast_components import AstIterPointer, ObjectNode, ObjectChoiceNode
 from ainix_common.parsing.grammar_lang import create_object_parser_from_grammar
 from builtin_types.posix_parsers import *
 from unittest.mock import MagicMock
@@ -451,6 +452,35 @@ def test_string_parse_e2e_multiword2(type_context):
     unparser = AstUnparser(type_context)
     to_string = unparser.to_string(ast)
     assert to_string.total_string == "hello -a foo bar"
+
+
+def test_string_parse_e2e_pos_unparse(type_context):
+    fooType = AInixType(type_context, "FooType")
+    fo = AInixObject(type_context, "fo", "FooType", [],
+                     preferred_object_parser_name=create_object_parser_from_grammar(
+                         type_context,
+                         "fooname", '"foo"'
+                     ).name)
+    twoargs = AInixObject(
+        type_context, "FooProgram", "Program",
+        [AInixArgument(type_context, "p1", "FooType",
+                       arg_data={POSITION: 0, MULTIWORD_POS_ARG: False},
+                       parent_object_name="bw",
+                       required=True)],
+        type_data={"invoke_name": "hello"}
+    )
+    type_context.finalize_data()
+    parser = StringParser(type_context)
+    ast = parser.create_parse_tree("hello foo", "Program")
+    unparser = AstUnparser(type_context)
+    unparse_result = unparser.to_string(ast)
+    assert unparse_result.total_string == "hello foo"
+    for p in ast.depth_first_iter():
+        n = p.cur_node
+        if isinstance(n, ObjectChoiceNode) and n.type_to_choose.name == "FooType":
+            arg_node_pointer = p
+            break
+    assert unparse_result.pointer_to_string(arg_node_pointer) == "foo"
 
 
 def test_command_operator_parser(type_context):

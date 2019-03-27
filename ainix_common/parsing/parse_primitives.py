@@ -250,13 +250,18 @@ class TypeParserResult:
         self.set_next_slice(si, endi)
 
 
+class RStripRequest:
+    """Used in typetostring result to request the unparser perform a rstrip"""
+    pass
+
+
 class TypeToStringResult:
     def __init__(
         self,
         implementation: 'typecontext.AInixObject',
         type_of_impl: 'typecontext.AInixType'
     ):
-        self._unparse_seq: List[Union[str, ImplementationToStringDelegation]] = []
+        self._unparse_seq: List[Union[str, ImplementationToStringDelegation, RStripRequest]] = []
         self._implementation = implementation
         self._type_of_impl = type_of_impl
         self._already_added_impl = False
@@ -276,9 +281,14 @@ class TypeToStringResult:
     def add_string(self, string: str):
         self._unparse_seq.append(string)
 
+    def add_rstrip(self):
+        self._unparse_seq.append(RStripRequest())
+
     def add_impl_unparse(self, prefix_adder: Callable[[str], str] = None):
         if self._already_added_impl:
             raise ValueError("Cannot add implementation multiple times in unparse")
+        if prefix_adder is not None:
+            raise NotImplemented("This didn't actually work and is not currently supported")
         next_parser = _next_parser_of_impl(self._implementation, self._type_of_impl)
         to_string_del = ImplementationToStringDelegation(next_parser, prefix_adder)
         self._unparse_seq.append(to_string_del)

@@ -34,7 +34,7 @@ import sklearn.naive_bayes
 
 import attr
 
-REPLACEMENT_SAMPLES = 5
+REPLACEMENT_SAMPLES = 10
 START_COPY_KERNEL_WEIGHTS = torch.tensor([0.25, 1, 0.05])
 END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, 1, 0.25])
 #                         ^ Weight current token the most and the before and after less.
@@ -253,7 +253,6 @@ def _preproc_example(
     """
     # Sample a bunch of replacements and get their summary
     x, y = xval.x_text, yval.y_text
-    print(x)
     needs_replacement = replacers.check_if_string_has_replacement_spots(x) or \
                         replacers.check_if_string_has_replacement_spots(y)
     xs, ys = [], []

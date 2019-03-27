@@ -20,8 +20,6 @@ def load_all_examples(tc: TypeContext) -> ExamplesStore:
     for f in ALL_EXAMPLE_NAMES:
         if f in ("numbers",):
             continue
-        if f not in ("cat",):
-            continue
         exampleloader.load_path(f"{dirname}/../../builtin_types/{f}_examples.ainix.yaml", index)
     return index
 

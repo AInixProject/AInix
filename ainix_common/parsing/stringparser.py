@@ -15,7 +15,7 @@ from ainix_common.parsing.parse_primitives import (TypeParser, ArgParseDelegatio
                                                    TypeToStringResult,
                                                    ImplementationToStringDelegation, ObjectParser,
                                                    ObjectNodeArgMap, ArgToStringDelegation,
-                                                   ArgIsPresentToString)
+                                                   ArgIsPresentToString, RStripRequest)
 from ainix_common.parsing.typecontext import OPTIONAL_ARGUMENT_NEXT_ARG_NAME
 from ainix_common.parsing.model_specific import tokenizers
 import functools
@@ -355,11 +355,15 @@ class AstUnparser:
                 impl_string = self._unparse_object_node(
                     node.next_node_not_copy, part_of_out.next_parser, result_builder,
                     new_left_offset, child_nums_here + (0, ))
-                if part_of_out.prefix_adder:
-                    prefix = part_of_out.prefix_adder(impl_string)
-                    impl_string = prefix + impl_string
+                #if part_of_out.prefix_adder:
+                #    prefix = part_of_out.prefix_adder(impl_string)
+                #    impl_string = prefix + impl_string
                 out_string += impl_string
                 new_left_offset += len(impl_string)
+            elif isinstance(part_of_out, RStripRequest):
+                old_str = out_string
+                out_string = out_string.rstrip()
+                new_left_offset -= len(old_str) - len(out_string)
             else:
                 raise ValueError("Unexpected object in unparse_seq")
         result_builder.add_subspan(node, child_nums_here, out_string, left_offset)
