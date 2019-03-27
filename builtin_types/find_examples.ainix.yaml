@@ -93,7 +93,7 @@ defines:
     - find all files here which belong to group [-[GROUPNAME]-]
     - look for files with group name [-[GROUPNAME]-]
     y:
-    - 'find / -type f -user [-[GROUPNAME]-]'
+    - 'find . -type f -user [-[GROUPNAME]-]'
   - x:
     - how many [-[EXTENSION]-] files are here
     - count the number of [-[EXTENSION]-] files are here

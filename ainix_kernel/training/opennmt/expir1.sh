@@ -29,17 +29,18 @@ echo "Train"
 data_size=$(wc -l < data_train_x.txt)
 steps_to_do=$[(TRAIN_EPOCHS*BATCH_SIZE)/REPLACE_SAMPLES/BATCH_SIZE]
 echo ${steps_to_do}
-python3 ./OpenNMT-py/train.py \
+CUDA_VISIBLE_DEVICES=0 python3 ./OpenNMT-py/train.py \
     -data expirs/exp1 \
     -save_model data/demo-model \
     --src_word_vec_size 64 \
     --tgt_word_vec_size 64 \
-    --rnn_size 64 \
+    --rnn_size 128 \
     --batch_size ${BATCH_SIZE} \
-    --train_steps 5000 \
+    --train_steps 7500 \
     --report_every 50 \
-    --start_decay_steps 3000 \
+    --start_decay_steps 4000 \
     --decay_steps 2000 \
+    --gpu_rank 0 \
     || exit 1
 
 echo "Predict"
@@ -55,6 +56,7 @@ python3 ./OpenNMT-py/translate.py \
 
 
 cd ../../..
+echo "evaling"
 python3 -m ainix_kernel.training.eval_external \
     --src_xs ./ainix_kernel/training/opennmt/data_val_x.txt \
     --predictions ./ainix_kernel/training/opennmt/pred.txt \
@@ -65,3 +67,6 @@ python3 -m ainix_kernel.training.eval_external \
 
     #--optim adagrad \
     #--learning_rate 1 \
+
+
+echo "Done."
