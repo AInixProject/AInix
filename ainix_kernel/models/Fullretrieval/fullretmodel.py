@@ -35,8 +35,8 @@ import sklearn.naive_bayes
 import attr
 
 REPLACEMENT_SAMPLES = 10
-START_COPY_KERNEL_WEIGHTS = torch.tensor([0.25, 1, 0.05])
-END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, 1, 0.25])
+START_COPY_KERNEL_WEIGHTS = torch.tensor([0.45, .5, 0.05])
+END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, .5, 0.45])
 #                         ^ Weight current token the most and the before and after less.
 COPY_KERNEL_SIZE = len(START_COPY_KERNEL_WEIGHTS)
 

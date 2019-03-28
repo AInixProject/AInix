@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
-# Run just basic rnn
+# Run just basic rnn with small glove
 
 BATCH_SIZE=64
 REPLACE_SAMPLES=10
 TRAIN_EPOCHS=40
+WORD_VEC_SIZE=300
 
 echo "Exporting latest data"
 cd ../../..
@@ -27,6 +28,16 @@ python3 ./OpenNMT-py/preprocess.py \
   --tgt_words_min_frequency 3 \
   || exit 1
 
+echo "prepare glove"
+cd ./OpenNMT-py/
+python3 -m tools.embeddings_to_torch \
+    -emb_file_enc "../glove_dir/glove.6B.${WORD_VEC_SIZE}d.txt" \
+    -emb_file_dec "../glove_dir/glove.6B.${WORD_VEC_SIZE}d.txt" \
+    -dict_file "../expirs/exp1.vocab.pt" \
+    -output_file "../data/embeddings" \
+    || exit 1
+cd ..
+
 echo "Train"
 data_size=$(wc -l < data_train_x.txt)
 steps_to_do=$[(TRAIN_EPOCHS*BATCH_SIZE)/REPLACE_SAMPLES/BATCH_SIZE]
@@ -43,6 +54,9 @@ CUDA_VISIBLE_DEVICES=0 python3 ./OpenNMT-py/train.py \
     --start_decay_steps 4000 \
     --decay_steps 2000 \
     --gpu_rank 0 \
+    --word_vec_size ${WORD_VEC_SIZE} \
+    --pre_word_vecs_enc "data/embeddings.enc.pt" \
+    --pre_word_vecs_dec "data/embeddings.dec.pt" \
     || exit 1
 
 echo "Predict"

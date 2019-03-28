@@ -152,13 +152,14 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
         whitespace_mod_inds: torch.LongTensor,
         input_lens: Optional[torch.LongTensor] = None
     ):
-        x = self.embedder.embed(
+        embeded = self.embedder.embed(
             torch.stack((token_inds, case_mod_inds, whitespace_mod_inds)))
-        start_shape = x.shape
-        x = self.after_embed_dropout(x)
+        start_shape = embeded.shape
+        x = self.after_embed_dropout(embeded)
         x = self.conv1(x)
         x = self.rnn2(x, input_lens)
-        #x = self.rnn3(x, input_lens)
+        new_blend_alpha = 0.2
+        x = x*new_blend_alpha + embeded*(1-new_blend_alpha)
         assert x.shape[0] == start_shape[0] and x.shape[1] == start_shape[1]
         return x
 
@@ -284,6 +285,13 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         #avgs = torch.sum((hidden * weights), dim=1) / torch.sum(weights, dim=1)
 
         stop_word_masks = get_non_stop_word_mask_batched(tokens, metads)
+        word_lens = get_word_lens_of_moded_tokens(tokens)
+        stop_word_masks *= self._word_lens_to_weights(word_lens)
+        #stop_word_masks[:, 2:5] = 0.25
+        # Don't include sos or EOS
+        stop_word_masks[:, 0] = 0.5
+        stop_word_masks[:, -1] = 0.5
+        #print(stop_word_masks)
         #
         weights = stop_word_masks.unsqueeze(2).expand(-1, -1, hidden.shape[-1])
         avgs = torch.sum((hidden * weights), dim=1) / torch.sum(weights, dim=1)
@@ -303,7 +311,8 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         # setting it to a smaller value (~3 in this case).
         # The function used is somewhat arbitrary. One was just created that roughly
         # had the desired properties. It could probably be simplified
-        equivalent_to_toks = 1 + (word_lens - 1) * 0.4 + (1 - 1/word_lens)
+        #equivalent_to_toks = 1 + (word_lens - 1) * 0.4 + (1 - 1/word_lens)
+        equivalent_to_toks = word_lens
         weights = 1.0 / equivalent_to_toks
         assert weights.requires_grad == originally_wanted_grad  # sanity check
         return weights

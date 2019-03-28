@@ -1,6 +1,7 @@
 import torch
 from typing import List
 
+from ainix_common.parsing.model_specific import parse_constants
 from ainix_common.parsing.model_specific.tokenizers import ModifiedStringToken, \
     ModifiedWordPieceTokenizer, StringTokensMetadata
 from ainix_kernel.model_util.stringops import get_all_words
