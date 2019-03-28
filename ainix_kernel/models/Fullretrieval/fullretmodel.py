@@ -17,7 +17,7 @@ from ainix_common.parsing.typecontext import TypeContext, AInixType
 from ainix_kernel.indexing.examplestore import ExamplesStore, XValue, DataSplits, YValue
 from ainix_kernel.model_util.attending import attend
 from ainix_kernel.model_util.operations import get_kernel_around, np_log_prob_inverse
-from ainix_kernel.model_util.vocab import Vocab, BasicVocab
+from ainix_kernel.model_util.vocab import Vocab, BasicVocab, make_x_vocab_from_examples
 from ainix_kernel.models.EncoderDecoder.decoders import get_valid_for_copy_mask
 from ainix_kernel.models.EncoderDecoder.encdecmodel import make_default_query_encoder, \
     get_default_tokenizers
@@ -80,15 +80,15 @@ class FullRetModel(StringTypeTranslateCF):
             sims[self.not_train_mask] = -1
         top_sims, top_inds = torch.topk(sims, 10)
 
-        logit_ratings = []
-        for sim, top_ind in zip(top_sims, top_inds):
-            this_example_ref: _ExampleRef = self.example_refs[int(top_ind)]
-            this_ref_ast = this_example_ref.reference_ast
-            #print("---")
-            rating = self.choice_models.rate_tree(
-                summary[0], AstIterPointer(this_ref_ast, None, None))
-            #print(rating)
-            logit_ratings.append(rating)
+        #logit_ratings = []
+        #for sim, top_ind in zip(top_sims, top_inds):
+        #    this_example_ref: _ExampleRef = self.example_refs[int(top_ind)]
+        #    this_ref_ast = this_example_ref.reference_ast
+        #    #print("---")
+        #    rating = self.choice_models.rate_tree(
+        #        summary[0], AstIterPointer(this_ref_ast, None, None))
+        #    #print(rating)
+        #    logit_ratings.append(rating)
         #print(logit_ratings)
         #print(top_sims)
         #scores = (logit(np.array(logit_ratings)) * 1 + logit(top_sims.data.numpy()) * 5) / 6
@@ -502,6 +502,12 @@ def full_ret_from_example_store(
 ) -> FullRetModel:
     output_size = 200
     (x_tokenizer, query_vocab), y_tokenizer = get_default_tokenizers()
+
+    # for glove the parseable vocab is huge. Narrow it down
+    #query_vocab = make_x_vocab_from_examples(example_store, x_tokenizer, replacers,
+    #                                         min_freq=2, replace_samples=2)
+    #print(f"vocab len {len(query_vocab)}")
+
     embedder = make_default_query_encoder(x_tokenizer, query_vocab,
                                        output_size, pretrained_checkpoint)
     embedder.eval()
@@ -525,5 +531,5 @@ def full_ret_from_example_store(
         summaries=torch.stack(summaries),
         dataset_splits=torch.tensor(example_splits),
         example_refs=np.array(example_refs),
-        choice_models=finalize_nb_fn()
+        choice_models=None#finalize_nb_fn()
     )

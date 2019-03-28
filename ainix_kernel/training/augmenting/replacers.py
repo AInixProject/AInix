@@ -108,6 +108,7 @@ class Replacer:
         """Test whether a string has places that could be replaced"""
         return len(self.get_bracketless_matches(string)) > 0
 
+
 def _split_replacement_assignment(no_brackets: str):
     """Separates the name and the value of a replacement item"""
     var_and_val = no_brackets.split("=")
@@ -198,6 +199,11 @@ class ReplacementSampling:
     @classmethod
     def from_serialized_string(cls, string: str) -> 'ReplacementSampling':
         return cls(json.loads(string))
+
+    def __lt__(self, other):
+        # tried to sort this as part of tuple, and needed to be able to support this
+        # It's kind of a meaningless opperation though
+        return False
 
 
 class Replacement:

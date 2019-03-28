@@ -8,12 +8,14 @@ from ainix_common.parsing.model_specific import parse_constants
 import torch
 from ainix_common.parsing.ast_components import AstObjectChoiceSet
 from ainix_common.parsing.stringparser import StringParser
-from ainix_kernel.indexing.examplestore import ExamplesStore
+from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits
 from ainix_common.parsing.model_specific.tokenizers import Tokenizer, ModifiedWordPieceTokenizer, \
     ModifiedStringToken, add_pads_to_mod_tokens
 from typing import Hashable, TypeVar, Generic
 import numpy as np
 import typing
+
+from ainix_kernel.training.augmenting.replacers import Replacer
 
 T = TypeVar('T')
 
@@ -101,7 +103,7 @@ class BasicVocab(Vocab):
                 self.stoi[w] = len(self.itos) - 1
 
     def items(self):
-        return enumerate(self.itos)
+        yield from self.itos
 
     def index_to_token(self, index: int) -> T:
         return self.itos[index]
@@ -316,10 +318,19 @@ def make_vocab_from_example_store_and_type_context(
     return x_vocab_builder.produce_vocab(), y_vocab
 
 
+def get_text_from_moded_toks(x: ModifiedStringToken):
+    return x.token_string
+
+
 def make_x_vocab_from_examples(
     example_store: ExamplesStore,
     x_tokenizer: Tokenizer,
-    x_vocab_builder: VocabBuilder = None
+    replacers: Replacer,
+    x_vocab_builder: VocabBuilder = None,
+    min_freq: int = 1,
+    train_only: bool = True,
+    replace_samples: int = 1,
+    extract_lambda = get_text_from_moded_toks
 ) -> Vocab:
     """
     Args:
@@ -331,10 +342,16 @@ def make_x_vocab_from_examples(
         The x vocab
     """
     if x_vocab_builder is None:
-        x_vocab_builder = CounterVocabBuilder(min_freq=1)
+        x_vocab_builder = CounterVocabBuilder(min_freq=min_freq)
 
-    for example in example_store.get_all_examples():
-        x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.xquery)[0])
+    for _ in range(replace_samples):
+        for example in example_store.get_all_examples():
+            if example.split != DataSplits.TRAIN and train_only:
+                continue
+            xstr, _ = replacers.strings_replace(example.x_text, "")
+            x_vocab_builder.add_sequence(
+                map(extract_lambda, x_tokenizer.tokenize(xstr)[0])
+            )
     return x_vocab_builder.produce_vocab()
 
 
@@ -374,7 +391,6 @@ def are_indices_valid(
             return 1 if valid_set.is_known_choice(tc.ind_to_object[ind].name) else 0
         valid_func = np.vectorize(test_func, otypes='f')
         return torch.from_numpy(valid_func(indices.numpy()))
-
 
 
 def torchify_moded_tokens(

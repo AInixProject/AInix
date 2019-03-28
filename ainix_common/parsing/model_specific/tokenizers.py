@@ -433,16 +433,18 @@ def tokenizer_from_save_dict(save_dict: dict):
         raise ValueError(f"Bad name {name}")
 
 
-def get_default_pieced_tokenizer_word_list() -> Tuple[StringTokenizerWithMods, List[str]]:
+def get_default_pieced_tokenizer_word_list(
+    vocab_file: str = "unix_vocab.txt"
+) -> Tuple[StringTokenizerWithMods, List[str]]:
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(dir_path, "unix_vocab.txt")) as f:
+    with open(os.path.join(dir_path, vocab_file)) as f:
         vocab_str = f.read()
     vocab = vocab_str.split("\n")
     return ModifiedWordPieceTokenizer(vocab), vocab
 
 
-common_exts = (".sh", ".py", ".txt", ".tar.gz", ".png", ".tmp", ".xml", ".zip",
-               ".csv", ".cpp", ".h", 'html', '.go', '.sql', '.json', '.java')
+common_exts = (".sh", ".py", ".txt", ".gz", ".png", ".tmp", ".xml", ".zip",
+               ".csv", ".cpp", ".h", 'html', '.go', '.sql', '.json', '.java', ".tar")
 
 
 def looks_like_a_file(string: str):
@@ -454,7 +456,7 @@ def looks_like_a_file(string: str):
     for c in non_filey_chars:
         if c in string:
             return False
-    if string.count(".") >= 1 and not string.endswith("."):
+    if string.count(".") >= 2 and not string.endswith("."):
         return True
     if string.startswith("./") or string.startswith("../"):
         return True
@@ -479,4 +481,3 @@ def get_tokenizer_by_name(
         return get_default_pieced_tokenizer_word_list()[0]
     else:
         raise ValueError(f"Unrecognized name {tokenizer_name}")
-

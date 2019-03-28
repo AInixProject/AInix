@@ -14,7 +14,7 @@ from ainix_kernel.model_util.vocab import Vocab, BasicVocab
 from ainix_kernel.models.EncoderDecoder import encoders, decoders
 from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder, TreeRNNDecoder
 from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder, StringQueryEncoder, \
-    RNNSeqEncoder
+    RNNSeqEncoder, SimpleGloveEncoder
 from ainix_kernel.models.LM.cookiemonster import make_default_cookie_monster_base, \
     PretrainPoweredQueryEncoder
 from ainix_kernel.models.model_types import StringTypeTranslateCF, TypeTranslatePredictMetadata
@@ -77,12 +77,12 @@ class EncDecModel(StringTypeTranslateCF):
         self.optimizer.step(None)
         return float(loss)
 
-    def train_only_decoder(self):
-        self.optimizer.zero_grad()
-        loss = self.decoder.forward_train(
-            query_summary, encoded_tokens, actual_tokens, ys, teacher_force_paths, example_ids)
-        self.optimizer.step(None)
-        return float(loss)
+    #def train_only_decoder(self):
+    #    self.optimizer.zero_grad()
+    #    loss = self.decoder.forward_train(
+    #        query_summary, encoded_tokens, actual_tokens, ys, teacher_force_paths, example_ids)
+    #    self.optimizer.step(None)
+    #    return float(loss)
 
     @classmethod
     def make_examples_store(cls, type_context: TypeContext, is_training: bool) -> ExamplesStore:
@@ -193,10 +193,21 @@ def make_default_query_encoder(
     """Factory for making a default QueryEncoder"""
     base_enc = make_default_cookie_monster_base(
         query_vocab, output_size)
+    #return SimpleGloveEncoder(query_vocab, 300)
     if pretrain_checkpoint is None:
-        return PretrainPoweredQueryEncoder(
-            x_tokenizer, query_vocab, base_enc, output_size
+        x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
+        print(f"encdecmodel:make_default_query_encoder {len(query_vocab)}")
+        internal_encoder = RNNSeqEncoder(
+            input_dims=x_vectorizer.feature_len(),
+            hidden_size=output_size,
+            summary_size=output_size,
+            memory_tokens_size=output_size,
+            variable_lengths=True
         )
+        return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
+        #return PretrainPoweredQueryEncoder(
+        #    x_tokenizer, query_vocab, base_enc, output_size
+        #)
     else:
         return PretrainPoweredQueryEncoder.create_with_pretrained_checkpoint(
             pretrain_checkpoint,
@@ -213,7 +224,7 @@ def get_default_encdec_model(
 ):
     (x_tokenizer, x_vocab), y_tokenizer = get_default_tokenizers()
     if x_vocab is None:
-        x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer)
+        x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer, replacer)
     hidden_size = standard_size
     tc = examples.type_context
     encoder = make_default_query_encoder(x_tokenizer, x_vocab, hidden_size, pretrain_checkpoint)

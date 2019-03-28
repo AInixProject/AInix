@@ -4,17 +4,23 @@ import torch
 from torch import nn
 from typing import Tuple, Type, Sequence, List, Union, Optional
 
-from ainix_common.parsing.model_specific.tokenizers import ModifiedStringToken, WhitespaceModifier
+from ainix_common.parsing.model_specific.tokenizers import ModifiedStringToken, WhitespaceModifier, \
+    SpaceTokenizer, add_str_pads, get_default_pieced_tokenizer_word_list, add_pads_to_mod_tokens
 from ainix_kernel.model_util import vectorizers
+from ainix_kernel.model_util.glove import get_glove_words
+from ainix_kernel.model_util.stop_words import STOP_WORDS
 from ainix_kernel.model_util.vectorizers import VectorizerBase, vectorizer_from_save_dict
-from ainix_kernel.model_util.vocab import Vocab, BasicVocab
+from ainix_kernel.model_util.vocab import Vocab, BasicVocab, make_x_vocab_from_examples
 from ainix_common.parsing.model_specific import tokenizers, parse_constants
 import numpy as np
 
 
 class QueryEncoder(nn.Module, ABC):
     @abstractmethod
-    def forward(self, queries: Sequence[str]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        queries: Sequence[str]
+    ) -> Tuple[torch.Tensor, torch.Tensor, List[List[ModifiedStringToken]]]:
         """
         Args:
             queries: An iterable representing a batch of query strings to encode
@@ -263,4 +269,37 @@ class RNNSeqEncoder(VectorSeqEncoder):
         else:
             return memory_tokens
 
+
+class SimpleGloveEncoder(QueryEncoder):
+    def __init__(self, vocab: Vocab, dims: int=50):
+        super().__init__()
+        self._tokenizer, _ = get_default_pieced_tokenizer_word_list("glove_vocab.txt")
+        self._glove_vecs = get_glove_words(dims, vocab)
+
+    def forward(
+        self,
+        queries: Sequence[str]
+    ) -> Tuple[torch.Tensor, torch.Tensor, List[List[ModifiedStringToken]]]:
+        tokenized = self._tokenizer.tokenize_batch(queries, True)
+        tokenized, original_lens = add_pads_to_mod_tokens(tokenized)
+        summaries = []
+        embedded_toks = []
+        for batch in tokenized:
+            this_toks = []
+            this_sum = np.zeros(self._glove_vecs.dims)
+            this_sum_count = 0
+            for word in batch:
+                word: str = word.token_string
+                vec = self._glove_vecs.get_vec(word, always_return_vec=True)
+                this_toks.append(vec)
+                if word in self._glove_vecs and word not in STOP_WORDS:
+                    # Only count words actually in vocab, not UNKs or PADs
+                    this_sum += vec
+                    this_sum_count += 1
+            summaries.append(this_sum / this_sum_count)
+            embedded_toks.append(this_toks)
+        return torch.Tensor(summaries), torch.Tensor(embedded_toks), tokenized
+
+    def get_tokenizer(self) -> tokenizers.Tokenizer:
+        return self._tokenizer
 

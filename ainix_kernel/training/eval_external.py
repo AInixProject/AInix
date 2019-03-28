@@ -91,6 +91,7 @@ if __name__ == "__main__":
         predictions = f.readlines()
     with open(args.tgt_yids, 'r') as f:
         yinfo = f.readlines()
+    # Parse all the strings
     xs = list(map(nonascii_untokenize, xs))
     predictions = list(map(nonascii_untokenize, predictions))
     yids = []
@@ -103,6 +104,10 @@ if __name__ == "__main__":
         rsamples.append(ReplacementSampling.from_serialized_string(
             "".join(split_info[2:])
         ))
+    # Sort the items so that multiple samples of same id end up together
+    yids, xs, predictions, yhashes, rsamples = \
+        zip(*sorted(zip(yids, xs, predictions, yhashes, rsamples)))
+    # Set up for actually predicting
     tokenizer = get_tokenizer_by_name(args.tokenizer_name)
     type_context, index, replacers, loader = get_examples()
     string_parser = StringParser(type_context)
