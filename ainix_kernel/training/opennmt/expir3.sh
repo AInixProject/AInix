@@ -4,8 +4,9 @@
 
 BATCH_SIZE=64
 REPLACE_SAMPLES=10
-TRAIN_EPOCHS=40
+#TRAIN_EPOCHS=40
 WORD_VEC_SIZE=300
+TRAIN_STEPS=7500
 
 #echo "Exporting latest data"
 #cd ../../..
@@ -28,39 +29,39 @@ WORD_VEC_SIZE=300
 #  --tgt_words_min_frequency 3 \
 #  || exit 1
 
-echo "prepare glove"
-cd ./OpenNMT-py/
-python3 -m tools.embeddings_to_torch \
-    -emb_file_both "../glove_dir/glove.840B.${WORD_VEC_SIZE}d.txt" \
-    -dict_file "../expirs/exp1.vocab.pt" \
-    -output_file "../data/embeddings" \
-    || exit 1
-cd ..
-
-echo "Train"
-data_size=$(wc -l < data_train_x.txt)
-steps_to_do=$[(TRAIN_EPOCHS*BATCH_SIZE)/REPLACE_SAMPLES/BATCH_SIZE]
-echo ${steps_to_do}
-CUDA_VISIBLE_DEVICES=0 python3 ./OpenNMT-py/train.py \
-    -data expirs/exp1 \
-    -save_model data/demo-model \
-    --src_word_vec_size 64 \
-    --tgt_word_vec_size 64 \
-    --rnn_size 128 \
-    --batch_size ${BATCH_SIZE} \
-    --train_steps 7500 \
-    --report_every 50 \
-    --start_decay_steps 4000 \
-    --decay_steps 2000 \
-    --gpu_rank 0 \
-    --word_vec_size ${WORD_VEC_SIZE} \
-    --pre_word_vecs_enc "data/embeddings.enc.pt" \
-    --pre_word_vecs_dec "data/embeddings.dec.pt" \
-    || exit 1
+#echo "prepare glove"
+#cd ./OpenNMT-py/
+#python3 -m tools.embeddings_to_torch \
+#    -emb_file_both "../glove_dir/glove.840B.${WORD_VEC_SIZE}d.txt" \
+#    -dict_file "../expirs/exp1.vocab.pt" \
+#    -output_file "../data/embeddings" \
+#    || exit 1
+#cd ..
+#
+#echo "Train"
+#data_size=$(wc -l < data_train_x.txt)
+##steps_to_do=$[(TRAIN_EPOCHS*BATCH_SIZE)/REPLACE_SAMPLES/BATCH_SIZE]
+#echo ${steps_to_do}
+#CUDA_VISIBLE_DEVICES=0 python3 ./OpenNMT-py/train.py \
+#    -data expirs/exp1 \
+#    -save_model data/demo-model \
+#    --src_word_vec_size 64 \
+#    --tgt_word_vec_size 64 \
+#    --rnn_size 128 \
+#    --batch_size ${BATCH_SIZE} \
+#    --train_steps ${TRAIN_STEPS} \
+#    --report_every 50 \
+#    --start_decay_steps 4000 \
+#    --decay_steps 2000 \
+#    --gpu_rank 0 \
+#    --word_vec_size ${WORD_VEC_SIZE} \
+#    --pre_word_vecs_enc "data/embeddings.enc.pt" \
+#    --pre_word_vecs_dec "data/embeddings.dec.pt" \
+#    || exit 1
 
 echo "Predict"
 python3 ./OpenNMT-py/translate.py \
-    -model data/demo-model_step_5000.pt \
+    -model data/demo-model_step_${TRAIN_STEPS}.pt \
     -src data_val_x.txt \
     -tgt data_val_y.txt \
     -output pred.txt \
@@ -83,6 +84,5 @@ python3 -m ainix_kernel.training.eval_external \
 
     #--optim adagrad \
     #--learning_rate 1 \
-
 
 echo "Done."

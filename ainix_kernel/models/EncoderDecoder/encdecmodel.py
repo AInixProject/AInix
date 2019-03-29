@@ -180,7 +180,7 @@ def get_default_tokenizers() -> Tuple[
     tokenizers.Tokenizer
 ]:
     """Returns tuple (default x tokenizer, default y tokenizer)"""
-    return (NonLetterTokenizer(), None), AstValTokenizer()
+    #return (NonLetterTokenizer(), None), AstValTokenizer()
     word_piece_tok, word_list = get_default_pieced_tokenizer_word_list()
     x_vocab = BasicVocab(word_list + parse_constants.ALL_SPECIALS)
     return (word_piece_tok, x_vocab), AstValTokenizer()
