@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import collections
-from typing import Iterable, Type, List, Union
+from typing import Iterable, List, Union
 from collections import defaultdict
 
 from ainix_common.parsing.typecontext import AInixType, AInixObject, TypeContext
@@ -9,8 +9,8 @@ import torch
 from ainix_common.parsing.ast_components import AstObjectChoiceSet
 from ainix_common.parsing.stringparser import StringParser
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits
-from ainix_common.parsing.model_specific.tokenizers import Tokenizer, ModifiedWordPieceTokenizer, \
-    ModifiedStringToken, add_pads_to_mod_tokens
+from ainix_common.parsing.model_specific.tokenizers import Tokenizer, ModifiedStringToken, \
+    add_pads_to_mod_tokens, StringTokenizerWithMods, get_text_from_tok
 from typing import Hashable, TypeVar, Generic
 import numpy as np
 import typing
@@ -318,10 +318,6 @@ def make_vocab_from_example_store_and_type_context(
     return x_vocab_builder.produce_vocab(), y_vocab
 
 
-def get_text_from_moded_toks(x: ModifiedStringToken):
-    return x.token_string
-
-
 def make_x_vocab_from_examples(
     example_store: ExamplesStore,
     x_tokenizer: Tokenizer,
@@ -330,7 +326,7 @@ def make_x_vocab_from_examples(
     min_freq: int = 1,
     train_only: bool = True,
     replace_samples: int = 1,
-    extract_lambda = get_text_from_moded_toks
+    extract_lambda = get_text_from_tok
 ) -> Vocab:
     """
     Args:

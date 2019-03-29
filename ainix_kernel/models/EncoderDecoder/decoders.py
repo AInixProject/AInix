@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Tuple, Callable, List, Optional, Dict
+from typing import Tuple, Callable, List, Optional, Dict, Union
 import torch
 from torch import nn
 import attr
 from ainix_common.parsing.ast_components import ObjectChoiceNode, AstObjectChoiceSet, \
     ObjectNode, AstNode, ObjectNodeSet, CopyNode
 from ainix_common.parsing.model_specific import parse_constants
-from ainix_common.parsing.model_specific.tokenizers import StringTokenizer, ModifiedStringToken
+from ainix_common.parsing.model_specific.tokenizers import StringTokenizer, ModifiedStringToken, \
+    get_text_from_tok
 from ainix_common.parsing.stringparser import AstUnparser, StringParser
 from ainix_common.parsing.typecontext import AInixType, AInixObject, TypeContext
 from ainix_kernel.indexing.examplestore import ExamplesStore
@@ -442,9 +443,9 @@ class TreeRNNDecoder(TreeDecoder):
         return instance
 
 
-def get_valid_for_copy_mask(tokens: List[List[ModifiedStringToken]]):
+def get_valid_for_copy_mask(tokens: List[List[Union[ModifiedStringToken, str]]]):
     return torch.tensor([
-        [0 if tok.token_string in parse_constants.ALL_SPECIALS else 1
+        [0 if get_text_from_tok(tok) in parse_constants.ALL_SPECIALS else 1
          for tok in batch]
         for batch in tokens
     ])

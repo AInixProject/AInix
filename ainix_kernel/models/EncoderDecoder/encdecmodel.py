@@ -178,10 +178,10 @@ def get_default_tokenizers() -> Tuple[
     tokenizers.Tokenizer
 ]:
     """Returns tuple (default x tokenizer, default y tokenizer)"""
+    return (NonLetterTokenizer(), None), AstValTokenizer()
     word_piece_tok, word_list = get_default_pieced_tokenizer_word_list()
     x_vocab = BasicVocab(word_list + parse_constants.ALL_SPECIALS)
     return (word_piece_tok, x_vocab), AstValTokenizer()
-    #return NonLetterTokenizer(), AstValTokenizer()
 
 
 def make_default_query_encoder(
@@ -193,22 +193,25 @@ def make_default_query_encoder(
     """Factory for making a default QueryEncoder"""
     #return SimpleGloveEncoder(query_vocab, 300)
     if pretrain_checkpoint is None:
-        #x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
-        #print(f"encdecmodel:make_default_query_encoder {len(query_vocab)}")
-        #internal_encoder = RNNSeqEncoder(
-        #    input_dims=x_vectorizer.feature_len(),
-        #    hidden_size=output_size,
-        #    summary_size=output_size,
-        #    memory_tokens_size=output_size,
-        #    variable_lengths=True
-        #)
-        #return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
-        base_enc = make_default_cookie_monster_base(
-            query_vocab, output_size, num_layers=1)
-        return PretrainPoweredQueryEncoder(
-            x_tokenizer, query_vocab, base_enc, output_size,
-            learned_extra_transform=True
+        x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
+        print(f"encdecmodel:make_default_query_encoder {len(query_vocab)}")
+        internal_encoder = RNNSeqEncoder(
+            input_dims=x_vectorizer.feature_len(),
+            hidden_size=output_size,
+            summary_size=output_size,
+            memory_tokens_size=output_size,
+            variable_lengths=True,
+            input_dropout_p=0.1,
+            dropout_p=0.3,
+            num_layers=2
         )
+        return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
+        #base_enc = make_default_cookie_monster_base(
+        #    query_vocab, output_size, num_layers=1)
+        #return PretrainPoweredQueryEncoder(
+        #    x_tokenizer, query_vocab, base_enc, output_size,
+        #    learned_extra_transform=True
+        #)
     else:
         return PretrainPoweredQueryEncoder.create_with_pretrained_checkpoint(
             pretrain_checkpoint,

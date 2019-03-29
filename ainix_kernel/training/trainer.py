@@ -83,7 +83,7 @@ class TypeTranslateCFTrainer:
             if eval_every_n_epochs and epoch + 1 != epochs and epoch % eval_every_n_epochs == 0:
                 print("Pausing to do an eval")
                 logger = EvaluateLogger()
-                self.evaluate(logger, dump_each=True, num_replace_samples=5)
+                self.evaluate(logger, dump_each=True, num_replace_samples=10)
                 print_ast_eval_log(logger)
                 if intermitted_save_path:
                     if self.loader is None:
@@ -261,7 +261,7 @@ if __name__ == "__main__":
         get_default_encdec_model
 
     model = get_default_encdec_model(
-        index, standard_size=64, use_retrieval_decoder=False, replacer=replacers)
+        index, standard_size=128, use_retrieval_decoder=False, replacer=replacers)
        # pretrain_checkpoint=None)
         #pretrain_checkpoint="../../checkpoints/"
         #                    "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt")
@@ -283,7 +283,7 @@ if __name__ == "__main__":
     print("-----------")
     logger = EvaluateLogger()
     trainer.evaluate(logger, filter_splits=(DataSplits.TRAIN,), dump_each=True,
-                     num_replace_samples=5)
+                     num_replace_samples=10)
     print_ast_eval_log(logger)
     print("-----------")
     print("Validation")

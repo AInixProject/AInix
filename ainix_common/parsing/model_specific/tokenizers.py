@@ -481,3 +481,12 @@ def get_tokenizer_by_name(
         return get_default_pieced_tokenizer_word_list()[0]
     else:
         raise ValueError(f"Unrecognized name {tokenizer_name}")
+
+
+def get_text_from_tok(x: Union[str, ModifiedStringToken]) -> str:
+    if isinstance(x, ModifiedStringToken):
+        return x.token_string
+    elif isinstance(x, str):
+        return x
+    else:
+        raise ValueError()

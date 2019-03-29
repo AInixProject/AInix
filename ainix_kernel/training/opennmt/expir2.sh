@@ -5,7 +5,7 @@
 BATCH_SIZE=64
 REPLACE_SAMPLES=10
 TRAIN_EPOCHS=40
-WORD_VEC_SIZE=300
+WORD_VEC_SIZE=100
 
 #echo "Exporting latest data"
 #cd ../../..
