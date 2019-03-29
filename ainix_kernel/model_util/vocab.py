@@ -63,6 +63,10 @@ class Vocab(Generic[T]):
     def get_save_state_dict(self):
         raise NotImplemented()
 
+    @abstractmethod
+    def __iter__(self):
+        raise NotImplemented()
+
 
 class BasicVocab(Vocab):
     """Provides an implementation of the Vocab interface which takes in a list
@@ -103,7 +107,7 @@ class BasicVocab(Vocab):
                 self.stoi[w] = len(self.itos) - 1
 
     def items(self):
-        yield from self.itos
+        return enumerate(self.itos)
 
     def index_to_token(self, index: int) -> T:
         return self.itos[index]
@@ -131,6 +135,9 @@ class BasicVocab(Vocab):
     def create_from_save_state_dict(cls, save_state: dict) -> 'BasicVocab':
         instance = cls(save_state['itos'])
         return instance
+
+    def __iter__(self):
+        yield from self.itos
 
 
 class VocabBuilder(ABC):
@@ -218,6 +225,9 @@ class TypeContextWrapperVocab(Vocab):
 
     def items(self):
         return enumerate(self.itos)
+
+    def __iter__(self):
+        yield from self.itos
 
     def extend(self, v, sort=False):
         raise NotImplemented("I should be less lazy...")

@@ -66,9 +66,7 @@ python3 -m ainix_kernel.training.eval_external \
     --tgt_yids ./ainix_kernel/training/opennmt/data_val_yids.txt \
     --tokenizer_name nonascii \
     || exit 1
-
     #--optim adagrad \
     #--learning_rate 1 \
-
 
 echo "Done."

@@ -8,6 +8,7 @@ import attr
 from ainix_common.parsing.ast_components import ObjectChoiceNode
 from ainix_kernel.indexing.examplestore import XValue
 from ainix_common.parsing.model_specific.tokenizers import Tokenizer
+from ainix_kernel.model_util.glove import GloveIndex
 from ainix_kernel.model_util.vocab import Vocab
 import torch
 from ainix_kernel.models.model_types import Pretrainable, Pretrainer
@@ -109,6 +110,17 @@ class TorchDeepEmbed(VectorizerBase):
         return instance
 
 
+def set_deep_embed_from_glove(embed: TorchDeepEmbed, glove: GloveIndex, vocab: Vocab):
+    mat = np.zeros((len(vocab), glove.dims))
+    for index, word in vocab.items():
+        mat[index] = glove.get_vec(word, always_return_vec=True)
+    embed.embed.weight.data.copy_(torch.from_numpy(mat))
+    print(embed.embed)
+    assert embed.embed.weight.requires_grad
+    print(embed.embed.weight[vocab.token_to_index("create")])
+    print(embed.embed.weight[vocab.token_to_index("sdfaw")])
+    assert embed.embed.weight[vocab.token_to_index("sdfaw")].requires_grad
+
 ####
 # Pretraining Vectorizers
 ####
@@ -149,7 +161,6 @@ class TorchAveragingPretrainer(Pretrainer):
     def close(self):
         super().close()
         self._average_store.data = self._sums / self._counts.reshape(-1, 1)
-
 
 
 class PretrainedAvgVectorizer(VectorizerBase):

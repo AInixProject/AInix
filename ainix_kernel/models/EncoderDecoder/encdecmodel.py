@@ -10,6 +10,8 @@ from ainix_kernel.model_util import vocab, vectorizers
 from ainix_common.parsing.model_specific import tokenizers, parse_constants
 from ainix_common.parsing.model_specific.tokenizers import NonLetterTokenizer, AstValTokenizer, \
     ModifiedWordPieceTokenizer, get_default_pieced_tokenizer_word_list
+from ainix_kernel.model_util.glove import GloveIndex, get_glove_words
+from ainix_kernel.model_util.vectorizers import set_deep_embed_from_glove
 from ainix_kernel.model_util.vocab import Vocab, BasicVocab
 from ainix_kernel.models.EncoderDecoder import encoders, decoders
 from ainix_kernel.models.EncoderDecoder.decoders import TreeDecoder, TreeRNNDecoder
@@ -193,17 +195,21 @@ def make_default_query_encoder(
     """Factory for making a default QueryEncoder"""
     #return SimpleGloveEncoder(query_vocab, 300)
     if pretrain_checkpoint is None:
-        x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
+        embed_size = output_size # 300
+        x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), embed_size)
         print(f"encdecmodel:make_default_query_encoder {len(query_vocab)}")
+        #set_deep_embed_from_glove(
+        #    x_vectorizer, get_glove_words(embed_size, query_vocab), query_vocab)
+
         internal_encoder = RNNSeqEncoder(
             input_dims=x_vectorizer.feature_len(),
             hidden_size=output_size,
             summary_size=output_size,
             memory_tokens_size=output_size,
             variable_lengths=True,
-            input_dropout_p=0.1,
+            input_dropout_p=0.3,
             dropout_p=0.3,
-            num_layers=2
+            num_layers=1
         )
         return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
         #base_enc = make_default_cookie_monster_base(
