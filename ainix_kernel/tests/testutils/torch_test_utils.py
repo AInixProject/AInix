@@ -94,11 +94,11 @@ def torch_train_tester(
             y_hat = y_extractor_train(model(*rezipped_xs))
             ys = torch.stack(ys)
             loss = criterion(y_hat, ys)
-            if epoch > 800:
-                print(f"xs {rezipped_xs} y_hat {y_hat} ys {ys} loss {loss}")
+            #if epoch > 800:
+            #    print(f"xs {rezipped_xs} y_hat {y_hat} ys {ys} loss {loss}")
             loss.backward()
             optimizer.step()
-            epoch_loss += loss
+            epoch_loss += float(loss)
         # Check to see if not making any progress
         if epoch_loss - best_loss > early_stop_loss_delta:
             bad_epochs += 1

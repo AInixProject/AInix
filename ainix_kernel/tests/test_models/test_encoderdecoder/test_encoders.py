@@ -33,7 +33,7 @@ def test_default_encoder(batch_size):
         criterion=nn.MSELoss(),
         max_epochs=10000,
         early_stop_loss_delta=-1e-6,
-        earyl_stop_patience=500,
+        earyl_stop_patience=1000,
         batch_size=batch_size,
         shuffle=True
     )

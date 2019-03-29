@@ -261,8 +261,8 @@ if __name__ == "__main__":
         get_default_encdec_model
 
     model = get_default_encdec_model(
-        index, standard_size=64, use_retrieval_decoder=False, replacer=replacers,
-        pretrain_checkpoint=None)
+        index, standard_size=64, use_retrieval_decoder=False, replacer=replacers)
+       # pretrain_checkpoint=None)
         #pretrain_checkpoint="../../checkpoints/"
         #                    "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt")
 

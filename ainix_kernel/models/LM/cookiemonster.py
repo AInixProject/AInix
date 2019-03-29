@@ -22,7 +22,7 @@ from ainix_common.parsing.model_specific import tokenizers
 from ainix_common.parsing.model_specific.tokenizers import CasingModifier, WhitespaceModifier, \
     ModifiedWordPieceTokenizer, ModifiedStringToken
 from ainix_kernel.model_util.lm_task_processor.lm_set_process import LMBatch
-from ainix_kernel.model_util.operations import pack_picks, avg_pool, GELUActivation
+from ainix_kernel.model_util.operations import pack_picks, avg_pool, GELUActivation, fastgelu
 from ainix_kernel.model_util.stop_words import get_non_stop_word_mask_batched
 from ainix_kernel.model_util.stringops import get_word_lens_of_moded_tokens
 from ainix_kernel.model_util.usefulmodules import Conv1dSame
@@ -133,7 +133,8 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
     def __init__(
         self,
         base_embedder: Multiembedder,
-        hidden_size_base: int = 128
+        hidden_size_base: int = 128,
+        num_layers: int = 2
     ):
         super().__init__()
         self.hidden_size_base = hidden_size_base
@@ -141,7 +142,7 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
         self.after_embed_dropout = nn.Dropout(p=0.1)
         self.conv1 = Conv1dSame(hidden_size_base, hidden_size_base, 3, tokens_before_channels=True)
         self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
-                                  variable_lengths=True, num_layers=2, input_dropout_p=0.1)
+                                  variable_lengths=True, num_layers=num_layers, input_dropout_p=0.1)
         #self.rnn3 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
         #                          variable_lengths=True)
 
@@ -157,6 +158,7 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
         start_shape = embeded.shape
         x = self.after_embed_dropout(embeded)
         x = self.conv1(x)
+        #x = fastgelu(x)
         x = self.rnn2(x, input_lens)
         new_blend_alpha = 0.4
         x = x*new_blend_alpha + embeded*(1-new_blend_alpha)
@@ -234,22 +236,27 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         query_vocab: Vocab,
         initial_encoder: ModTokensEncoder,
         summary_size: int,
-        device: torch.device = torch.device("cpu")
+        device: torch.device = torch.device("cpu"),
+        learned_extra_transform: bool = False
     ):
         super().__init__()
         self.tokenizer = tokenizer
         self.query_vocab = query_vocab
         self.initial_encoder = initial_encoder
         self.device = device
-        #self.pre_summary = nn.Sequential(
-        #    nn.Dropout(p=0.15),
-        #    nn.Linear(self.initial_encoder.output_size, summary_size),
-        #)
-        #self.post_summary_linear = nn.Linear(summary_size, summary_size)
+
+        self.learend_extra_transform = learned_extra_transform
+        other_modules = []
+        if learned_extra_transform:
+            self.pre_summary = nn.Sequential(
+                nn.Dropout(p=0.15),
+                nn.Linear(self.initial_encoder.output_size, summary_size),
+            )
+            self.post_summary_linear = nn.Linear(summary_size, summary_size)
+            other_modules = [self.pre_summary, self.post_summary_linear]
         # To avoid storing redunant copies of the weights we store a list of
         # models that we need to save the weights of during serialization
-        #self.other_models = nn.ModuleList([self.pre_summary, self.post_summary_linear])
-        self.other_models = nn.ModuleList([])
+        self.other_models = nn.ModuleList(other_modules)
         self.summary_size = summary_size
 
     def _vectorize_query(self, queries: Sequence[str]):
@@ -269,32 +276,24 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         return summaries, vectorized, tokenized
 
     def _sumarize(self, hidden, input_lens, tokens, metads):
-        #hidden = self.pre_summary(hidden)
-        #hidden = avg_pool(hidden, input_lens)
-        #return hidden
-        #hidden = self.post_summary_linear(hidden)
+        if self.learend_extra_transform:
+            hidden = self.pre_summary(hidden)
 
+        stop_word_masks = get_non_stop_word_mask_batched(tokens, metads)
         # Average pool the tokens.
         # Count the tokens of long words less so that way a single long word like
         # a file name does not dominate the sumamry
-        #word_lens = get_word_lens_of_moded_tokens(tokens)
-        #weights = self._word_lens_to_weights(word_lens)
-
-        # Now do weighted sum
-        #weights = weights.unsqueeze(2).expand(-1, -1, hidden.shape[-1])
-        #avgs = torch.sum((hidden * weights), dim=1) / torch.sum(weights, dim=1)
-
-        stop_word_masks = get_non_stop_word_mask_batched(tokens, metads)
         word_lens = get_word_lens_of_moded_tokens(tokens)
         stop_word_masks *= self._word_lens_to_weights(word_lens)
-        #stop_word_masks[:, 2:5] = 0.25
-        # Don't include sos or EOS
+        # Limit SOS or EOS
         stop_word_masks[:, 0] = 0.5
         stop_word_masks[:, -1] = 0.5
         #print(stop_word_masks)
         #
         weights = stop_word_masks.unsqueeze(2).expand(-1, -1, hidden.shape[-1])
         avgs = torch.sum((hidden * weights), dim=1) / torch.sum(weights, dim=1)
+        #if self.learend_extra_transform:
+        #    avgs = self.post_summary_linear(avgs)
 
         return avgs
 
@@ -378,12 +377,13 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
 def make_default_cookie_monster_base(
     vocab: Vocab,
     hidden_size_base: int,
+    num_layers: int = 2
 ):
     embedder = Multiembedder(
         (len(vocab), len(CasingModifier), len(WhitespaceModifier)),
         target_out_len=hidden_size_base
     )
-    return CookieMonsterBaseEncoder(embedder, hidden_size_base)
+    return CookieMonsterBaseEncoder(embedder, hidden_size_base, num_layers)
 
 
 def make_default_cookie_monster(

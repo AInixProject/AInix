@@ -1,7 +1,6 @@
 import math
 
 from ainix_common.parsing.stringparser import AstUnparser
-from ainix_kernel.indexing.examplestore import DataSplits
 from ainix_kernel.models.Fullretrieval.fullretmodel import full_ret_from_example_store
 from ainix_kernel.training.evaluate import EvaluateLogger, print_ast_eval_log
 from ainix_kernel.training.trainer import TypeTranslateCFTrainer, get_examples
@@ -20,13 +19,11 @@ def train_the_thing():
 
 if __name__ == "__main__":
     model, index, replacers, type_context, loader = train_the_thing()
-    print(f"eval count {len(list(index.get_all_examples((DataSplits.VALIDATION,))))}")
     unparser = AstUnparser(type_context, model.get_string_tokenizer())
 
     tran_trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
-    logger = None
     logger = EvaluateLogger()
-    tran_trainer.evaluate(logger, dump_each=True, num_replace_samples=10)
+    tran_trainer.evaluate(logger, dump_each=True, num_replace_samples=5)
     print_ast_eval_log(logger)
 
     while True:

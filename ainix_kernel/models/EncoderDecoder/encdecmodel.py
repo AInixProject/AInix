@@ -191,23 +191,24 @@ def make_default_query_encoder(
     pretrain_checkpoint: str = None
 ) -> QueryEncoder:
     """Factory for making a default QueryEncoder"""
-    base_enc = make_default_cookie_monster_base(
-        query_vocab, output_size)
     #return SimpleGloveEncoder(query_vocab, 300)
     if pretrain_checkpoint is None:
-        x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
-        print(f"encdecmodel:make_default_query_encoder {len(query_vocab)}")
-        internal_encoder = RNNSeqEncoder(
-            input_dims=x_vectorizer.feature_len(),
-            hidden_size=output_size,
-            summary_size=output_size,
-            memory_tokens_size=output_size,
-            variable_lengths=True
-        )
-        return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
-        #return PretrainPoweredQueryEncoder(
-        #    x_tokenizer, query_vocab, base_enc, output_size
+        #x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), output_size)
+        #print(f"encdecmodel:make_default_query_encoder {len(query_vocab)}")
+        #internal_encoder = RNNSeqEncoder(
+        #    input_dims=x_vectorizer.feature_len(),
+        #    hidden_size=output_size,
+        #    summary_size=output_size,
+        #    memory_tokens_size=output_size,
+        #    variable_lengths=True
         #)
+        #return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
+        base_enc = make_default_cookie_monster_base(
+            query_vocab, output_size, num_layers=1)
+        return PretrainPoweredQueryEncoder(
+            x_tokenizer, query_vocab, base_enc, output_size,
+            learned_extra_transform=True
+        )
     else:
         return PretrainPoweredQueryEncoder.create_with_pretrained_checkpoint(
             pretrain_checkpoint,
@@ -223,8 +224,11 @@ def get_default_encdec_model(
     pretrain_checkpoint: str = None
 ):
     (x_tokenizer, x_vocab), y_tokenizer = get_default_tokenizers()
-    if x_vocab is None:
-        x_vocab = vocab.make_x_vocab_from_examples(examples, x_tokenizer, replacer)
+    if x_vocab is None or pretrain_checkpoint is None:
+        # If we don't have a pretrained_checkpoint, then we might not know all
+        # words in the vocab, so should filter the vocab to only tokens in dataset
+        x_vocab = vocab.make_x_vocab_from_examples(
+            examples, x_tokenizer, replacer, min_freq=2, replace_samples=2)
     hidden_size = standard_size
     tc = examples.type_context
     encoder = make_default_query_encoder(x_tokenizer, x_vocab, hidden_size, pretrain_checkpoint)
