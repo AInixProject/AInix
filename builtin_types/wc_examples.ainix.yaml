@@ -45,9 +45,10 @@ defines:
     - ls but only one per line | wc -l
     - print each file or directory here but only one per line | wc -l
     - ls and count the number of lines of the output
-    - get a list of files here and count the number lines returned.
     y:
-    - ls -1 | wc -l
+    - get a list of files here and count the number lines returned.
+    x:
+    -
   - x:
     - how many letters are in "foolumboo"
     y:

@@ -44,6 +44,8 @@ def get_parsable_commands(data: Tuple[str, str]) -> List[Tuple[str, str]]:
     parsable_data = []
     for nl, cm in data:
         try:
+            if cm.strip().startswith("tar"):
+                continue
             ast = parser.create_parse_tree(cm, "CommandSequence")
             parsable_data.append((nl, cm))
             print(f"PASS {cm}")

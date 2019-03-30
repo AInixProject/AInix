@@ -99,17 +99,33 @@ class FullRetModel(StringTypeTranslateCF):
         example_ref = self.example_refs[top_inds[max_score_ind]]
         ref_ast = example_ref.reference_ast
 
-
         valid_for_copy_mask = get_valid_for_copy_mask(tokens)
         ast_with_new_copies = self._apply_copy_changes(
             ref_ast, example_ref.copy_refs, memory, valid_for_copy_mask, tokens[0])
+
+        other_options = []
+        for ind, sim in zip(top_inds, top_sims):
+            try:
+                new_example_ref = self.example_refs[ind]
+                new_ref_ast = new_example_ref.reference_ast
+
+                new_valid_for_copy_mask = get_valid_for_copy_mask(tokens)
+                new_ast_with_new_copies = self._apply_copy_changes(
+                    new_ref_ast, new_example_ref.copy_refs, memory, new_valid_for_copy_mask,
+                    tokens[0])
+                other_options.append((math.log(float(sim)), new_ast_with_new_copies))
+            except Exception:
+                pass
+
+
         metad = TypeTranslatePredictMetadata(
             (math.log(float(top_sims[0])), ),
             (ExampleRetrieveExplanation(
                 tuple([self.example_refs[int(ind)].x_val_id for ind in top_inds]),
                 tuple([math.log(float(sim)) for sim in top_sims]),
                 None),
-            )
+            ),
+            other_options=other_options
         )
         return ast_with_new_copies, metad
 

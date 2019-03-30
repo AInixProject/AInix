@@ -207,6 +207,7 @@ class TypeTranslatePredictMetadata:
     """
     log_confidences: Tuple[float, ...]
     example_retrieve_explanations: Tuple['ExampleRetrieveExplanation', ...]
+    other_options: List[Tuple[float, ObjectChoiceNode]] = None
 
     @property
     def total_confidence(self) -> float:

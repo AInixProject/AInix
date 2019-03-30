@@ -1,6 +1,7 @@
 import math
 
 from ainix_common.parsing.stringparser import AstUnparser
+from ainix_kernel.indexing.examplestore import DataSplits
 from ainix_kernel.models.Fullretrieval.fullretmodel import full_ret_from_example_store
 from ainix_kernel.training.evaluate import EvaluateLogger, print_ast_eval_log
 from ainix_kernel.training.trainer import TypeTranslateCFTrainer, get_examples
@@ -13,6 +14,7 @@ def train_the_thing():
     pretrained_checkpoint_path = f"{dir_path}/../../checkpoints/" \
                                  "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt"
     type_context, index, replacers, loader = get_examples()
+    print(f"count {len(list(index.get_all_examples((DataSplits.VALIDATION,))))}")
     model = full_ret_from_example_store(index, replacers, pretrained_checkpoint_path)
     return model, index, replacers, type_context, loader
 

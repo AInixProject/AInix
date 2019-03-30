@@ -16,7 +16,7 @@ import more_itertools
 from ainix_kernel.specialtypes import allspecials
 from ainix_kernel.training.model_specific_training import update_latent_store_from_examples
 from ainix_kernel.training.train_contexts import ALL_EXAMPLE_NAMES, load_all_examples, \
-    load_tellia_examples
+    load_tellia_examples, load_all_and_tellina
 from ainix_kernel.util.sampling import WeightedRandomChooser
 from ainix_kernel.util.serialization import serialize
 from tqdm import tqdm

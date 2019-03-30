@@ -19,6 +19,7 @@ MODIFIER_ALL_UPPER = "all_cap_modifier"
 WORD_PART_MODIFIER_ARG_NAME = "modifier"
 WORD_PART_NEXT_ARG_NAME = "next_part"
 
+
 def create_generic_strings(type_context: TypeContext):
     """Main public interface for creating the appropriate types inside context"""
     _create_root_types(type_context)

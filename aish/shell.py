@@ -19,6 +19,7 @@ import aish.execer
 from aish.parser import BashParser
 from terminaltables import SingleTable
 import colorama
+import math
 
 builtin_dict = {}
 
@@ -86,9 +87,39 @@ class AishShell2(PromptToolkit2Shell):
                   f"{colorama.Fore.MAGENTA}{pred_result.unparse.total_string.strip()}"
                   f"{colorama.Fore.RESET} "
                   f"(confidence score {pred_result.metad.total_confidence:.2f} {conf_emoji} )")
+            # actual method
             #self.do_example_retrieve_explanation(
             #    pred_result.metad.example_retrieve_explanations, pred_result.ast,
             #    pred_result.unparse)
+
+            # hacky for fullrett
+
+            # Hackily just grab things out of the interface. This should be improved
+            #index = self.kernel_interface.example_store
+            #retr_explan = pred_result.metad.example_retrieve_explanations[0]
+            #for sim, example_id in zip(
+            #    retr_explan.reference_confidence,
+            #    retr_explan.reference_example_ids
+            #):
+            #    example = index.get_example_by_id(example_id)
+            #    yvs = index.get_y_values_for_y_set(example.y_set_id)
+            #    print(math.exp(sim), yvs[0].y_text)
+            print("Other possible options:")
+            printed = set([pred_result.unparse.total_string.strip()])
+            for sim, other_ast in pred_result.metad.other_options[1:]:
+                try:
+                    s = self.kernel_interface.unparser.to_string(other_ast).total_string.strip()
+                    if s in printed:
+                        continue
+                    print(math.exp(sim), s)
+                    printed.add(s)
+                except Exception:
+                    # panic! time
+                    pass
+                if len(printed) >= 3:
+                    break
+            print("-")
+
             if total_confidence > PROMPT_CONF_THRESHOLD:
                 pass
             return pred_result.unparse.total_string.strip(), total_confidence

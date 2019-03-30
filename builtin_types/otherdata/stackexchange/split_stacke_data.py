@@ -9,8 +9,10 @@ import html
 import attr
 from tqdm import tqdm
 DEFAULT_NAME = "./unix-stackexchange/small_posts.xml"
-MIN_NUM_OF_WORDS_IN_SENTENCE = 4
-MIN_NUM_CHARS_IN_SENTENCE = 16
+MIN_NUM_OF_WORDS_IN_SENTENCE = 4 # 4
+MIN_NUM_CHARS_IN_SENTENCE = 16 # 16
+MAX_SENTENCE_CHARACTERS = 320
+MAX_CODE_PRE_LEN = 160  # Exclude posts with really long code blocks
 
 
 def get_post_body(row_element, min_score=-9e9) -> Optional[str]:
@@ -38,10 +40,10 @@ def longest_code_pre_len(string: str) -> Optional[int]:
     return max(map(len, matches)) - len("<pre><code></code></pre>")
 
 
-def clean_post_body(body: str, max_code_pre_len=60) -> Optional[str]:
+def clean_post_body(body: str) -> Optional[str]:
     longest_quoted_out_code_block = longest_code_pre_len(body)
     if longest_quoted_out_code_block is not None and \
-            longest_quoted_out_code_block > max_code_pre_len:
+            longest_quoted_out_code_block > MAX_CODE_PRE_LEN:
         return None
     body = remove_html_tags(body)
     body = unscape_html_entities(body)
@@ -88,6 +90,9 @@ if __name__ == "__main__":
             continue
         shortest_char_count_sentence = min(map(len, sentences))
         if shortest_char_count_sentence < MIN_NUM_CHARS_IN_SENTENCE:
+            continue
+        longest_char_count_sentence = max(map(len, sentences))
+        if longest_char_count_sentence > MAX_SENTENCE_CHARACTERS:
             continue
         shortest_word_count_sentence = min(len(s.split()) for s in sentences)
         if shortest_word_count_sentence < MIN_NUM_OF_WORDS_IN_SENTENCE:

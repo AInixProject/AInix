@@ -26,6 +26,10 @@ defines:
       - make a tarball for [-[DIRNAME]-]
       - make a compressed archive for [-[DIRNAME]-]
       - move [-[DIRNAME]-] to a tarball
+      - make [-[DIRNAME]-] a tar file
+      - move [-[DIRNAME]-] to a tarfile
+      - compress [-[DIRNAME]-] into a tarfile
+      - compress [-[DIRNAME]-] into a tarball
       y:
       - tar -c -z -f [-[DIRNAME]-].tar.gz [-[DIRNAME]-]
     # TODO Replacers of certain extension

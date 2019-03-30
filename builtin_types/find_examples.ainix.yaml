@@ -8,49 +8,59 @@ defines:
     - recursively search for files and dirs named [-[ENGWORD]-].txt
     y:
     - 'find . -name "[-[ENGWORD]-].txt"'
+    risk: 1
   - x:
     - recursively print all directories here
     - what are all the directories anywhere on this path?
     y:
     - 'find . -type d'
+    risk: 1
   - x:
     - recursively find all files that start with "[-[ENGWORD]-]"
     - Starting here, find all files which start with "[-[ENGWORD]-]"
     y:
     - 'find . -name "[-[ENGWORD]-]*" -type f'
+    risk: 1
   - x:
     - recursively find all files that end with "[-[ENGWORD]-]"
     - Starting here, find all files which end with "[-[ENGWORD]-]"
     - find files that end with "[-[ENGWORD]-]" starting here
     y:
     - 'find . -name "*[-[ENGWORD]-]" -type f'
+    risk: 1
   - x:
     - find all files that start with the letter "[-[LETTER]-]"
     - recursively find files that start with "[-[LETTER]-]"
     y:
     # TODO: once user queries are supported, ask if care about case?
     - 'find . -name "[-[LETTER]-]*" -type f'
+    risk: 1
   - x:
       - recursively find files that contain "[-[ENGWORD]-]" in their name
     y:
       - 'find . -name "*[-[ENGWORD]-]*" -type f'
+    risk: 1
   - x:
       - recursively find files with "[-[LETTER]-][-[ENGWORD]-]" in name
     y:
       - 'find . -name "*[-[LETTER]-][-[ENGWORD]-]*" -type f'
+    risk: 1
   - x:
       - recursively find all directories that end with "[-[ENGWORD]-]" starting here
     y:
       - 'find . -name "*[-[ENGWORD]-]" -type d'
+    risk: 1
   - x:
       - recursively find all python files
     y:
       - 'find . -name "*.py" -type f'
+    risk: 1
   - x:
       - recursively find all javascript files
       - find all javascript files starting here
     y:
       - 'find . -name "*.js" -type f'
+    risk: 1
   - x:
       - recursively find all [-[EXTENSION]-] files starting here
       - recursively find all [-[EXTENSION]-] files
@@ -58,42 +68,50 @@ defines:
       - find all "[-[EXTENSION]-]" files
     y:
       - 'find . -name "*.[-[EXTENSION]-]" -type f'
+    risk: 1
   - x:
       - recursively find all .[-[EXTENSION]-] files starting here
       - recursively find all ".[-[EXTENSION]-]" files starting here
       - find all .[-[EXTENSION]-] files
     y:
       - 'find . -name "*.[-[EXTENSION]-]" -type f'
+    risk: 1
   - x:
       - find all hidden files starting here
       - recursively list all hidden files here
       - recursively find all hidden files
     y:
       - 'find . -name ".*" -type f'
+    risk: 1
   - x:
       - find all hidden files starting in [-[DIRNAME]-]
     y:
       - 'find [-[DIRNAME]-] -name ".*" -type f'
+    risk: 1
   - x:
       - find all hidden files starting in my tmp directory
     y:
       - 'find \tmp -name ".*" -type f'
+    risk: 1
   - x:
       - find all files starting here which belong to [-[USERNAME]-]
       - recursively find files that belong to [-[USERNAME]-]
       - what files here belong to [-[USERNAME]-]?
     y:
       - 'find . -type f -user [-[USERNAME]-]'
+    risk: 1
   - x:
       - search for all files in the whole system that belong to [-[USERNAME]-]
       - starting from root find all files that belong to [-[USERNAME]-]
     y:
       - 'find / -type f -user [-[USERNAME]-]'
+    risk: 1
   - x:
     - find all files here which belong to group [-[GROUPNAME]-]
     - look for files with group name [-[GROUPNAME]-]
     y:
     - 'find . -type f -user [-[GROUPNAME]-]'
+    risk: 1
   - x:
     - how many [-[EXTENSION]-] files are here
     - count the number of [-[EXTENSION]-] files are here
@@ -101,6 +119,7 @@ defines:
     - how many *.[-[EXTENSION]-] files are in this dir
     y:
     - 'find . -name "*.[-[EXTENSION]-]" -type f -maxdepth 1 | wc -l'
+    risk: 0
     # We don't actually do anything with this warn parameter, but it seems useful
     warn: 'If any files contain new lines in their name, this might give incorrect results.'
   - x:
@@ -110,12 +129,24 @@ defines:
     - how many files in this directory
     y:
     - 'find . -type f -maxdepth 1 | wc -l'
+    risk: 0
     warn: 'If any files contain new lines in their name, this might give incorrect results.'
+  - x:
+    - how many files are in this directory and all subdirectories
+    - how many files are here recursive
+    - recursively count number files here
+    - how many files in this folder or all subfolders
+    y:
+    - 'find . -type f | wc -l'
+    warn: 'If any files contain new lines in their name, this might give incorrect results.'
+    risk: 1
   - x:
     - how many empty files are here nonrecursive
     y:
     - 'find . -type f -empty -maxdepth 1 | wc -l'
+    risk: 0
   - x:
     - how many empty files are here recursive
     y:
     - 'find . -type f -empty | wc -l'
+    risk: 1

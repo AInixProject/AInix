@@ -18,7 +18,7 @@ Depending on what you are doing you might not need all these.
 $ ./download_data.sh
 # Split it into a txt file which has a sentence per line 
 # and an empty line between documents (this is like what bert wants)
-$ python3 split_stacke_data.py -s unix-stackexchange/Posts.xml -o unix-stackexchange/sentences.txt
+$ ./split_all_stacke.sh
 
 # Train a word tokenizer
 
