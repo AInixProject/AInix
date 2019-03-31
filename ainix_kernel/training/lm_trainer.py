@@ -130,5 +130,5 @@ if __name__ == "__main__":
     print(args.epochs)
     iters = len(dataset) * args.epochs
     print(f"Doing {iters} or about {iters / len(dataset)} epochs")
-    trainer.train(int(iters / batch_size), window=int(len(dataset) / batch_size / 10))
+    trainer.train(int(iters / batch_size), window=int(len(dataset) / batch_size / 15))
     serialize_func(f"lm_saved_model_{args.hiddensize}.pt", iters)

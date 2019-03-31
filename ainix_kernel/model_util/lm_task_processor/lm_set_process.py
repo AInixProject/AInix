@@ -291,7 +291,6 @@ def human_test(dataset: CookieMonsterDataset, samples):
     for i in range(samples):
         sent, gt_seq = dataset.random_sample_sentence_str()
         guess = input(f"TRY(1 seq/ 0 not): {sent}")
-        # print(restore_map)
         right = bool(float(guess)) == gt_seq
         print("guess", bool(float(guess)), "actual", gt_seq, "right", right)
         rights.append(right)

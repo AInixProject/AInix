@@ -1,7 +1,7 @@
 import argparse
 import multiprocessing
 from typing import List
-import sentencepiece
+#import sentencepiece
 import tempfile
 import os
 
@@ -9,8 +9,8 @@ import os
 def train_sentence_piece(args) -> str:
     with tempfile.TemporaryDirectory() as tempd:
         prefix = os.path.join(tempd, "spm_m")
-        sentencepiece.SentencePieceTrainer.Train(
-            f'--input={args.srcsentences} --model_prefix={prefix} '
+        os.system(
+            f'spm_train --input={args.srcsentences} --model_prefix={prefix} '
             f'--vocab_size={args.vocabsize} '
             f'--num_threads={multiprocessing.cpu_count()} '
             f'--max_sentence_length=6000k '

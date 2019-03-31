@@ -182,7 +182,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
             if is_casable:
                 self.trie[tok_upper] = CasingModifier.ALL_UPPER if len(tok) > 1 \
                     else CasingModifier.SINGLE_CHAR_UPPER
-            tok_first_cap = tok[0].upper() + tok[1:]
+            tok_first_cap = tok[0].upper() + tok[1:] if len(tok) > 1 else ""
             if tok_first_cap != tok_upper:
                 self.trie[tok_first_cap] = CasingModifier.FIRST_UPPER
             self.trie[tok] = CasingModifier.LOWER if is_casable else CasingModifier.CASELESS
@@ -229,7 +229,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
 
             cur_str = to_tokenize[cur_ind:]
             longest_prefix = self.trie.longest_prefix(cur_str)
-            is_an_unk_tok = not longest_prefix
+            is_an_unk_tok = not longest_prefix or len(longest_prefix.key) == 0
             if is_an_unk_tok:
                 raw_tok: str = cur_str[0]
                 token_str = parse_constants.UNK
@@ -434,7 +434,7 @@ def tokenizer_from_save_dict(save_dict: dict):
 
 
 def get_default_pieced_tokenizer_word_list(
-    vocab_file: str = "unix_vocab.txt"
+    vocab_file: str = "unixc_vocab.txt"
 ) -> Tuple[StringTokenizerWithMods, List[str]]:
     dir_path = os.path.dirname(os.path.realpath(__file__))
     with open(os.path.join(dir_path, vocab_file)) as f:
