@@ -58,7 +58,7 @@ class BertlikeTrainer:
             if iteration % window == 0:
                 print(f"Iter {iteration} total loss {self.total_loss_avg.get()}. "
                       f"Next Sent {self.next_sent_loss_avg.get()}. LM {self.lm_loss_avg.get()}")
-            if iteration > 0 and iteration % (window*10) == 0 and intermitted_save_path:
+            if iteration > 0 and iteration % (window*2) == 0 and intermitted_save_path:
                 s_path = f"{intermitted_save_path}_iter{iteration}_total_" + \
                          f"{self.total_loss_avg.get()}_ns{self.next_sent_loss_avg.get()}_" \
                              f"lm{self.lm_loss_avg.get()}.pt"
@@ -130,5 +130,5 @@ if __name__ == "__main__":
     print(args.epochs)
     iters = len(dataset) * args.epochs
     print(f"Doing {iters} or about {iters / len(dataset)} epochs")
-    trainer.train(int(iters / batch_size), window=int(len(dataset) / batch_size / 15))
+    trainer.train(int(iters / batch_size), window=int(len(dataset) / batch_size / 50))
     serialize_func(f"lm_saved_model_{args.hiddensize}.pt", iters)

@@ -151,7 +151,7 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
             total_key_depth=hidden_size_base,
             total_value_depth=hidden_size_base,
             filter_size=hidden_size_base,
-            num_heads=16,
+            num_heads=12,
             layer_dropout=0.1,
             relu_dropout=0.1
         )
