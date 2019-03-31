@@ -13,7 +13,8 @@ def train_sentence_piece(args) -> str:
             f'--input={args.srcsentences} --model_prefix={prefix} '
             f'--vocab_size={args.vocabsize} '
             f'--num_threads={multiprocessing.cpu_count()} '
-            f'--max_sentence_length=6000k'
+            f'--max_sentence_length=6000k '
+            f'--input_sentence_size=1000000'
         )
         with open(prefix + ".vocab") as outf:
             data = outf.read()

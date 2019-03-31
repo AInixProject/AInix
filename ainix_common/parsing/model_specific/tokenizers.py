@@ -452,7 +452,7 @@ def looks_like_a_file(string: str):
     if string.startswith("s/"):
         # Could be a sed expression. This is admittedly a crappy detection of this...
         return False
-    non_filey_chars = ("?", "@", "!", "(", ")", "//")
+    non_filey_chars = ("?", "@", "!", "(", ")", "//", "=")
     for c in non_filey_chars:
         if c in string:
             return False

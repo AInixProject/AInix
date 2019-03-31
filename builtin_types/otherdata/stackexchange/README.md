@@ -20,6 +20,9 @@ $ ./download_data.sh
 # and an empty line between documents (this is like what bert wants)
 $ ./split_all_stacke.sh
 
+# Make a combined of everything
+$ ./make_combined.sh
+
 # Train a word tokenizer
 
 # Download google/sentencepiece

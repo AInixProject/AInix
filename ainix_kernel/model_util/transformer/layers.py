@@ -45,7 +45,8 @@ class EncoderLayer(nn.Module):
 
         self.positionwise_feed_forward = PositionwiseFeedForward(hidden_size, filter_size,
                                                                  hidden_size,
-                                                                 layer_config='cc', padding='both',
+                                                                 #layer_config='cc',
+                                                                 #padding='both',
                                                                  dropout=relu_dropout)
         self.dropout = nn.Dropout(layer_dropout)
         self.layer_norm_mha = LayerNorm(hidden_size)

@@ -86,7 +86,8 @@ if __name__ == "__main__":
                         help="size of batches")
     parser.add_argument(
         "--files",
-        default=["../../builtin_types/otherdata/stackexchange/unix-stackexchange/sentences.txt"],
+        default=["../../builtin_types/otherdata/stackexchange/"
+                 "unix.stackexchange-stackexchange/sentences.txt"],
         help="all the corpus files",
         nargs="+"
     )

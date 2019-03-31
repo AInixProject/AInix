@@ -22,12 +22,12 @@ class Conv2dSame(nn.Module):
 
 class Conv1dSame(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, bias=True,
-                 tokens_before_channels = False):
+                 tokens_before_channels: bool = False, groups: int = 1):
         super().__init__()
         assert kernel_size % 2 == 1
         pad_size = kernel_size // 2
         self.conv_layer = nn.Conv1d(in_channels, out_channels, kernel_size,
-                                    bias=bias, padding=pad_size)
+                                    bias=bias, padding=pad_size, groups=groups)
         self.tokens_before_channels = tokens_before_channels
 
     def get_weight(self):

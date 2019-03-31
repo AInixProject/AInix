@@ -32,6 +32,7 @@ from ainix_kernel.models.EncoderDecoder.encoders import RNNSeqEncoder, ModTokens
     QueryEncoder
 from ainix_kernel.models.model_types import BertlikeLangModel
 from ainix_kernel.multiembedder.multiencoder import Multiembedder
+import ainix_kernel.model_util.transformer.layers
 
 
 class CookieMonsterForPretraining(BertlikeLangModel):
@@ -140,9 +141,20 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
         self.hidden_size_base = hidden_size_base
         self.embedder = base_embedder
         self.after_embed_dropout = nn.Dropout(p=0.1)
-        self.conv1 = Conv1dSame(hidden_size_base, hidden_size_base, 3, tokens_before_channels=True)
+        self.conv1 = Conv1dSame(hidden_size_base, hidden_size_base, 3,
+                                tokens_before_channels=True,
+                                groups=4)
         self.rnn2 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
                                   variable_lengths=True, num_layers=num_layers, input_dropout_p=0.1)
+        self.transformer = ainix_kernel.model_util.transformer.layers.EncoderLayer(
+            hidden_size=hidden_size_base,
+            total_key_depth=hidden_size_base,
+            total_value_depth=hidden_size_base,
+            filter_size=hidden_size_base,
+            num_heads=16,
+            layer_dropout=0.1,
+            relu_dropout=0.1
+        )
         #self.rnn3 = RNNSeqEncoder(hidden_size_base, hidden_size_base, None, hidden_size_base,
         #                          variable_lengths=True)
 
@@ -158,10 +170,10 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
         start_shape = embeded.shape
         x = self.after_embed_dropout(embeded)
         x = self.conv1(x)
-        #x = fastgelu(x)
         x = self.rnn2(x, input_lens)
-        new_blend_alpha = 0.4
-        x = x*new_blend_alpha + embeded*(1-new_blend_alpha)
+        x = self.transformer(x)
+        #new_blend_alpha = 0.4
+        #x = x*new_blend_alpha + embeded*(1-new_blend_alpha)
         assert x.shape[0] == start_shape[0] and x.shape[1] == start_shape[1]
         return x
 

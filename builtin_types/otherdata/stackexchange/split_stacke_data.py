@@ -9,16 +9,17 @@ import html
 import attr
 from tqdm import tqdm
 DEFAULT_NAME = "./unix-stackexchange/small_posts.xml"
+MIN_SCORE = -1
 MIN_NUM_OF_WORDS_IN_SENTENCE = 4 # 4
 MIN_NUM_CHARS_IN_SENTENCE = 16 # 16
 MAX_SENTENCE_CHARACTERS = 320
 MAX_CODE_PRE_LEN = 160  # Exclude posts with really long code blocks
 
 
-def get_post_body(row_element, min_score=-9e9) -> Optional[str]:
+def get_post_body(row_element) -> Optional[str]:
     for key, val in row_element.items():
         if key == "Score":
-            if int(val) < min_score:
+            if int(val) < MIN_SCORE:
                 return None
         if key == "Body":
             return val
@@ -79,7 +80,7 @@ if __name__ == "__main__":
     print("Splitting sentences.")
     for row in tqdm(e):
         doc_strs = []
-        body = get_post_body(row, -1)
+        body = get_post_body(row)
         if body is None:
             continue
         body = clean_post_body(body)
