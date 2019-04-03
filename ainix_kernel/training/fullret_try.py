@@ -12,7 +12,8 @@ def train_the_thing():
     # bad hacks method thing
     dir_path = os.path.dirname(os.path.realpath(__file__))
     pretrained_checkpoint_path = f"{dir_path}/../../checkpoints/" \
-                                 "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt"
+        f"lmchkp_192conv2rnntrans_3epochs_total_3.21_ns0.44_lm2.77"
+    #                             "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt"
     type_context, index, replacers, loader = get_examples()
     print(f"count {len(list(index.get_all_examples((DataSplits.VALIDATION,))))}")
     model = full_ret_from_example_store(index, replacers, pretrained_checkpoint_path)

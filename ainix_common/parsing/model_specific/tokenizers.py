@@ -456,6 +456,8 @@ def looks_like_a_file(string: str):
     for c in non_filey_chars:
         if c in string:
             return False
+    if string.endswith(common_exts):
+        return True
     if string.count(".") >= 2 and not string.endswith("."):
         return True
     if string.startswith("./") or string.startswith("../"):

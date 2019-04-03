@@ -46,9 +46,7 @@ defines:
     - print each file or directory here but only one per line | wc -l
     - ls and count the number of lines of the output
     y:
-    - get a list of files here and count the number lines returned.
-    x:
-    -
+    - ls -1 | wc -l
   - x:
     - how many letters are in "foolumboo"
     y:

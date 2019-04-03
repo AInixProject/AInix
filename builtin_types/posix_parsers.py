@@ -103,7 +103,10 @@ def ProgramTypeParser(
                 next_start_ind += 1
         result.set_next_slice(next_start_ind, len(string))
     else:
-        raise parse_primitives.AInixParseError("Unable to find program", first_word)
+        raise parse_primitives.AInixParseError(
+            f"Unable to find program '{first_word}'."
+            f" The input string to program parser was '{string}'"
+        )
 
 
 def ProgramTypeUnparser(result: parse_primitives.TypeToStringResult):

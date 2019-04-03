@@ -124,6 +124,7 @@ defines:
     warn: 'If any files contain new lines in their name, this might give incorrect results.'
   - x:
     - how many files are in this directory nonrecursive
+    - get a list of files here and count the number lines returned.
     - how many files are here
     - count number of files here
     - how many files in this directory
