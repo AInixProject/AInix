@@ -41,15 +41,19 @@ defines:
       - unzip [-[ENGWORD]-].tar.gz
       y:
       - 'tar -x -z -f [-[ENGWORD]-].tar.gz'
+      - 'tar -x -f [-[ENGWORD]-].tar.gz'
     - x:
       - extract [-[ENGWORD]-].tar into current directory
       - extract [-[ENGWORD]-].tar
+      - untar [-[ENGWORD]-].tar
       y:
       - 'tar -x -f [-[ENGWORD]-].tar'
+      - 'tar -x -z -f [-[ENGWORD]-].tar'
     - x:
       - extract [-[1=ENGWORD]-][-[2=ENGWORD]-].tar into current directory
       y:
       - 'tar -x -f [-[$1]-][-[$2]-].tar'
+      - 'tar -x -z -f [-[$1]-][-[$2]-].tar'
     - x:
       - Compress all [-[EXTENSION]-] files into [-[ENGWORD]-].tar.gz
       - move all [-[EXTENSION]-] files into [-[ENGWORD]-].tar.gz
@@ -60,11 +64,13 @@ defines:
       - extract [-[1=ENGWORD]-]/[-[2=ENGWORD]-].tar.gz
       y:
       - tar -x -z -f [-[$1]-]/[-[$2]-].tar.gz
+      - tar -x -f [-[$1]-]/[-[$2]-].tar.gz
     - x:
       - extract [-[ENGWORD]-].tar.gz into [-[DIRNAME]-]
       - uncompress [-[ENGWORD]-].tar.gz into [-[DIRNAME]-]
       y:
       - tar -x -z -f [-[ENGWORD]-].tar.gz -C [-[DIRNAME]-]
+      - tar -x -f [-[ENGWORD]-].tar.gz -C [-[DIRNAME]-]
     - x:
       - get the contents of ./[-[ENGWORD]-].tar without extracting
       y:

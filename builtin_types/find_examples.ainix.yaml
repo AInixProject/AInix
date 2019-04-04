@@ -15,12 +15,12 @@ defines:
     y:
     - 'find . -type d'
     risk: 1
-  - x:
-    - recursively find all files that start with "[-[ENGWORD]-]"
-    - Starting here, find all files which start with "[-[ENGWORD]-]"
-    y:
-    - 'find . -name "[-[ENGWORD]-]*" -type f'
-    risk: 1
+  #- x:
+  #  - recursively find all files that start with "[-[ENGWORD]-]"
+  #  - Starting here, find all files which start with "[-[ENGWORD]-]"
+  #  y:
+  #  - 'find . -name "[-[ENGWORD]-]*" -type f'
+  #  risk: 1
   - x:
     - recursively find all files that end with "[-[ENGWORD]-]"
     - Starting here, find all files which end with "[-[ENGWORD]-]"
@@ -28,23 +28,23 @@ defines:
     y:
     - 'find . -name "*[-[ENGWORD]-]" -type f'
     risk: 1
-  - x:
-    - find all files that start with the letter "[-[LETTER]-]"
-    - recursively find files that start with "[-[LETTER]-]"
-    y:
-    # TODO: once user queries are supported, ask if care about case?
-    - 'find . -name "[-[LETTER]-]*" -type f'
-    risk: 1
-  - x:
-      - recursively find files that contain "[-[ENGWORD]-]" in their name
-    y:
-      - 'find . -name "*[-[ENGWORD]-]*" -type f'
-    risk: 1
-  - x:
-      - recursively find files with "[-[LETTER]-][-[ENGWORD]-]" in name
-    y:
-      - 'find . -name "*[-[LETTER]-][-[ENGWORD]-]*" -type f'
-    risk: 1
+  #- x:
+  #  - find all files that start with the letter "[-[LETTER]-]"
+  #  - recursively find files that start with "[-[LETTER]-]"
+  #  y:
+  #  # TODO: once user queries are supported, ask if care about case?
+  #  - 'find . -name "[-[LETTER]-]*" -type f'
+  #  risk: 1
+  #- x:
+  #    - recursively find files that contain "[-[ENGWORD]-]" in their name
+  #  y:
+  #    - 'find . -name "*[-[ENGWORD]-]*" -type f'
+  #  risk: 1
+  #- x:
+  #    - recursively find files with "[-[LETTER]-][-[ENGWORD]-]" in name
+  #  y:
+  #    - 'find . -name "*[-[LETTER]-][-[ENGWORD]-]*" -type f'
+  #  risk: 1
   - x:
       - recursively find all directories that end with "[-[ENGWORD]-]" starting here
     y:
@@ -52,6 +52,7 @@ defines:
     risk: 1
   - x:
       - recursively find all python files
+      - find all python files here and in all subdirs
     y:
       - 'find . -name "*.py" -type f'
     risk: 1
@@ -66,6 +67,7 @@ defines:
       - recursively find all [-[EXTENSION]-] files
       - find all [-[EXTENSION]-] files
       - find all "[-[EXTENSION]-]" files
+      - recursively find all files with a "[-[EXTENSION]-]" extension
     y:
       - 'find . -name "*.[-[EXTENSION]-]" -type f'
     risk: 1

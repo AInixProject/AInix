@@ -149,7 +149,7 @@ class TreeRNNCellLSTM(TreeRNNCell):
         # self.rnn = nn.GRUCell(ast_node_embed_size, hidden_size)
         self.root_node_features = nn.Parameter(torch.rand(hidden_size))
         self.dropout = nn.Dropout(p=0.1)
-        self.attn_query_lin = nn.Linear(hidden_size*3, hidden_size)
+        #self.attn_query_lin = nn.Linear(hidden_size*3, hidden_size)
 
     def forward(
         self,
@@ -178,14 +178,14 @@ class TreeRNNCellLSTM(TreeRNNCell):
             num_of_batches = len(type_to_predict_features)
             parent_node_features = self.root_node_features.expand(num_of_batches, -1)
 
-        attn_query = self.attn_query_lin(
-            torch.cat((parent_node_features, type_to_predict_features, last_hidden), dim=1))
-        # The attend function expects dim (batch_size_q, num_queries, hidden)
-        # right now we are only (batch_size, hidden), so need to unsqueeze
-        attn_query = attn_query.unsqueeze(0)
-        attn_result = attend.attend(attn_query, context=memory_tokens)
-        attn_result = attn_result.squeeze(1)
-        last_hidden = attn_result
+        #attn_query = self.attn_query_lin(
+        #    torch.cat((parent_node_features, type_to_predict_features, last_hidden), dim=1))
+        ## The attend function expects dim (batch_size_q, num_queries, hidden)
+        ## right now we are only (batch_size, hidden), so need to unsqueeze
+        #attn_query = attn_query.unsqueeze(0)
+        #attn_result = attend.attend(attn_query, context=memory_tokens)
+        #attn_result = attn_result.squeeze(1)
+        #last_hidden = attn_result
 
         out, next_hidden = self.rnn(type_to_predict_features,
                                     (parent_node_features, last_hidden))
@@ -248,7 +248,7 @@ class TreeRNNCellGRU(TreeRNNCell):
         self.rnn = nn.GRUCell(ast_node_embed_size, hidden_size)
         self.root_node_features = nn.Parameter(torch.rand(hidden_size))
         self.dropout = nn.Dropout(p=0.1)
-        self.attn_query_lin = nn.Linear(hidden_size*3, hidden_size)
+        self.attn_query_lin = nn.Linear(int(hidden_size*1.5), hidden_size)
 
     def forward(
         self,
@@ -271,15 +271,15 @@ class TreeRNNCellGRU(TreeRNNCell):
             internal state to pass forward.
         """
         # TODO (DNGros): Use parent hidden data
-
-        # Normal LSTM
         if parent_node_features is None:
             num_of_batches = len(type_to_predict_features)
             parent_node_features = self.root_node_features.expand(num_of_batches, -1)
 
         attn_query = self.attn_query_lin(
             self.dropout(
-                torch.cat((parent_node_features, type_to_predict_features, last_hidden), dim=1)
+                #torch.cat((parent_node_features, type_to_predict_features, last_hidden), dim=1)
+                #torch.cat((parent_node_features, type_to_predict_features, last_hidden), dim=1)
+                torch.cat((last_hidden, type_to_predict_features), dim=1)
             )
         )
         # The attend function expects dim (batch_size_q, num_queries, hidden)
@@ -287,12 +287,12 @@ class TreeRNNCellGRU(TreeRNNCell):
         attn_query = attn_query.unsqueeze(0)
         attn_result = attend.attend(attn_query, context=memory_tokens)
         attn_result = attn_result.squeeze(1)
-        last_hidden = attn_result
 
-        out, next_hidden = self.rnn(type_to_predict_features,
-                                    (parent_node_features, last_hidden))
-        next_hidden = self.dropout(next_hidden)
-        return out, next_hidden
+        #out, next_hidden = self.rnn(type_to_predict_features, attn_result)
+        out = self.rnn(parent_node_features, attn_result)
+        #next_hidden = self.dropout(next_hidden)
+        #return out, next_hidden
+        return out, out
 
 
 #@attr.s
@@ -609,9 +609,11 @@ def get_default_nonretrieval_decoder(
     rnn_hidden_size: int
 ) -> TreeDecoder:
     object_vectorizer = vectorizers.TorchDeepEmbed(type_context.get_object_count(), rnn_hidden_size)
-    type_vectorizer = vectorizers.TorchDeepEmbed(type_context.get_type_count(), rnn_hidden_size)
-    rnn_cell = TreeRNNCellLSTM(rnn_hidden_size, rnn_hidden_size)
+    type_vectorizer = vectorizers.TorchDeepEmbed(
+        type_context.get_type_count(), int(rnn_hidden_size / 2))
+    #rnn_cell = TreeRNNCellLSTM(rnn_hidden_size, rnn_hidden_size)
     #rnn_cell = TreeCellOnlyAttn(rnn_hidden_size, rnn_hidden_size)
+    rnn_cell = TreeRNNCellGRU(rnn_hidden_size, rnn_hidden_size)
     action_selector = SimpleActionSelector(rnn_cell.input_size,
                                            objectselector.get_default_object_selector(
                                                type_context, object_vectorizer), type_context)

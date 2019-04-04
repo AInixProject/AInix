@@ -25,7 +25,8 @@ from ainix_kernel.models.EncoderDecoder.encoders import StringQueryEncoder
 from ainix_kernel.models.LM.cookiemonster import PretrainPoweredQueryEncoder
 from ainix_kernel.models.model_types import StringTypeTranslateCF, TypeTranslatePredictMetadata, \
     ExampleRetrieveExplanation
-from ainix_kernel.training.augmenting.replacers import Replacer, get_all_replacers
+from ainix_kernel.training.augmenting.replacers import Replacer, get_all_replacers, \
+    remove_replacements
 import numpy as np
 import torch.nn.functional as F
 import sklearn
@@ -35,16 +36,18 @@ import sklearn.naive_bayes
 import attr
 
 REPLACEMENT_SAMPLES = 10
-START_COPY_KERNEL_WEIGHTS = torch.tensor([0.45, .5, 0.05])
-END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, .5, 0.45])
+START_COPY_KERNEL_WEIGHTS = torch.tensor([0.35, .6, 0.05])
+END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, .6, 0.35])
 #                         ^ Weight current token the most and the before and after less.
 COPY_KERNEL_SIZE = len(START_COPY_KERNEL_WEIGHTS)
+COPY_NODES_K = 3
 
 
 def logit(ps):
     #v = ps/(1-p)
     #v[v < 0] = 1e-8
     return np.log(ps/(1-ps))
+
 
 def sigmoid(x):
     return 1/(1+np.exp(-x))
@@ -104,18 +107,18 @@ class FullRetModel(StringTypeTranslateCF):
             ref_ast, example_ref.copy_refs, memory, valid_for_copy_mask, tokens[0])
 
         other_options = []
-        for ind, sim in zip(top_inds, top_sims):
-            try:
-                new_example_ref = self.example_refs[ind]
-                new_ref_ast = new_example_ref.reference_ast
+        #for ind, sim in zip(top_inds, top_sims):
+        #    try:
+        #        new_example_ref = self.example_refs[ind]
+        #        new_ref_ast = new_example_ref.reference_ast
 
-                new_valid_for_copy_mask = get_valid_for_copy_mask(tokens)
-                new_ast_with_new_copies = self._apply_copy_changes(
-                    new_ref_ast, new_example_ref.copy_refs, memory, new_valid_for_copy_mask,
-                    tokens[0])
-                other_options.append((math.log(float(sim)), new_ast_with_new_copies))
-            except Exception:
-                pass
+        #        new_valid_for_copy_mask = get_valid_for_copy_mask(tokens)
+        #        new_ast_with_new_copies = self._apply_copy_changes(
+        #            new_ref_ast, new_example_ref.copy_refs, memory, new_valid_for_copy_mask,
+        #            tokens[0])
+        #        other_options.append((math.log(float(sim)), new_ast_with_new_copies))
+        #    except Exception:
+        #        pass
 
 
         metad = TypeTranslatePredictMetadata(
@@ -143,7 +146,7 @@ class FullRetModel(StringTypeTranslateCF):
             copy_node_pointer = latest_tree.get_node_along_path(copy_ref.path_to_this_copy)
             new_copy_node = self._figure_out_new_copy_node(
                 copy_ref, embedded_tokens, copy_node_pointer.cur_node.copy_type, extra_feat_info,
-                valid_for_copy_mask)
+                valid_for_copy_mask, original_tokens)
             latest_tree = copy_node_pointer.change_here(new_copy_node).get_root().cur_node
             extra_feat_info = update_extra_feats_info(
                 extra_feat_info, new_copy_node.start, new_copy_node.end)
@@ -155,7 +158,8 @@ class FullRetModel(StringTypeTranslateCF):
         embedded_tokens: torch.Tensor,
         copy_type,
         extra_copy_info,
-        valid_for_copy_mask: torch.Tensor
+        valid_for_copy_mask: torch.Tensor,
+        original_tokens: List[ModifiedStringToken]
     ) -> CopyNode:
         assert len(embedded_tokens) == 1, "no batch yet :("
         mask_addition = (1.0 - valid_for_copy_mask.float()) * -10000.0
@@ -168,11 +172,39 @@ class FullRetModel(StringTypeTranslateCF):
                                           START_COPY_KERNEL_WEIGHTS)
         start_attens += mask_addition
         assert start_attens.shape[1] == embedded_tokens.shape[1]
-        starts = torch.argmax(start_attens, dim=1)
+        start_scores, start_inds = torch.topk(start_attens, COPY_NODES_K, dim=1)
         end_attens = self._apply_kernel(extra_valsBCT, copy_ref.end_avgs, END_COPY_KERNEL_WEIGHTS)
         end_attens += mask_addition
-        ends = torch.argmax(end_attens, dim=1)
-        return CopyNode(copy_type, int(starts[0]), int(ends[0]))
+        end_scores, end_inds = torch.topk(end_attens, COPY_NODES_K, dim=1)
+
+        # Iterate through all start, end pairs and calculate a score for each
+        canidates: List[Tuple[float, Tuple[int, int]]] = []
+        for s_score, s_ind in zip(start_scores[0], start_inds[0]):
+            for e_score, e_ind in zip(end_scores[0], end_inds[0]):
+                score = s_score + e_score
+                if int(e_ind) < int(s_ind):
+                    # End should be after start!
+                    score -= 1e9
+                spans_whitespace = toks_span_a_whitespace(
+                    original_tokens[s_ind:e_ind + 1])
+                #print(f"I {spans_whitespace} span whitespace. "
+                #      f"Frac {copy_ref.frac_that_span_whitespace}. "
+                #      f"s {s_ind} e {e_ind}")
+                if spans_whitespace and copy_ref.frac_that_span_whitespace == 0:
+                    score *= 0.1
+                # make sure balance quotes
+                if original_tokens[e_ind].token_string == '"':
+                    if original_tokens[s_ind].token_string != '"':
+                        score -= 1e9
+                if original_tokens[s_ind].token_string == '"':
+                    if original_tokens[e_ind].token_string != '"':
+                        score -= 1e9
+                canidates.append((score, (s_ind, e_ind)))
+        canidates.sort(reverse=True)
+        best_score, (best_start, best_end) = canidates[0]
+        #print(f"copy {best_score} with bstart {best_start} b end {best_end}")
+
+        return CopyNode(copy_type, best_start, best_end)
 
     def _apply_kernel(self, valsBCT, kernel, k_weight):
         return F.conv1d(valsBCT, kernel.unsqueeze(0) * k_weight,
@@ -241,6 +273,8 @@ class _CopyNodeReference:
     # This is so it can more easily go into F.conv1d
     start_avgs: torch.Tensor
     end_avgs: torch.Tensor
+    # The fraction between 0 and 1 where the copy goes between whitespace
+    frac_that_span_whitespace: float
 
 
 @attr.s(auto_attribs=True)
@@ -271,11 +305,12 @@ def _preproc_example(
     x, y = xval.x_text, yval.y_text
     needs_replacement = replacers.check_if_string_has_replacement_spots(x) or \
                         replacers.check_if_string_has_replacement_spots(y)
-    xs, ys = [], []
+    xs, ys, xs_no_repl = [], [], []
     for _ in range(REPLACEMENT_SAMPLES if needs_replacement else 1):
         xreplaced, yreplaced = replacers.strings_replace(x, y)
         xs.append(xreplaced)
         ys.append(yreplaced)
+        xs_no_repl.append(remove_replacements(x, " "))
     summaries, memories, tokens = embedder(xs)
     summary = torch.mean(summaries, dim=0)
     ast_parses = [parser.create_parse_tree(y, "CommandSequence") for y in ys]
@@ -286,7 +321,7 @@ def _preproc_example(
             # Really should not have to retokenize, but whatever. It's memoized I think
             token_metadata=embedder.get_tokenizer().tokenize(rx)[1]
         )
-        for ast, rx in zip(ast_parses, xs)
+        for ast, rx, no_repl_x in zip(ast_parses, xs, xs_no_repl)
     ]
     paths_to_copies = [
         get_paths_to_all_copies(ast)
@@ -310,8 +345,9 @@ def _preproc_example(
     all_extra_feats = [make_extra_feats_info(m, toks) for m, toks in zip(memories, tokens)]
     for copy_path in most_common_paths:
         starts, ends = [], []
-        for i, (ast_with_copies, this_ast_paths, embedded_toks, extra_feats) in \
-                enumerate(zip(ast_as_copies, paths_to_copies, memories, all_extra_feats)):
+        num_spans_a_whitespace = 0
+        for i, (ast_with_copies, this_ast_paths, embedded_toks, extra_feats, toks) in \
+                enumerate(zip(ast_as_copies, paths_to_copies, memories, all_extra_feats, tokens)):
             if this_ast_paths != most_common_paths:
                 continue
             actual_node = ast_with_copies.get_node_along_path(copy_path).cur_node
@@ -326,10 +362,14 @@ def _preproc_example(
             ends.append(get_kernel_around(embedded_with_extraBCT, actual_node.end).squeeze())
             all_extra_feats[i] = update_extra_feats_info(
                 extra_feats, actual_node.start, actual_node.end)
+            # As an extra heuristic keep track if the copy spans multiple whitespaces or not
+            num_spans_a_whitespace += 1 if toks_span_a_whitespace(
+                toks[actual_node.start + 1:actual_node.end + 1]) else 0
         copy_refs.append(_CopyNodeReference(
             path_to_this_copy=copy_path,
             start_avgs=torch.mean(torch.stack(starts), dim=0),
-            end_avgs=torch.mean(torch.stack(ends), dim=0)
+            end_avgs=torch.mean(torch.stack(ends), dim=0),
+            frac_that_span_whitespace=num_spans_a_whitespace / len(starts)
         ))
 
     if nb_update_fn:
@@ -339,6 +379,13 @@ def _preproc_example(
         summary,
         _ExampleRef(xval.id, yval.id, representive_ast, tuple(copy_refs))
     )
+
+
+def toks_span_a_whitespace(toks: List[ModifiedStringToken]) -> bool:
+    return sum([
+        1 if t.whitespace_modifier == WhitespaceModifier.AFTER_SPACE_OR_SOS else 0
+        for t in toks[1:]
+    ]) > 0
 
 
 def make_extra_feats_info(curr_embed, original_tokens: List[ModifiedStringToken]):

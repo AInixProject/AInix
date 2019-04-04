@@ -172,8 +172,8 @@ class CookieMonsterBaseEncoder(ModTokensEncoder):
         x = self.conv1(x)
         x = self.rnn2(x, input_lens)
         x = self.transformer(x)
-        #new_blend_alpha = 0.4
-        #x = x*new_blend_alpha + embeded*(1-new_blend_alpha)
+        new_blend_alpha = 1
+        x = x*new_blend_alpha + embeded*(1-new_blend_alpha)
         assert x.shape[0] == start_shape[0] and x.shape[1] == start_shape[1]
         return x
 

@@ -4,6 +4,7 @@ from ainix_common.parsing.ast_components import ObjectChoiceNode, CopyNode, \
     depth_first_iterate_ast_set_along_path, is_obj_choice_a_not_present_node, AstIterPointer
 from ainix_common.parsing.model_specific.tokenizers import StringTokensMetadata, StringTokenizer
 from ainix_common.parsing.stringparser import AstUnparser, UnparseResult
+from ainix_kernel.model_util.stop_words import STOP_WORDS
 
 
 def string_in_tok_list(string: str, metadata: StringTokensMetadata) -> Optional[Tuple[int, int]]:
@@ -123,7 +124,11 @@ def make_copy_version_of_tree(
             this_node_str = unparse.pointer_to_string(cur_pointer)
             if this_node_str:
                 copy_pos = string_in_tok_list(this_node_str, token_metadata)
-                if copy_pos:
+                # Questionable hacky skip?
+                # Need to avoid being overly generous with copying stuff
+                other_no_copy_reason = this_node_str in STOP_WORDS or \
+                                       this_node_str in ('"', ".", ",", "?")
+                if copy_pos and not other_no_copy_reason:
                     copy_node = CopyNode(
                         cur_pointer.cur_node.type_to_choose, copy_pos[0], copy_pos[1])
                     cur_pointer = cur_pointer.dfs_get_next().change_here(copy_node,

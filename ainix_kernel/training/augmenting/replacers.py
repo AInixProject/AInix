@@ -38,12 +38,12 @@ class ReplacementError(ValueError):
 
 _IMPLICIT_REPLACER_ARG_NAME_PREFIX = "implicitargname"
 
+dashbrack_pattern = r"\[-\[.+?\]-\]"
+dash_bracket_regex = re.compile(dashbrack_pattern)
+
 
 class Replacer:
     """A class that will fill in the values """
-    pattern = r"\[-\[.+?\]-\]"
-    reg = re.compile(pattern)
-
     def __init__(self, types: List['ReplacementGroup']):
         self.types = types
         self.name_to_types: Dict[Dict, 'ReplacementGroup'] = {t.name: t for t in types}
@@ -99,7 +99,7 @@ class Replacer:
 
     @staticmethod
     def get_bracketless_matches(in_str):
-        matches = Replacer.reg.findall(in_str)
+        matches = dash_bracket_regex.findall(in_str)
         # A match will have be surrounded with dash-brackets. Remove those.
         no_brackets = [match[3:-3] for match in matches]
         return no_brackets
@@ -246,6 +246,11 @@ class ReplacementGroup:
 
 def seed_from_x_val(x: str, offset: int = 0) -> int:
     return (hash(x) + offset) % 100000
+
+
+def remove_replacements(string: str, set_as=""):
+    """Removes all replacements with just one fixed value"""
+    dash_bracket_regex.sub(set_as, string)
 
 
 def get_all_replacers() -> Replacer:

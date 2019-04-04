@@ -195,11 +195,12 @@ def make_default_query_encoder(
     """Factory for making a default QueryEncoder"""
     #return SimpleGloveEncoder(query_vocab, 300)
     if pretrain_checkpoint is None:
-        embed_size = output_size # 300
+        #embed_size = output_size
+        embed_size = 300
         x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), embed_size)
         print(f"encdecmodel:make_default_query_encoder {len(query_vocab)}")
-        #set_deep_embed_from_glove(
-        #    x_vectorizer, get_glove_words(embed_size, query_vocab), query_vocab)
+        set_deep_embed_from_glove(
+            x_vectorizer, get_glove_words(embed_size, query_vocab), query_vocab)
 
         internal_encoder = RNNSeqEncoder(
             input_dims=x_vectorizer.feature_len(),
