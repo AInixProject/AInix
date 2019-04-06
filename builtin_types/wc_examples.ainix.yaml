@@ -40,13 +40,16 @@ defines:
     - how many files or directories are here
     - how many things are here
     - ls count number of results
+    - print each file or directory here but only one per line | wc -l
+    - ls and count the number of lines of the output
     - ls -1 | count the number of lines
     - ls -1 | count num of outputs
     - ls but only one per line | wc -l
-    - print each file or directory here but only one per line | wc -l
-    - ls and count the number of lines of the output
     y:
     - ls -1 | wc -l
+    # -1 is default output format when not to terminal
+    # so can not specify it
+    - ls | wc -l
   - x:
     - how many letters are in "foolumboo"
     y:
