@@ -43,8 +43,13 @@ $ spm_train --input sentences_no_blank_lines.txt --model_prefix testmod --vocab_
 # follow install instructions at https://fasttext.cc/docs/en/supervised-tutorial.html
 # Tokenize the stuff
 $ cat sentences_no_blank_lines.txt | spm_encode --model=testmod_upper_2000.model > sentences_tokenized_with_upper_2000.txt
+# Or if using non_ascii tokenizer, go up to root dir and run
+$ python3 -m ainix_common.parsing.model_specific.tokenizers \
+      --tok_type 'nonascii' -s builtin_types/otherdata/stackexchange/combined/sentences_lower.txt \
+      -o builtin_types/otherdata/stackexchange/combined/sentences_non_ascii_split.txt
 # train (disable subword stuff though with maxn = 0)
-$ $PATH_TO_FASTTEXT skipgram -input sentences_tokenized_with_upper_2000.txt -output fasttext/m3 -thread 8 -maxn 0
+$ $PATH_TO_FASTTEXT skipgram -input sentences_tokenized_with_upper_2000.txt -output fasttext/m3 -thread 8 -maxn 0 # -dim 300 -minCount 50
+# If you did make install of fast text it should probably already be on your path
 
 
 ```

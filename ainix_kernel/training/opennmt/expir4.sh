@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Run just basic rnn with big glove
+# Run just basic rnn with fasttext from codetext
 
 BATCH_SIZE=64
 REPLACE_SAMPLES=10
@@ -32,7 +32,7 @@ python3 ./OpenNMT-py/preprocess.py \
 echo "prepare glove"
 cd ./OpenNMT-py/
 python3 -m tools.embeddings_to_torch \
-    -emb_file_both "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/glove_dir/glove.840B.300d.txt" \
+    -emb_file_both "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/glove_dir/m3.vec" \
     -dict_file "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/expirs/exp1.vocab.pt" \
     -output_file "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/data/embeddings" \
     || exit 1

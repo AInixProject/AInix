@@ -492,3 +492,24 @@ def get_text_from_tok(x: Union[str, ModifiedStringToken]) -> str:
         return x
     else:
         raise ValueError()
+
+
+if __name__ == "__main__":
+    # Some code for processing some sentences for tokenizeing
+    import argparse
+    from tqdm import tqdm
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--src', type=str)
+    parser.add_argument('-o', '--out', type=str)
+    parser.add_argument('--tok_type', type=str)
+    args = parser.parse_args()
+
+    tokenizer = get_tokenizer_by_name(args.tok_type)
+    with open(args.src, 'r') as f, open(args.out, 'w') as out_f:
+        for line in tqdm(f):
+            toks, metad = tokenizer.tokenize(line)
+            out_f.write(" ".join(toks))
+
+
+
+
