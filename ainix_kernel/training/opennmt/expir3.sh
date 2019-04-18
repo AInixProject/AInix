@@ -3,7 +3,7 @@
 # Run just basic rnn with big glove
 
 BATCH_SIZE=64
-REPLACE_SAMPLES=10
+REPLACE_SAMPLES=20
 #TRAIN_EPOCHS=40
 WORD_VEC_SIZE=300
 TRAIN_STEPS=5000
@@ -32,24 +32,20 @@ python3 ./OpenNMT-py/preprocess.py \
 echo "prepare glove"
 cd ./OpenNMT-py/
 python3 -m tools.embeddings_to_torch \
-    -emb_file_both "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/glove_dir/glove.840B.300d.txt" \
-    -dict_file "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/expirs/exp1.vocab.pt" \
-    -output_file "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/data/embeddings" \
+    -emb_file_both "../glove_dir/glove.840B.${WORD_VEC_SIZE}d.txt" \
+    -dict_file "../expirs/exp1.vocab.pt" \
+    -output_file "../data/embeddings" \
     || exit 1
-    #-emb_file_both "../glove_dir/glove.840B.${WORD_VEC_SIZE}d.txt" \
-    #-dict_file "../expirs/exp1.vocab.pt" \
-    #-output_file "../data/embeddings" \
+    #-emb_file_both "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/glove_dir/glove.840B.300d.txt" \
+    #-dict_file "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/expirs/exp1.vocab.pt" \
+    #-output_file "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/data/embeddings" \
 cd ..
 
 echo "Train"
 data_size=$(wc -l < data_train_x.txt)
-#steps_to_do=$[(TRAIN_EPOCHS*BATCH_SIZE)/REPLACE_SAMPLES/BATCH_SIZE]
-echo ${steps_to_do}
 python3 ./OpenNMT-py/train.py \
     -data expirs/exp1 \
     -save_model data/demo-model \
-    --src_word_vec_size 64 \
-    --tgt_word_vec_size 64 \
     --rnn_size 128 \
     --batch_size ${BATCH_SIZE} \
     --train_steps ${TRAIN_STEPS} \

@@ -81,6 +81,7 @@ if __name__ == "__main__":
     argparer.add_argument("--tgt_ys", type=str)
     argparer.add_argument("--tgt_yids", type=str)
     argparer.add_argument("--tokenizer_name", type=str)
+    argparer.add_argument("--json_preds", action="store_true")
     args = argparer.parse_args()
 
     with open(args.src_xs, 'r') as f:
@@ -91,6 +92,12 @@ if __name__ == "__main__":
         predictions = f.readlines()
     with open(args.tgt_yids, 'r') as f:
         yinfo = f.readlines()
+    if args.json_preds:
+        import json
+        predictions = [
+            " ".join(json.loads(p)['predicted_tokens'][0])
+            for p in predictions
+        ]
     # Parse all the strings
     xs = list(map(nonascii_untokenize, xs))
     predictions = list(map(nonascii_untokenize, predictions))
