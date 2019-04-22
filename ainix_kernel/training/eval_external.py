@@ -1,4 +1,6 @@
+import warnings
 from argparse import ArgumentParser
+from builtins import RuntimeWarning
 from typing import List, Generator, Iterable, Tuple, Set, Callable
 
 from ainix_common.parsing.ast_components import AstSet, AstObjectChoiceSet
@@ -57,6 +59,9 @@ def eval_stuff(
         try:
             pred_ast = string_parser.create_parse_tree(pred, y_ast_set.type_to_choose.name)
         except AInixParseError as e:
+            pexception = e
+        except RecursionError as e:
+            warnings.warn(f"Max recursion meet. {pred}", RuntimeWarning)
             pexception = e
         evaluation = AstEvaluation(pred_ast, y_ast_set, y_texts, x,
                                    pexception, unparser, pred)

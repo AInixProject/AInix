@@ -55,6 +55,7 @@ python3 ./OpenNMT-py/train.py \
     --word_vec_size ${WORD_VEC_SIZE} \
     --pre_word_vecs_enc "data/embeddings.enc.pt" \
     --pre_word_vecs_dec "data/embeddings.dec.pt" \
+    --gpu_rank 0 \
     || exit 1
    #--gpu_rank 0 \
 

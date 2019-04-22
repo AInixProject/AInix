@@ -175,12 +175,13 @@ class EncDecModel(StringTypeTranslateCF):
 
 
 # Factory methods for different versions
-def get_default_tokenizers() -> Tuple[
+def get_default_tokenizers(use_word_piece: bool = False) -> Tuple[
     Tuple[tokenizers.Tokenizer, Optional[Vocab]],
     tokenizers.Tokenizer
 ]:
     """Returns tuple (default x tokenizer, default y tokenizer)"""
-    return (NonLetterTokenizer(), None), AstValTokenizer()
+    if not use_word_piece:
+        return (NonLetterTokenizer(), None), AstValTokenizer()
     word_piece_tok, word_list = get_default_pieced_tokenizer_word_list()
     x_vocab = BasicVocab(word_list + parse_constants.ALL_SPECIALS)
     return (word_piece_tok, x_vocab), AstValTokenizer()
@@ -233,7 +234,9 @@ def get_default_encdec_model(
     use_retrieval_decoder: bool = False,
     pretrain_checkpoint: str = None
 ):
-    (x_tokenizer, x_vocab), y_tokenizer = get_default_tokenizers()
+    (x_tokenizer, x_vocab), y_tokenizer = get_default_tokenizers(
+        use_word_piece=pretrain_checkpoint is not None
+    )
     if x_vocab is None or pretrain_checkpoint is None:
         # If we don't have a pretrained_checkpoint, then we might not know all
         # words in the vocab, so should filter the vocab to only tokens in dataset
