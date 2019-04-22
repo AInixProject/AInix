@@ -128,7 +128,8 @@ class TreeRNNCell(nn.Module, ABC):
     """An rnn cell in a tree RNN"""
     def __init__(self, ast_node_embed_size: int, hidden_size):
         super().__init__()
-        self.input_size = ast_node_embed_size
+        self.output_size = hidden_size  # TODO this is wrong
+        self.hidden_size = hidden_size
 
     def forward(
         self,
@@ -140,20 +141,28 @@ class TreeRNNCell(nn.Module, ABC):
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         raise NotImplemented()
 
+    def create_first_state(self, query_summary: torch.Tensor):
+        raise NotImplemented
+
+
 
 class TreeRNNCellLSTM(TreeRNNCell):
     """An rnn cell in a tree RNN"""
     def __init__(self, ast_node_embed_size: int, hidden_size, attn: bool = True):
         super().__init__(ast_node_embed_size, hidden_size)
-        self.rnn = nn.LSTMCell(ast_node_embed_size, hidden_size)
+        self.rnn = nn.LSTMCell(ast_node_embed_size + hidden_size, hidden_size)
         # self.rnn = nn.GRUCell(ast_node_embed_size, hidden_size)
         self.root_node_features = nn.Parameter(torch.rand(hidden_size))
-        self.dropout = nn.Dropout(p=0.1)
+        #self.init_hidden = nn.Parameter(torch.zeros(hidden_size))
+        self.init_cellstate = nn.Parameter(torch.zeros(hidden_size))
         #self.attn_query_lin = nn.Linear(hidden_size*3, hidden_size)
+        self.input_droput = nn.Dropout(p=0.3)
+        self.output_dropout = nn.Dropout(p=0.2)
+        self.attn_linear = nn.Linear(hidden_size*2, hidden_size)
 
     def forward(
         self,
-        last_hidden: torch.Tensor,
+        internal_state: Tuple[torch.Tensor, torch.Tensor],
         type_to_predict_features: torch.Tensor,
         parent_node_features: torch.Tensor,
         parent_node_hidden: torch.Tensor,
@@ -162,14 +171,14 @@ class TreeRNNCellLSTM(TreeRNNCell):
         """
 
         Args:
-            last_hidden:
+            internal_state: The (h_0, c_0) tensor. h_0 = hidden state. c_0 = cell state
             type_to_predict_features:
             parent_node_features:
             parent_node_hidden:
 
         Returns:
-            Tuple of tensor. First the the thing to predict on. Second is
-            internal state to pass forward.
+            Tuple of tensor.
+            (output / hidden state, cellstate)
         """
         # TODO (DNGros): Use parent hidden data
 
@@ -178,19 +187,31 @@ class TreeRNNCellLSTM(TreeRNNCell):
             num_of_batches = len(type_to_predict_features)
             parent_node_features = self.root_node_features.expand(num_of_batches, -1)
 
-        #attn_query = self.attn_query_lin(
-        #    torch.cat((parent_node_features, type_to_predict_features, last_hidden), dim=1))
-        ## The attend function expects dim (batch_size_q, num_queries, hidden)
-        ## right now we are only (batch_size, hidden), so need to unsqueeze
-        #attn_query = attn_query.unsqueeze(0)
-        #attn_result = attend.attend(attn_query, context=memory_tokens)
-        #attn_result = attn_result.squeeze(1)
-        #last_hidden = attn_result
+        #print(type_to_predict_features.shape)
+        #print(parent_node_features.shape)
+        #print([x.shape for x in internal_state])
+        combined_input = torch.cat((type_to_predict_features, parent_node_features), dim=1)
+        combined_input = self.input_droput(combined_input)
+        hidden_state, cell_state = self.rnn(combined_input, internal_state)
 
-        out, next_hidden = self.rnn(type_to_predict_features,
-                                    (parent_node_features, last_hidden))
-        next_hidden = self.dropout(next_hidden)
-        return out, next_hidden
+        attn_query = hidden_state
+        # The attend function expects dim (batch_size_q, num_queries, hidden)
+        # right now we are only (batch_size, hidden), so need to unsqueeze
+        attn_query = attn_query.unsqueeze(0)
+        # TODO: query linear?
+        attn_result = attend.attend(attn_query, context=memory_tokens)
+        attn_result = attn_result.squeeze(1)
+
+        # https://github.com/pcyin/tranX/blob/master/model/parser.py step() is useful
+        pred_outs = torch.tanh(self.attn_linear(torch.cat((attn_result, hidden_state), dim=1)))
+        pred_outs = self.output_dropout(pred_outs)
+
+        return pred_outs, (hidden_state, cell_state)
+
+    def create_first_state(self, query_summary: torch.Tensor):
+        return query_summary, self.init_cellstate.unsqueeze(0)
+        # TODO: when batch going to need not simply unsqueeze. init_cellstate
+        # should have same batch_dim as query_summary
 
 
 class TreeCellOnlyAttn(TreeRNNCell):
@@ -320,148 +341,8 @@ class TreeRNNDecoder(TreeDecoder):
         self.action_selector = action_selector
         self.type_vectorizer = type_vectorizer
         self.type_context = type_context
-
-    def _node_to_token_type(self, node: AstNode):
-        if isinstance(node, ObjectNode):
-            return node.implementation
-        elif isinstance(node, ObjectChoiceNode):
-            return node.type_to_choose
-        raise ValueError("Unrecognized node")
-
-    def _get_obj_choice_features(self, node: ObjectChoiceNode) -> torch.Tensor:
-        # TODO (DNGros): Cache during current train component
-        indxs = node.type_to_choose.ind
-        return self.type_vectorizer(torch.LongTensor([[indxs]]))[:, 0]
-
-    def _inference_objectchoice_step(
-        self,
-        current_leaf: ObjectChoiceNode,
-        last_hidden: torch.Tensor,
-        parent_node_features: Optional[torch.Tensor],
-        memory_tokens: torch.Tensor,
-        valid_for_copy_mask: torch.LongTensor,
-        cur_depth: int,
-        override_action_selector: ActionSelector = None
-    ) -> Tuple[torch.Tensor, TypeTranslatePredictMetadata]:
-        if cur_depth > self.MAX_DEPTH:
-            raise ModelException()
-        outs, hiddens = self.rnn_cell(
-            last_hidden=last_hidden,
-            type_to_predict_features=self._get_obj_choice_features(current_leaf),
-            parent_node_features=parent_node_features,
-            parent_node_hidden=None,
-            memory_tokens=memory_tokens
-        )
-        if len(outs) != 1:
-            raise NotImplemented("Batches not implemented")
-
-        use_selector = override_action_selector or self.action_selector
-        predicted_action, my_metad = use_selector.infer_predict(
-            outs, memory_tokens, valid_for_copy_mask,current_leaf.type_to_choose)
-        if isinstance(predicted_action, CopyAction):
-            current_leaf.set_choice(CopyNode(
-                current_leaf.type_to_choose, predicted_action.start, predicted_action.end))
-        elif isinstance(predicted_action, ProduceObjectAction):
-            new_node = ObjectNode(predicted_action.implementation)
-            current_leaf.set_choice(new_node)
-            hiddens, child_metad = self._inference_object_step(
-                new_node, outs, hiddens, memory_tokens, valid_for_copy_mask,
-                cur_depth + 1, override_action_selector)
-            my_metad = my_metad.concat(child_metad)
-        else:
-            raise ValueError()
-        return hiddens, my_metad
-
-    def _train_objectchoice_step(
-        self,
-        last_hidden: torch.Tensor,
-        memory_tokens: torch.Tensor,
-        valid_for_copy_mask: torch.LongTensor,
-        parent_node_features: Optional[torch.Tensor],
-        expected: AstObjectChoiceSet,
-        teacher_force_path: ObjectChoiceNode,
-        num_parents_with_a_copy_option: int,
-        example_id: int
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        outs, hiddens = self.rnn_cell(
-            last_hidden=last_hidden,
-            type_to_predict_features=self._get_obj_choice_features(teacher_force_path),
-            parent_node_features=parent_node_features,
-            parent_node_hidden=None,
-            memory_tokens=memory_tokens
-        )
-
-        loss = self.action_selector.forward_train(
-            latent_vec=outs,
-            memory_tokens=memory_tokens,
-            valid_for_copy_mask=valid_for_copy_mask,
-            types_to_select=[teacher_force_path.type_to_choose],
-            expected=expected,
-            num_of_parents_with_copy_option=num_parents_with_a_copy_option,
-            example_inds=[example_id]
-        )
-
-        next_expected_set = expected.get_next_node_for_choice(
-            impl_name_chosen=teacher_force_path.get_chosen_impl_name()
-        ).next_node
-        assert next_expected_set is not None, "Teacher force path not in expected ast set!"
-        next_object_node = teacher_force_path.next_node_not_copy
-        hiddens, child_loss = self._train_objectnode_step(
-            outs, hiddens, memory_tokens, valid_for_copy_mask, next_expected_set, next_object_node,
-            num_parents_with_a_copy_option + (1 if expected.copy_is_known_choice() else 0),
-            example_id)
-        return hiddens, loss + child_loss
-
-    def _inference_object_step(
-        self,
-        current_leaf: ObjectNode,
-        my_features: torch.Tensor,
-        last_hidden: Optional[torch.Tensor],
-        memory_tokens: torch.Tensor,
-        valid_for_copy_mask: torch.LongTensor,
-        cur_depth,
-        override_selector: ActionSelector = None
-    ) -> Tuple[torch.Tensor, TypeTranslatePredictMetadata]:
-        """makes one step for ObjectNodes. Returns last hidden state"""
-        if cur_depth > self.MAX_DEPTH:
-            raise ModelSafePredictError("Max length exceeded")
-        latest_hidden = last_hidden
-        metad = TypeTranslatePredictMetadata.create_empty()
-        for arg in current_leaf.implementation.children:
-            if arg.next_choice_type is not None:
-                new_node = ObjectChoiceNode(arg.next_choice_type)
-            else:
-                continue
-            current_leaf.set_arg_value(arg.name, new_node)
-            latest_hidden, child_metad = self._inference_objectchoice_step(
-                new_node, latest_hidden, my_features, memory_tokens, valid_for_copy_mask,
-                cur_depth + 1, override_selector)
-            metad = metad.concat(child_metad)
-        return latest_hidden, metad
-
-    def _train_objectnode_step(
-        self,
-        my_features: torch.Tensor,
-        last_hidden: torch.Tensor,
-        memory_tokens: torch.Tensor,
-        valid_for_copy_mask: torch.LongTensor,
-        expected: ObjectNodeSet,
-        teacher_force_path: ObjectNode,
-        num_of_parents_with_a_copy_option: int,
-        example_id: int,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        arg_set_data = expected.get_arg_set_data(teacher_force_path.as_childless_node())
-        assert arg_set_data is not None, "Teacher force path not in expected ast set!"
-        latest_hidden = last_hidden
-        child_loss = 0
-        for arg in teacher_force_path.implementation.children:
-            next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
-            next_force_path = teacher_force_path.get_choice_node_for_arg(arg.name)
-            latest_hidden, arg_loss = self._train_objectchoice_step(
-                latest_hidden, memory_tokens, valid_for_copy_mask, my_features, next_choice_set,
-                next_force_path, num_of_parents_with_a_copy_option, example_id)
-            child_loss += arg_loss
-        return latest_hidden, child_loss
+        self.object_embeddings = nn.Embedding(
+            type_context.get_object_count(), rnn_cell.hidden_size)
 
     @add_hooks
     def forward_predict(
@@ -477,8 +358,9 @@ class TreeRNNDecoder(TreeDecoder):
         # TODO (DNGros): make steps this not mutate state and iterative
         prediction_root_node = ObjectChoiceNode(root_type)
         valid_for_copy_mask = get_valid_for_copy_mask(actual_tokens)
-        last_hidden, metad = self._inference_objectchoice_step(
-            prediction_root_node, query_summary, None, memory_encoding, valid_for_copy_mask,
+        internal_state, metad = self._inference_objectchoice_step(
+            prediction_root_node, self.rnn_cell.create_first_state(query_summary),
+            None, memory_encoding, valid_for_copy_mask,
             0, override_action_selector)
         return prediction_root_node, metad
 
@@ -502,11 +384,155 @@ class TreeRNNDecoder(TreeDecoder):
             if y_asts[i] is None or teacher_force_paths[i] is None:
                 raise ValueError("If training expect path to be previded")
             last_hidden, loss = self._train_objectchoice_step(
-                query_summary[i:i+1], memory_encoding[i:i+1], valid_for_copy_mask[i:i+1],
+                self.rnn_cell.create_first_state(query_summary[i:i+1]),
+                memory_encoding[i:i+1], valid_for_copy_mask[i:i+1],
                 None, y_asts[i], teacher_force_paths[i], 0, example_ids[i]
             )
             batch_loss += loss
         return batch_loss
+
+    def _node_to_token_type(self, node: AstNode):
+        if isinstance(node, ObjectNode):
+            return node.implementation
+        elif isinstance(node, ObjectChoiceNode):
+            return node.type_to_choose
+        raise ValueError("Unrecognized node")
+
+    def _get_obj_choice_features(self, node: ObjectChoiceNode) -> torch.Tensor:
+        # TODO (DNGros): Cache during current train component
+        indxs = node.type_to_choose.ind
+        return self.type_vectorizer(torch.LongTensor([[indxs]]))[:, 0]
+
+    def _inference_objectchoice_step(
+        self,
+        current_leaf: ObjectChoiceNode,
+        internal_state,  # For an lstm cell this is the (h_0, c_0) tensors
+        parent_node_features: Optional[torch.Tensor],
+        memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
+        cur_depth: int,
+        override_action_selector: ActionSelector = None
+    ) -> Tuple[torch.Tensor, TypeTranslatePredictMetadata]:
+        if cur_depth > self.MAX_DEPTH:
+            raise ModelException()
+        outs, internal_state = self.rnn_cell(
+            internal_state=internal_state,
+            type_to_predict_features=self._get_obj_choice_features(current_leaf),
+            parent_node_features=parent_node_features,
+            parent_node_hidden=None,
+            memory_tokens=memory_tokens
+        )
+        if len(outs) != 1:
+            raise NotImplemented("Batches not implemented")
+
+        use_selector = override_action_selector or self.action_selector
+        predicted_action, my_metad = use_selector.infer_predict(
+            outs, memory_tokens, valid_for_copy_mask,current_leaf.type_to_choose)
+        if isinstance(predicted_action, CopyAction):
+            current_leaf.set_choice(CopyNode(
+                current_leaf.type_to_choose, predicted_action.start, predicted_action.end))
+        elif isinstance(predicted_action, ProduceObjectAction):
+            new_node = ObjectNode(predicted_action.implementation)
+            current_leaf.set_choice(new_node)
+            internal_state, child_metad = self._inference_object_step(
+                new_node, internal_state, memory_tokens, valid_for_copy_mask,
+                cur_depth + 1, override_action_selector)
+            my_metad = my_metad.concat(child_metad)
+        else:
+            raise ValueError()
+        return internal_state, my_metad
+
+    def _train_objectchoice_step(
+        self,
+        last_internal_state,  # For an lstm cell this is the (h_0, c_0) tensors
+        memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
+        parent_node_features: Optional[torch.Tensor],
+        expected: AstObjectChoiceSet,
+        teacher_force_path: ObjectChoiceNode,
+        num_parents_with_a_copy_option: int,
+        example_id: int
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        outs, internal_state = self.rnn_cell(
+            internal_state=last_internal_state,
+            type_to_predict_features=self._get_obj_choice_features(teacher_force_path),
+            parent_node_features=parent_node_features,
+            parent_node_hidden=None,
+            memory_tokens=memory_tokens
+        )
+
+        loss = self.action_selector.forward_train(
+            latent_vec=outs,
+            memory_tokens=memory_tokens,
+            valid_for_copy_mask=valid_for_copy_mask,
+            types_to_select=[teacher_force_path.type_to_choose],
+            expected=expected,
+            num_of_parents_with_copy_option=num_parents_with_a_copy_option,
+            example_inds=[example_id]
+        )
+
+        next_expected_set = expected.get_next_node_for_choice(
+            impl_name_chosen=teacher_force_path.get_chosen_impl_name()
+        ).next_node
+        assert next_expected_set is not None, "Teacher force path not in expected ast set!"
+        next_object_node = teacher_force_path.next_node_not_copy
+        internal_state, child_loss = self._train_objectnode_step(
+            internal_state, memory_tokens, valid_for_copy_mask, next_expected_set, next_object_node,
+            num_parents_with_a_copy_option + (1 if expected.copy_is_known_choice() else 0),
+            example_id)
+        return internal_state, loss + child_loss
+
+    def _inference_object_step(
+        self,
+        current_leaf: ObjectNode,
+        internal_state,  # For lstm the (h_0, c_0) tensors
+        memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
+        cur_depth,
+        override_selector: ActionSelector = None
+    ) -> Tuple[torch.Tensor, TypeTranslatePredictMetadata]:
+        """makes one step for ObjectNodes. Returns last hidden state"""
+        if cur_depth > self.MAX_DEPTH:
+            raise ModelSafePredictError("Max length exceeded")
+        latest_internal_state = internal_state
+        metad = TypeTranslatePredictMetadata.create_empty()
+        my_features = self.object_embeddings(torch.LongTensor([current_leaf.implementation.ind]))
+        for arg in current_leaf.implementation.children:
+            if arg.next_choice_type is not None:
+                new_node = ObjectChoiceNode(arg.next_choice_type)
+            else:
+                continue
+            current_leaf.set_arg_value(arg.name, new_node)
+            latest_internal_state, child_metad = self._inference_objectchoice_step(
+                new_node, latest_internal_state, my_features, memory_tokens, valid_for_copy_mask,
+                cur_depth + 1, override_selector)
+            metad = metad.concat(child_metad)
+        return latest_internal_state, metad
+
+    def _train_objectnode_step(
+        self,
+        internal_state: torch.Tensor,
+        memory_tokens: torch.Tensor,
+        valid_for_copy_mask: torch.LongTensor,
+        expected: ObjectNodeSet,
+        teacher_force_path: ObjectNode,
+        num_of_parents_with_a_copy_option: int,
+        example_id: int,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        arg_set_data = expected.get_arg_set_data(teacher_force_path.as_childless_node())
+        assert arg_set_data is not None, "Teacher force path not in expected ast set!"
+        child_loss = 0
+        my_features = self.object_embeddings(
+            torch.LongTensor([teacher_force_path.implementation.ind]))
+        latest_internal_state = internal_state
+        for arg in teacher_force_path.implementation.children:
+            next_choice_set = arg_set_data.arg_to_choice_set[arg.name]
+            next_force_path = teacher_force_path.get_choice_node_for_arg(arg.name)
+            latest_internal_state, arg_loss = self._train_objectchoice_step(
+                latest_internal_state, memory_tokens, valid_for_copy_mask, my_features,
+                next_choice_set, next_force_path, num_of_parents_with_a_copy_option, example_id)
+            child_loss += arg_loss
+        return latest_internal_state, child_loss
 
     def get_latent_select_states(
         self,
@@ -609,12 +635,13 @@ def get_default_nonretrieval_decoder(
     rnn_hidden_size: int
 ) -> TreeDecoder:
     object_vectorizer = vectorizers.TorchDeepEmbed(type_context.get_object_count(), rnn_hidden_size)
+    ast_embed_size = int(rnn_hidden_size / 2)
     type_vectorizer = vectorizers.TorchDeepEmbed(
-        type_context.get_type_count(), int(rnn_hidden_size / 2))
-    #rnn_cell = TreeRNNCellLSTM(rnn_hidden_size, rnn_hidden_size)
+        type_context.get_type_count(), ast_embed_size)
+    rnn_cell = TreeRNNCellLSTM(ast_embed_size, rnn_hidden_size)
     #rnn_cell = TreeCellOnlyAttn(rnn_hidden_size, rnn_hidden_size)
-    rnn_cell = TreeRNNCellGRU(rnn_hidden_size, rnn_hidden_size)
-    action_selector = SimpleActionSelector(rnn_cell.input_size,
+    #rnn_cell = TreeRNNCellGRU(rnn_hidden_size, rnn_hidden_size)
+    action_selector = SimpleActionSelector(rnn_cell.output_size,
                                            objectselector.get_default_object_selector(
                                                type_context, object_vectorizer), type_context)
     return TreeRNNDecoder(rnn_cell, action_selector, type_vectorizer, type_context)

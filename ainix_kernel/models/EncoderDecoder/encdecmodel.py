@@ -200,8 +200,8 @@ def make_default_query_encoder(
         embed_size = 300
         x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), embed_size)
         print(f"encdecmodel:make_default_query_encoder {len(query_vocab)}")
-        set_deep_embed_from_glove(
-            x_vectorizer, get_glove_words(embed_size, query_vocab), query_vocab)
+        #set_deep_embed_from_glove(
+        #    x_vectorizer, get_glove_words(embed_size, query_vocab), query_vocab)
 
         internal_encoder = RNNSeqEncoder(
             input_dims=x_vectorizer.feature_len(),

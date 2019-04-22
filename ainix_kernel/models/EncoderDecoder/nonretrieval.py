@@ -34,6 +34,7 @@ class SimpleActionSelector(ActionSelector):
         self.object_selector = object_selector
         self.type_context = type_context
         self.latent_size = latent_size
+        print("latent_size", latent_size)
         # Copy stuff. Should probably be moved to its own module, but for now
         # I'm being lazy because if switch to retrieval method this will change
         # anyways.
