@@ -4,7 +4,8 @@ from typing import Tuple, Generator, List, Set, Optional
 
 from ainix_common.parsing.copy_tools import add_copies_to_ast_set
 from ainix_common.parsing.model_specific.tokenizers import StringTokenizer, StringTokensMetadata
-from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, XValue, YValue
+from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, XValue, YValue, \
+    SPLIT_PROPORTIONS_TYPE, DEFAULT_SPLITS
 from ainix_kernel.models.model_types import StringTypeTranslateCF, ModelCantPredictException, \
     ModelSafePredictError
 from ainix_common.parsing.ast_components import AstObjectChoiceSet, ObjectChoiceNode
@@ -225,7 +226,10 @@ def flatten_list(lists):
     return [item for sublist in lists for item in sublist]
 
 
-def get_examples():
+def get_examples(
+    split_proportions: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS,
+    randomize_seed: bool = False
+):
     type_context = TypeContext()
     loader = TypeContextDataLoader(type_context, up_search_limit=4)
     loader.load_path("builtin_types/generic_parsers.ainix.yaml")
@@ -237,7 +241,9 @@ def get_examples():
         loader.load_path(f"builtin_types/{f}.ainix.yaml")
     type_context.finalize_data()
 
-    index = load_all_examples(type_context)
+    split_seed = None if not randomize_seed else random.randint(1, 1e8)
+
+    index = load_all_examples(type_context, split_proportions, split_seed)
     #index = load_tellia_examples(type_context)
     #index = load_all_and_tellina(type_context)
 
@@ -274,7 +280,7 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    epochs = 60
+    epochs = 40
     trainer.train(epochs, eval_every_n_epochs=3, intermitted_save_path="./checkpoints/chkp")
 
     print("Lets eval")

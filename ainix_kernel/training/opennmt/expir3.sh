@@ -7,38 +7,38 @@ REPLACE_SAMPLES=35
 WORD_VEC_SIZE=300
 TRAIN_STEPS=7500
 
-#echo "Exporting latest data"
-#cd ../../..
-#python3 -m ainix_kernel.training.export_data \
-#    --replace_samples ${REPLACE_SAMPLES} \
-#    || exit 1
-#mv data_train* ./ainix_kernel/training/opennmt
-#mv data_val* ./ainix_kernel/training/opennmt
-#cd ./ainix_kernel/training/opennmt
+echo "Exporting latest data"
+cd ../../..
+python3 -m ainix_kernel.training.export_data \
+    --replace_samples ${REPLACE_SAMPLES} \
+    || exit 1
+mv data_train* ./ainix_kernel/training/opennmt
+mv data_val* ./ainix_kernel/training/opennmt
+cd ./ainix_kernel/training/opennmt
 
-#echo "Preproc data"
-#rm expirs/exp1*
-#python3 ./OpenNMT-py/preprocess.py \
-#  -train_src data_train_x.txt \
-#  -train_tgt data_train_y.txt \
-#  -valid_src data_val_x.txt \
-#  -valid_tgt data_val_y.txt \
-#  --save_data expirs/exp1 \
-#  --src_words_min_frequency 40 \
-#  --tgt_words_min_frequency 40 \
-#  || exit 1
-#
-#echo "prepare glove"
-#cd ./OpenNMT-py/
-#python3 -m tools.embeddings_to_torch \
-#    -emb_file_both "../glove_dir/glove.840B.${WORD_VEC_SIZE}d.txt" \
-#    -dict_file "../expirs/exp1.vocab.pt" \
-#    -output_file "../data/embeddings" \
-#    || exit 1
-#    #-emb_file_both "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/glove_dir/glove.840B.300d.txt" \
-#    #-dict_file "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/expirs/exp1.vocab.pt" \
-#    #-output_file "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/data/embeddings" \
-#cd ..
+echo "Preproc data"
+rm expirs/exp1*
+python3 ./OpenNMT-py/preprocess.py \
+  -train_src data_train_x.txt \
+  -train_tgt data_train_y.txt \
+  -valid_src data_val_x.txt \
+  -valid_tgt data_val_y.txt \
+  --save_data expirs/exp1 \
+  --src_words_min_frequency 40 \
+  --tgt_words_min_frequency 40 \
+  || exit 1
+
+echo "prepare glove"
+cd ./OpenNMT-py/
+python3 -m tools.embeddings_to_torch \
+    -emb_file_both "../glove_dir/glove.840B.${WORD_VEC_SIZE}d.txt" \
+    -dict_file "../expirs/exp1.vocab.pt" \
+    -output_file "../data/embeddings" \
+    || exit 1
+    #-emb_file_both "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/glove_dir/glove.840B.300d.txt" \
+    #-dict_file "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/expirs/exp1.vocab.pt" \
+    #-output_file "/Users/dgros/Dropbox/cloudDL/ai-nix-2/ainix_kernel/training/opennmt/data/embeddings" \
+cd ..
 
 echo "Train"
 data_size=$(wc -l < data_train_x.txt)

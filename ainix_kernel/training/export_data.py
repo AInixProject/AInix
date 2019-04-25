@@ -5,6 +5,7 @@ from collections import defaultdict
 from ainix_common.parsing.model_specific.tokenizers import get_default_pieced_tokenizer_word_list, \
     NonLetterTokenizer
 from ainix_common.parsing.stringparser import StringParser, AstUnparser
+from ainix_kernel.indexing.examplestore import DataSplits, DEFAULT_SPLITS
 from ainix_kernel.training.trainer import iterate_data_pairs, get_examples
 from tqdm import tqdm
 
@@ -12,9 +13,17 @@ if __name__ == "__main__":
     argparer = ArgumentParser()
     argparer.add_argument("--prefix", type=str, default="data_")
     argparer.add_argument("--replace_samples", type=int, default=1)
+    default_split_train = DEFAULT_SPLITS[0]
+    assert default_split_train[1] == DataSplits.TRAIN
+    argparer.add_argument("--train_percent", type=float, default=default_split_train[0]*100)
+    argparer.add_argument("--randomize_seed", type=bool, default=False)
     args = argparer.parse_args()
 
-    type_context, index, replacers, loader = get_examples()
+    train_frac = args.train_percent / 100.0
+    split_proportions = ((train_frac, DataSplits.TRAIN), (1-train_frac, DataSplits.VALIDATION))
+
+    type_context, index, replacers, loader = get_examples(
+        split_proportions, randomize_seed=args.randomize_seed)
     index.get_all_examples(())
     string_parser = StringParser(type_context)
     tokenizer, vocab = get_default_pieced_tokenizer_word_list()

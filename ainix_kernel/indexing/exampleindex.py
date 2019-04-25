@@ -13,7 +13,7 @@ from whoosh.query import Term, Or, Every
 from whoosh.analysis.tokenizers import RegexTokenizer
 from whoosh.analysis.filters import LowercaseFilter
 from ainix_kernel.indexing.examplestore import ExamplesStore, XValue, \
-    get_split_from_example, SPLIT_PROPORTIONS_TYPE, DEFAULT_SPLITS, DataSplits
+    SPLIT_PROPORTIONS_TYPE, DEFAULT_SPLITS, DataSplits, DEFAULT_SPLITTER
 from ainix_common.util.strings import id_generator
 import ainix_kernel.indexing.index
 import copy
@@ -76,11 +76,11 @@ class ExamplesIndex(ExamplesStore):
         x_type: str,
         y_type: str,
         y_preferences: List[float],
-        splits: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS
+        splitter: DataSplits = DEFAULT_SPLITTER
     ) -> None:
         y_group = id_generator(size=10)
         for x in x_values:
-            split = get_split_from_example(x, y_type, splits)
+            split = splitter.get_split_from_example(x, y_type)
             for y, weight in zip(y_values, y_preferences):
                 new_example = XValue(self.example_count, x, y, x_type, y_type, weight, y_group,
                                      split=split.value,

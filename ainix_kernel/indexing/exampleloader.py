@@ -5,7 +5,7 @@ For that use ainix_common.parsing.loader"""
 # how to make this DRYer...
 import yaml
 from ainix_kernel.indexing.examplestore import ExamplesStore, DataSplits, \
-    DEFAULT_SPLITS, SPLIT_PROPORTIONS_TYPE, default_preferences
+    DEFAULT_SPLITS, SPLIT_PROPORTIONS_TYPE, default_preferences, DEFAULT_SPLITTER, DataSplitter
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -17,20 +17,20 @@ from typing import Dict, IO, Tuple
 def load_path(
     path : str,
     index: ExamplesStore,
-    splits: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS
+    splitter: DataSplitter = DEFAULT_SPLITTER
 ) -> None:
     """Loads a *.ainix.yaml file and registers and definesgT
     or objects with the supplied type_context"""
     # TODO (DNGros): validate that is actually a *.ainix.yaml file
     # TODO (DNGros): allow for you to specify a path and recurse down
     with open(path, 'r') as f:
-        load_yaml(f, index, splits)
+        load_yaml(f, index, splitter)
 
 
 def load_yaml(
     filelike: IO,
     index: ExamplesStore,
-    splits: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS
+    splits: DataSplitter = DEFAULT_SPLITTER
 ) -> None:
     doc = yaml.safe_load(filelike)
     _load(doc, index, splits)
@@ -39,7 +39,7 @@ def load_yaml(
 def _load(
     parsed_doc: Dict,
     index: ExamplesStore,
-    splits: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS
+    splits: DataSplitter = DEFAULT_SPLITTER
 ) -> None:
     """
     Args:
@@ -69,7 +69,7 @@ def _load_single_example(
     xtype: str,
     ytype: str,
     load_index: ExamplesStore,
-    splits: SPLIT_PROPORTIONS_TYPE
+    splits: DataSplitter
 ):
     x = example_dict['x']
     if not isinstance(x, list):
@@ -82,7 +82,7 @@ def _load_single_example(
     load_index.add_yset(x, y, xtype, ytype, default_preferences(len(y)), splits)
 
 
-def _load_example_set(define: Dict, load_index: ExamplesStore, splits: SPLIT_PROPORTIONS_TYPE):
+def _load_example_set(define: Dict, load_index: ExamplesStore, splits: DataSplitter):
     y_type = define['y_type']
     x_type = define.get('x_type', load_index.DEFAULT_X_TYPE)
     examples = define['examples']

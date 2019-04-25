@@ -6,6 +6,8 @@ import enum
 import hashlib
 import math
 
+from ainix_common.util.strings import id_generator
+
 
 @enum.unique
 class DataSplits(enum.IntEnum):
@@ -18,32 +20,49 @@ DEFAULT_SPLITS = ((.7, DataSplits.TRAIN), (.3, DataSplits.VALIDATION))
 SPLIT_PROPORTIONS_TYPE = Tuple[Tuple[float, DataSplits], ...]
 
 
-def get_split_from_example(
-    x_string: str,
-    y_type: str,
-    splits: SPLIT_PROPORTIONS_TYPE
-) -> DataSplits:
-    """Generates a pseudorandom selection of a split for example as a function of
+class DataSplitter:
+    """Used to perform a  pseudorandom selection of a split for example as a function of
     its x_string and y_type. This allows for examples to be placed in the same
     split between runs without storing the splits in a file. It also ensures that
-    any duplicate x_string example gets placed in the same split
-
-    Args:
-        x_string: A string value for this example's x query
-        y_type: The type name of root y type for the example
-        splits: A tuple of tuppes in the form
-            ((probability of being in split, split class), ...)
+    any duplicate x_string example gets placed in the same split.
     """
-    DIGEST_BYTES = 8
-    MAX_VAL = 2**(8*DIGEST_BYTES)
-    hash = hashlib.blake2b(str.encode(x_string + "::" + y_type), digest_size=DIGEST_BYTES)
-    hash_int = int(hash.hexdigest(), 16)
-    current_ceiling = 0
-    for probability, split_name in splits:
-        current_ceiling += probability * MAX_VAL
-        if hash_int <= math.ceil(current_ceiling):
-            return split_name
-    raise RuntimeError(f"Unreachable code reached. Splits {splits}")
+    def __init__(
+        self,
+        split_proportions: SPLIT_PROPORTIONS_TYPE,
+        seed: int = None
+    ):
+        self._splits = split_proportions
+        if seed is None:
+            self._seed_str = ""
+        else:
+            self._seed_str = id_generator(seed=seed)
+
+    def get_split_from_example(
+        self,
+        x_string: str,
+        y_type: str
+    ) -> DataSplits:
+        """
+        Args:
+            x_string: A string value for this example's x query
+            y_type: The type name of root y type for the example
+        """
+        DIGEST_BYTES = 8
+        MAX_VAL = 2**(8*DIGEST_BYTES)
+        hash = hashlib.blake2b(
+            str.encode(x_string + "::" + y_type + self._seed_str),
+            digest_size=DIGEST_BYTES
+        )
+        hash_int = int(hash.hexdigest(), 16)
+        current_ceiling = 0
+        for probability, split_name in self._splits:
+            current_ceiling += probability * MAX_VAL
+            if hash_int <= math.ceil(current_ceiling):
+                return split_name
+        raise RuntimeError(f"Unreachable code reached. Splits {self._splits}")
+
+
+DEFAULT_SPLITTER = DataSplitter(DEFAULT_SPLITS)
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -116,7 +135,7 @@ class ExamplesStore(ABC):
         x_type: str,
         y_type: str,
         y_preferences: List[float],
-        splits: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS
+        splitter: DataSplitter = DEFAULT_SPLITTER
     ) -> None:
         """Essentially used for creating a new YSet.
 
@@ -193,7 +212,7 @@ class BasicExampleStore(ExamplesStore):
         x_type: str,
         y_type: str,
         y_preferences: List[float],
-        splits: SPLIT_PROPORTIONS_TYPE = DEFAULT_SPLITS
+        splitter: DataSplitter = DEFAULT_SPLITTER
     ) -> None:
         if len(y_preferences) != len(y_texts):
             raise ValueError()
@@ -203,7 +222,7 @@ class BasicExampleStore(ExamplesStore):
         for y_text, weight in zip(y_texts, y_preferences):
             self.add_y_value(y_text, y_type, new_y_set.id, weight)
         for x_text in x_texts:
-            split = get_split_from_example(x_text, y_type, splits)
+            split = splitter.get_split_from_example(x_text, y_type)
             self.add_x_value(x_text, new_y_set.id, x_type, split)
 
     def add_y_value(self, y_text, y_type, y_set_id, preference) -> YValue:
