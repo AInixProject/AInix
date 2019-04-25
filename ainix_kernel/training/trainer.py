@@ -274,8 +274,8 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    epochs = 40
-    trainer.train(epochs, eval_every_n_epochs=2, intermitted_save_path="./checkpoints/chkp")
+    epochs = 60
+    trainer.train(epochs, eval_every_n_epochs=3, intermitted_save_path="./checkpoints/chkp")
 
     print("Lets eval")
     print("-----------")
@@ -289,7 +289,7 @@ if __name__ == "__main__":
     print("Validation")
     print("-----------")
     logger = EvaluateLogger()
-    trainer.evaluate(logger, dump_each=True)
+    trainer.evaluate(logger, dump_each=True, num_replace_samples=10)
     print_ast_eval_log(logger)
     print("serialize model")
     serialize(model, loader, "saved_model.pt", logger, trained_epochs=epochs)

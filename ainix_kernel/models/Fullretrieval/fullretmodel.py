@@ -564,7 +564,7 @@ def full_ret_from_example_store(
     pretrained_checkpoint: str
 ) -> FullRetModel:
     output_size = 200
-    (x_tokenizer, query_vocab), y_tokenizer = get_default_tokenizers()
+    (x_tokenizer, query_vocab), y_tokenizer = get_default_tokenizers(use_word_piece=True)
 
     # for glove the parseable vocab is huge. Narrow it down
     #query_vocab = make_x_vocab_from_examples(example_store, x_tokenizer, replacers,

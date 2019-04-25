@@ -123,7 +123,7 @@ class CasingModifier(IntEnum):
     ALL_UPPER = 1
     FIRST_UPPER = 2
     CASELESS = 3  # True if all symbols
-    SINGLE_CHAR_UPPER = 4  # True if all symbols
+    SINGLE_CHAR_UPPER = 4
 
 
 @unique

@@ -156,7 +156,7 @@ class TreeRNNCellLSTM(TreeRNNCell):
         #self.init_hidden = nn.Parameter(torch.zeros(hidden_size))
         self.init_cellstate = nn.Parameter(torch.zeros(hidden_size))
         #self.attn_query_lin = nn.Linear(hidden_size*3, hidden_size)
-        self.input_droput = nn.Dropout(p=0.3)
+        self.input_droput = nn.Dropout(p=0.4)
         self.output_dropout = nn.Dropout(p=0.2)
         self.attn_linear = nn.Linear(hidden_size*2, hidden_size)
 

@@ -3,9 +3,9 @@
 # Run just basic rnn with big glove
 
 BATCH_SIZE=64
-REPLACE_SAMPLES=30
+REPLACE_SAMPLES=35
 WORD_VEC_SIZE=300
-TRAIN_STEPS=5000
+TRAIN_STEPS=7500
 
 #echo "Exporting latest data"
 #cd ../../..
@@ -15,7 +15,7 @@ TRAIN_STEPS=5000
 #mv data_train* ./ainix_kernel/training/opennmt
 #mv data_val* ./ainix_kernel/training/opennmt
 #cd ./ainix_kernel/training/opennmt
-#
+
 #echo "Preproc data"
 #rm expirs/exp1*
 #python3 ./OpenNMT-py/preprocess.py \
@@ -24,8 +24,8 @@ TRAIN_STEPS=5000
 #  -valid_src data_val_x.txt \
 #  -valid_tgt data_val_y.txt \
 #  --save_data expirs/exp1 \
-#  --src_words_min_frequency 7 \
-#  --tgt_words_min_frequency 7 \
+#  --src_words_min_frequency 40 \
+#  --tgt_words_min_frequency 40 \
 #  || exit 1
 #
 #echo "prepare glove"
@@ -54,6 +54,8 @@ python3 ./OpenNMT-py/train.py \
     --word_vec_size ${WORD_VEC_SIZE} \
     --pre_word_vecs_enc "data/embeddings.enc.pt" \
     --pre_word_vecs_dec "data/embeddings.dec.pt" \
+    --enc_layers 2 \
+    --dec_layers 2 \
     --gpu_rank 0 \
     || exit 1
    #--gpu_rank 0 \
@@ -67,7 +69,7 @@ python3 ./OpenNMT-py/translate.py \
     -replace_unk \
     -verbose \
     --replace_unk \
-    --beam_size 5 \
+    --beam_size 10 \
     || exit 1
 
 
