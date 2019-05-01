@@ -211,7 +211,7 @@ def make_default_query_encoder(
             variable_lengths=True,
             input_dropout_p=0.3,
             dropout_p=0.3,
-            num_layers=1
+            num_layers=2
         )
         return StringQueryEncoder(x_tokenizer, query_vocab, x_vectorizer, internal_encoder)
         #base_enc = make_default_cookie_monster_base(

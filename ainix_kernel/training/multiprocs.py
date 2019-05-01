@@ -52,9 +52,9 @@ def train_func(pid, model: StringTypeTranslateCF, index: ExamplesStore, batch_si
         os.environ["OMP_NUM_THREADS"] = "1"
         torch.set_num_threads = 1
     print(f"start {pid} actual pid {os.getpid()}")
-    #print(f"example count {index.get_doc_count()}")
+    #print(f"example count {index.get_num_x_values()}")
     #for i in range(10):
-    #    print(f"feelin racey? {len(list(index.get_all_examples()))}")
+    #    print(f"feelin racey? {len(list(index.get_all_x_values()))}")
     trainer = TypeTranslateCFTrainer(model, index, batch_size)
     if eval_thresh is None:
         trainer.train(epochs)

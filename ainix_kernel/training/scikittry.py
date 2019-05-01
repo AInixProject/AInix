@@ -31,8 +31,8 @@ if __name__ == "__main__":
     index = load_all_examples(type_context)
     #index = load_tellia_examples(type_context)
 
-    print("num docs", index.get_doc_count())
-    print("num train", len(list(index.get_all_examples((DataSplits.TRAIN, )))))
+    print("num docs", index.get_num_x_values())
+    print("num train", len(list(index.get_all_x_values((DataSplits.TRAIN,)))))
 
     replacers = get_all_replacers()
 

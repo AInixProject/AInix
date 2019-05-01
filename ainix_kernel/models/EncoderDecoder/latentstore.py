@@ -345,7 +345,7 @@ def make_latent_store_from_examples(
     splits=(DataSplits.TRAIN,)
 ) -> LatentStore:
     builder = TorchLatentStoreBuilder(examples.type_context.get_type_count(), latent_size)
-    for example in examples.get_all_examples(splits):
+    for example in examples.get_all_x_values(splits):
         if replacer is not None:
             x = example.xquery
             x, y = replacer.strings_replace(x, example.ytext, seed_from_x_val(x))

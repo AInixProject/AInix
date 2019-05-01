@@ -21,7 +21,7 @@ def update_latent_store_from_examples(
     tokenizer: StringTokenizer
 ):
     model.set_in_eval_mode()
-    for example in examples.get_all_examples(splits):
+    for example in examples.get_all_x_values(splits):
         # TODO multi sampling and average replacers
         x_replaced, y_replaced = replacer.strings_replace(
             example.xquery, example.ytext, seed_from_x_val(example.xquery))

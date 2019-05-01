@@ -11,6 +11,8 @@ echo "Exporting latest data"
 cd ../../..
 python3 -m ainix_kernel.training.export_data \
     --replace_samples ${REPLACE_SAMPLES} \
+    --train_percent 80 \
+    --randomize_seed \
     || exit 1
 mv data_train* ./ainix_kernel/training/opennmt
 mv data_val* ./ainix_kernel/training/opennmt

@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
 
     train_splits = (DataSplits.TRAIN,)
-    all_ex_list = list(index.get_all_examples(train_splits))
+    all_ex_list = list(index.get_all_x_values(train_splits))
     random.shuffle(all_ex_list)
     processed_x_raws = set()
     summaries = []

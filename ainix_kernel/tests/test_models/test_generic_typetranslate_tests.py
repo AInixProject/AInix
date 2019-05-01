@@ -283,11 +283,11 @@ def test_non_bow(model_name, basic_classify_tc):
     )
     model = make_model(model_name, example_store)
     print("train_len", len(list(
-        example_store.get_all_examples(only_from_splits=(DataSplits.TRAIN,)))))
+        example_store.get_all_x_values(only_from_splits=(DataSplits.TRAIN,)))))
     print("val_len", len(list(
-        example_store.get_all_examples(only_from_splits=(DataSplits.VALIDATION,)))))
+        example_store.get_all_x_values(only_from_splits=(DataSplits.VALIDATION,)))))
     print("val examples", [x.xquery for x in
-                           example_store.get_all_examples(
+                           example_store.get_all_x_values(
                                only_from_splits=(DataSplits.VALIDATION,))])
     if "Oracle" not in model_name:
         # Don't expect it to work before training.

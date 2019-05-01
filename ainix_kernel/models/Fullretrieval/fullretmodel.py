@@ -35,7 +35,8 @@ import sklearn.naive_bayes
 
 import attr
 
-REPLACEMENT_SAMPLES = 10
+#REPLACEMENT_SAMPLES = 10
+REPLACEMENT_SAMPLES = 35
 START_COPY_KERNEL_WEIGHTS = torch.tensor([0.25, .7, 0.05])
 END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, .7, 0.25])
 #                         ^ Weight current token the most and the before and after less.
@@ -579,7 +580,7 @@ def full_ret_from_example_store(
     summaries, example_refs, example_splits = [], [], []
     nb_update_fn, finalize_nb_fn = get_nb_learner()
     with torch.no_grad():
-        for xval in tqdm(list(example_store.get_all_examples())):
+        for xval in tqdm(list(example_store.get_all_x_values())):
             # Get the most prefered y text
             all_y_examples = example_store.get_y_values_for_y_set(xval.y_set_id)
             most_preferable_y = all_y_examples[0]

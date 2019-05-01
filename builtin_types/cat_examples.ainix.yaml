@@ -12,6 +12,7 @@ defines:
     - output the content of [-[FILENAME]-]
     y:
     - cat [-[FILENAME]-]
+    risk: 1  # could dump a lot of data to terminal. Minor annoyance.
   - x:
     - print the contents of [-[FILENAME]-] with line numbers
     - write out the contents of [-[FILENAME]-] with line numbers
@@ -19,10 +20,12 @@ defines:
     - cat the contents of [-[FILENAME]-] with line numbers
     y:
     - cat -n [-[FILENAME]-]
+    risk: 1
   - x:
     - concatenate * together
     y:
     - cat *
+    risk: 1
   #- x:
   #  - print a combination of the contents of all files that start with "[-[ENGWORD]-]"
   #  - concatenate [-[ENGWORD]-]* together
@@ -33,11 +36,14 @@ defines:
     - concat all comma separated files here
     y:
     - cat *.csv
+    risk: 1
   - x:
     - concatenate [-[1=FILENAME]-] and [-[2=FILENAME]-] together
     y:
     - cat [-[$1]-] [-[$2]-]
+    risk: 1
   - x:
     - concatenate [-[1=FILENAME]-], [-[2=FILENAME]-], and [-[3=FILENAME]-] together
     y:
     - cat [-[$1]-] [-[$2]-] [-[$3]-]
+    risk: 1

@@ -1,6 +1,6 @@
 import numpy as np
 from collections import defaultdict
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 from pyrsistent import pmap
 
@@ -294,7 +294,7 @@ class TypeContext:
     def get_object_by_ind(self, ind: int) -> AInixObject:
         return self.ind_to_object[ind]
 
-    def get_implementations(self, type) -> List[AInixObject]:
+    def get_implementations(self, type: Union[str, AInixType]) -> List[AInixObject]:
         type = self._resolve_type(type)
         return self._type_name_to_implementations[type.name]
 

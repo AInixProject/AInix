@@ -26,7 +26,7 @@ def do_train(
     rsampled_examples = tqdm(itertools.chain.from_iterable((
         iterate_data_pairs(index, replacers, string_parser, x_tokenizer, unparser, None)
         for _ in range(num_replace_samples)
-    )), total=index.get_doc_count()*num_replace_samples)
+    )), total=index.get_num_x_values() * num_replace_samples)
 
     # TODO this should probably be model dependent
     encoder = make_default_query_encoder(x_tokenizer, x_vocab, 200, pretrain_checkpoint)

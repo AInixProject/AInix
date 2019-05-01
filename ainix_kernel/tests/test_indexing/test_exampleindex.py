@@ -78,9 +78,9 @@ def test_get_all_docs():
                              other_type_name, 1, "nwand",
                              DataSplits.VALIDATION.value, other_parsed_rep))
 
-    assert len(list(index.get_all_examples())) == 5
-    assert len(list(index.get_all_examples((DataSplits.VALIDATION,)))) == 2
-    assert len(list(index.get_all_examples((DataSplits.VALIDATION, DataSplits.TRAIN)))) == 4
+    assert len(list(index.get_all_x_values())) == 5
+    assert len(list(index.get_all_x_values((DataSplits.VALIDATION,)))) == 2
+    assert len(list(index.get_all_x_values((DataSplits.VALIDATION, DataSplits.TRAIN)))) == 4
 
 
 BUILTIN_TYPES_PATH = "builtin_types"

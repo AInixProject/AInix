@@ -58,7 +58,7 @@ class ExamplesIndex(ExamplesStore):
         return ainix_kernel.indexing.whooshbackend.WhooshIndexBackend(
             ExamplesIndex.get_scheme(), ram_only=True)
 
-    def get_doc_count(self) -> int:
+    def get_num_x_values(self) -> int:
         return self.backend.get_doc_count()
 
     def _get_yparsed_rep(self, y_string: str, y_type: str) -> str:
@@ -137,7 +137,7 @@ class ExamplesIndex(ExamplesStore):
         query_result = self.backend.query(query, max_results)
         yield from (self._dict_to_example(hit.doc) for hit in query_result)
 
-    def get_all_examples(
+    def get_all_x_values(
         self,
         filter_splits: Tuple[DataSplits, ...] = None
     ) -> Generator[XValue, None, None]:

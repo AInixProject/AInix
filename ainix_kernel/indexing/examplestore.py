@@ -86,6 +86,10 @@ class XValue:
     split: int
     x_weight: float = 1.0
 
+    def get_y_type(self, index: 'ExamplesStore') -> str:
+        # Currently XValues don't track what index they belong to. Should they??
+        return index.get_y_set_by_id(self.y_set_id).y_type
+
 
 @attr.s(auto_attribs=True, frozen=True)
 class YSet:
@@ -149,7 +153,7 @@ class ExamplesStore(ABC):
         pass
 
     @abstractmethod
-    def get_all_examples(self, filter_splits=None) -> Generator[XValue, None, None]:
+    def get_all_x_values(self, filter_splits=None) -> Generator[XValue, None, None]:
         pass
 
     @abstractmethod
@@ -157,11 +161,23 @@ class ExamplesStore(ABC):
         pass
 
     @abstractmethod
-    def get_doc_count(self) -> int:
+    def get_num_x_values(self) -> int:
+        pass
+
+    @abstractmethod
+    def get_num_y_values(self) -> int:
+        pass
+
+    @abstractmethod
+    def get_num_y_sets(self) -> int:
         pass
 
     @abstractmethod
     def get_example_by_id(self, id: int) -> XValue:
+        pass
+
+    @abstractmethod
+    def get_y_set_by_id(self, id: int) -> YSet:
         pass
 
     @abstractmethod
@@ -199,7 +215,7 @@ class BasicExampleStore(ExamplesStore):
     def __init__(self, type_context: TypeContext):
         super().__init__(type_context)
         self._x_vals: List[XValue] = []
-        self._y_sets: List[YValue] = []
+        self._y_sets: List[YSet] = []
         self._y_values: List[YValue] = []
         self._y_set_id_to_y_values: List[List[YValue]] = []
         # Used to enforce that we don't have duplicate x values
@@ -249,7 +265,7 @@ class BasicExampleStore(ExamplesStore):
         self._x_uniqueness_set.add(uniqueness_tuple)
         return new_val
 
-    def get_all_examples(
+    def get_all_x_values(
         self,
         only_from_splits: Tuple[DataSplits, ...] = None
     ) -> Generator[XValue, None, None]:
@@ -262,11 +278,20 @@ class BasicExampleStore(ExamplesStore):
     def get_x_val_y_type(self, xval: XValue) -> str:
         return self._y_sets[xval.y_set_id].y_type
 
-    def get_doc_count(self) -> int:
+    def get_num_x_values(self) -> int:
         return len(self._x_vals)
+
+    def get_num_y_values(self) -> int:
+        return len(self._y_values)
+
+    def get_num_y_sets(self) -> int:
+        return len(self._y_sets)
 
     def get_example_by_id(self, id: int) -> XValue:
         return self._x_vals[id]
+
+    def get_y_set_by_id(self, id: int) -> YSet:
+        return self._y_sets[id]
 
     def get_non_combined_example_count(self):
         raise NotImplemented()

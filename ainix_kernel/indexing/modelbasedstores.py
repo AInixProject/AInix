@@ -26,7 +26,7 @@ class EncoderCacheEntry:
 class EncoderCache:
     def __init__(self, store_to_cache: ExamplesStore):
         self.store_to_cache = store_to_cache
-        self.x_vals_cache = [[] for _ in range(store_to_cache.get_doc_count())]
+        self.x_vals_cache = [[] for _ in range(store_to_cache.get_num_x_values())]
 
     def add_entry(
         self,

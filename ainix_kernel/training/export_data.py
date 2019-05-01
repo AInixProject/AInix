@@ -16,7 +16,7 @@ if __name__ == "__main__":
     default_split_train = DEFAULT_SPLITS[0]
     assert default_split_train[1] == DataSplits.TRAIN
     argparer.add_argument("--train_percent", type=float, default=default_split_train[0]*100)
-    argparer.add_argument("--randomize_seed", type=bool, default=False)
+    argparer.add_argument("--randomize_seed", action='store_true')
     args = argparer.parse_args()
 
     train_frac = args.train_percent / 100.0
@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     type_context, index, replacers, loader = get_examples(
         split_proportions, randomize_seed=args.randomize_seed)
-    index.get_all_examples(())
+    index.get_all_x_values(())
     string_parser = StringParser(type_context)
     tokenizer, vocab = get_default_pieced_tokenizer_word_list()
     unparser = AstUnparser(type_context, tokenizer)
@@ -34,7 +34,7 @@ if __name__ == "__main__":
         return " ".join(toks)
 
     split_to_sentences = defaultdict(list)
-    num_to_do = args.replace_samples*index.get_doc_count()
+    num_to_do = args.replace_samples*index.get_num_x_values()
     data_iterator = itertools.chain.from_iterable(
         (iterate_data_pairs(
             index, replacers, string_parser, tokenizer, unparser, None)

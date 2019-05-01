@@ -293,7 +293,7 @@ def make_vocab_from_example_store(
 
     already_done_ys = set()
     parser = StringParser(exampe_store.type_context)
-    for example in exampe_store.get_all_examples():
+    for example in exampe_store.get_all_x_values():
         x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.xquery)[0])
         if example.ytext not in already_done_ys:
             ast = parser.create_parse_tree(example.ytext, example.ytype)
@@ -322,7 +322,7 @@ def make_vocab_from_example_store_and_type_context(
     if x_vocab_builder is None:
         x_vocab_builder = CounterVocabBuilder(min_freq=1)
 
-    for example in example_store.get_all_examples():
+    for example in example_store.get_all_x_values():
         x_vocab_builder.add_sequence(x_tokenizer.tokenize(example.xquery)[0])
     y_vocab = TypeContextWrapperVocab(example_store.type_context)
     return x_vocab_builder.produce_vocab(), y_vocab
@@ -351,7 +351,7 @@ def make_x_vocab_from_examples(
         x_vocab_builder = CounterVocabBuilder(min_freq=min_freq)
 
     for _ in range(replace_samples):
-        for example in example_store.get_all_examples():
+        for example in example_store.get_all_x_values():
             if example.split != DataSplits.TRAIN and train_only:
                 continue
             xstr, _ = replacers.strings_replace(example.x_text, "")

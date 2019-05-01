@@ -17,6 +17,7 @@ defines:
     - '[-[1=FILENAME]-] line count'
     y:
     - wc -l [-[$1]-]
+    risk: 0
   - x:
     - how many words are in [-[1=FILENAME]-]
     - get the word count of [-[1=FILENAME]-]
@@ -24,16 +25,19 @@ defines:
     - '[-[1=FILENAME]-] word count'
     y:
     - wc -w [-[$1]-]
+    risk: 0
   - x:
     - how many bytes are in [-[1=FILENAME]-]?
     y:
     - wc -c [-[$1]-]
+    risk: 0
   - x:
     - how many characters are in [-[1=FILENAME]-]
     - character count of [-[1=FILENAME]-]
     - '[-[1=FILENAME]-] character count'
     y:
     - 'wc -m [-[$1]-]'
+    risk: 0
   - x:
     - count the number of files and directories in current directory without recursion
     - how many files or dirs are here?
@@ -50,14 +54,17 @@ defines:
     # -1 is default output format when not to terminal
     # so can not specify it
     - ls | wc -l
+    risk: 0
   - x:
     - how many letters are in "foolumboo"
     y:
     - echo foolumboo | wc -c
+    risk: 0
   - x:
     - how many letters are in "[-[1=ENGWORD]-]"
     y:
     - echo [-[$1]-] | wc -c
+    risk: 0
   - x:
     - how many letters are in "[-[1=ENGWORD]-][-[2=ENGWORD]-]"
     - Get letter count of "[-[1=ENGWORD]-][-[2=ENGWORD]-]"
@@ -65,3 +72,4 @@ defines:
     - count number of letters in "[-[1=ENGWORD]-][-[2=ENGWORD]-]"
     y:
     - echo [-[$1]-][-[$2]-] | wc -c
+    risk: 0

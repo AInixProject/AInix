@@ -215,4 +215,4 @@ class TerribleSearchTypePredictor(SearchingTypePredictor):
         use_only_training_data: bool
     ):
         splits = (DataSplits.TRAIN,) if use_only_training_data else None
-        return list(self.index.get_all_examples(filter_splits=splits))
+        return list(self.index.get_all_x_values(filter_splits=splits))

@@ -1,4 +1,6 @@
 import random
+from argparse import ArgumentParser
+
 import torch
 from typing import Tuple, Generator, List, Set, Optional
 
@@ -49,7 +51,7 @@ class TypeTranslateCFTrainer:
 
     def _train_one_epoch(self, which_epoch_on: int):
         train_splits = (DataSplits.TRAIN,)
-        train_count = sum(1 for _ in self.example_store.get_all_examples(train_splits))
+        train_count = sum(1 for _ in self.example_store.get_all_x_values(train_splits))
         single_examples_iter = self.data_pair_iterate(train_splits)
         batches_iter = more_itertools.chunked(single_examples_iter, self.batch_size)
         loss = torch.tensor(0.0)
@@ -205,9 +207,9 @@ def iterate_data_pairs(
     """Will yield one epoch of examples as a tuple of the example and the
     Ast set that represents all valid y_values for that example"""
     type_context = example_store.type_context
-    all_ex_list = list(example_store.get_all_examples(filter_splits))
+    all_ex_list = list(example_store.get_all_x_values(filter_splits))
     random.shuffle(all_ex_list)
-    for example in all_ex_list:  #self.example_store.get_all_examples(splits):
+    for example in all_ex_list:  #self.example_store.get_all_x_values(splits):
         all_y_examples = example_store.get_y_values_for_y_set(example.y_set_id)
         y_type = type_context.get_type_by_name(all_y_examples[0].y_type)
         replacement_sample = replacers.create_replace_sampling(example.x_text)
@@ -247,8 +249,8 @@ def get_examples(
     #index = load_tellia_examples(type_context)
     #index = load_all_and_tellina(type_context)
 
-    #print("num docs", index.get_doc_count())
-    #print("num train", len(list(index.get_all_examples((DataSplits.TRAIN, )))))
+    #print("num docs", index.get_num_x_values())
+    #print("num train", len(list(index.get_all_x_values((DataSplits.TRAIN, )))))
 
     replacers = get_all_replacers()
     return type_context, index, replacers, loader
@@ -257,12 +259,23 @@ def get_examples(
 # A bunch of code for running the thing which really shouldn't be here.
 
 if __name__ == "__main__":
+    argparer = ArgumentParser()
+    default_split_train = DEFAULT_SPLITS[0]
+    assert default_split_train[1] == DataSplits.TRAIN
+    argparer.add_argument("--train_percent", type=float, default=default_split_train[0]*100)
+    argparer.add_argument("--randomize_seed", action='store_true')
+    argparer.add_argument("--eval_replace_samples", type=int, default=10)
+    argparer.add_argument("--quiet_dump", action='store_true')
+    args = argparer.parse_args()
+    train_frac = args.train_percent / 100.0
+    split_proportions = ((train_frac, DataSplits.TRAIN), (1-train_frac, DataSplits.VALIDATION))
+
     import ainix_kernel.indexing.exampleindex
     from ainix_kernel.indexing import exampleloader
     import datetime
 
     print("start time", datetime.datetime.now())
-    type_context, index, replacers, loader = get_examples()
+    type_context, index, replacers, loader = get_examples(split_proportions, args.randomize_seed)
     from ainix_kernel.models.EncoderDecoder.encdecmodel import \
         get_default_encdec_model
 
@@ -288,14 +301,15 @@ if __name__ == "__main__":
     print("TRAIN")
     print("-----------")
     logger = EvaluateLogger()
-    trainer.evaluate(logger, filter_splits=(DataSplits.TRAIN,), dump_each=True,
+    trainer.evaluate(logger, filter_splits=(DataSplits.TRAIN,), dump_each=not args.quiet_dump,
                      num_replace_samples=10)
     print_ast_eval_log(logger)
     print("-----------")
     print("Validation")
     print("-----------")
     logger = EvaluateLogger()
-    trainer.evaluate(logger, dump_each=True, num_replace_samples=10)
+    trainer.evaluate(logger, dump_each=not args.quiet_dump,
+                     num_replace_samples=args.eval_replace_samples)
     print_ast_eval_log(logger)
     print("serialize model")
     serialize(model, loader, "saved_model.pt", logger, trained_epochs=epochs)

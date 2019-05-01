@@ -1,5 +1,6 @@
 defines:
 - define_new: example_set
+  y_type: CommandSequence
   examples:
   - x:
     - move [-[1=FILENAME]-] to [-[2=FILENAME]-]
@@ -63,4 +64,3 @@ defines:
     - change [-[ENGWORD]-].[-[EXTENSION]-] to a dot file
     y:
     - mv [-[ENGWORD]-].[-[EXTENSION]-] .[-[ENGWORD]-].[-[EXTENSION]-]
-  y_type: CommandSequence

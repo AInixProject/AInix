@@ -10,6 +10,7 @@ defines:
     - cd to my home directory
     y:
     - cd ~
+    risk: 0
   - x:
     - go up one directory
     - cd to parent dir
@@ -17,31 +18,38 @@ defines:
     - cd up one directory
     y:
     - cd ..
+    risk: 0
   - x:
     - cd to where I was before
     - go back to where I was
     - go back to directory was in before last cd
     y:
     - 'cd -'
+    risk: 0
   - x:
     - go to my tmp directory
     - change directory to my tmp dir
     y:
     - cd /tmp
+    risk: 0
   - x:
     - go up two directories
     y:
     - cd ../..
+    risk: 0
   - x:
     - cd up three directories
     y:
     - cd ../../..
+    risk: 0
   - x:
     - go into pictures dir
     y:
     - cd pictures
+    risk: 0
   - x:
     - change directory to [-[DIRNAME]-] dir
     - go to [-[DIRNAME]-] directory
     y:
     - cd [-[DIRNAME]-]
+    risk: 0

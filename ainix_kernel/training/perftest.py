@@ -41,7 +41,7 @@ def get_index() -> ExamplesStore:
 
 def get_examples_per_sec(batch_size, examples_sample_size=1e4):
     index = get_index()
-    num_docs = index.get_doc_count()
+    num_docs = index.get_num_x_values()
     print("num docs", num_docs)
 
     model = get_default_encdec_model(index, standard_size=64)
@@ -60,7 +60,7 @@ def get_examples_per_sec(batch_size, examples_sample_size=1e4):
 
 def train_to_threshold_st(batch_size, threshold=0.7, max_epochs=100):
     index = get_index()
-    num_docs = index.get_doc_count()
+    num_docs = index.get_num_x_values()
     print("num docs", num_docs)
 
     model = get_default_encdec_model(index, standard_size=64)
@@ -131,7 +131,7 @@ def get_examples_per_sec_multi(batch_size, procs, examples_sample_size=1e4):
     torch.set_num_threads = 1
 
     index = get_index()
-    print("num docs", index.get_doc_count())
+    print("num docs", index.get_num_x_values())
     model = get_default_encdec_model(examples=index, standard_size=64)
     # train
     mptrainer = MultiprocTrainer(
@@ -141,7 +141,7 @@ def get_examples_per_sec_multi(batch_size, procs, examples_sample_size=1e4):
             batch_size
         )
     )
-    num_docs = index.get_doc_count()
+    num_docs = index.get_num_x_values()
     epochs = math.ceil(examples_sample_size / num_docs / procs)
     print("going to perform", epochs, "epochs")
     train_time = datetime.datetime.now()
@@ -158,7 +158,7 @@ def get_multi_train_time(batch_size, procs):
     torch.set_num_threads = 1
 
     index = get_index()
-    print("num docs", index.get_doc_count())
+    print("num docs", index.get_num_x_values())
     model = get_default_encdec_model(examples=index, standard_size=64)
     # train
     mptrainer = MultiprocTrainer(
@@ -168,7 +168,7 @@ def get_multi_train_time(batch_size, procs):
             batch_size
         )
     )
-    num_docs = index.get_doc_count()
+    num_docs = index.get_num_x_values()
     time = mptrainer.train(workers_count=procs, epochs_per_worker=50,
                            index=index, batch_size=batch_size, converge_check_val=0.75)
     return time
