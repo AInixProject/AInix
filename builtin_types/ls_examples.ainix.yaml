@@ -107,7 +107,7 @@ defines:
             - ls -l sorted by modification date
             - ls -l sorted by mod data
             - ls -l sort by mod date
-            - ls -l sort the list by modification time which the newest first
+            - ls -l sort the list by modification time with the newest first
             y:
             - "ls -lt"
           - x:

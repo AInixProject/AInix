@@ -3,9 +3,10 @@
 # Run just basic rnn with big glove
 
 BATCH_SIZE=64
-REPLACE_SAMPLES=35
+REPLACE_SAMPLES=${1:-35}
 WORD_VEC_SIZE=300
 TRAIN_STEPS=7500
+echo repl samples ${REPLACE_SAMPLES}
 
 echo "Exporting latest data"
 cd ../../..

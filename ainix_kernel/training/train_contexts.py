@@ -31,7 +31,7 @@ def load_all_examples(
     return index
 
 
-def load_tellia_examples(tc: TypeContext) -> ExamplesStore:
+def load_tellina_examples(tc: TypeContext) -> ExamplesStore:
     dirname, filename = os.path.split(os.path.abspath(__file__))
     index = ainix_kernel.indexing.examplestore.BasicExampleStore(tc)
     exampleloader.load_path(

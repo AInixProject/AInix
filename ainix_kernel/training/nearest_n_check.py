@@ -66,7 +66,7 @@ if __name__ == "__main__":
     type_context.finalize_data()
 
     index = load_all_examples(type_context)
-    #index = load_tellia_examples(type_context)
+    #index = load_tellina_examples(type_context)
 
     print("num docs", index.backend.index.doc_count())
     replacers = get_all_replacers()

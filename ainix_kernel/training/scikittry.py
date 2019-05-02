@@ -29,7 +29,7 @@ if __name__ == "__main__":
     type_context.finalize_data()
 
     index = load_all_examples(type_context)
-    #index = load_tellia_examples(type_context)
+    #index = load_tellina_examples(type_context)
 
     print("num docs", index.get_num_x_values())
     print("num train", len(list(index.get_all_x_values((DataSplits.TRAIN,)))))

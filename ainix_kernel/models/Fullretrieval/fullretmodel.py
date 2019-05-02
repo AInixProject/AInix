@@ -293,7 +293,8 @@ def _preproc_example(
     embedder: StringQueryEncoder,
     parser: StringParser,
     unparser: AstUnparser,
-    nb_update_fn: Callable
+    nb_update_fn: Callable,
+    replace_samples: int = REPLACEMENT_SAMPLES
 ) -> Tuple[torch.Tensor, _ExampleRef]:
     """Processedes an example for storing in the lookup model.
 
@@ -307,7 +308,7 @@ def _preproc_example(
     needs_replacement = replacers.check_if_string_has_replacement_spots(x) or \
                         replacers.check_if_string_has_replacement_spots(y)
     xs, ys, xs_no_repl = [], [], []
-    for _ in range(REPLACEMENT_SAMPLES if needs_replacement else 1):
+    for _ in range(replace_samples if needs_replacement else 1):
         xreplaced, yreplaced = replacers.strings_replace(x, y)
         xs.append(xreplaced)
         ys.append(yreplaced)
@@ -562,7 +563,8 @@ def get_nb_learner():
 def full_ret_from_example_store(
     example_store: ExamplesStore,
     replacers: Replacer,
-    pretrained_checkpoint: str
+    pretrained_checkpoint: str,
+    replace_samples: int = REPLACEMENT_SAMPLES
 ) -> FullRetModel:
     output_size = 200
     (x_tokenizer, query_vocab), y_tokenizer = get_default_tokenizers(use_word_piece=True)
@@ -586,7 +588,8 @@ def full_ret_from_example_store(
             most_preferable_y = all_y_examples[0]
             new_summary, new_example_ref = _preproc_example(
                 xval, most_preferable_y, replacers, embedder, parser, unparser,
-                nb_update_fn if xval.split == DataSplits.TRAIN else None)
+                nb_update_fn if xval.split == DataSplits.TRAIN else None,
+                replace_samples=replace_samples)
             summaries.append(new_summary)
             example_refs.append(new_example_ref)
             example_splits.append(xval.split)
