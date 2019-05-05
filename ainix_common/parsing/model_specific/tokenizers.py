@@ -168,6 +168,21 @@ class NonLetterTokenizer(StringTokenizer):
         return {"name": "NonLetterTokenizer"}
 
 
+def get_case_modifier_for_tok(tok: str) -> CasingModifier:
+    if tok == "":
+        raise ValueError("Empty str?")
+    if tok.lower() == tok:
+        if tok.upper() == tok:
+            return CasingModifier.CASELESS
+        return CasingModifier.LOWER
+    if tok.upper() == tok:
+        if len(tok) == 1:
+            return CasingModifier.SINGLE_CHAR_UPPER
+        return CasingModifier.ALL_UPPER
+    if tok[0].upper() == tok[0] and tok[1:].lower() == tok[1:]:
+        return CasingModifier.FIRST_UPPER
+    raise ValueError(f"Not good casing mod '{tok}'")
+
 # TODO (DNGros): This should be unified with the tokenizer in generic_strings.
 class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
     def __init__(self, vocab: List[str], merge_long_files: bool = True):

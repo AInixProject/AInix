@@ -564,19 +564,25 @@ def full_ret_from_example_store(
     example_store: ExamplesStore,
     replacers: Replacer,
     pretrained_checkpoint: str,
-    replace_samples: int = REPLACEMENT_SAMPLES
+    replace_samples: int = REPLACEMENT_SAMPLES,
+    encoder_name="CM"
 ) -> FullRetModel:
     output_size = 200
-    (x_tokenizer, query_vocab), y_tokenizer = get_default_tokenizers(use_word_piece=True)
 
     # for glove the parseable vocab is huge. Narrow it down
     #query_vocab = make_x_vocab_from_examples(example_store, x_tokenizer, replacers,
     #                                         min_freq=2, replace_samples=2)
     #print(f"vocab len {len(query_vocab)}")
 
-    embedder = make_default_query_encoder(x_tokenizer, query_vocab,
-                                       output_size, pretrained_checkpoint)
-    embedder.eval()
+    if encoder_name == "CM":
+        (x_tokenizer, query_vocab), y_tokenizer = get_default_tokenizers(use_word_piece=True)
+        embedder = make_default_query_encoder(x_tokenizer, query_vocab,
+                                           output_size, pretrained_checkpoint)
+        embedder.eval()
+    elif encoder_name == "BERT":
+        pass
+    else:
+        raise ValueError(f"Unsupported encoder_name {encoder_name}")
     parser = StringParser(example_store.type_context)
     unparser = AstUnparser(example_store.type_context, embedder.get_tokenizer())
     summaries, example_refs, example_splits = [], [], []
