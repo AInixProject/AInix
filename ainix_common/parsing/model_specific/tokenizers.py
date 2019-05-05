@@ -169,22 +169,13 @@ class NonLetterTokenizer(StringTokenizer):
         return {"name": "NonLetterTokenizer"}
 
 
-def get_case_modifier_for_tok(tok: str, allow_other: bool = False) -> CasingModifier:
-    if tok == "":
-        raise ValueError("Empty str?")
-    if tok.lower() == tok:
-        if tok.upper() == tok:
-            return CasingModifier.CASELESS
-        return CasingModifier.LOWER
-    if tok.upper() == tok:
-        if len(tok) == 1:
-            return CasingModifier.SINGLE_CHAR_UPPER
-        return CasingModifier.ALL_UPPER
-    if tok[0].upper() == tok[0] and tok[1:].lower() == tok[1:]:
-        return CasingModifier.FIRST_UPPER
-    if allow_other:
-        return CasingModifier.OTHER
-    raise ValueError(f"Not good casing mod '{tok}'")
+MOD_SOS_TOK = ModifiedStringToken(
+    parse_constants.SOS,
+    CasingModifier.CASELESS, WhitespaceModifier.AFTER_SPACE_OR_SOS)
+
+MOD_EOS_TOK = ModifiedStringToken(
+    parse_constants.EOS,
+    CasingModifier.CASELESS, WhitespaceModifier.AFTER_SPACE_OR_SOS)
 
 
 # TODO (DNGros): This should be unified with the tokenizer in generic_strings.
@@ -208,15 +199,6 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
         for special in TOKEN_SPECIALS:
             self.trie[special] = CasingModifier.CASELESS
 
-
-    SOS_TOK = ModifiedStringToken(
-        parse_constants.SOS,
-        CasingModifier.CASELESS, WhitespaceModifier.AFTER_SPACE_OR_SOS)
-
-    EOS_TOK = ModifiedStringToken(
-        parse_constants.EOS,
-        CasingModifier.CASELESS, WhitespaceModifier.AFTER_SPACE_OR_SOS)
-
     @functools.lru_cache(maxsize=50)
     def tokenize(
         self,
@@ -230,7 +212,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
         after_whitespace = True
 
         # Handle SOS
-        outs_strs.append(self.SOS_TOK)
+        outs_strs.append(MOD_SOS_TOK)
         actual_to_joinable_ind.append(None)
 
         # Go through and parse tokens
@@ -271,7 +253,7 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
             after_whitespace = False
 
         # Handle EOS
-        outs_strs.append(self.EOS_TOK)
+        outs_strs.append(MOD_EOS_TOK)
         actual_to_joinable_ind.append(None)
 
         assert len(outs_strs) == len(actual_to_joinable_ind)
@@ -287,15 +269,40 @@ class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
 
 def apply_case_mod(string: str, case_mod: CasingModifier):
     if case_mod == CasingModifier.CASELESS:
-        assert string.lower() == string.upper()
+        assert string.lower() == string.upper() or string in parse_constants.ALL_SPECIALS
+        return string
     elif case_mod == CasingModifier.ALL_UPPER:
         return string.upper()
     elif case_mod == CasingModifier.FIRST_UPPER:
         return string[0].upper() + string[1:]
     elif case_mod == CasingModifier.LOWER:
         return string.lower()
+    elif case_mod == CasingModifier.OTHER:
+        return string
+    elif case_mod == CasingModifier.SINGLE_CHAR_UPPER:
+        return string.upper()
     else:
         raise ValueError()
+
+
+def get_case_modifier_for_tok(tok: str, allow_other: bool = False) -> CasingModifier:
+    if tok == "":
+        raise ValueError("Empty str?")
+    if tok.lower() == tok:
+        if tok.upper() == tok:
+            return CasingModifier.CASELESS
+        return CasingModifier.LOWER
+    if tok.upper() == tok:
+        if len(tok) == 1:
+            return CasingModifier.SINGLE_CHAR_UPPER
+        return CasingModifier.ALL_UPPER
+    if tok[0].upper() == tok[0] and tok[1:].lower() == tok[1:]:
+        return CasingModifier.FIRST_UPPER
+    if allow_other:
+        return CasingModifier.OTHER
+    raise ValueError(f"Not good casing mod '{tok}'")
+
+
 
 
 MOD_TOK_FOR_MERGE = ModifiedStringToken(
