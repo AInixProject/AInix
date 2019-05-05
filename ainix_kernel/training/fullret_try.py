@@ -36,6 +36,7 @@ if __name__ == "__main__":
     argparer.add_argument("--nointeractive", action='store_true')
     argparer.add_argument("--eval_replace_samples", type=int, default=5)
     argparer.add_argument("--replace_samples", type=int, default=REPLACEMENT_SAMPLES)
+    argparer.add_argument("--encoder_name", type=str, default="BERT")
     args = argparer.parse_args()
     train_frac = args.train_percent / 100.0
     split_proportions = ((train_frac, DataSplits.TRAIN), (1-train_frac, DataSplits.VALIDATION))

@@ -4,7 +4,7 @@ from typing import List, Sequence, Tuple
 from ainix_common.parsing.model_specific import parse_constants, tokenizers
 from ainix_common.parsing.model_specific.tokenizers import ModifiedStringToken, \
     StringTokenizerWithMods, StringTokensMetadata, CasingModifier, WhitespaceModifier, \
-    get_case_modifier_for_tok
+    get_case_modifier_for_tok, add_pads_to_mod_tokens
 from ainix_kernel.model_util.vocab import Vocab
 from ainix_kernel.models.EncoderDecoder.encoders import QueryEncoder
 import torch
@@ -63,6 +63,7 @@ class ModStringTokenizerFromBert(StringTokenizerWithMods):
         metad = StringTokensMetadata(
             joinable_toks, joinable_toks_to_actual, actual_pos_to_joinable)
 
+        assert len(raw_toks) == len(out_toks[1:-1])
         return out_toks, metad
 
 
@@ -70,6 +71,7 @@ class BertEncoder(QueryEncoder):
     def __init__(self):
         super().__init__()
         model_name = 'bert-base-cased'
+        self.mod_tokenizer = ModStringTokenizerFromBert(model_name)
         self.bert = BertModel.from_pretrained(model_name)
         self.bert.eval()
 
@@ -77,68 +79,70 @@ class BertEncoder(QueryEncoder):
         self,
         queries: Sequence[str]
     ) -> Tuple[torch.Tensor, torch.Tensor, List[List[ModifiedStringToken]]]:
-        tokenized = self._tokenizer.tokenize_batch(queries, True)
-        tokenized, original_lens = add_pads_to_mod_tokens(tokenized)
-        summaries = []
-        embedded_toks = []
-        for batch in tokenized:
-            this_toks = []
-            this_sum = np.zeros(self._glove_vecs.dims)
-            this_sum_count = 0
-            for word in batch:
-                word: str = word.token_string
-                vec = self._glove_vecs.get_vec(word, always_return_vec=True)
-                this_toks.append(vec)
-                if word in self._glove_vecs and word not in STOP_WORDS:
-                    # Only count words actually in vocab, not UNKs or PADs
-                    this_sum += vec
-                    this_sum_count += 1
-            summaries.append(this_sum / this_sum_count)
-            embedded_toks.append(this_toks)
-        return torch.Tensor(summaries), torch.Tensor(embedded_toks), tokenized
+        assert len(queries) == 1
+        raw_toks = self.mod_tokenizer.bert_tokenizer.tokenize(queries[0])
+        raw_toks = [BERT_SOS.token_string] + raw_toks + [BERT_EOS.token_string]
+        mod_toks, metad = self.mod_tokenizer.tokenize(queries[0])
+        assert len(raw_toks) == len(mod_toks)
+        indexed_tokens = self.mod_tokenizer.bert_tokenizer.convert_tokens_to_ids(raw_toks)
+        segments_ids = [0 for _ in raw_toks]
+        tokens_tensor = torch.tensor([indexed_tokens])
+        segments_tensors = torch.tensor([segments_ids])
+        #tokens_tensor = tokens_tensor.to('cuda')
+        #segments_tensors = segments_tensors.to('cuda')
+        last_layer, cls_value = self.bert(tokens_tensor, segments_tensors,
+                                          output_all_encoded_layers=False)
+        summaries = cls_value
+        embedded_toks = last_layer
+
+        return torch.Tensor(summaries), torch.Tensor(embedded_toks), mod_toks
 
     def get_tokenizer(self) -> ModStringTokenizerFromBert:
         return self._tokenizer
 
 
 if __name__ == "__main__":
-    import torch
-    from pytorch_pretrained_bert import BertTokenizer, BertModel
+    #import torch
+    #from pytorch_pretrained_bert import BertTokenizer, BertModel
 
-    # OPTIONAL: if you want to have more information on what's happening,
-    # activate the logger as follows
-    import logging
-    logging.basicConfig(level=logging.INFO)
+    ## OPTIONAL: if you want to have more information on what's happening,
+    ## activate the logger as follows
+    #import logging
+    #logging.basicConfig(level=logging.INFO)
 
-    model_name = 'bert-base-uncased'
+    #model_name = 'bert-base-uncased'
 
-    # Load pre-trained model tokenizer (vocabulary)
-    tokenizer = BertTokenizer.from_pretrained(model_name, do_lower_case=False)
+    ## Load pre-trained model tokenizer (vocabulary)
+    #tokenizer = BertTokenizer.from_pretrained(model_name, do_lower_case=False)
 
-    # Tokenized input
-    text = "[CLS] What is lifez?? [SEP]"
-    tokenized_text = tokenizer.tokenize(text)
-    print(tokenized_text)
+    ## Tokenized input
+    #text = "[CLS] What is lifez?? [SEP]"
+    #tokenized_text = tokenizer.tokenize(text)
+    #print(tokenized_text)
 
-    # Convert token to vocabulary indices
-    indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
-    segments_ids = [0 for _ in tokenized_text]
+    ## Convert token to vocabulary indices
+    #indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
+    #segments_ids = [0 for _ in tokenized_text]
 
-    # Convert inputs to PyTorch tensors
-    tokens_tensor = torch.tensor([indexed_tokens])
-    segments_tensors = torch.tensor([segments_ids])
+    ## Convert inputs to PyTorch tensors
+    #tokens_tensor = torch.tensor([indexed_tokens])
+    #segments_tensors = torch.tensor([segments_ids])
 
-    # Load pre-trained model (weights)
-    model = BertModel.from_pretrained(model_name)
-    model.eval()
+    ## Load pre-trained model (weights)
+    #model = BertModel.from_pretrained(model_name)
+    #model.eval()
 
-    # If you have a GPU, put everything on cuda
-    tokens_tensor = tokens_tensor.to('cuda')
-    segments_tensors = segments_tensors.to('cuda')
-    model.to('cuda')
+    ## If you have a GPU, put everything on cuda
+    #tokens_tensor = tokens_tensor.to('cuda')
+    #segments_tensors = segments_tensors.to('cuda')
+    #model.to('cuda')
 
-    # Predict hidden states features for each layer
-    with torch.no_grad():
-        encoded_layers, pooled_output = model(tokens_tensor, segments_tensors)
-    # We have a hidden states for each of the 12 layers in model bert-base-uncased
-    assert len(encoded_layers) == 12
+    ## Predict hidden states features for each layer
+    #with torch.no_grad():
+    #    encoded_layers, pooled_output = model(tokens_tensor, segments_tensors)
+    ## We have a hidden states for each of the 12 layers in model bert-base-uncased
+    #assert len(encoded_layers) == 12
+
+    enc = BertEncoder()
+    sumarry, emb, toks = enc(["hello there"])
+    print(emb)

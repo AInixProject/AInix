@@ -183,6 +183,7 @@ def get_case_modifier_for_tok(tok: str) -> CasingModifier:
         return CasingModifier.FIRST_UPPER
     raise ValueError(f"Not good casing mod '{tok}'")
 
+
 # TODO (DNGros): This should be unified with the tokenizer in generic_strings.
 class ModifiedWordPieceTokenizer(StringTokenizerWithMods):
     def __init__(self, vocab: List[str], merge_long_files: bool = True):

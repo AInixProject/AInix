@@ -580,7 +580,8 @@ def full_ret_from_example_store(
                                            output_size, pretrained_checkpoint)
         embedder.eval()
     elif encoder_name == "BERT":
-        pass
+        from ainix_kernel.models.EncoderDecoder.bertencoders import BertEncoder
+        embedder = BertEncoder()
     else:
         raise ValueError(f"Unsupported encoder_name {encoder_name}")
     parser = StringParser(example_store.type_context)
