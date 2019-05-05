@@ -36,7 +36,7 @@ import sklearn.naive_bayes
 import attr
 
 #REPLACEMENT_SAMPLES = 10
-REPLACEMENT_SAMPLES = 35
+REPLACEMENT_SAMPLES = 3#35
 START_COPY_KERNEL_WEIGHTS = torch.tensor([0.25, .7, 0.05])
 END_COPY_KERNEL_WEIGHTS = torch.tensor([0.05, .7, 0.25])
 #                         ^ Weight current token the most and the before and after less.
@@ -270,7 +270,7 @@ class FullRetModel(StringTypeTranslateCF):
 @attr.s(auto_attribs=True)
 class _CopyNodeReference:
     path_to_this_copy: Tuple[int, ...]
-    # Avgs are in shape (hidden_channel, kernel_size)
+    # Avgs are in shape (hidden_c3hannel, kernel_size)
     # This is so it can more easily go into F.conv1d
     start_avgs: torch.Tensor
     end_avgs: torch.Tensor

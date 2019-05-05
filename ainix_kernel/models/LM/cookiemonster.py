@@ -284,19 +284,19 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         queries: Sequence[str]
     ) -> Tuple[torch.Tensor, torch.Tensor, List[List[ModifiedStringToken]]]:
         vectorized, tokenized, input_lens, token_metads = self._vectorize_query(queries)
-        summaries = self._sumarize(vectorized, input_lens, tokenized, token_metads)
+        if self.learend_extra_transform:
+            vectorized_for_summary = self.pre_summary(vectorized)
+        summaries = self._sumarize(vectorized_for_summary, input_lens, tokenized, token_metads)
         return summaries, vectorized, tokenized
 
-    def _sumarize(self, hidden, input_lens, tokens, metads):
-        if self.learend_extra_transform:
-            hidden = self.pre_summary(hidden)
-
+    @classmethod
+    def sumarize(cls, hidden, input_lens, tokens, metads):
         stop_word_masks = get_non_stop_word_mask_batched(tokens, metads)
         # Average pool the tokens.
         # Count the tokens of long words less so that way a single long word like
         # a file name does not dominate the sumamry
         word_lens = get_word_lens_of_moded_tokens(tokens)
-        stop_word_masks *= self._word_lens_to_weights(word_lens)
+        stop_word_masks *= cls._word_lens_to_weights(word_lens)
         # Limit SOS or EOS
         stop_word_masks[:, 0] = 0.5
         stop_word_masks[:, -1] = 0.5
@@ -309,7 +309,8 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
 
         return avgs
 
-    def _word_lens_to_weights(self, word_lens):
+    @classmethod
+    def _word_lens_to_weights(cls, word_lens):
         originally_wanted_grad = word_lens.requires_grad  # for sanity check
         # Pretend that pads are really long
         word_lens = word_lens.clone()

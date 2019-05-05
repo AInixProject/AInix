@@ -124,6 +124,7 @@ class CasingModifier(IntEnum):
     FIRST_UPPER = 2
     CASELESS = 3  # True if all symbols
     SINGLE_CHAR_UPPER = 4
+    OTHER = 5  # Typically not allowed. But needed in BERT tokenizer for tokens like YouTube
 
 
 @unique
@@ -168,7 +169,7 @@ class NonLetterTokenizer(StringTokenizer):
         return {"name": "NonLetterTokenizer"}
 
 
-def get_case_modifier_for_tok(tok: str) -> CasingModifier:
+def get_case_modifier_for_tok(tok: str, allow_other: bool = False) -> CasingModifier:
     if tok == "":
         raise ValueError("Empty str?")
     if tok.lower() == tok:
@@ -181,6 +182,8 @@ def get_case_modifier_for_tok(tok: str) -> CasingModifier:
         return CasingModifier.ALL_UPPER
     if tok[0].upper() == tok[0] and tok[1:].lower() == tok[1:]:
         return CasingModifier.FIRST_UPPER
+    if allow_other:
+        return CasingModifier.OTHER
     raise ValueError(f"Not good casing mod '{tok}'")
 
 

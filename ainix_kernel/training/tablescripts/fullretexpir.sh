@@ -12,6 +12,7 @@ do
         --randomize_seed \
         --nointeractive \
         --eval_replace_samples 35 \
+        --encoder_name CM
         | tee ${RUNDIR}/runs/fullret/run${i} \
         || exit 1
 done

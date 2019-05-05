@@ -12,7 +12,8 @@ import os
 
 
 def train_the_thing(splits = DEFAULT_SPLITS, use_rand_seed = False,
-                    replace_samples = REPLACEMENT_SAMPLES):
+                    replace_samples = REPLACEMENT_SAMPLES,
+                    enc_name: str = "CM"):
     # bad hacks method thing
     dir_path = os.path.dirname(os.path.realpath(__file__))
     pretrained_checkpoint_path = f"{dir_path}/../../checkpoints/" \
@@ -23,7 +24,7 @@ def train_the_thing(splits = DEFAULT_SPLITS, use_rand_seed = False,
     type_context, index, replacers, loader = get_examples(splits, use_rand_seed)
     print(f"count {len(list(index.get_all_x_values((DataSplits.VALIDATION,))))}")
     model = full_ret_from_example_store(index, replacers, pretrained_checkpoint_path,
-                                        replace_samples)
+                                        replace_samples, enc_name)
     return model, index, replacers, type_context, loader
 
 
@@ -42,7 +43,7 @@ if __name__ == "__main__":
     split_proportions = ((train_frac, DataSplits.TRAIN), (1-train_frac, DataSplits.VALIDATION))
 
     model, index, replacers, type_context, loader = train_the_thing(
-        split_proportions, args.randomize_seed, args.replace_samples)
+        split_proportions, args.randomize_seed, args.replace_samples, args.encoder_name)
     unparser = AstUnparser(type_context, model.get_string_tokenizer())
 
     tran_trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
