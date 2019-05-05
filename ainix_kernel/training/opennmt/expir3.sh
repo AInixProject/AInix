@@ -3,10 +3,34 @@
 # Run just basic rnn with big glove
 
 BATCH_SIZE=64
-REPLACE_SAMPLES=${1:-35}
+REPLACE_SAMPLES=35
+BEAM_SIZE=10
 WORD_VEC_SIZE=300
 TRAIN_STEPS=7500
+WORD_FREQ=40
+
+while getopts "h?r:b:s:" opt; do
+    case "$opt" in
+    h|\?)
+        show_help
+        exit 0
+        ;;
+    r)  REPLACE_SAMPLES=$OPTARG 
+        WORD_FREQ=$(($REPLACE_SAMPLES * 10 * 13  / 100 + 1))
+        ;;
+    b)  BEAM_SIZE=$OPTARG
+        ;;
+    s)  TRAIN_STEPS=$OPTARG
+        ;;
+    esac
+done
+
+echo batch size ${BATCH_SIZE}
 echo repl samples ${REPLACE_SAMPLES}
+echo beam size ${BEAM_SIZE}
+echo word vec size ${WORD_VEC_SIZE}
+echo train steps ${TRAIN_STEPS}
+echo min word freq ${WORD_FREQ}
 
 echo "Exporting latest data"
 cd ../../..
@@ -27,8 +51,8 @@ python3 ./OpenNMT-py/preprocess.py \
   -valid_src data_val_x.txt \
   -valid_tgt data_val_y.txt \
   --save_data expirs/exp1 \
-  --src_words_min_frequency 40 \
-  --tgt_words_min_frequency 40 \
+  --src_words_min_frequency ${WORD_FREQ} \
+  --tgt_words_min_frequency ${WORD_FREQ} \
   || exit 1
 
 echo "prepare glove"
@@ -72,7 +96,7 @@ python3 ./OpenNMT-py/translate.py \
     -replace_unk \
     -verbose \
     --replace_unk \
-    --beam_size 10 \
+    --beam_size ${BEAM_SIZE} \
     || exit 1
 
 

@@ -159,6 +159,7 @@ class ReplacementSampling:
         vars_used = set()
         new_str = in_str
         for var, (x, y) in self.var_to_x_y_vals.items():
+            #x, y = "XZ", 'XZ'
             val_to_use = x if is_x else y
             is_a_implicit_arg_name = var.startswith(_IMPLICIT_REPLACER_ARG_NAME_PREFIX)
             if is_a_implicit_arg_name:
@@ -178,6 +179,7 @@ class ReplacementSampling:
             if "=" in match:
                 var, val = _split_replacement_assignment(match)
                 fill_str, _ = self.var_to_x_y_vals[var]
+                #fill_str = "XZ"
                 new_str = new_str.replace(f"[-[{match}]-]", fill_str)
                 vars_used.add(var)
         return new_str, vars_used

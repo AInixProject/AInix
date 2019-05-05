@@ -39,11 +39,11 @@ def restore(file_name) -> Tuple[TypeContext, StringTypeTranslateCF, ExamplesStor
         example_store = load_all_examples(type_context)
     else:
         example_store = None
-    if save_dict['name'] == "fullret":
+    if save_dict.get('name', None) == "fullret":
         from ainix_kernel.models.Fullretrieval.fullretmodel import FullRetModel
         model = FullRetModel.create_from_save_state_dict(
             save_dict['model'], type_context, example_store)
-    elif save_dict['EncoderDecoder']:
+    elif save_dict['model']['name'] == 'EncoderDecoder':
         from ainix_kernel.models.EncoderDecoder.encdecmodel import EncDecModel
         model = EncDecModel.create_from_save_state_dict(
             save_dict['model'], type_context, example_store)

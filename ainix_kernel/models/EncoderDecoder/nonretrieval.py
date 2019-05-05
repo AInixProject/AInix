@@ -100,6 +100,7 @@ class SimpleActionSelector(ActionSelector):
             latent_vec, types_to_select, expected)
         span_pred_loss = self.span_predictor.train_predict_span(
             latent_vec, memory_tokens, valid_for_copy_mask, types_to_select, expected)
+        assert num_of_parents_with_copy_option <= 0
         loss += get_copy_depth_discount(num_of_parents_with_copy_option) * span_pred_loss
 
         return loss

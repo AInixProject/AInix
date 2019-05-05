@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-rm -r runs/gram
-mkdir -p runs/gram
+#rm -r runs/gram
+#mkdir -p runs/gram
 
 RUNDIR=$(pwd)
 cd ../../..

@@ -145,7 +145,6 @@ class TreeRNNCell(nn.Module, ABC):
         raise NotImplemented
 
 
-
 class TreeRNNCellLSTM(TreeRNNCell):
     """An rnn cell in a tree RNN"""
     def __init__(self, ast_node_embed_size: int, hidden_size, attn: bool = True):
@@ -471,15 +470,21 @@ class TreeRNNDecoder(TreeDecoder):
             example_inds=[example_id]
         )
 
-        next_expected_set = expected.get_next_node_for_choice(
-            impl_name_chosen=teacher_force_path.get_chosen_impl_name()
-        ).next_node
-        assert next_expected_set is not None, "Teacher force path not in expected ast set!"
-        next_object_node = teacher_force_path.next_node_not_copy
-        internal_state, child_loss = self._train_objectnode_step(
-            internal_state, memory_tokens, valid_for_copy_mask, next_expected_set, next_object_node,
-            num_parents_with_a_copy_option + (1 if expected.copy_is_known_choice() else 0),
-            example_id)
+        child_loss = 0
+        if not expected.copy_is_known_choice():
+            # Don't descend if copy? Not sure if this is good. Need to do something
+            # to usensure the altering of internal state is same between train and
+            # test and this is an easy fix
+            next_expected_set = expected.get_next_node_for_choice(
+                impl_name_chosen=teacher_force_path.get_chosen_impl_name()
+            ).next_node
+            assert next_expected_set is not None, "Teacher force path not in expected ast set!"
+            next_object_node = teacher_force_path.next_node_not_copy
+            internal_state, child_loss = self._train_objectnode_step(
+                internal_state, memory_tokens, valid_for_copy_mask,
+                next_expected_set, next_object_node,
+                num_parents_with_a_copy_option + (1 if expected.copy_is_known_choice() else 0),
+                example_id)
         return internal_state, loss + child_loss
 
     def _inference_object_step(

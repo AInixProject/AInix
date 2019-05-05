@@ -148,8 +148,13 @@ class EncDecModel(StringTypeTranslateCF):
         # TODO (DNGros): acutally handle the new type context.
 
         # TODO check the name of the query encoder
-        query_encoder = PretrainPoweredQueryEncoder.create_from_save_state_dict(
-            state_dict['query_encoder'])
+        if state_dict['name'] == "EncoderDecoder":
+            # I don't think this is right??
+            query_encoder = encoders.StringQueryEncoder.create_from_save_state_dict(
+                state_dict['query_encoder'])
+        else:
+            query_encoder = PretrainPoweredQueryEncoder.create_from_save_state_dict(
+                state_dict['query_encoder'])
         parser = StringParser(new_type_context)
         unparser = AstUnparser(new_type_context, query_encoder.get_tokenizer())
         replacers = get_all_replacers()
@@ -200,8 +205,8 @@ def make_default_query_encoder(
         embed_size = 300
         x_vectorizer = vectorizers.TorchDeepEmbed(len(query_vocab), embed_size)
         print(f"encdecmodel:make_default_query_encoder {len(query_vocab)}")
-        #set_deep_embed_from_glove(
-        #    x_vectorizer, get_glove_words(embed_size, query_vocab), query_vocab)
+        set_deep_embed_from_glove(
+            x_vectorizer, get_glove_words(embed_size, query_vocab), query_vocab)
 
         internal_encoder = RNNSeqEncoder(
             input_dims=x_vectorizer.feature_len(),
@@ -241,7 +246,7 @@ def get_default_encdec_model(
         # If we don't have a pretrained_checkpoint, then we might not know all
         # words in the vocab, so should filter the vocab to only tokens in dataset
         x_vocab = vocab.make_x_vocab_from_examples(
-            examples, x_tokenizer, replacer, min_freq=2, replace_samples=2)
+            examples, x_tokenizer, replacer, min_freq=5, replace_samples=3)
     hidden_size = standard_size
     tc = examples.type_context
     encoder = make_default_query_encoder(x_tokenizer, x_vocab, hidden_size, pretrain_checkpoint)
@@ -257,4 +262,3 @@ def get_default_encdec_model(
         # TODO lolz, this is such a crappy interface
         model.plz_train_this_latent_store_thanks = lambda: decoder.action_selector.latent_store
     return model
-

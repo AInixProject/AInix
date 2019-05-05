@@ -66,7 +66,10 @@ class TypeTranslateCFTrainer:
         self.model.end_train_epoch()
         return loss / examples_seen
 
-    def train(self, epochs: int, eval_every_n_epochs: int = None, intermitted_save_path = None):
+    def train(
+            self, epochs: int, eval_every_n_epochs: int = None,
+            intermitted_save_path = None, dump_each_in_eval: bool = True,
+            intermitted_repl_samples: int = 10):
         self.model.start_train_session()
         for epoch in tqdm(range(epochs), unit="Epochs"):
             print()
@@ -83,10 +86,14 @@ class TypeTranslateCFTrainer:
                                                       self.replacer, self.string_parser,
                                                       (DataSplits.TRAIN,), self.unparser,
                                                       self.str_tokenizer)
-            if eval_every_n_epochs and epoch + 1 != epochs and epoch % eval_every_n_epochs == 0:
+            if eval_every_n_epochs and \
+                    epoch + 1 != epochs and \
+                    epoch % eval_every_n_epochs == 0 and \
+                    epoch > 0:
                 print("Pausing to do an eval")
                 logger = EvaluateLogger()
-                self.evaluate(logger, dump_each=True, num_replace_samples=10)
+                self.evaluate(logger, dump_each=dump_each_in_eval,
+                              num_replace_samples=intermitted_repl_samples)
                 print_ast_eval_log(logger)
                 if intermitted_save_path:
                     if self.loader is None:
@@ -268,6 +275,10 @@ if __name__ == "__main__":
     argparer.add_argument("--quiet_dump", action='store_true')
     args = argparer.parse_args()
     train_frac = args.train_percent / 100.0
+
+    #train_frac = 0.05
+    #args.randomize_seed = True
+
     split_proportions = ((train_frac, DataSplits.TRAIN), (1-train_frac, DataSplits.VALIDATION))
 
     import ainix_kernel.indexing.exampleindex
@@ -293,8 +304,10 @@ if __name__ == "__main__":
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)
     train_time = datetime.datetime.now()
     print("train time", train_time)
-    epochs = 40
-    trainer.train(epochs, eval_every_n_epochs=3, intermitted_save_path="./checkpoints/chkp")
+    epochs = 35
+    trainer.train(epochs, eval_every_n_epochs=3,
+                  intermitted_save_path="./checkpoints/chkp",
+                  dump_each_in_eval=True, intermitted_repl_samples=5)
 
     print("Lets eval")
     print("-----------")
