@@ -22,7 +22,8 @@ from ainix_common.parsing.model_specific import tokenizers
 from ainix_common.parsing.model_specific.tokenizers import CasingModifier, WhitespaceModifier, \
     ModifiedWordPieceTokenizer, ModifiedStringToken
 from ainix_kernel.model_util.lm_task_processor.lm_set_process import LMBatch
-from ainix_kernel.model_util.operations import pack_picks, avg_pool, GELUActivation, fastgelu
+from ainix_kernel.model_util.operations import pack_picks, avg_pool, GELUActivation, fastgelu, \
+    get_input_lengths_mask
 from ainix_kernel.model_util.stop_words import get_non_stop_word_mask_batched
 from ainix_kernel.model_util.stringops import get_word_lens_of_moded_tokens
 from ainix_kernel.model_util.usefulmodules import Conv1dSame
@@ -286,7 +287,9 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         vectorized, tokenized, input_lens, token_metads = self._vectorize_query(queries)
         if self.learend_extra_transform:
             vectorized_for_summary = self.pre_summary(vectorized)
-        summaries = self._sumarize(vectorized_for_summary, input_lens, tokenized, token_metads)
+        else:
+            vectorized_for_summary = vectorized
+        summaries = type(self).sumarize(vectorized_for_summary, input_lens, tokenized, token_metads)
         return summaries, vectorized, tokenized
 
     @classmethod
@@ -300,8 +303,9 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         # Limit SOS or EOS
         stop_word_masks[:, 0] = 0.5
         stop_word_masks[:, -1] = 0.5
-        #print(stop_word_masks)
-        #
+        # In case the tokens have been padded, multiply the lens
+        stop_word_masks *= get_input_lengths_mask(torch.tensor(input_lens)).float()
+
         weights = stop_word_masks.unsqueeze(2).expand(-1, -1, hidden.shape[-1])
         avgs = torch.sum((hidden * weights), dim=1) / torch.sum(weights, dim=1)
         #if self.learend_extra_transform:

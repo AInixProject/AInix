@@ -16,7 +16,8 @@ from ainix_common.parsing.stringparser import StringParser, AstUnparser
 from ainix_common.parsing.typecontext import TypeContext, AInixType
 from ainix_kernel.indexing.examplestore import ExamplesStore, XValue, DataSplits, YValue
 from ainix_kernel.model_util.attending import attend
-from ainix_kernel.model_util.operations import get_kernel_around, np_log_prob_inverse
+from ainix_kernel.model_util.operations import get_kernel_around, np_log_prob_inverse, \
+    get_number_of_model_parameters
 from ainix_kernel.model_util.vocab import Vocab, BasicVocab, make_x_vocab_from_examples
 from ainix_kernel.models.EncoderDecoder.decoders import get_valid_for_copy_mask
 from ainix_kernel.models.EncoderDecoder.encdecmodel import make_default_query_encoder, \
@@ -584,6 +585,7 @@ def full_ret_from_example_store(
         embedder = BertEncoder()
     else:
         raise ValueError(f"Unsupported encoder_name {encoder_name}")
+    print(f"Number of embedder params: {get_number_of_model_parameters(embedder)}")
     parser = StringParser(example_store.type_context)
     unparser = AstUnparser(example_store.type_context, embedder.get_tokenizer())
     summaries, example_refs, example_splits = [], [], []

@@ -153,6 +153,28 @@ def test_avg_pool4(use_cuda):
     )
 
 
+def test_get_input_lens_mask_expanded():
+    assert torch_epsilon_eq(
+        get_input_lengths_mask_expanded(torch.tensor([1, 3, 2]), 2),
+        torch.tensor([
+            [[1., 1], [0, 0], [0, 0]],
+            [[1, 1], [1, 1], [1, 1]],
+            [[1, 1], [1, 1], [0, 0]],
+        ])
+    )
+
+
+def test_get_input_lens_mask():
+    assert torch_epsilon_eq(
+        get_input_lengths_mask(torch.tensor([1, 3, 2])),
+        torch.tensor([
+            [True, False, False],
+            [True, True, True],
+            [True, True, False],
+        ])
+    )
+
+
 def test_get_kernel_around0():
     assert torch_epsilon_eq(
         get_kernel_around(

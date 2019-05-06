@@ -84,15 +84,32 @@ def avg_pool(data, input_lens: Optional[torch.LongTensor] = None):
 
     """
     if input_lens is not None:
-        # TODO: is there a way to do this without list comprehension??
-        return torch.stack([
-            torch.sum(data[i, :l, :], dim=0) / l for i, l in enumerate(input_lens)
-        ])
+        mask = get_input_lengths_mask_expanded(input_lens, data.shape[2])
+        return (data * mask).sum(1) / input_lens.unsqueeze(1).float()
+        #return torch.stack([
+        #    torch.sum(data[i, :l, :], dim=0) / l for i, l in enumerate(input_lens)
+        #])
     else:
         return torch.sum(data, dim=1) / float(data.shape[1])
 
     #lens_mask = torch.zeros()
 #    return torch.sum(data, dim=1) / float(data.shape[1])
+
+
+def get_input_lengths_mask_expanded(input_lens: torch.LongTensor, hidden_size: int):
+    """Given the input lens provides a hidden mask of dim (batch, lens, hidden)
+    that are 1 if < the input len and 0 otherwise
+    """
+    idx = get_input_lengths_mask(input_lens)
+    idx = idx.unsqueeze(2).expand(-1, -1, hidden_size)
+    return idx.float()
+
+
+def get_input_lengths_mask(input_lens: torch.LongTensor):
+    max_len = torch.max(input_lens)
+    idx = torch.arange(max_len, device=input_lens.device)
+    idx = idx.unsqueeze(0).expand(len(input_lens), -1)
+    return idx < input_lens.unsqueeze(1)
 
 
 def fastgelu(x):
@@ -166,4 +183,7 @@ def np_log_prob_inverse(log_p):
 #    @staticmethod
 #    def forward(ctx, input, select_mask):
 #        pass
+
+def get_number_of_model_parameters(model: torch.nn.Module):
+    return sum(p.numel() for p in model.parameters())
 

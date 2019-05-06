@@ -15,18 +15,25 @@ def torch_epsilon_eq(val, expected, epsilon=1e-12, print_error=True):
         expected = torch.Tensor(expected) \
             if not isinstance(val, torch.LongTensor) else torch.LongTensor(expected)
     difs = None
-    try:
-        difs = torch.abs(torch.add(val, -expected))
-    except RuntimeError as e:
-        print(e)
-    else:
-        eqs = torch.lt(difs, epsilon)
-        if torch.all(eqs):
+    if val.dtype == torch.uint8 and expected.dtype == torch.uint8:
+        difs = val != expected
+        if not torch.any(difs):
             return True
+        else:
+            print_error = True
+    else:
+        try:
+            difs = torch.abs(torch.add(val, -expected))
+        except RuntimeError as e:
+            print(e)
+        else:
+            eqs = torch.lt(difs, epsilon)
+            if torch.all(eqs):
+                return True
+
     if print_error:
         print("Epsilon equals failure.")
         print(f"Expected:\n {expected}")
-        print(f"Got:\n {val}")
         if difs is not None:
             print(f"Difs:\n {difs}")
     return False
