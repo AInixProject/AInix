@@ -1,0 +1,29 @@
+defines:
+  - define_new: example_set
+    # All example_set definitions must include a root y_type. For Unix commands,
+    # the root type is CommandSequence. However, this framework could also be
+    # used with a root type of RegularExp, SQL, or something else more domain
+    # specific. This allows AInix to be used in multitask settings.
+    y_type: CommandSequence
+    examples:
+      - x:
+          - how many lines are in [-[FILENAME]-]
+          - Counts lines of [-[FILENAME]-]
+          - line count of [-[FILENAME]-]
+          - get line count of [-[FILENAME]-]
+        y:
+          - wc -l [-[FILENAME]-]
+        risk: 0
+      - x:
+          - how many words are in [-[FILENAME]-]
+          - get the word count of [-[FILENAME]-]
+          - word count [-[FILENAME]-]
+        y:
+          - wc -w [-[FILENAME]-]
+        risk: 0
+      - x:
+          - how many letters are in "[-[ENGWORD]-]"
+        y:
+          - echo "[-[ENGWORD]-]" | wc -c
+        risk: 0
+    # ...Examples ommitted for conciseness...

@@ -30,6 +30,7 @@ defines:
     y:
     - cp -r [-[$1]-] [-[$2]-]
   - x:
+    # TODO fix
     - copy everything in [-[1=ENGWORD]-]s dir to [-[$1]-]copy
     y:
     - cp -r [-[$1]-]/* [-[$1]-]copy

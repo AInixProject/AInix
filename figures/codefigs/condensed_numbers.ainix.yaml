@@ -1,0 +1,23 @@
+defines:
+  - define_new: type
+    name: Number
+  - define_new: object
+    name: decimal_number
+    type: Number
+    children:
+      - name: SignArg
+        type: Sign
+        required: False
+      - name: BeforeDecimal
+        type: IntBase
+        required: True
+      - name: AfterDecimal
+        type: IntBase
+        required: False
+      - name: Exponent
+        type: IntBase
+        required: False
+    preferred_object_parser:
+      grammar: |
+        SignArg? BeforeDecimal ("." AfterDecimal)? ("e" Exponent)?
+  # Definition of Sign type and IntBase type omitted ..........................

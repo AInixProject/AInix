@@ -1,0 +1,27 @@
+defines:
+  - define_new: object
+    name: wc
+    type: Program
+    # We must provide type data so the default TypeParser for Programs knows
+    # how to recognize this object in strings.
+    type_data: {invoke_name: "wc"}
+    children:
+      - name: l
+        arg_data: {short_name: "l", long_name: "lines"}
+      - name: c
+        # By default arguments are optional.
+        # We can also explicitly specify this for clarity.
+        required: False
+        # The default ObjectParser for Program's knows how to parse
+        # POSIX-compliant program argument conventions. To do this the parser
+        # examines the arg_data that the user provides for the arguments.
+        arg_data: {short_name: "c", long_name: "bytes"}
+      - name: m
+        arg_data: {short_name: "m", long_name: "chars"}
+      - name: w
+        arg_data: {short_name: "w", long_name: "words"}
+      - name: files_list
+        # The previous arguments had None type (were just flags)
+        # However, this positional argument has a Type which needs to be parsed
+        type: PathList
+        arg_data: {position: 0, multiword_pos_arg: True}

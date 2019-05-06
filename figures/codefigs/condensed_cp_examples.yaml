@@ -1,0 +1,21 @@
+defines:
+  - define_new: example_set
+    y_type: CommandSequence
+    examples:
+      - x:
+        - make a copy of [-[FILENAME]-] in parent dir
+        - copy [-[FILENAME]-] to parent directory
+        - copy [-[FILENAME]-] up one directory
+        y:
+        - cp [-[FILENAME]-] ..
+      - x:
+        - copy [-[1=DIRNAME]-] to [-[2=DIRNAME]-]
+        - recursive copy [-[1=DIRNAME]-] to [-[2=DIRNAME]-]
+        - cp for directories [-[1=DIRNAME]-] [-[2=DIRNAME]-]
+        y:
+        - cp -r [-[$1]-] [-[$2]-]
+      - x:
+        - copy everything in [-[1=ENGWORD]-] dir to [-[$1]-]copy
+        y:
+        - cp -r [-[$1]-]/* [-[$1]-]copy
+      # ...Other examples ommitted for conciseness.............................

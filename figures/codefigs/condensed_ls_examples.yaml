@@ -1,0 +1,13 @@
+defines:
+  - define_new: example_set
+    y_type: CommandSequence
+    examples:
+      - x:
+        - list files here with smallest file first
+        - display files smallest to largest
+        - list files small to big
+        - show files. Sort by file size small first
+        y:
+        - ls -lSr
+        - ls -Sr
+      # ...Other examples ommitted for conciseness.............................
