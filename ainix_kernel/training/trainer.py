@@ -26,6 +26,16 @@ from tqdm import tqdm
 from ainix_common.parsing.loader import TypeContextDataLoader
 from ainix_common.parsing.typecontext import AInixType
 from ainix_common.parsing.typecontext import TypeContext, AInixType
+import os
+
+
+def cookie_monster_path():
+    # bad hacks method thing
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    return f"{dir_path}/../../checkpoints/" \
+        f"lmchkp_192conv2rnntrans_3epochs_total_3.21_ns0.44_lm2.77"
+    #  "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt"
+
 
 
 class TypeTranslateCFTrainer:
@@ -273,6 +283,7 @@ if __name__ == "__main__":
     argparer.add_argument("--randomize_seed", action='store_true')
     argparer.add_argument("--eval_replace_samples", type=int, default=10)
     argparer.add_argument("--quiet_dump", action='store_true')
+    argparer.add_argument("--use_pretrain", action='store_true', default=True)
     args = argparer.parse_args()
     train_frac = args.train_percent / 100.0
 
@@ -291,14 +302,11 @@ if __name__ == "__main__":
         get_default_encdec_model
 
     model = get_default_encdec_model(
-        index, standard_size=128, use_retrieval_decoder=False, replacer=replacers)
-       # pretrain_checkpoint=None)
-        #pretrain_checkpoint="../../checkpoints/"
-        #                    "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt")
-
-    #t model = get_default_encdec_model(
-    #    index, standard_size=64, replacer=replacers, use_retrieval_decoder=True)
-
+        index, standard_size=128, use_retrieval_decoder=False,
+        replacer=replacers,
+        pretrain_checkpoint=cookie_monster_path() if args.use_pretrain else None,
+        learn_on_top_pretrained=args.use_pretrain
+    )
     #model = make_rulebased_seacr(index)
 
     trainer = TypeTranslateCFTrainer(model, index, replacer=replacers, loader=loader)

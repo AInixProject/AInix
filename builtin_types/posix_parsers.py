@@ -17,7 +17,7 @@ def lex_bash(string: str) -> List[tuple]:
     last_was_slash_escape = False
     current_word = []
     current_word_start = 0
-    output = []
+    output = [] 
     for i, c in enumerate(string):
         if c == "'" and not inside_double_quotes and not last_was_slash_escape:
             inside_single_quotes = not inside_double_quotes

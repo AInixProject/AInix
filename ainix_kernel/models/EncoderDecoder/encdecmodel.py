@@ -196,7 +196,8 @@ def make_default_query_encoder(
     x_tokenizer: tokenizers.Tokenizer,
     query_vocab: Vocab,
     output_size=64,
-    pretrain_checkpoint: str = None
+    pretrain_checkpoint: str = None,
+    learn_on_top_pretrain: bool = False
 ) -> QueryEncoder:
     """Factory for making a default QueryEncoder"""
     #return SimpleGloveEncoder(query_vocab, 300)
@@ -228,7 +229,8 @@ def make_default_query_encoder(
     else:
         return PretrainPoweredQueryEncoder.create_with_pretrained_checkpoint(
             pretrain_checkpoint,
-            x_tokenizer, query_vocab, output_size, freeze_base=True
+            x_tokenizer, query_vocab, output_size, freeze_base=True,
+            rnn_top=learn_on_top_pretrain
         )
 
 
@@ -237,7 +239,8 @@ def get_default_encdec_model(
     standard_size=16,
     replacer: Replacer = None,
     use_retrieval_decoder: bool = False,
-    pretrain_checkpoint: str = None
+    pretrain_checkpoint: str = None,
+    learn_on_top_pretrained: bool = False
 ):
     (x_tokenizer, x_vocab), y_tokenizer = get_default_tokenizers(
         use_word_piece=pretrain_checkpoint is not None

@@ -250,23 +250,29 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         initial_encoder: ModTokensEncoder,
         summary_size: int,
         device: torch.device = torch.device("cpu"),
-        learned_extra_transform: bool = False
+        rnn_top: bool = False
     ):
         super().__init__()
         self.tokenizer = tokenizer
         self.query_vocab = query_vocab
         self.initial_encoder = initial_encoder
         self.device = device
+        self.rnn_top = rnn_top
 
-        self.learend_extra_transform = learned_extra_transform
         other_modules = []
-        if learned_extra_transform:
-            self.pre_summary = nn.Sequential(
-                nn.Dropout(p=0.15),
-                nn.Linear(self.initial_encoder.output_size, summary_size),
+        if rnn_top:
+            self.rnn = RNNSeqEncoder(
+                input_dims=self.initial_encoder.output_size,
+                hidden_size=self.initial_encoder.output_size,
+                summary_size=summary_size,
+                memory_tokens_size=summary_size,
+                rnn_cell=nn.LSTM,
+                num_layers=1,
+                input_dropout_p=0.25,
+                dropout_p=0.25,
+                variable_lengths=True
             )
-            self.post_summary_linear = nn.Linear(summary_size, summary_size)
-            other_modules = [self.pre_summary, self.post_summary_linear]
+            other_modules = [self.rnn]
         # To avoid storing redunant copies of the weights we store a list of
         # models that we need to save the weights of during serialization
         self.other_models = nn.ModuleList(other_modules)
@@ -285,11 +291,10 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         queries: Sequence[str]
     ) -> Tuple[torch.Tensor, torch.Tensor, List[List[ModifiedStringToken]]]:
         vectorized, tokenized, input_lens, token_metads = self._vectorize_query(queries)
-        if self.learend_extra_transform:
-            vectorized_for_summary = self.pre_summary(vectorized)
+        if self.rnn_top:
+            summaries, vectorized = self.rnn(vectorized, input_lens)
         else:
-            vectorized_for_summary = vectorized
-        summaries = type(self).sumarize(vectorized_for_summary, input_lens, tokenized, token_metads)
+            summaries = type(self).sumarize(vectorized, input_lens, tokenized, token_metads)
         return summaries, vectorized, tokenized
 
     @classmethod
@@ -371,7 +376,8 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
         query_vocab: Vocab,
         summary_size: int,
         device: torch.device = torch.device("cpu"),
-        freeze_base = False
+        freeze_base = False,
+        rnn_top: bool = False
     ) -> 'PretrainPoweredQueryEncoder':
         """
         Creates a new instance using the base encoder from a encoder that was
@@ -387,7 +393,7 @@ class PretrainPoweredQueryEncoder(QueryEncoder):
             for param in initial_encoder.parameters():
                 param.requires_grad = False
         return cls(
-            tokenizer, query_vocab, initial_encoder, summary_size, device
+            tokenizer, query_vocab, initial_encoder, summary_size, device, rnn_top
         )
 
 

@@ -7,20 +7,14 @@ from ainix_kernel.indexing.examplestore import DataSplits, DEFAULT_SPLITS
 from ainix_kernel.models.Fullretrieval.fullretmodel import full_ret_from_example_store, \
     REPLACEMENT_SAMPLES
 from ainix_kernel.training.evaluate import EvaluateLogger, print_ast_eval_log
-from ainix_kernel.training.trainer import TypeTranslateCFTrainer, get_examples
+from ainix_kernel.training.trainer import TypeTranslateCFTrainer, get_examples, cookie_monster_path
 import os
 
 
 def train_the_thing(splits = DEFAULT_SPLITS, use_rand_seed = False,
                     replace_samples = REPLACEMENT_SAMPLES,
                     enc_name: str = "CM"):
-    # bad hacks method thing
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    pretrained_checkpoint_path = f"{dir_path}/../../checkpoints/" \
-        f"lmchkp_192conv2rnntrans_3epochs_total_3.21_ns0.44_lm2.77"
-    #                             "lmchkp_30epoch2rnn_merge_toks_total_2.922_ns0.424_lm2.4973.pt"
-
-
+    pretrained_checkpoint_path = cookie_monster_path()
     type_context, index, replacers, loader = get_examples(splits, use_rand_seed)
     print(f"count {len(list(index.get_all_x_values((DataSplits.VALIDATION,))))}")
     model = full_ret_from_example_store(index, replacers, pretrained_checkpoint_path,
@@ -37,7 +31,7 @@ if __name__ == "__main__":
     argparer.add_argument("--nointeractive", action='store_true')
     argparer.add_argument("--eval_replace_samples", type=int, default=5)
     argparer.add_argument("--replace_samples", type=int, default=REPLACEMENT_SAMPLES)
-    argparer.add_argument("--encoder_name", type=str, default="BERT")
+    argparer.add_argument("--encoder_name", type=str, default="CM")
     args = argparer.parse_args()
     train_frac = args.train_percent / 100.0
     split_proportions = ((train_frac, DataSplits.TRAIN), (1-train_frac, DataSplits.VALIDATION))
